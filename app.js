@@ -1,4 +1,4 @@
-// app.js - Application NETTOYÉE avec initialisation garantie des modules
+// app.js - Application CORRIGÉE avec initialisation garantie v6.0
 
 class App {
     constructor() {
@@ -8,8 +8,10 @@ class App {
         this.maxInitAttempts = 3;
         this.isInitializing = false;
         this.initializationPromise = null;
+        this.servicesReady = false;
         
-        console.log('[App] Constructor - Application starting...');
+        console.log('[App] Constructor v6.0 - Application starting...');
+        console.log('[App] Current domain:', window.location.hostname);
     }
 
     async init() {
@@ -34,25 +36,35 @@ class App {
         this.initializationAttempts++;
         
         try {
+            console.log('[App] Starting initialization attempt', this.initializationAttempts);
+            
+            // Étape 1: Vérifier les prérequis
             if (!this.checkPrerequisites()) {
-                return;
+                throw new Error('Prerequisites check failed');
             }
-
+            
+            // Étape 2: Attendre que tous les services soient prêts
+            await this.waitForServices();
+            
+            // Étape 3: Initialiser les modules critiques
+            await this.initializeCriticalModules();
+            
+            // Étape 4: Initialiser AuthService
             console.log('[App] Initializing auth service...');
             
             const initTimeout = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Initialization timeout')), 20000)
+                setTimeout(() => reject(new Error('Auth initialization timeout')), 30000)
             );
             
             const initPromise = window.authService.initialize();
             await Promise.race([initPromise, initTimeout]);
             
-            console.log('[App] Auth service initialized');
+            console.log('[App] ✅ Auth service initialized');
             
-            // INITIALISER LES MODULES CRITIQUES
-            await this.initializeCriticalModules();
-            
+            // Étape 5: Vérifier le statut d'authentification
             await this.checkAuthenticationStatus();
+            
+            console.log('[App] ✅ Initialization completed successfully');
             
         } catch (error) {
             await this.handleInitializationError(error);
@@ -62,202 +74,210 @@ class App {
         }
     }
 
-    // =====================================
-    // INITIALISATION DES MODULES CRITIQUES
-    // =====================================
-    async initializeCriticalModules() {
-        console.log('[App] Initializing critical modules...');
-        
-        // 1. Vérifier TaskManager
-        await this.ensureTaskManagerReady();
-        
-        // 2. Vérifier PageManager
-        await this.ensurePageManagerReady();
-        
-        // 3. Vérifier TasksView
-        await this.ensureTasksViewReady();
-        
-        // 4. Bind methods
-        this.bindModuleMethods();
-        
-        console.log('[App] Critical modules initialized');
-    }
-
-    async ensureTaskManagerReady() {
-        console.log('[App] Ensuring TaskManager is ready...');
-        
-        // Vérifier si TaskManager existe déjà
-        if (window.taskManager && window.taskManager.initialized) {
-            console.log('[App] ✅ TaskManager already ready');
-            return true;
-        }
-        
-        // Attendre que TaskManager soit initialisé (il est chargé avant app.js)
-        let attempts = 0;
-        const maxAttempts = 50; // 5 secondes max
-        
-        while ((!window.taskManager || !window.taskManager.initialized) && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.taskManager || !window.taskManager.initialized) {
-            console.error('[App] TaskManager not ready after 5 seconds');
-            return false;
-        }
-        
-        // Vérifier que les méthodes essentielles existent
-        const essentialMethods = ['createTaskFromEmail', 'createTask', 'updateTask', 'deleteTask', 'getStats'];
-        for (const method of essentialMethods) {
-            if (typeof window.taskManager[method] !== 'function') {
-                console.error(`[App] TaskManager missing essential method: ${method}`);
-                return false;
-            }
-        }
-        
-        console.log('[App] ✅ TaskManager ready with', window.taskManager.getAllTasks().length, 'tasks');
-        return true;
-    }
-
-    async ensurePageManagerReady() {
-        console.log('[App] Ensuring PageManager is ready...');
-        
-        if (window.pageManager) {
-            console.log('[App] ✅ PageManager already ready');
-            return true;
-        }
-        
-        // Attendre que PageManager soit chargé
-        let attempts = 0;
-        const maxAttempts = 30;
-        
-        while (!window.pageManager && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.pageManager) {
-            console.error('[App] PageManager not ready after 3 seconds');
-            return false;
-        }
-        
-        console.log('[App] ✅ PageManager ready');
-        return true;
-    }
-
-    async ensureTasksViewReady() {
-        console.log('[App] Ensuring TasksView is ready...');
-        
-        if (window.tasksView) {
-            console.log('[App] ✅ TasksView already ready');
-            return true;
-        }
-        
-        // TasksView est créé dans TaskManager.js, attendre
-        let attempts = 0;
-        const maxAttempts = 30;
-        
-        while (!window.tasksView && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.tasksView) {
-            console.warn('[App] TasksView not ready after 3 seconds - will work without it');
-            return false;
-        }
-        
-        console.log('[App] ✅ TasksView ready');
-        return true;
-    }
-
-    bindModuleMethods() {
-        // Bind TaskManager methods
-        if (window.taskManager) {
-            try {
-                Object.getOwnPropertyNames(Object.getPrototypeOf(window.taskManager)).forEach(name => {
-                    if (name !== 'constructor' && typeof window.taskManager[name] === 'function') {
-                        window.taskManager[name] = window.taskManager[name].bind(window.taskManager);
-                    }
-                });
-                console.log('[App] ✅ TaskManager methods bound');
-            } catch (error) {
-                console.warn('[App] Error binding TaskManager methods:', error);
-            }
-        }
-        
-        // Bind PageManager methods
-        if (window.pageManager) {
-            try {
-                Object.getOwnPropertyNames(Object.getPrototypeOf(window.pageManager)).forEach(name => {
-                    if (name !== 'constructor' && typeof window.pageManager[name] === 'function') {
-                        window.pageManager[name] = window.pageManager[name].bind(window.pageManager);
-                    }
-                });
-                console.log('[App] ✅ PageManager methods bound');
-            } catch (error) {
-                console.warn('[App] Error binding PageManager methods:', error);
-            }
-        }
-        
-        // Bind TasksView methods
-        if (window.tasksView) {
-            try {
-                Object.getOwnPropertyNames(Object.getPrototypeOf(window.tasksView)).forEach(name => {
-                    if (name !== 'constructor' && typeof window.tasksView[name] === 'function') {
-                        window.tasksView[name] = window.tasksView[name].bind(window.tasksView);
-                    }
-                });
-                console.log('[App] ✅ TasksView methods bound');
-            } catch (error) {
-                console.warn('[App] Error binding TasksView methods:', error);
-            }
-        }
-    }
-
     checkPrerequisites() {
+        console.log('[App] Checking prerequisites...');
+        
+        // Vérifier MSAL
         if (typeof msal === 'undefined') {
             console.error('[App] MSAL library not loaded');
             this.showError('MSAL library not loaded. Please refresh the page.');
             return false;
         }
-
+        
+        // Vérifier AppConfig
         if (!window.AppConfig) {
-            console.error('[App] Configuration not loaded');
+            console.error('[App] AppConfig not loaded');
             this.showError('Configuration not loaded. Please refresh the page.');
             return false;
         }
-
+        
+        if (window.AppConfig.error) {
+            console.error('[App] AppConfig has errors:', window.AppConfig.error);
+            this.showConfigurationError([window.AppConfig.message || 'Configuration error']);
+            return false;
+        }
+        
+        // Valider la configuration
         const validation = window.AppConfig.validate();
         if (!validation.valid) {
-            console.error('[App] Configuration invalid:', validation.issues);
+            console.error('[App] Configuration validation failed:', validation.issues);
             this.showConfigurationError(validation.issues);
             return false;
         }
-
+        
+        // Vérifier AuthService
         if (!window.authService) {
             console.error('[App] AuthService not available');
             this.showError('Authentication service not available. Please refresh the page.');
             return false;
         }
-
+        
+        console.log('[App] ✅ Prerequisites check passed');
         return true;
     }
 
+    async waitForServices() {
+        console.log('[App] Waiting for services...');
+        
+        const requiredServices = ['authService'];
+        const optionalServices = ['uiManager', 'mailService', 'taskManager', 'pageManager'];
+        
+        // Attendre les services requis
+        for (const service of requiredServices) {
+            await this.waitForService(service, true);
+        }
+        
+        // Vérifier les services optionnels
+        for (const service of optionalServices) {
+            await this.waitForService(service, false);
+        }
+        
+        this.servicesReady = true;
+        console.log('[App] ✅ Services check completed');
+    }
+
+    async waitForService(serviceName, required = false) {
+        const maxAttempts = required ? 100 : 30; // 10s pour requis, 3s pour optionnel
+        let attempts = 0;
+        
+        while (!window[serviceName] && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (window[serviceName]) {
+            console.log(`[App] ✅ ${serviceName} ready`);
+        } else if (required) {
+            console.error(`[App] ❌ Required service ${serviceName} not available`);
+            throw new Error(`Required service ${serviceName} not available`);
+        } else {
+            console.warn(`[App] ⚠️ Optional service ${serviceName} not available`);
+        }
+    }
+
+    async initializeCriticalModules() {
+        console.log('[App] Initializing critical modules...');
+        
+        // Créer UIManager si manquant
+        if (!window.uiManager) {
+            console.log('[App] Creating UIManager...');
+            window.uiManager = this.createBasicUIManager();
+        }
+        
+        // Initialiser TaskManager si disponible
+        if (window.taskManager && typeof window.taskManager.initialize === 'function') {
+            try {
+                await window.taskManager.initialize();
+                console.log('[App] ✅ TaskManager initialized');
+            } catch (error) {
+                console.warn('[App] TaskManager initialization failed:', error);
+            }
+        }
+        
+        // Initialiser PageManager si disponible
+        if (window.pageManager && typeof window.pageManager.initialize === 'function') {
+            try {
+                await window.pageManager.initialize();
+                console.log('[App] ✅ PageManager initialized');
+            } catch (error) {
+                console.warn('[App] PageManager initialization failed:', error);
+            }
+        }
+        
+        // Bind methods pour éviter les erreurs de contexte
+        this.bindModuleMethods();
+        
+        console.log('[App] ✅ Critical modules initialized');
+    }
+
+    createBasicUIManager() {
+        return {
+            showToast: function(message, type = 'info', duration = 5000) {
+                console.log(`[UIManager] ${type.toUpperCase()}: ${message}`);
+                
+                // Créer un toast simple
+                const toast = document.createElement('div');
+                toast.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: ${type === 'error' ? '#dc2626' : type === 'warning' ? '#f59e0b' : '#10b981'};
+                    color: white;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    z-index: 10000;
+                    max-width: 400px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    font-family: system-ui, sans-serif;
+                    font-size: 14px;
+                `;
+                toast.textContent = message;
+                
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, duration);
+            },
+            
+            updateAuthStatus: function(user) {
+                const authStatus = document.getElementById('authStatus');
+                if (authStatus) {
+                    if (user) {
+                        authStatus.innerHTML = `
+                            <span style="color: #10b981;">
+                                <i class="fas fa-user-circle"></i> 
+                                ${user.displayName || user.mail || 'Utilisateur'}
+                            </span>
+                            <button onclick="window.app.logout()" style="margin-left: 10px; background: none; border: 1px solid rgba(255,255,255,0.3); color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                Déconnexion
+                            </button>
+                        `;
+                    } else {
+                        authStatus.innerHTML = '<span class="text-muted">Non connecté</span>';
+                    }
+                }
+            }
+        };
+    }
+
+    bindModuleMethods() {
+        const modules = ['taskManager', 'pageManager', 'uiManager', 'mailService', 'categoryManager'];
+        
+        modules.forEach(moduleName => {
+            if (window[moduleName] && typeof window[moduleName] === 'object') {
+                try {
+                    Object.getOwnPropertyNames(Object.getPrototypeOf(window[moduleName])).forEach(name => {
+                        if (name !== 'constructor' && typeof window[moduleName][name] === 'function') {
+                            window[moduleName][name] = window[moduleName][name].bind(window[moduleName]);
+                        }
+                    });
+                    console.log(`[App] ✅ ${moduleName} methods bound`);
+                } catch (error) {
+                    console.warn(`[App] Error binding ${moduleName} methods:`, error);
+                }
+            }
+        });
+    }
+
     async checkAuthenticationStatus() {
+        console.log('[App] Checking authentication status...');
+        
         if (window.authService.isAuthenticated()) {
             const account = window.authService.getAccount();
             if (account) {
-                console.log('[App] Getting user info...');
+                console.log('[App] User is authenticated, getting user info...');
                 try {
                     this.user = await window.authService.getUserInfo();
                     this.isAuthenticated = true;
-                    console.log('[App] User authenticated:', this.user.displayName || this.user.mail);
+                    console.log('[App] ✅ User authenticated:', this.user.displayName || this.user.mail);
                     this.showAppWithTransition();
                 } catch (userInfoError) {
                     console.error('[App] Error getting user info:', userInfoError);
                     if (userInfoError.message.includes('401') || userInfoError.message.includes('403')) {
-                        console.log('[App] Token seems invalid, clearing auth and showing login');
+                        console.log('[App] Token invalid, clearing auth and showing login');
                         await window.authService.reset();
                         this.showLogin();
                     } else {
@@ -286,8 +306,8 @@ class App {
             return;
         }
         
-        if (error.message.includes('Configuration invalid')) {
-            this.showConfigurationError(['Configuration invalide - vérifiez la configuration']);
+        if (error.message.includes('Configuration not loaded') || error.message.includes('Prerequisites check failed')) {
+            this.showConfigurationError(['Configuration invalide ou manquante']);
             return;
         }
         
@@ -300,7 +320,7 @@ class App {
             return;
         }
         
-        this.showError('Failed to initialize the application. Please check the configuration and refresh the page.');
+        this.showError('Échec de l\'initialisation de l\'application. Veuillez vérifier la configuration et actualiser la page.');
     }
 
     showConfigurationError(issues) {
@@ -309,36 +329,34 @@ class App {
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.innerHTML = `
-                <div class="hero-container">
-                    <div style="max-width: 600px; margin: 0 auto; text-align: center; color: white;">
-                        <div style="font-size: 4rem; margin-bottom: 20px; animation: pulse 2s infinite;">
-                            <i class="fas fa-exclamation-triangle" style="color: #fbbf24;"></i>
+                <div class="login-container">
+                    <div style="font-size: 4rem; margin-bottom: 20px; color: #fbbf24;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h1 style="font-size: 2.5rem; margin-bottom: 20px; color: white;">Configuration requise</h1>
+                    <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); padding: 30px; border-radius: 20px; margin: 30px 0; text-align: left; color: white;">
+                        <h3 style="color: #fbbf24; margin-bottom: 15px; text-align: center;">Problèmes détectés :</h3>
+                        <ul style="margin-left: 20px; text-align: left;">
+                            ${issues.map(issue => `<li style="margin: 8px 0;">${issue}</li>`).join('')}
+                        </ul>
+                        <div style="margin-top: 20px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; text-align: center;">
+                            <h4 style="margin-bottom: 10px;">Pour résoudre :</h4>
+                            <ol style="margin-left: 20px; text-align: left;">
+                                <li>Cliquez sur "Configurer l'application"</li>
+                                <li>Suivez l'assistant de configuration</li>
+                                <li>Entrez votre Azure Client ID</li>
+                            </ol>
                         </div>
-                        <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Configuration requise</h1>
-                        <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); padding: 30px; border-radius: 20px; margin: 30px 0; text-align: left;">
-                            <h3 style="color: #fbbf24; margin-bottom: 15px;">Problèmes détectés :</h3>
-                            <ul style="margin-left: 20px;">
-                                ${issues.map(issue => `<li style="margin: 8px 0;">${issue}</li>`).join('')}
-                            </ul>
-                            <div style="margin-top: 20px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
-                                <h4 style="margin-bottom: 10px;">Pour résoudre :</h4>
-                                <ol style="margin-left: 20px;">
-                                    <li>Cliquez sur "Configurer l'application"</li>
-                                    <li>Suivez l'assistant de configuration</li>
-                                    <li>Entrez votre Azure Client ID</li>
-                                </ol>
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                            <a href="setup.html" class="cta-button" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white;">
-                                <i class="fas fa-cog"></i>
-                                Configurer l'application
-                            </a>
-                            <button onclick="location.reload()" class="cta-button" style="background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3);">
-                                <i class="fas fa-refresh"></i>
-                                Actualiser
-                            </button>
-                        </div>
+                    </div>
+                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <a href="setup.html" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white; padding: 15px 30px; border-radius: 50px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-cog"></i>
+                            Configurer l'application
+                        </a>
+                        <button onclick="location.reload()" style="background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3); padding: 15px 30px; border-radius: 50px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-refresh"></i>
+                            Actualiser
+                        </button>
                     </div>
                 </div>
             `;
@@ -350,6 +368,7 @@ class App {
     setupEventListeners() {
         console.log('[App] Setting up event listeners...');
         
+        // Bouton de connexion
         const loginBtn = document.getElementById('loginBtn');
         if (loginBtn) {
             const newLoginBtn = loginBtn.cloneNode(true);
@@ -358,6 +377,7 @@ class App {
             newLoginBtn.addEventListener('click', () => this.login());
         }
 
+        // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
             const newItem = item.cloneNode(true);
             item.parentNode.replaceChild(newItem, item);
@@ -370,15 +390,9 @@ class App {
             });
         });
 
+        // Gestionnaires d'erreurs globaux
         window.addEventListener('error', (event) => {
             console.error('[App] Global error:', event.error);
-            
-            if (event.error && event.error.message && 
-                event.error.message.includes('ScanStart.js') && 
-                event.error.message.includes('Unexpected token')) {
-                console.warn('[App] ScanStart.js syntax error detected - handled inline');
-                return;
-            }
             
             if (event.error && event.error.message) {
                 const message = event.error.message;
@@ -397,7 +411,6 @@ class App {
         window.addEventListener('unhandledrejection', (event) => {
             console.error('[App] Unhandled promise rejection:', event.reason);
             
-            // Vérifier s'il s'agit d'une erreur de TaskManager
             if (event.reason && event.reason.message && 
                 event.reason.message.includes('Cannot read properties of undefined')) {
                 
@@ -411,10 +424,6 @@ class App {
                         );
                     }
                 }
-            }
-            
-            if (event.reason && event.reason.errorCode) {
-                console.log('[App] MSAL promise rejection:', event.reason.errorCode);
             }
         });
     }
@@ -515,11 +524,13 @@ class App {
         this.isAuthenticated = false;
         this.isInitializing = false;
         this.initializationPromise = null;
+        this.servicesReady = false;
         
         if (window.authService) {
             window.authService.forceCleanup();
         }
         
+        // Conserver uniquement les données essentielles
         const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
         const allKeys = Object.keys(localStorage);
         
@@ -541,13 +552,11 @@ class App {
     showLogin() {
         console.log('[App] Showing login page');
         
-        // S'assurer que la page de login est visible
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.style.display = 'flex';
         }
         
-        // S'assurer que l'app n'est pas en mode actif
         document.body.classList.remove('app-active');
         
         this.hideModernLoading();
@@ -613,43 +622,7 @@ class App {
             console.warn('[App] PageManager not available');
         }
         
-        // Forcer l'affichage avec CSS
-        this.forceAppDisplay();
-        
         console.log('[App] ✅ Application fully displayed');
-    }
-
-    forceAppDisplay() {
-        const forceDisplayStyle = document.createElement('style');
-        forceDisplayStyle.id = 'force-app-display';
-        forceDisplayStyle.textContent = `
-            body.app-active #loginPage {
-                display: none !important;
-            }
-            body.app-active .app-header {
-                display: block !important;
-                opacity: 1 !important;
-                visibility: visible !important;
-            }
-            body.app-active .app-nav {
-                display: block !important;
-                opacity: 1 !important;
-                visibility: visible !important;
-            }
-            body.app-active #pageContent {
-                display: block !important;
-                opacity: 1 !important;
-                visibility: visible !important;
-            }
-        `;
-        
-        const oldStyle = document.getElementById('force-app-display');
-        if (oldStyle) {
-            oldStyle.remove();
-        }
-        
-        document.head.appendChild(forceDisplayStyle);
-        console.log('[App] Force display CSS injected');
     }
 
     showModernLoading(message = 'Chargement...') {
@@ -681,25 +654,23 @@ class App {
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.innerHTML = `
-                <div class="hero-container">
-                    <div style="max-width: 600px; margin: 0 auto; text-align: center; color: white;">
-                        <div style="font-size: 4rem; margin-bottom: 20px; animation: pulse 2s infinite;">
-                            <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
-                        </div>
-                        <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Erreur d'application</h1>
-                        <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); padding: 30px; border-radius: 20px; margin: 30px 0;">
-                            <p style="font-size: 1.2rem; line-height: 1.6;">${message}</p>
-                        </div>
-                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                            <button onclick="location.reload()" class="cta-button">
-                                <i class="fas fa-refresh"></i>
-                                Actualiser la page
-                            </button>
-                            <button onclick="window.app.forceCleanup()" class="cta-button" style="background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3);">
-                                <i class="fas fa-undo"></i>
-                                Réinitialiser
-                            </button>
-                        </div>
+                <div class="login-container">
+                    <div style="font-size: 4rem; margin-bottom: 20px; color: #ef4444;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h1 style="font-size: 2.5rem; margin-bottom: 20px; color: white;">Erreur d'application</h1>
+                    <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); padding: 30px; border-radius: 20px; margin: 30px 0; color: white;">
+                        <p style="font-size: 1.2rem; line-height: 1.6;">${message}</p>
+                    </div>
+                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <button onclick="location.reload()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; border-radius: 50px; border: none; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-refresh"></i>
+                            Actualiser la page
+                        </button>
+                        <button onclick="window.app.forceCleanup()" style="background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3); padding: 15px 30px; border-radius: 50px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-undo"></i>
+                            Réinitialiser
+                        </button>
                     </div>
                 </div>
             `;
@@ -709,29 +680,25 @@ class App {
         this.hideModernLoading();
     }
 
-    checkScanStartModule() {
-        console.log('[App] Checking ScanStart module...');
-        
-        if (!window.scanStartModule) {
-            console.warn('[App] ScanStart module not available');
-            return {
-                available: false,
-                error: 'Module not loaded'
-            };
-        }
-        
-        if (typeof window.scanStartModule.render !== 'function') {
-            console.warn('[App] ScanStart module incomplete');
-            return {
-                available: false,
-                error: 'Module incomplete - missing render method'
-            };
-        }
-        
-        console.log('[App] ScanStart module OK');
+    getDiagnosticInfo() {
         return {
-            available: true,
-            methods: Object.keys(window.scanStartModule)
+            isAuthenticated: this.isAuthenticated,
+            hasUser: !!this.user,
+            userName: this.user?.displayName || this.user?.mail,
+            isInitializing: this.isInitializing,
+            servicesReady: this.servicesReady,
+            initializationAttempts: this.initializationAttempts,
+            domain: window.location.hostname,
+            appConfigValid: window.AppConfig ? window.AppConfig.validate().valid : false,
+            authServiceReady: window.authService ? window.authService.isInitialized : false,
+            services: {
+                authService: !!window.authService,
+                uiManager: !!window.uiManager,
+                mailService: !!window.mailService,
+                taskManager: !!window.taskManager,
+                pageManager: !!window.pageManager
+            },
+            timestamp: new Date().toISOString()
         };
     }
 }
@@ -740,7 +707,6 @@ class App {
 // FONCTIONS GLOBALES D'URGENCE
 // =====================================
 
-// Fonction globale pour le reset d'urgence
 window.emergencyReset = function() {
     console.log('[App] Emergency reset triggered');
     
@@ -760,7 +726,6 @@ window.emergencyReset = function() {
     window.location.reload();
 };
 
-// Fonction pour forcer l'affichage
 window.forceShowApp = function() {
     console.log('[Global] Force show app triggered');
     if (window.app && typeof window.app.showAppWithTransition === 'function') {
@@ -772,79 +737,92 @@ window.forceShowApp = function() {
     }
 };
 
-// =====================================
-// VÉRIFICATION DES SERVICES
-// =====================================
-function checkServicesReady() {
-    const requiredServices = ['authService', 'uiManager'];
-    const optionalServices = ['mailService', 'emailScanner', 'categoryManager'];
+window.checkAppStatus = function() {
+    console.log('=== APP STATUS v6.0 ===');
     
-    const missingRequired = requiredServices.filter(service => !window[service]);
-    const missingOptional = optionalServices.filter(service => !window[service]);
-    
-    if (missingRequired.length > 0) {
-        console.error('[App] Missing REQUIRED services:', missingRequired);
-        return false;
+    if (window.app) {
+        const diagnostic = window.app.getDiagnosticInfo();
+        console.log('App diagnostic:', diagnostic);
+        
+        if (window.authService) {
+            const authDiag = window.authService.getDiagnosticInfo();
+            console.log('Auth diagnostic:', authDiag);
+        }
+        
+        if (window.AppConfig) {
+            const configDiag = window.AppConfig.getDebugInfo();
+            console.log('Config diagnostic:', configDiag);
+        }
+        
+        return diagnostic;
+    } else {
+        console.log('❌ App instance not available');
+        return { error: 'App instance not available' };
     }
-    
-    if (missingOptional.length > 0) {
-        console.warn('[App] Missing optional services:', missingOptional);
-    }
-    
-    if (!window.AppConfig) {
-        console.error('[App] Missing AppConfig');
-        return false;
-    }
-    
-    return true;
-}
+};
 
 // =====================================
 // INITIALISATION PRINCIPALE
 // =====================================
 
-// Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[App] DOM loaded, creating app instance...');
     
+    // Vérification immédiate de la configuration
+    if (!window.AppConfig) {
+        console.error('[App] ❌ AppConfig not available on DOM load');
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; background: #dc2626; color: white; 
+            padding: 15px; text-align: center; z-index: 99999; font-family: monospace;
+        `;
+        errorDiv.innerHTML = '❌ Configuration not loaded. Please refresh the page.';
+        document.body.appendChild(errorDiv);
+        return;
+    }
+    
+    if (window.AppConfig.error) {
+        console.error('[App] ❌ AppConfig has errors:', window.AppConfig.error);
+        return;
+    }
+    
+    // Créer l'instance de l'app
     window.app = new App();
     
-    const waitForServices = (attempts = 0) => {
-        const maxAttempts = 50;
+    // Fonction pour vérifier la disponibilité des services
+    function checkServicesAndStart() {
+        const requiredServices = ['authService'];
+        const missingServices = requiredServices.filter(service => !window[service]);
         
-        if (checkServicesReady()) {
-            console.log('[App] All required services ready, initializing...');
-            
-            const scanStartStatus = window.app.checkScanStartModule();
-            console.log('[App] ScanStart status:', scanStartStatus);
-            
+        if (missingServices.length === 0) {
+            console.log('[App] All required services available, starting initialization...');
             setTimeout(() => {
-                window.app.init();
+                window.app.init().catch(error => {
+                    console.error('[App] Initialization failed:', error);
+                });
             }, 100);
-        } else if (attempts < maxAttempts) {
-            console.log(`[App] Waiting for services... (${attempts + 1}/${maxAttempts})`);
-            setTimeout(() => waitForServices(attempts + 1), 100);
         } else {
-            console.error('[App] Timeout waiting for services, initializing anyway...');
-            setTimeout(() => {
-                window.app.init();
-            }, 100);
+            console.log('[App] Missing services:', missingServices, '- retrying...');
+            setTimeout(checkServicesAndStart, 200);
         }
-    };
+    }
     
-    waitForServices();
+    checkServicesAndStart();
 });
 
-// Fallback si l'initialisation échoue
+// Fallback de sécurité
 window.addEventListener('load', () => {
     setTimeout(() => {
         if (!window.app) {
             console.error('[App] App instance not created, creating fallback...');
-            window.app = new App();
-            window.app.init();
+            try {
+                window.app = new App();
+                window.app.init();
+            } catch (error) {
+                console.error('[App] Fallback creation failed:', error);
+            }
         } else if (!window.app.isAuthenticated && !window.app.isInitializing) {
-            console.log('[App] Fallback initialization check...');
-            
+            console.log('[App] Fallback check - ensuring login page is visible...');
             const loginPage = document.getElementById('loginPage');
             if (loginPage && loginPage.style.display === 'none') {
                 loginPage.style.display = 'flex';
@@ -853,4 +831,4 @@ window.addEventListener('load', () => {
     }, 5000);
 });
 
-console.log('✅ App loaded - CLEAN VERSION without conflicts');
+console.log('✅ App v6.0 loaded with guaranteed initialization support');
