@@ -135,23 +135,21 @@
     <!-- Badge d'environnement -->
     <script>
         const CURRENT_HOSTNAME = window.location.hostname;
-        const IS_TEST_ENV = CURRENT_HOSTNAME.includes('coruscating-dodol') || 
-                           CURRENT_HOSTNAME.includes('test') || 
-                           CURRENT_HOSTNAME.includes('preview');
+        const EXPECTED_DOMAIN = 'coruscating-dodol-f30e8d.netlify.app';
+        const IS_CORRECT_DOMAIN = CURRENT_HOSTNAME === EXPECTED_DOMAIN;
         
-        if (IS_TEST_ENV) {
-            const badge = document.createElement('div');
-            badge.className = 'env-badge';
-            badge.textContent = `🧪 TEST: ${CURRENT_HOSTNAME}`;
-            document.body.appendChild(badge);
-        }
+        const badge = document.createElement('div');
+        badge.className = 'env-badge';
+        badge.textContent = IS_CORRECT_DOMAIN ? `✅ ${EXPECTED_DOMAIN}` : `⚠️ WRONG: ${CURRENT_HOSTNAME}`;
+        badge.style.background = IS_CORRECT_DOMAIN ? '#10b981' : '#ef4444';
+        document.body.appendChild(badge);
     </script>
 
     <div class="callback-container">
         <div id="loading-state">
             <div class="spinner"></div>
             <h2>Authentification en cours...</h2>
-            <p>Traitement de votre connexion, veuillez patienter...</p>
+            <p>Traitement de votre connexion sur coruscating-dodol-f30e8d.netlify.app...</p>
         </div>
         
         <div id="success-state" style="display: none;">
@@ -185,81 +183,38 @@
     <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
     
     <script>
-        console.log('[Auth Callback] 🚀 Starting callback processing v6.0...');
+        console.log('[Auth Callback] 🚀 Starting callback processing for coruscating-dodol-f30e8d.netlify.app v7.0...');
         
-        // Détection de l'environnement avec validation stricte
+        // Configuration stricte pour le domaine spécifique
+        const TARGET_DOMAIN = 'coruscating-dodol-f30e8d.netlify.app';
         const CURRENT_ORIGIN = window.location.origin;
         const CURRENT_URL = window.location.href;
         
-        console.log('[Auth Callback] Environment v6.0:', {
-            hostname: CURRENT_HOSTNAME,
-            origin: CURRENT_ORIGIN,
-            url: CURRENT_URL,
-            protocol: window.location.protocol,
-            isTest: IS_TEST_ENV
+        console.log('[Auth Callback] Environment configuration:', {
+            targetDomain: TARGET_DOMAIN,
+            currentHostname: CURRENT_HOSTNAME,
+            currentOrigin: CURRENT_ORIGIN,
+            currentUrl: CURRENT_URL,
+            isCorrectDomain: IS_CORRECT_DOMAIN
         });
 
-        // Configuration stricte par domaine
-        const DOMAIN_CONFIGS = {
-            'emailsortpro.netlify.app': {
-                clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
-                redirectUri: 'https://emailsortpro.netlify.app/auth-callback.html',
-                postLogoutUri: 'https://emailsortpro.netlify.app/',
-                environment: 'production'
-            },
-            'coruscating-dodol-f30e8d.netlify.app': {
-                clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
-                redirectUri: 'https://coruscating-dodol-f30e8d.netlify.app/auth-callback.html',
-                postLogoutUri: 'https://coruscating-dodol-f30e8d.netlify.app/',
-                environment: 'test'
-            },
-            'localhost': {
-                clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
-                redirectUri: 'http://localhost:3000/auth-callback.html',
-                postLogoutUri: 'http://localhost:3000/',
-                environment: 'development'
-            },
-            '127.0.0.1': {
-                clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
-                redirectUri: 'http://127.0.0.1:3000/auth-callback.html',
-                postLogoutUri: 'http://127.0.0.1:3000/',
-                environment: 'development'
-            }
+        // Configuration STRICTE pour ce domaine uniquement
+        const CONFIG = {
+            clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
+            redirectUri: `https://${TARGET_DOMAIN}/auth-callback.html`,
+            postLogoutUri: `https://${TARGET_DOMAIN}/`,
+            environment: 'test',
+            authority: 'https://login.microsoftonline.com/common'
         };
 
-        // Fonction pour obtenir la configuration stricte
-        function getDomainConfiguration() {
-            console.log('[Auth Callback] Getting configuration for:', CURRENT_HOSTNAME);
-            
-            // Configuration prédéfinie
-            if (DOMAIN_CONFIGS[CURRENT_HOSTNAME]) {
-                console.log('[Auth Callback] ✅ Using predefined config for:', CURRENT_HOSTNAME);
-                return DOMAIN_CONFIGS[CURRENT_HOSTNAME];
-            }
-            
-            // Domaine Netlify non listé
-            if (CURRENT_HOSTNAME.includes('netlify.app')) {
-                console.log('[Auth Callback] ⚠️ Netlify domain not predefined, generating config:', CURRENT_HOSTNAME);
-                return {
-                    clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
-                    redirectUri: `https://${CURRENT_HOSTNAME}/auth-callback.html`,
-                    postLogoutUri: `https://${CURRENT_HOSTNAME}/`,
-                    environment: 'preview'
-                };
-            }
-            
-            // Configuration d'urgence
-            console.error('[Auth Callback] ❌ Unknown domain, using emergency config:', CURRENT_HOSTNAME);
-            return {
-                clientId: 'CONFIGURATION_REQUIRED',
-                redirectUri: CURRENT_ORIGIN + '/auth-callback.html',
-                postLogoutUri: CURRENT_ORIGIN + '/',
-                environment: 'unknown'
-            };
+        // Validation stricte du domaine
+        if (!IS_CORRECT_DOMAIN) {
+            console.error('[Auth Callback] ❌ CRITICAL DOMAIN MISMATCH!');
+            console.error('[Auth Callback] Expected:', TARGET_DOMAIN);
+            console.error('[Auth Callback] Current:', CURRENT_HOSTNAME);
+            showError(`Domaine incorrect! Cette page doit s'exécuter sur ${TARGET_DOMAIN} uniquement.`);
         }
 
-        const CONFIG = getDomainConfiguration();
-        
         // Validation stricte de l'URL
         const IS_VALID_CALLBACK_URL = CURRENT_URL.startsWith(CONFIG.redirectUri);
         
@@ -269,35 +224,25 @@
             console.error('[Auth Callback] Expected start:', CONFIG.redirectUri);
         }
         
-        console.log('[Auth Callback] Configuration selected:', {
+        console.log('[Auth Callback] Configuration for', TARGET_DOMAIN, ':', {
             clientId: CONFIG.clientId.substring(0, 8) + '...',
             redirectUri: CONFIG.redirectUri,
             postLogoutUri: CONFIG.postLogoutUri,
             environment: CONFIG.environment,
+            domainValid: IS_CORRECT_DOMAIN,
             urlValid: IS_VALID_CALLBACK_URL
         });
 
-        // Fonction pour récupérer le Client ID avec fallbacks
+        // Fonction pour récupérer le Client ID
         function getClientId() {
-            // 1. Configuration du domaine
-            if (CONFIG.clientId && CONFIG.clientId !== 'CONFIGURATION_REQUIRED') {
-                console.log('[Auth Callback] Using domain config client ID');
+            // Utiliser la configuration fixe pour ce domaine
+            if (IS_CORRECT_DOMAIN) {
+                console.log('[Auth Callback] Using fixed client ID for', TARGET_DOMAIN);
                 return CONFIG.clientId;
             }
             
-            // 2. LocalStorage comme fallback
-            try {
-                const saved = localStorage.getItem('emailsortpro_client_id');
-                if (saved && /^[a-f0-9-]{36}$/i.test(saved)) {
-                    console.log('[Auth Callback] Using saved client ID');
-                    return saved;
-                }
-            } catch (e) {
-                console.warn('[Auth Callback] Cannot access localStorage:', e);
-            }
-            
-            // 3. Valeur par défaut
-            console.warn('[Auth Callback] Using fallback client ID');
+            // Fallback si le domaine ne correspond pas
+            console.warn('[Auth Callback] Domain mismatch, using fallback client ID');
             return CONFIG.clientId;
         }
 
@@ -305,16 +250,16 @@
         function validateCallbackUrl() {
             const issues = [];
             
+            if (!IS_CORRECT_DOMAIN) {
+                issues.push(`Wrong domain: Expected ${TARGET_DOMAIN}, got ${CURRENT_HOSTNAME}`);
+            }
+            
             if (!CURRENT_URL.startsWith(CONFIG.redirectUri)) {
                 issues.push(`URL mismatch: Expected ${CONFIG.redirectUri}, got ${CURRENT_URL}`);
             }
             
-            if (window.location.protocol !== new URL(CONFIG.redirectUri).protocol) {
-                issues.push(`Protocol mismatch: Expected ${new URL(CONFIG.redirectUri).protocol}, got ${window.location.protocol}`);
-            }
-            
-            if (CURRENT_HOSTNAME !== new URL(CONFIG.redirectUri).hostname) {
-                issues.push(`Hostname mismatch: Expected ${new URL(CONFIG.redirectUri).hostname}, got ${CURRENT_HOSTNAME}`);
+            if (window.location.protocol !== 'https:') {
+                issues.push(`Protocol mismatch: Expected https:, got ${window.location.protocol}`);
             }
             
             return {
@@ -337,7 +282,7 @@
             
             const welcomeMsg = document.getElementById('welcome-message');
             const userName = account?.name || account?.username || 'Utilisateur';
-            welcomeMsg.textContent = `Bienvenue ${userName} !`;
+            welcomeMsg.textContent = `Bienvenue ${userName} sur ${TARGET_DOMAIN} !`;
             
             // Compteur de redirection
             let countdown = 3;
@@ -365,21 +310,22 @@
             errorElement.textContent = message;
             
             // Préparer les informations de debug
-            if (error) {
+            if (error || !IS_CORRECT_DOMAIN) {
                 const debugInfo = document.getElementById('debug-info');
                 const debugData = {
-                    error: error.message || 'Unknown error',
-                    errorCode: error.errorCode || 'none',
-                    subError: error.subError || 'none',
+                    error: error?.message || 'Domain/URL validation error',
+                    errorCode: error?.errorCode || 'validation_failed',
                     timestamp: new Date().toISOString(),
                     environment: CONFIG.environment,
-                    url: CURRENT_URL,
-                    hostname: CURRENT_HOSTNAME,
-                    clientId: getClientId().substring(0, 8) + '...',
-                    redirectUri: CONFIG.redirectUri,
+                    targetDomain: TARGET_DOMAIN,
+                    currentDomain: CURRENT_HOSTNAME,
+                    domainMatch: IS_CORRECT_DOMAIN,
+                    currentUrl: CURRENT_URL,
+                    expectedUrl: CONFIG.redirectUri,
                     urlValid: IS_VALID_CALLBACK_URL,
-                    userAgent: navigator.userAgent.substring(0, 100) + '...',
-                    validation: validateCallbackUrl()
+                    clientId: getClientId().substring(0, 8) + '...',
+                    validation: validateCallbackUrl(),
+                    userAgent: navigator.userAgent.substring(0, 100) + '...'
                 };
                 
                 debugInfo.innerHTML = `<pre>${JSON.stringify(debugData, null, 2)}</pre>`;
@@ -401,15 +347,20 @@
         // Fonction principale de traitement du callback
         async function processAuthCallback() {
             try {
-                console.log('[Auth Callback] 🔄 Processing authentication callback with strict validation...');
+                console.log('[Auth Callback] 🔄 Processing authentication callback for', TARGET_DOMAIN, '...');
+                
+                // Validation CRITIQUE du domaine
+                if (!IS_CORRECT_DOMAIN) {
+                    throw new Error(`CRITICAL DOMAIN ERROR: This page must run on ${TARGET_DOMAIN} only. Current: ${CURRENT_HOSTNAME}`);
+                }
                 
                 // Validation préliminaire de l'URL
                 const urlValidation = validateCallbackUrl();
                 if (!urlValidation.valid) {
                     console.error('[Auth Callback] ❌ URL validation failed:', urlValidation.issues);
-                    throw new Error(`URL validation failed: ${urlValidation.issues.join('; ')}`);
+                    throw new Error(`URL validation failed for ${TARGET_DOMAIN}: ${urlValidation.issues.join('; ')}`);
                 }
-                console.log('[Auth Callback] ✅ URL validation passed');
+                console.log('[Auth Callback] ✅ URL validation passed for', TARGET_DOMAIN);
                 
                 // Vérifier que MSAL est chargé
                 if (typeof msal === 'undefined') {
@@ -419,17 +370,17 @@
                 
                 // Obtenir le Client ID avec validation
                 const clientId = getClientId();
-                if (!clientId || clientId === 'CONFIGURATION_REQUIRED' || !/^[a-f0-9-]{36}$/i.test(clientId)) {
-                    throw new Error(`Invalid Client ID format: ${clientId}`);
+                if (!clientId || !/^[a-f0-9-]{36}$/i.test(clientId)) {
+                    throw new Error(`Invalid Client ID format for ${TARGET_DOMAIN}: ${clientId}`);
                 }
-                console.log('[Auth Callback] ✅ Valid Client ID:', clientId.substring(0, 8) + '...');
+                console.log('[Auth Callback] ✅ Valid Client ID for', TARGET_DOMAIN, ':', clientId.substring(0, 8) + '...');
                 
-                // Configuration MSAL avec URIs strictement validées
+                // Configuration MSAL avec URIs strictement validées pour ce domaine
                 const msalConfig = {
                     auth: {
                         clientId: clientId,
-                        authority: 'https://login.microsoftonline.com/common',
-                        redirectUri: CONFIG.redirectUri, // URI exacte et validée
+                        authority: CONFIG.authority,
+                        redirectUri: CONFIG.redirectUri, // URI exacte pour ce domaine
                         postLogoutRedirectUri: CONFIG.postLogoutUri
                     },
                     cache: {
@@ -439,12 +390,10 @@
                     system: {
                         loggerOptions: {
                             loggerCallback: (level, message) => {
-                                if (CONFIG.environment !== 'production') {
-                                    console.log(`[MSAL ${level}] ${message}`);
-                                }
+                                console.log(`[MSAL ${level}] ${message}`);
                             },
                             piiLoggingEnabled: false,
-                            logLevel: CONFIG.environment === 'production' ? 'Warning' : 'Verbose'
+                            logLevel: 'Verbose'
                         },
                         allowNativeBroker: false,
                         allowRedirectInIframe: false
@@ -452,25 +401,24 @@
                 };
                 
                 // Validation finale de la configuration MSAL
-                console.log('[Auth Callback] MSAL config validation:', {
+                console.log('[Auth Callback] MSAL config validation for', TARGET_DOMAIN, ':', {
                     clientId: msalConfig.auth.clientId.substring(0, 8) + '...',
                     authority: msalConfig.auth.authority,
                     redirectUri: msalConfig.auth.redirectUri,
                     currentUrl: CURRENT_URL,
                     exactMatch: CURRENT_URL.startsWith(msalConfig.auth.redirectUri),
-                    protocolMatch: window.location.protocol === new URL(msalConfig.auth.redirectUri).protocol,
-                    hostnameMatch: CURRENT_HOSTNAME === new URL(msalConfig.auth.redirectUri).hostname
+                    domainMatch: IS_CORRECT_DOMAIN
                 });
                 
                 // Vérification critique finale
                 if (!CURRENT_URL.startsWith(msalConfig.auth.redirectUri)) {
-                    throw new Error(`CRITICAL: Current URL ${CURRENT_URL} does not start with configured redirect URI ${msalConfig.auth.redirectUri}`);
+                    throw new Error(`CRITICAL: Current URL ${CURRENT_URL} does not start with configured redirect URI ${msalConfig.auth.redirectUri} for ${TARGET_DOMAIN}`);
                 }
                 
                 // Créer l'instance MSAL
                 const msalInstance = new msal.PublicClientApplication(msalConfig);
                 await msalInstance.initialize();
-                console.log('[Auth Callback] ✅ MSAL instance initialized with validated config');
+                console.log('[Auth Callback] ✅ MSAL instance initialized for', TARGET_DOMAIN);
                 
                 // Traiter la réponse de redirection avec timeout
                 const responseTimeout = new Promise((_, reject) => 
@@ -480,7 +428,7 @@
                 const responsePromise = msalInstance.handleRedirectPromise();
                 const response = await Promise.race([responsePromise, responseTimeout]);
                 
-                console.log('[Auth Callback] Response received:', {
+                console.log('[Auth Callback] Response received for', TARGET_DOMAIN, ':', {
                     hasResponse: !!response,
                     hasAccount: !!response?.account,
                     username: response?.account?.username,
@@ -488,15 +436,15 @@
                 });
                 
                 if (response && response.account) {
-                    console.log('[Auth Callback] ✅ Authentication successful!');
+                    console.log('[Auth Callback] ✅ Authentication successful for', TARGET_DOMAIN, '!');
                     
                     // Sauvegarder la configuration qui a fonctionné
                     try {
                         localStorage.setItem('emailsortpro_client_id', clientId);
                         localStorage.setItem('emailsortpro_redirect_uri', CONFIG.redirectUri);
-                        localStorage.setItem('emailsortpro_domain', CURRENT_HOSTNAME);
+                        localStorage.setItem('emailsortpro_domain', TARGET_DOMAIN);
                         localStorage.setItem('emailsortpro_last_auth', new Date().toISOString());
-                        console.log('[Auth Callback] ✅ Working configuration saved');
+                        console.log('[Auth Callback] ✅ Working configuration saved for', TARGET_DOMAIN);
                     } catch (e) {
                         console.warn('[Auth Callback] Could not save configuration:', e);
                     }
@@ -528,12 +476,16 @@
                 }
                 
             } catch (error) {
-                console.error('[Auth Callback] ❌ Error processing callback:', error);
+                console.error('[Auth Callback] ❌ Error processing callback for', TARGET_DOMAIN, ':', error);
                 
-                let errorMessage = 'Erreur inconnue d\'authentification';
+                let errorMessage = `Erreur d'authentification sur ${TARGET_DOMAIN}`;
                 
                 // Messages d'erreur spécifiques avec solutions
-                if (error.errorCode) {
+                if (error.message.includes('CRITICAL DOMAIN ERROR')) {
+                    errorMessage = error.message;
+                } else if (error.message.includes('URL validation failed')) {
+                    errorMessage = `Configuration incorrecte pour ${TARGET_DOMAIN}: ${error.message}`;
+                } else if (error.errorCode) {
                     const errorCode = error.errorCode;
                     console.log('[Auth Callback] MSAL Error details:', {
                         errorCode: error.errorCode,
@@ -544,13 +496,13 @@
                     
                     switch (errorCode) {
                         case 'invalid_request':
-                            errorMessage = `URI de redirection invalide. Azure attend: ${CONFIG.redirectUri}. Actuel: ${CURRENT_URL}`;
+                            errorMessage = `URI de redirection invalide pour ${TARGET_DOMAIN}. Azure attend: ${CONFIG.redirectUri}`;
                             break;
                         case 'unauthorized_client':
-                            errorMessage = `Client ID ${getClientId().substring(0, 8)}... non autorisé pour ${CURRENT_HOSTNAME}`;
+                            errorMessage = `Client ID non autorisé pour ${TARGET_DOMAIN}`;
                             break;
                         case 'invalid_client':
-                            errorMessage = `Client ID invalide: ${getClientId().substring(0, 8)}...`;
+                            errorMessage = `Client ID invalide pour ${TARGET_DOMAIN}`;
                             break;
                         case 'user_cancelled':
                             errorMessage = 'Authentification annulée par l\'utilisateur';
@@ -558,32 +510,11 @@
                         case 'access_denied':
                             errorMessage = 'Accès refusé - Vérifiez vos permissions';
                             break;
-                        case 'interaction_required':
-                            errorMessage = 'Interaction utilisateur requise - Veuillez réessayer';
-                            break;
-                        case 'consent_required':
-                            errorMessage = 'Consentement requis - Acceptez les permissions demandées';
-                            break;
-                        case 'login_required':
-                            errorMessage = 'Connexion requise - Session expirée';
-                            break;
                         default:
-                            errorMessage = `Erreur MSAL: ${errorCode}`;
+                            errorMessage = `Erreur MSAL sur ${TARGET_DOMAIN}: ${errorCode}`;
                     }
                 } else if (error.message) {
-                    if (error.message.includes('URL validation failed')) {
-                        errorMessage = `Configuration incorrecte: ${error.message}`;
-                    } else if (error.message.includes('CRITICAL')) {
-                        errorMessage = `Erreur critique de configuration: ${error.message}`;
-                    } else if (error.message.includes('MSAL')) {
-                        errorMessage = 'Erreur de la bibliothèque d\'authentification Microsoft';
-                    } else if (error.message.includes('network') || error.message.includes('timeout')) {
-                        errorMessage = 'Erreur réseau ou timeout - Vérifiez votre connexion internet';
-                    } else if (error.message.includes('Client ID')) {
-                        errorMessage = 'Configuration Client ID invalide - Contactez l\'administrateur';
-                    } else {
-                        errorMessage = `Erreur: ${error.message}`;
-                    }
+                    errorMessage = `Erreur sur ${TARGET_DOMAIN}: ${error.message}`;
                 }
                 
                 showError(errorMessage, error);
@@ -598,115 +529,106 @@
                 return;
             }
             
-            console.log('[Auth Callback] ✅ MSAL loaded, processing callback...');
+            console.log('[Auth Callback] ✅ MSAL loaded, processing callback for', TARGET_DOMAIN, '...');
             processAuthCallback();
         }
 
-        // Démarrer le processus quand la page est chargée
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('[Auth Callback] ✅ DOM loaded, starting callback process...');
-            console.log('[Auth Callback] Current URL:', CURRENT_URL);
-            console.log('[Auth Callback] Expected redirect URI:', CONFIG.redirectUri);
-            console.log('[Auth Callback] Environment:', CONFIG.environment);
-            waitForMSALAndProcess();
-        });
+        // Vérification initiale du domaine
+        if (!IS_CORRECT_DOMAIN) {
+            console.error('[Auth Callback] ❌ WRONG DOMAIN DETECTED!');
+            showError(`Cette page doit s'exécuter uniquement sur ${TARGET_DOMAIN}. Domaine actuel: ${CURRENT_HOSTNAME}`);
+        } else {
+            // Démarrer le processus quand la page est chargée
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('[Auth Callback] ✅ DOM loaded on correct domain, starting callback process...');
+                console.log('[Auth Callback] Target domain:', TARGET_DOMAIN);
+                console.log('[Auth Callback] Current URL:', CURRENT_URL);
+                console.log('[Auth Callback] Expected redirect URI:', CONFIG.redirectUri);
+                waitForMSALAndProcess();
+            });
+        }
 
         // Timeout de sécurité global
         setTimeout(() => {
             const loadingState = document.getElementById('loading-state');
             if (loadingState && loadingState.style.display !== 'none') {
                 console.warn('[Auth Callback] ⏰ Global timeout after 60 seconds');
-                showError('Timeout d\'authentification - Redirection automatique en cours...');
+                showError(`Timeout d'authentification sur ${TARGET_DOMAIN} - Redirection automatique en cours...`);
             }
         }, 60000);
 
         // Gestionnaire d'erreur global
         window.addEventListener('error', (event) => {
             console.error('[Auth Callback] Global error:', event.error);
-            if (event.error && event.error.message && !document.getElementById('error-state').style.display !== 'none') {
-                showError(`Erreur système: ${event.error.message}`, event.error);
+            if (event.error && event.error.message && document.getElementById('error-state').style.display === 'none') {
+                showError(`Erreur système sur ${TARGET_DOMAIN}: ${event.error.message}`, event.error);
             }
         });
 
         // Gestionnaire de promesses rejetées
         window.addEventListener('unhandledrejection', (event) => {
             console.error('[Auth Callback] Unhandled promise rejection:', event.reason);
-            if (event.reason && event.reason.message && !document.getElementById('error-state').style.display !== 'none') {
-                showError(`Erreur de promesse: ${event.reason.message}`, event.reason);
+            if (event.reason && event.reason.message && document.getElementById('error-state').style.display === 'none') {
+                showError(`Erreur de promesse sur ${TARGET_DOMAIN}: ${event.reason.message}`, event.reason);
             }
         });
 
-        // Debug global complet avec validation stricte
+        // Debug global avec validation stricte du domaine
         window.authCallbackDebug = function() {
-            console.group('=== AUTH CALLBACK DEBUG v6.0 - STRICT VALIDATION ===');
+            console.group(`=== AUTH CALLBACK DEBUG v7.0 - ${TARGET_DOMAIN} ONLY ===`);
+            console.log('Target Domain:', TARGET_DOMAIN);
+            console.log('Current Domain:', CURRENT_HOSTNAME);
+            console.log('Domain Match:', IS_CORRECT_DOMAIN ? '✅' : '❌');
             console.log('Current URL:', CURRENT_URL);
-            console.log('Current hostname:', CURRENT_HOSTNAME);
-            console.log('Current origin:', CURRENT_ORIGIN);
-            console.log('Environment:', CONFIG.environment);
+            console.log('Expected Redirect URI:', CONFIG.redirectUri);
+            console.log('URL Valid:', IS_VALID_CALLBACK_URL ? '✅' : '❌');
             
-            console.log('Domain Configuration:');
-            console.log('  Configured redirect URI:', CONFIG.redirectUri);
-            console.log('  Configured logout URI:', CONFIG.postLogoutUri);
-            console.log('  Client ID:', CONFIG.clientId.substring(0, 8) + '...');
+            console.log('Configuration:', {
+                clientId: CONFIG.clientId.substring(0, 8) + '...',
+                redirectUri: CONFIG.redirectUri,
+                postLogoutUri: CONFIG.postLogoutUri,
+                environment: CONFIG.environment
+            });
             
-            console.log('URL Validation:');
             const urlValidation = validateCallbackUrl();
-            console.log('  Valid:', urlValidation.valid ? '✅' : '❌');
-            if (!urlValidation.valid) {
-                console.log('  Issues:', urlValidation.issues);
-            }
+            console.log('URL Validation:', urlValidation);
             
             console.log('Environment Check:');
             console.log('  MSAL loaded:', typeof msal !== 'undefined' ? '✅' : '❌');
             console.log('  LocalStorage available:', typeof Storage !== 'undefined' ? '✅' : '❌');
-            console.log('  Is callback URL:', IS_VALID_CALLBACK_URL ? '✅' : '❌');
-            console.log('  Test environment:', IS_TEST_ENV ? '🧪' : '🏭');
             
-            // Test de localStorage
-            try {
-                const testKey = 'test_' + Date.now();
-                localStorage.setItem(testKey, 'test');
-                localStorage.removeItem(testKey);
-                console.log('  LocalStorage functional: ✅');
-            } catch (e) {
-                console.log('  LocalStorage functional: ❌ -', e.message);
+            if (!IS_CORRECT_DOMAIN) {
+                console.log('🚨 CRITICAL: Wrong domain detected!');
+                console.log(`This callback page MUST run on ${TARGET_DOMAIN} only`);
             }
             
-            // État du DOM
-            console.log('DOM states:', {
-                loading: document.getElementById('loading-state').style.display !== 'none',
-                success: document.getElementById('success-state').style.display !== 'none',
-                error: document.getElementById('error-state').style.display !== 'none'
-            });
-            
-            // Instructions de correction si problèmes détectés
-            if (!urlValidation.valid || !IS_VALID_CALLBACK_URL) {
+            if (!urlValidation.valid) {
                 console.log('🚨 ACTIONS REQUISES POUR AZURE PORTAL:');
                 console.log(`  1. Aller sur: https://portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/RegisteredApps`);
                 console.log(`  2. Sélectionner votre app avec Client ID: ${CONFIG.clientId}`);
                 console.log(`  3. Aller dans "Authentication"`);
-                console.log(`  4. Sélectionner "Single-page application (SPA)" (PAS "Web")`);
+                console.log(`  4. Sélectionner "Single-page application (SPA)"`);
                 console.log(`  5. Ajouter l'URI de redirection EXACTE: ${CONFIG.redirectUri}`);
-                console.log(`  6. Cliquer "Save" et attendre 3-5 minutes`);
-                console.log(`  7. IMPORTANT: L'URI doit correspondre EXACTEMENT`);
+                console.log(`  6. Supprimer toute autre URI non nécessaire`);
+                console.log(`  7. Cliquer "Save" et attendre 3-5 minutes`);
             }
             
             console.groupEnd();
             
             return {
+                targetDomain: TARGET_DOMAIN,
+                currentDomain: CURRENT_HOSTNAME,
+                domainMatch: IS_CORRECT_DOMAIN,
                 config: CONFIG,
                 validation: urlValidation,
                 currentUrl: CURRENT_URL,
                 isValidCallbackUrl: IS_VALID_CALLBACK_URL,
-                environment: CONFIG.environment,
-                clientId: getClientId().substring(0, 8) + '...',
                 timestamp: new Date().toISOString()
             };
         };
         
-        console.log('[Auth Callback] ✅ Callback page ready v6.0 with strict URI validation');
-        console.log('[Auth Callback] Domain config:', CONFIG);
-        console.log('[Auth Callback] URL validation:', IS_VALID_CALLBACK_URL ? '✅' : '❌');
+        console.log(`[Auth Callback] ✅ Callback page ready v7.0 for ${TARGET_DOMAIN} ONLY`);
+        console.log('[Auth Callback] Domain validation:', IS_CORRECT_DOMAIN ? '✅ CORRECT' : '❌ WRONG');
         console.log('[Auth Callback] Use authCallbackDebug() for detailed diagnostic information');
     </script>
 </body>
