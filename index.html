@@ -19,9 +19,9 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- CONFIGURATION GLOBALE - Version 7.0 -->
+    <!-- CONFIGURATION GLOBALE - Version 7.1 CORRIGÉE -->
     <script>
-        console.log('[INDEX] 🚀 Starting EmailSortPro v7.0 - CORRECTION FINALE BOUCLES...');
+        console.log('[INDEX] 🚀 Starting EmailSortPro v7.1 - NO DEMO MODE...');
         
         // === VARIABLES GLOBALES CRITIQUES ===
         window.CURRENT_HOSTNAME = window.location.hostname;
@@ -29,9 +29,16 @@
         window.CURRENT_PROTOCOL = window.location.protocol;
         window.CURRENT_URL = window.location.href;
         
-        console.log('[INDEX] Environment v7.0:', {
+        // CORRECTION: Forcer le mode réel dès le début
+        window.APP_REAL_MODE = true;
+        window.APP_DEMO_MODE = false;
+        window.FORCE_REAL_EMAILS = true;
+        
+        console.log('[INDEX] Environment v7.1 (REAL MODE ONLY):', {
             hostname: window.CURRENT_HOSTNAME,
-            origin: window.CURRENT_ORIGIN
+            origin: window.CURRENT_ORIGIN,
+            realMode: window.APP_REAL_MODE,
+            demoMode: window.APP_DEMO_MODE
         });
 
         // === CONFIGURATION PAR DOMAINE ===
@@ -86,9 +93,9 @@
         window.DOMAIN_CONFIG = DOMAIN_CONFIG;
         window.IS_TEST_ENV = DOMAIN_CONFIG.environment !== 'production';
         
-        // === CRÉATION APPCONFIG ===
+        // === CRÉATION APPCONFIG SANS MODE DÉMO ===
         function createAppConfig() {
-            console.log('[INDEX] Creating AppConfig v7.0...');
+            console.log('[INDEX] Creating AppConfig v7.1 (NO DEMO MODE)...');
             
             const clientId = DOMAIN_CONFIG.clientId;
             
@@ -128,9 +135,11 @@
                 },
                 app: {
                     name: 'EmailSortPro',
-                    version: '7.0.0',
+                    version: '7.1.0',
                     environment: DOMAIN_CONFIG.environment,
-                    domain: window.CURRENT_HOSTNAME
+                    domain: window.CURRENT_HOSTNAME,
+                    realModeOnly: true, // CORRECTION: Forcer le mode réel uniquement
+                    demoModeDisabled: true // CORRECTION: Désactiver explicitement le mode démo
                 },
                 validate() {
                     const issues = [];
@@ -146,12 +155,14 @@
                         environment: this.app.environment,
                         clientId: this.msal.clientId.substring(0, 8) + '...',
                         redirectUri: this.msal.redirectUri,
-                        validation: this.validate()
+                        validation: this.validate(),
+                        realModeOnly: this.app.realModeOnly,
+                        demoModeDisabled: this.app.demoModeDisabled
                     };
                 }
             };
             
-            console.log('[INDEX] ✅ AppConfig created v7.0');
+            console.log('[INDEX] ✅ AppConfig created v7.1 (REAL MODE ONLY)');
             return true;
         }
         
@@ -161,8 +172,38 @@
         if (!configSuccess) {
             console.error('[INDEX] ❌ Configuration failed');
         } else {
-            console.log('[INDEX] ✅ Configuration ready for', window.CURRENT_HOSTNAME);
+            console.log('[INDEX] ✅ Configuration ready for', window.CURRENT_HOSTNAME, '(REAL MODE ONLY)');
         }
+
+        // CORRECTION: Fonction pour forcer le mode réel globalement
+        window.forceRealModeGlobally = function() {
+            console.log('[INDEX] 🔧 Forcing REAL mode globally...');
+            
+            window.APP_REAL_MODE = true;
+            window.APP_DEMO_MODE = false;
+            window.FORCE_REAL_EMAILS = true;
+            
+            // Nettoyer les caches de démo
+            const demoKeys = [
+                'emailsort_demo_emails',
+                'emailsort_demo_mode',
+                'emailsort_demo_data'
+            ];
+            
+            demoKeys.forEach(key => {
+                try {
+                    localStorage.removeItem(key);
+                    console.log('[INDEX] ✅ Removed demo cache:', key);
+                } catch (error) {
+                    console.warn('[INDEX] Could not remove:', key);
+                }
+            });
+            
+            console.log('[INDEX] ✅ Global real mode enforced');
+        };
+
+        // Appliquer immédiatement
+        window.forceRealModeGlobally();
     </script>
 
     <!-- STYLES COMPLETS ET OPTIMISÉS -->
@@ -264,6 +305,13 @@
             gap: 8px;
         }
 
+        /* CORRECTION: Suppression de tous les styles relatifs au mode démo */
+        .demo-warning,
+        .demo-notice,
+        .demo-badge {
+            display: none !important;
+        }
+
         /* === HEADER APPLICATION === */
         .app-header {
             position: fixed;
@@ -301,6 +349,18 @@
             padding: 2px 8px;
             border-radius: 12px;
             font-size: 12px;
+        }
+
+        /* CORRECTION: Badge de mode réel */
+        .real-mode-indicator {
+            background: #10b981;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: 8px;
         }
 
         /* === NAVIGATION === */
@@ -454,6 +514,46 @@
             margin-bottom: 20px;
         }
 
+        /* CORRECTION: Styles pour les statistiques réelles */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            color: #667eea;
+            width: 50px;
+            text-align: center;
+        }
+
+        .stat-content {
+            flex: 1;
+        }
+
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+
         .dashboard-actions {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -495,6 +595,26 @@
             font-size: 0.95rem;
             color: #6b7280;
             line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .action-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
         /* === BADGE ENVIRONNEMENT === */
@@ -502,7 +622,7 @@
             position: fixed;
             top: 10px;
             right: 10px;
-            background: #f59e0b;
+            background: #10b981;
             color: white;
             padding: 6px 12px;
             border-radius: 16px;
@@ -589,6 +709,11 @@
             body.app-active .app-main {
                 margin-top: 140px;
             }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 15px;
+            }
         }
 
         /* === BOUTONS === */
@@ -615,19 +740,32 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
+
+        /* CORRECTION: Styles pour mode réel uniquement */
+        .real-mode-only {
+            border: 2px solid #10b981;
+            background: #f0fdf4;
+        }
+
+        .demo-mode-disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
-    <!-- Badge d'environnement -->
+    <!-- Badge d'environnement avec indicateur mode réel -->
     <script>
-        if (window.IS_TEST_ENV) {
-            document.addEventListener('DOMContentLoaded', () => {
-                const badge = document.createElement('div');
-                badge.className = 'env-badge';
-                badge.textContent = `🧪 ${DOMAIN_CONFIG.environment.toUpperCase()}: ${window.CURRENT_HOSTNAME}`;
-                document.body.appendChild(badge);
-            });
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const badge = document.createElement('div');
+            badge.className = 'env-badge';
+            badge.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                RÉEL: ${window.CURRENT_HOSTNAME}
+            `;
+            badge.title = 'Mode emails réels activé';
+            document.body.appendChild(badge);
+        });
     </script>
 
     <!-- Vérification de configuration -->
@@ -650,7 +788,7 @@
                 document.body.appendChild(errorDiv);
             });
         } else {
-            console.log('[INDEX] ✅ Configuration OK');
+            console.log('[INDEX] ✅ Configuration OK (REAL MODE ONLY)');
         }
     </script>
 
@@ -662,6 +800,7 @@
                     <i class="fas fa-envelope-open-text"></i>
                     <span>EmailSortPro</span>
                     <span class="ai-badge">AI</span>
+                    <span class="real-mode-indicator">Mode Réel</span>
                 </div>
                 <div id="authStatus">
                     <span style="opacity: 0.8;">Initialisation...</span>
@@ -711,6 +850,7 @@
                     <h1 class="login-title">EmailSortPro</h1>
                     <p class="login-subtitle">
                         Organisez vos emails Outlook avec l'intelligence artificielle
+                        <br><strong>Mode emails réels uniquement</strong>
                     </p>
 
                     <button id="loginBtn" class="login-button">
@@ -721,16 +861,63 @@
                     <div class="login-security">
                         <i class="fas fa-shield-alt"></i>
                         Connexion sécurisée Microsoft
+                        <span class="real-mode-indicator">Emails réels</span>
                     </div>
                 </div>
             </div>
 
             <!-- Contenu des Pages -->
             <div id="pageContent">
-                <div class="dashboard-container">
+                <!-- CORRECTION: Contenu par défaut avec données réelles -->
+                <div class="dashboard-container real-mode-only">
                     <div class="dashboard-header">
                         <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
-                        <p class="dashboard-subtitle">Organisez vos emails intelligemment avec l'IA</p>
+                        <p class="dashboard-subtitle">
+                            Organisez vos emails intelligemment avec l'IA
+                            <span class="real-mode-indicator">Mode Réel Activé</span>
+                        </p>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="totalEmailsCount">-</div>
+                                <div class="stat-label">Emails analysés</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-envelope-open"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="unreadEmailsCount">-</div>
+                                <div class="stat-label">Non lus</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-tags"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="categoriesCount">-</div>
+                                <div class="stat-label">Catégories</div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number">✓</div>
+                                <div class="stat-label">Mode Réel</div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="dashboard-actions">
@@ -738,24 +925,36 @@
                             <div class="action-icon">
                                 <i class="fas fa-search"></i>
                             </div>
-                            <h3 class="action-title">Scanner des emails</h3>
-                            <p class="action-description">Analysez et catégorisez vos emails automatiquement</p>
+                            <h3 class="action-title">Scanner vos emails</h3>
+                            <p class="action-description">Analysez et catégorisez vos emails réels automatiquement</p>
+                            <button class="action-button">
+                                <i class="fas fa-play"></i>
+                                Démarrer
+                            </button>
                         </div>
                         
                         <div class="action-card" onclick="window.pageManager?.loadPage('emails')">
                             <div class="action-icon">
                                 <i class="fas fa-inbox"></i>
                             </div>
-                            <h3 class="action-title">Voir les emails</h3>
-                            <p class="action-description">Consultez vos emails catégorisés</p>
+                            <h3 class="action-title">Voir vos emails</h3>
+                            <p class="action-description">Consultez vos emails réels catégorisés</p>
+                            <button class="action-button">
+                                <i class="fas fa-eye"></i>
+                                Voir
+                            </button>
                         </div>
                         
                         <div class="action-card" onclick="window.pageManager?.loadPage('tasks')">
                             <div class="action-icon">
                                 <i class="fas fa-tasks"></i>
                             </div>
-                            <h3 class="action-title">Gérer les tâches</h3>
-                            <p class="action-description">Suivez vos tâches créées depuis vos emails</p>
+                            <h3 class="action-title">Gérer vos tâches</h3>
+                            <p class="action-description">Suivez les tâches créées depuis vos emails réels</p>
+                            <button class="action-button">
+                                <i class="fas fa-cog"></i>
+                                Gérer
+                            </button>
                         </div>
                         
                         <div class="action-card" onclick="window.pageManager?.loadPage('settings')">
@@ -763,7 +962,11 @@
                                 <i class="fas fa-cog"></i>
                             </div>
                             <h3 class="action-title">Paramètres</h3>
-                            <p class="action-description">Configurez vos catégories et préférences</p>
+                            <p class="action-description">Configurez vos préférences</p>
+                            <button class="action-button">
+                                <i class="fas fa-wrench"></i>
+                                Configurer
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -783,38 +986,59 @@
     <script src="UIManager.js"></script>
     <script src="CategoryManager.js"></script>
     <script src="TaskManager.js"></script>
-    
-    <!-- ===== MODULE DE SCAN - AJOUTÉ ===== -->
     <script src="StartScan.js"></script>
-    
-    <!-- ===== PAGE MANAGER ET APP ===== -->
     <script src="PageManager.js"></script>
     <script src="app.js"></script>
     
     <!-- INITIALISATION FINALE -->
     <script>
+        // CORRECTION: Fonction de mise à jour des statistiques réelles
+        function updateRealStats() {
+            console.log('[INDEX] Updating real stats...');
+            
+            // Attendre que les services soient prêts
+            setTimeout(() => {
+                if (window.emailScanner) {
+                    const emails = window.emailScanner.getAllEmails();
+                    const realEmails = emails.filter(e => !e.isDemo && e.source !== 'demo');
+                    
+                    document.getElementById('totalEmailsCount').textContent = realEmails.length;
+                    document.getElementById('unreadEmailsCount').textContent = 
+                        realEmails.filter(e => !e.isRead).length;
+                    
+                    const categories = new Set(realEmails.map(e => e.category).filter(c => c));
+                    document.getElementById('categoriesCount').textContent = categories.size;
+                    
+                    console.log('[INDEX] ✅ Real stats updated:', {
+                        total: realEmails.length,
+                        unread: realEmails.filter(e => !e.isRead).length,
+                        categories: categories.size
+                    });
+                }
+            }, 2000);
+        }
+
         // Fonction de diagnostic
         window.checkConfig = function() {
-            console.log('=== DIAGNOSTIC v7.0 ===');
+            console.log('=== DIAGNOSTIC v7.1 (REAL MODE ONLY) ===');
             console.log('Hostname:', window.CURRENT_HOSTNAME);
             console.log('Environment:', DOMAIN_CONFIG.environment);
+            console.log('Real Mode:', window.APP_REAL_MODE);
+            console.log('Demo Mode:', window.APP_DEMO_MODE, '(should be false)');
             console.log('AppConfig:', !!window.AppConfig);
             console.log('Services:', {
                 authService: !!window.authService,
                 uiManager: !!window.uiManager,
                 pageManager: !!window.pageManager,
+                mailService: !!window.mailService,
                 app: !!window.app
             });
             
-            // Vérification du module de scan
-            console.log('Scan modules:', {
-                MinimalScanModule: !!window.MinimalScanModule,
-                minimalScanModule: !!window.minimalScanModule,
-                scanStartModule: !!window.scanStartModule
-            });
-            
             if (window.AppConfig) {
-                console.log('Config debug:', window.AppConfig.getDebugInfo());
+                const debugInfo = window.AppConfig.getDebugInfo();
+                console.log('Config debug:', debugInfo);
+                console.log('Real Mode Only:', debugInfo.realModeOnly);
+                console.log('Demo Mode Disabled:', debugInfo.demoModeDisabled);
             }
             
             return window.AppConfig?.getDebugInfo() || null;
@@ -822,7 +1046,7 @@
 
         // Attendre le DOM et initialiser
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('[INDEX] DOM loaded v7.0');
+            console.log('[INDEX] DOM loaded v7.1 (REAL MODE ONLY)');
             
             // Vérification finale
             if (!window.AppConfig || window.AppConfig.error) {
@@ -830,23 +1054,20 @@
                 return;
             }
             
-            console.log('[INDEX] ✅ Ready to initialize app');
+            console.log('[INDEX] ✅ Ready to initialize app (REAL MODE ONLY)');
             
-            // Vérifier que le module de scan est chargé
-            setTimeout(() => {
-                if (window.MinimalScanModule) {
-                    console.log('[INDEX] ✅ StartScan.js loaded successfully');
-                } else {
-                    console.warn('[INDEX] ⚠️ StartScan.js not found - fallback will be used');
-                }
-            }, 100);
+            // Mettre à jour les stats périodiquement
+            updateRealStats();
+            setInterval(updateRealStats, 30000); // Toutes les 30 secondes
             
             // L'app va s'initialiser automatiquement grâce à app.js
         });
 
-        console.log('[INDEX] ✅ EmailSortPro v7.0 - Correction finale boucles');
+        console.log('[INDEX] ✅ EmailSortPro v7.1 - REAL MODE ONLY');
         console.log('[INDEX] Environment:', DOMAIN_CONFIG.environment);
         console.log('[INDEX] Domain:', window.CURRENT_HOSTNAME);
+        console.log('[INDEX] Demo Mode:', window.APP_DEMO_MODE ? 'ENABLED' : 'DISABLED');
+        console.log('[INDEX] Real Mode:', window.APP_REAL_MODE ? 'ENABLED' : 'DISABLED');
     </script>
 </body>
 </html>
