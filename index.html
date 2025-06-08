@@ -34,95 +34,154 @@
     <!-- CONFIGURATION ADAPTATIVE UNIVERSELLE v5.0 -->
     <script>
         // =====================================================
-        // CONFIGURATION ADAPTATIVE POUR TOUS LES DOMAINES v5.0
+        // CONFIGURATION STRICTE AVEC DOMAINES VALIDÉS v5.1
         // =====================================================
         
-        // Détection automatique du domaine actuel
-        const CURRENT_HOSTNAME = window.location.hostname;
-        const CURRENT_ORIGIN = window.location.origin;
-        const CURRENT_URL = window.location.href;
-        
-        console.log('[INDEX] 🚀 Loading adaptive configuration v5.0 for', CURRENT_HOSTNAME);
-        
-        // Client ID universel fonctionnel
-        window.UNIVERSAL_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
+        // Whitelist des domaines autorisés avec leurs configurations exactes
+        const DOMAIN_CONFIGS = {
+            'emailsortpro.netlify.app': {
+                clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
+                redirectUri: 'https://emailsortpro.netlify.app/auth-callback.html',
+                postLogoutUri: 'https://emailsortpro.netlify.app/',
+                environment: 'production'
+            },
+            'coruscating-dodol-f30e8d.netlify.app': {
+                clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
+                redirectUri: 'https://coruscating-dodol-f30e8d.netlify.app/auth-callback.html',
+                postLogoutUri: 'https://coruscating-dodol-f30e8d.netlify.app/',
+                environment: 'test'
+            },
+            'localhost': {
+                clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
+                redirectUri: 'http://localhost:3000/auth-callback.html',
+                postLogoutUri: 'http://localhost:3000/',
+                environment: 'development'
+            },
+            '127.0.0.1': {
+                clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
+                redirectUri: 'http://127.0.0.1:3000/auth-callback.html',
+                postLogoutUri: 'http://127.0.0.1:3000/',
+                environment: 'development'
+            }
+        };
+
+        // Fonction pour obtenir la configuration stricte du domaine
+        function getDomainConfiguration() {
+            console.log('[INDEX] Getting domain configuration for:', CURRENT_HOSTNAME);
+            
+            // Vérifier si le domaine est dans la whitelist
+            if (DOMAIN_CONFIGS[CURRENT_HOSTNAME]) {
+                console.log('[INDEX] ✅ Domain found in whitelist:', CURRENT_HOSTNAME);
+                return DOMAIN_CONFIGS[CURRENT_HOSTNAME];
+            }
+            
+            // Pour les domaines Netlify non listés explicitement
+            if (CURRENT_HOSTNAME.includes('netlify.app')) {
+                console.log('[INDEX] ⚠️ Netlify domain not in whitelist, generating config:', CURRENT_HOSTNAME);
+                return {
+                    clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
+                    redirectUri: `https://${CURRENT_HOSTNAME}/auth-callback.html`,
+                    postLogoutUri: `https://${CURRENT_HOSTNAME}/`,
+                    environment: 'preview'
+                };
+            }
+            
+            // Configuration d'urgence (probablement ne fonctionnera pas)
+            console.error('[INDEX] ❌ Domain not recognized, using fallback config:', CURRENT_HOSTNAME);
+            return {
+                clientId: 'CONFIGURATION_REQUIRED',
+                redirectUri: CURRENT_ORIGIN + '/auth-callback.html',
+                postLogoutUri: CURRENT_ORIGIN + '/',
+                environment: 'unknown'
+            };
+        }
+
+        const DOMAIN_CONFIG = getDomainConfiguration();
         
         // =====================================================
-        // GÉNÉRATION DYNAMIQUE DE LA CONFIGURATION
+        // CRÉATION DE LA CONFIGURATION STRICTE
         // =====================================================
         (function() {
-            // URIs générées dynamiquement basées sur l'URL actuelle
-            const REDIRECT_URI = CURRENT_ORIGIN + '/auth-callback.html';
-            const POST_LOGOUT_URI = CURRENT_ORIGIN + '/';
+            console.log('[INDEX] Creating strict configuration for:', CURRENT_HOSTNAME);
+            console.log('[INDEX] Domain config:', DOMAIN_CONFIG);
             
-            console.log('[INDEX] Generated URIs for current domain:', {
-                hostname: CURRENT_HOSTNAME,
-                origin: CURRENT_ORIGIN,
-                redirectUri: REDIRECT_URI,
-                postLogoutUri: POST_LOGOUT_URI
-            });
+            // Validation de la configuration du domaine
+            if (DOMAIN_CONFIG.clientId === 'CONFIGURATION_REQUIRED') {
+                console.error('[INDEX] ❌ Domain not configured, redirecting to setup...');
+                // Redirection vers la page de configuration après un délai
+                setTimeout(() => {
+                    window.location.href = '/setup.html';
+                }, 2000);
+                return;
+            }
             
-            // Détection de l'environnement
-            const isNetlify = CURRENT_HOSTNAME.includes('netlify');
-            const isLocalhost = CURRENT_HOSTNAME === 'localhost' || CURRENT_HOSTNAME === '127.0.0.1';
-            const isTest = CURRENT_HOSTNAME.includes('test') || CURRENT_HOSTNAME.includes('preview') || CURRENT_HOSTNAME.includes('coruscating-dodol');
-            
-            console.log('[INDEX] Environment detection:', {
-                isNetlify,
-                isLocalhost,
-                isTest,
-                hostname: CURRENT_HOSTNAME
-            });
-            
-            // Fonction pour obtenir le Client ID avec priorité
+            // Fonction pour obtenir le Client ID avec priorité stricte
             function getClientIdForEnvironment() {
-                // Priorité 1: Client ID sauvegardé dans localStorage
+                // Priorité 1: Configuration du domaine (toujours utilisée en premier)
+                if (DOMAIN_CONFIG.clientId && DOMAIN_CONFIG.clientId !== 'CONFIGURATION_REQUIRED') {
+                    console.log('[INDEX] ✅ Using whitelisted client ID for domain');
+                    return DOMAIN_CONFIG.clientId;
+                }
+                
+                // Priorité 2: Client ID sauvegardé (uniquement si validé)
                 try {
                     const savedClientId = localStorage.getItem('emailsortpro_client_id');
                     if (savedClientId && 
                         savedClientId !== 'VOTRE_CLIENT_ID_ICI' && 
                         savedClientId !== 'CONFIGURATION_REQUIRED' &&
                         /^[a-f0-9-]{36}$/i.test(savedClientId)) {
-                        console.log('[INDEX] ✅ Using saved client ID from localStorage');
-                        return savedClientId;
+                        
+                        // Vérifier si l'URI sauvegardée correspond au domaine actuel
+                        const savedRedirectUri = localStorage.getItem('emailsortpro_redirect_uri');
+                        const expectedRedirectUri = DOMAIN_CONFIG.redirectUri;
+                        
+                        if (savedRedirectUri === expectedRedirectUri) {
+                            console.log('[INDEX] ✅ Using saved client ID with matching URI');
+                            return savedClientId;
+                        } else {
+                            console.warn('[INDEX] ⚠️ Saved client ID URI mismatch, using domain config');
+                            console.warn('[INDEX] Saved URI:', savedRedirectUri);
+                            console.warn('[INDEX] Expected URI:', expectedRedirectUri);
+                        }
                     }
                 } catch (e) {
                     console.warn('[INDEX] Cannot access localStorage:', e);
                 }
                 
-                // Priorité 2: Client ID universel
-                console.log('[INDEX] ✅ Using universal client ID');
-                return window.UNIVERSAL_CLIENT_ID;
+                // Priorité 3: Configuration du domaine
+                console.log('[INDEX] Using domain configuration client ID');
+                return DOMAIN_CONFIG.clientId;
             }
             
-            // Créer la configuration adaptative
-            function createConfig(clientId) {
-                console.log('[INDEX] Creating adaptive config with:', {
+            // Créer la configuration stricte
+            function createStrictConfig(clientId) {
+                console.log('[INDEX] Creating strict config with validated parameters:', {
                     clientId: clientId.substring(0, 8) + '...',
-                    redirectUri: REDIRECT_URI,
-                    postLogoutUri: POST_LOGOUT_URI,
-                    hostname: CURRENT_HOSTNAME
+                    redirectUri: DOMAIN_CONFIG.redirectUri,
+                    postLogoutUri: DOMAIN_CONFIG.postLogoutUri,
+                    hostname: CURRENT_HOSTNAME,
+                    environment: DOMAIN_CONFIG.environment
                 });
                 
                 window.AppConfig = {
                     msal: {
                         clientId: clientId,
                         authority: 'https://login.microsoftonline.com/common',
-                        redirectUri: REDIRECT_URI,
-                        postLogoutRedirectUri: POST_LOGOUT_URI,
+                        redirectUri: DOMAIN_CONFIG.redirectUri, // URI stricte du domaine
+                        postLogoutRedirectUri: DOMAIN_CONFIG.postLogoutUri,
                         cache: {
                             cacheLocation: 'localStorage',
-                            storeAuthStateInCookie: true // Important pour tous les environnements
+                            storeAuthStateInCookie: true // Critique pour Netlify
                         },
                         system: {
                             loggerOptions: {
                                 loggerCallback: (level, message, containsPii) => {
-                                    if (window.debugMode || isLocalhost || isTest) {
+                                    if (window.debugMode || DOMAIN_CONFIG.environment !== 'production') {
                                         console.log(`[MSAL ${level}] ${message}`);
                                     }
                                 },
                                 piiLoggingEnabled: false,
-                                logLevel: (isLocalhost || isTest) ? 'Verbose' : 'Warning'
+                                logLevel: DOMAIN_CONFIG.environment === 'production' ? 'Warning' : 'Verbose'
                             },
                             allowNativeBroker: false,
                             allowRedirectInIframe: false
@@ -142,17 +201,12 @@
                     },
                     app: {
                         name: 'EmailSortPro',
-                        version: '5.0.0',
-                        debug: isLocalhost || isTest,
-                        environment: isTest ? 'test' : 
-                                   isNetlify ? 'netlify' : 
-                                   isLocalhost ? 'localhost' : 'production',
+                        version: '5.1.0',
+                        debug: DOMAIN_CONFIG.environment !== 'production',
+                        environment: DOMAIN_CONFIG.environment,
                         domain: CURRENT_HOSTNAME,
-                        urls: {
-                            redirect: REDIRECT_URI,
-                            logout: POST_LOGOUT_URI,
-                            current: CURRENT_URL
-                        }
+                        domainConfig: DOMAIN_CONFIG,
+                        strictValidation: true
                     },
                     email: {
                         defaultFolder: 'inbox',
@@ -161,10 +215,10 @@
                         maxEmails: 10000
                     },
                     errors: {
-                        'unauthorized_client': `Configuration Azure incorrecte pour ${CURRENT_HOSTNAME}. Vérifiez votre Client ID.`,
-                        'invalid_client': 'Application non autorisée. Contactez l\'administrateur.',
-                        'invalid_request': `URI de redirection invalide. Configurez ${REDIRECT_URI} dans Azure Portal.`,
-                        'consent_required': 'Autorisation requise. Veuillez accepter les permissions.',
+                        'unauthorized_client': `Client ID ${clientId.substring(0, 8)}... non autorisé pour ${CURRENT_HOSTNAME}. Vérifiez Azure Portal.`,
+                        'invalid_client': 'Client ID invalide ou application non autorisée.',
+                        'invalid_request': `URI de redirection invalide. Configurez EXACTEMENT: ${DOMAIN_CONFIG.redirectUri} comme Single-page application (SPA) dans Azure Portal.`,
+                        'consent_required': 'Autorisation requise. Acceptez les permissions.',
                         'interaction_required': 'Reconnexion requise.',
                         'login_required': 'Connexion requise.',
                         'network_error': 'Erreur réseau. Vérifiez votre connexion.',
@@ -174,7 +228,7 @@
                         const issues = [];
                         
                         // Validation du Client ID
-                        if (!this.msal.clientId || this.msal.clientId === 'VOTRE_CLIENT_ID_ICI' || this.msal.clientId === 'CONFIGURATION_REQUIRED') {
+                        if (!this.msal.clientId || this.msal.clientId === 'CONFIGURATION_REQUIRED') {
                             issues.push(`Client ID non configuré pour ${CURRENT_HOSTNAME}`);
                         }
                         
@@ -183,9 +237,14 @@
                             issues.push(`Format Client ID invalide: ${this.msal.clientId}`);
                         }
                         
-                        // Validation des URIs (doit correspondre au domaine actuel)
+                        // Validation stricte des URIs
+                        if (this.msal.redirectUri !== DOMAIN_CONFIG.redirectUri) {
+                            issues.push(`URI de redirection ne correspond pas à la configuration du domaine`);
+                        }
+                        
+                        // Validation du domaine dans l'URI
                         if (!this.msal.redirectUri.includes(CURRENT_HOSTNAME)) {
-                            issues.push(`URI de redirection ne correspond pas au domaine actuel: ${CURRENT_HOSTNAME}`);
+                            issues.push(`URI de redirection ne contient pas le domaine actuel: ${CURRENT_HOSTNAME}`);
                         }
                         
                         return { 
@@ -202,54 +261,74 @@
                             origin: CURRENT_ORIGIN,
                             currentUrl: CURRENT_URL,
                             environment: this.app.environment,
+                            domainWhitelisted: !!DOMAIN_CONFIGS[CURRENT_HOSTNAME],
                             configValid: this.validate().valid,
                             clientId: this.msal.clientId.substring(0, 8) + '...',
                             redirectUri: this.msal.redirectUri,
                             postLogoutRedirectUri: this.msal.postLogoutRedirectUri,
+                            domainConfig: DOMAIN_CONFIG,
+                            strictValidation: true,
                             uriValidation: {
-                                redirectUriIncludesHostname: this.msal.redirectUri.includes(CURRENT_HOSTNAME),
-                                exactRedirectUri: this.msal.redirectUri,
-                                expectedRedirectUri: REDIRECT_URI,
-                                match: this.msal.redirectUri === REDIRECT_URI
+                                exactMatch: this.msal.redirectUri === DOMAIN_CONFIG.redirectUri,
+                                expectedUri: DOMAIN_CONFIG.redirectUri,
+                                configuredUri: this.msal.redirectUri,
+                                domainInUri: this.msal.redirectUri.includes(CURRENT_HOSTNAME)
                             },
-                            isAdaptive: true,
-                            generatedDynamically: true,
                             timestamp: new Date().toISOString()
                         };
                     }
                 };
                 
-                console.log('[INDEX] ✅ Configuration created successfully:', {
+                console.log('[INDEX] ✅ Strict configuration created successfully:', {
                     environment: window.AppConfig.app.environment,
                     domain: window.AppConfig.app.domain,
                     clientId: clientId.substring(0, 8) + '...',
                     redirectUri: window.AppConfig.msal.redirectUri,
-                    validation: window.AppConfig.validate()
+                    validation: window.AppConfig.validate(),
+                    whitelisted: !!DOMAIN_CONFIGS[CURRENT_HOSTNAME]
                 });
             }
             
-            // Créer la configuration
+            // Créer la configuration avec le Client ID validé
             const clientId = getClientIdForEnvironment();
-            createConfig(clientId);
+            createStrictConfig(clientId);
             
             // Mettre à jour les meta tags
-            document.getElementById('og-url').setAttribute('content', CURRENT_ORIGIN + '/');
-            document.getElementById('twitter-url').setAttribute('content', CURRENT_ORIGIN + '/');
+            document.getElementById('og-url').setAttribute('content', DOMAIN_CONFIG.postLogoutUri);
+            document.getElementById('twitter-url').setAttribute('content', DOMAIN_CONFIG.postLogoutUri);
             
-            // Adapter le titre en mode test
-            if (isTest) {
+            // Adapter le titre selon l'environnement
+            if (DOMAIN_CONFIG.environment === 'test' || DOMAIN_CONFIG.environment === 'preview') {
                 const titleElement = document.getElementById('page-title');
                 if (titleElement) {
-                    titleElement.textContent = `EmailSortPro [TEST] - ${CURRENT_HOSTNAME}`;
+                    titleElement.textContent = `EmailSortPro [${DOMAIN_CONFIG.environment.toUpperCase()}] - ${CURRENT_HOSTNAME}`;
                 }
             }
             
-            // Vérification finale
+            // Vérification finale stricte
             const validation = window.AppConfig.validate();
             if (!validation.valid) {
-                console.error('[INDEX] ❌ Configuration issues:', validation.issues);
+                console.error('[INDEX] ❌ Configuration validation failed:', validation.issues);
+                
+                // Afficher une bannière d'erreur pour les problèmes critiques
+                const errorBanner = document.createElement('div');
+                errorBanner.className = 'config-error-banner';
+                errorBanner.innerHTML = `
+                    <div>
+                        ❌ <strong>ERREUR DE CONFIGURATION:</strong> ${validation.issues.join(' | ')}
+                    </div>
+                    <div>
+                        Domaine: ${CURRENT_HOSTNAME} | URI attendue: ${DOMAIN_CONFIG.redirectUri}
+                    </div>
+                    <div class="config-error-actions">
+                        <button class="config-error-btn" onclick="this.parentElement.parentElement.remove()">Masquer</button>
+                        <a href="/setup.html" class="config-error-btn">Configuration</a>
+                        <button class="config-error-btn" onclick="console.log('Debug:', window.AppConfig.getDebugInfo())">Debug</button>
+                    </div>
+                `;
+                document.body.appendChild(errorBanner);
             } else {
-                console.log('[INDEX] ✅ Configuration valid for', CURRENT_HOSTNAME);
+                console.log('[INDEX] ✅ Configuration strictement validée pour', CURRENT_HOSTNAME);
             }
         })();
     </script>
@@ -969,14 +1048,27 @@
             }, 1000);
         });
         
-        // Fonction de diagnostic accessible globalement
+        // Fonction de diagnostic améliorée avec validation stricte
         window.checkServices = function() {
-            console.log('=== DIAGNOSTIC v5.0 pour', CURRENT_HOSTNAME, '===');
+            console.log('=== DIAGNOSTIC STRICT v5.1 pour', CURRENT_HOSTNAME, '===');
+            console.log('Domain whitelisted:', !!DOMAIN_CONFIGS[CURRENT_HOSTNAME] ? '✅' : '❌');
+            console.log('Domain config:', DOMAIN_CONFIG);
             console.log('AppConfig:', window.AppConfig ? 'OK' : 'MANQUANT');
+            
             if (window.AppConfig) {
                 const debug = window.AppConfig.getDebugInfo();
                 console.log('Configuration debug:', debug);
+                console.log('Strict validation:', debug.strictValidation ? '✅' : '❌');
+                console.log('URI exact match:', debug.uriValidation.exactMatch ? '✅' : '❌');
+                
+                if (!debug.uriValidation.exactMatch) {
+                    console.log('🚨 URI MISMATCH DETECTED:');
+                    console.log('  Expected:', debug.uriValidation.expectedUri);
+                    console.log('  Configured:', debug.uriValidation.configuredUri);
+                    console.log('  ACTION: Update Azure Portal with exact URI');
+                }
             }
+            
             console.log('authService:', window.authService ? 'OK' : 'MANQUANT');
             console.log('mailService:', window.mailService ? 'OK' : 'MANQUANT');
             console.log('uiManager:', window.uiManager ? 'OK' : 'MANQUANT');
@@ -984,10 +1076,10 @@
             console.log('pageManager:', window.pageManager ? 'OK' : 'MANQUANT');
             console.log('categoryManager:', window.categoryManager ? 'OK' : 'MANQUANT');
             console.log('Current hostname:', CURRENT_HOSTNAME);
-            console.log('Test environment:', IS_TEST_ENVIRONMENT);
-            console.log('Generated URIs:', {
-                redirect: window.AppConfig?.msal?.redirectUri,
-                logout: window.AppConfig?.msal?.postLogoutRedirectUri
+            console.log('Environment:', DOMAIN_CONFIG.environment);
+            console.log('Exact URIs required:', {
+                redirect: DOMAIN_CONFIG.redirectUri,
+                logout: DOMAIN_CONFIG.postLogoutUri
             });
         };
 
@@ -1006,12 +1098,12 @@
             console.log('✅ CategoryManagerUI créé automatiquement');
         }
 
-        // Log de confirmation
-        console.log('[INDEX] ✅ Configuration v5.0 loaded for', CURRENT_HOSTNAME);
-        console.log('[INDEX] Current hostname:', CURRENT_HOSTNAME);
-        console.log('[INDEX] Current origin:', CURRENT_ORIGIN);
-        console.log('[INDEX] Test environment:', IS_TEST_ENVIRONMENT);
-        console.log('[INDEX] Configuration adaptative active avec URIs dynamiques');
+        // Log de confirmation avec validation stricte
+        console.log('[INDEX] ✅ Configuration stricte v5.1 loaded for', CURRENT_HOSTNAME);
+        console.log('[INDEX] Domain whitelisted:', !!DOMAIN_CONFIGS[CURRENT_HOSTNAME]);
+        console.log('[INDEX] Environment:', DOMAIN_CONFIG.environment);
+        console.log('[INDEX] Strict URI validation active');
+        console.log('[INDEX] Required redirect URI:', DOMAIN_CONFIG.redirectUri);
     </script>
 </body>
 </html>
