@@ -1,5 +1,4 @@
-// TaskManager Pro v9.2 - Module Indépendant et Auto-suffisant
-// Se charge automatiquement et s'intègre parfaitement
+// TaskManager Pro v9.0 - Interface Épurée et Moderne
 
 // =====================================
 // ENHANCED TASK MANAGER CLASS
@@ -14,7 +13,7 @@ class TaskManager {
 
     async init() {
         try {
-            console.log('[TaskManager] Initializing v9.2 - Module indépendant...');
+            console.log('[TaskManager] Initializing v9.0 - Interface Épurée...');
             await this.loadTasks();
             this.initialized = true;
             console.log('[TaskManager] Initialization complete with', this.tasks.length, 'tasks');
@@ -27,7 +26,7 @@ class TaskManager {
 
     async loadTasks() {
         try {
-            const saved = localStorage.getItem('emailsort_tasks_v9');
+            const saved = localStorage.getItem('emailsort_tasks');
             if (saved) {
                 this.tasks = JSON.parse(saved);
                 console.log(`[TaskManager] Loaded ${this.tasks.length} tasks from storage`);
@@ -44,14 +43,19 @@ class TaskManager {
     generateSampleTasks() {
         const sampleTasks = [
             {
-                id: 'task_1',
+                id: 'sample_1',
                 title: 'Validation campagne marketing Q2',
                 description: '📧 RÉSUMÉ EXÉCUTIF\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nDe: Sarah Martin (acme-corp.com)\nObjet: Demande de validation pour la campagne marketing Q2\n📮 Réponse attendue\n\n🎯 ACTIONS REQUISES:\n1. Valider les visuels de la campagne\n2. Confirmer le budget alloué\n3. Définir les dates de lancement\n\n💡 INFORMATIONS CLÉS:\n• Budget proposé : 50k€\n• Cible : 25-45 ans\n• Canaux : LinkedIn, Google Ads\n\n⚠️ POINTS D\'ATTENTION:\n• Deadline serrée pour le lancement\n• Coordination avec l\'équipe commerciale requise',
-                client: 'ACME Corp',
-                company: 'acme-corp.com',
+                priority: 'high',
+                status: 'todo',
+                category: 'email',
+                type: 'email',
+                hasEmail: true,
                 emailFrom: 'sarah.martin@acme-corp.com',
                 emailFromName: 'Sarah Martin',
                 emailSubject: 'Validation campagne marketing Q2',
+                emailDate: '2025-06-06T09:15:00Z',
+                emailDomain: 'acme-corp.com',
                 emailContent: `Email de: Sarah Martin <sarah.martin@acme-corp.com>
 Date: ${new Date().toLocaleString('fr-FR')}
 Sujet: Validation campagne marketing Q2
@@ -89,15 +93,13 @@ Sarah Martin`,
                         <p style="margin-top: 30px;">Merci d'avance,<br><strong>Sarah Martin</strong></p>
                     </div>
                 </div>`,
-                priority: 'high',
-                status: 'todo',
-                category: 'marketing',
-                type: 'email',
-                dueDate: '2025-06-10',
-                createdAt: new Date().toISOString(),
-                hasEmail: true,
+                tags: ['marketing', 'validation', 'q2'],
+                client: 'ACME Corp',
+                createdAt: new Date(Date.now() - 86400000).toISOString(),
+                updatedAt: new Date(Date.now() - 86400000).toISOString(),
                 needsReply: true,
-                emailReplied: false,
+                dueDate: '2025-06-08',
+                summary: 'Validation urgente de la campagne marketing Q2 avec budget de 50k€',
                 actions: [
                     { text: 'Valider les visuels de la campagne', deadline: null },
                     { text: 'Confirmer le budget alloué', deadline: '2025-06-07' },
@@ -130,106 +132,47 @@ Vous pouvez procéder au lancement en coordination avec l'équipe commerciale co
 Excellente initiative, félicitations à toute l'équipe !
 
 Cordialement,
-[Votre nom]`,
-                        description: 'Réponse professionnelle d\'approbation',
-                        generatedBy: 'claude-ai'
-                    },
-                    {
-                        tone: 'urgent',
-                        subject: 'Re: Validation campagne marketing Q2 - Questions urgentes',
-                        content: `Bonjour Sarah,
-
-J'ai examiné le dossier campagne Q2 avec attention.
-
-Avant validation finale, j'ai quelques questions urgentes :
-
-1. Budget 50k€ : quelle répartition LinkedIn vs Google Ads ?
-2. Cible 25-45 ans : avez-vous les personas détaillés ?
-3. Coordination commerciale : qui est le référent côté vente ?
-
-Pouvons-nous organiser un point rapidement demain pour clarifier ces aspects ?
-
-Dans l'attente de votre retour,
-[Votre nom]`,
-                        description: 'Réponse avec questions complémentaires',
-                        generatedBy: 'claude-ai'
+[Votre nom]`
                     }
                 ],
-                tags: ['marketing', 'validation', 'q2'],
-                summary: 'Validation urgente de la campagne marketing Q2 avec budget de 50k€',
-                aiRepliesGenerated: true,
-                aiRepliesGeneratedAt: new Date().toISOString()
+                method: 'ai'
             },
             {
-                id: 'task_2', 
-                title: 'Révision contrat partenariat',
-                description: 'Révision complète du contrat de partenariat avec TechFlow pour la nouvelle année.',
-                client: 'TechFlow',
-                company: 'techflow.io',
-                emailFrom: 'legal@techflow.io',
-                emailFromName: 'Marie Dubois',
-                emailSubject: 'Révision contrat partenariat 2025',
-                emailContent: 'Email concernant la révision du contrat de partenariat pour 2025...',
-                priority: 'urgent',
-                status: 'in-progress',
-                category: 'legal',
+                id: 'sample_2',
+                title: 'Proposition commerciale Bankin\'',
+                description: 'Offre record jusqu\'à 260€ offerts',
+                priority: 'medium',
+                status: 'todo',
+                category: 'email',
                 type: 'email',
-                dueDate: '2025-06-08',
-                createdAt: new Date(Date.now() - 86400000).toISOString(),
                 hasEmail: true,
-                needsReply: true,
-                emailReplied: false,
-                actions: [
-                    { text: 'Examiner les nouvelles clauses', deadline: '2025-06-08' },
-                    { text: 'Valider les conditions financières', deadline: '2025-06-08' }
-                ],
-                keyInfo: ['Contrat annuel', 'Conditions modifiées'],
-                risks: ['Délai très serré'],
-                suggestedReplies: [],
-                tags: ['legal', 'contrat', 'urgent'],
-                summary: 'Révision urgente du contrat de partenariat TechFlow'
+                emailFrom: 'offres@bankin.com',
+                emailFromName: 'Bankin\'',
+                emailSubject: 'Offre record : jusqu\'à 260€ offerts',
+                emailDate: '2025-06-06T14:30:00Z',
+                emailDomain: 'bankin.com',
+                tags: ['finance', 'offre'],
+                client: 'Bankin\'',
+                createdAt: new Date(Date.now() - 3600000).toISOString(),
+                updatedAt: new Date(Date.now() - 3600000).toISOString(),
+                needsReply: false,
+                dueDate: null,
+                method: 'ai'
             },
             {
-                id: 'task_3',
-                title: 'Préparation présentation client',
-                description: 'Préparer la présentation pour le client StartupXYZ concernant leur nouveau projet.',
-                client: 'StartupXYZ',
-                company: 'startup-xyz.fr',
-                emailFrom: 'ceo@startup-xyz.fr',
-                emailFromName: 'Pierre Laurent',
-                priority: 'medium',
-                status: 'todo', 
-                category: 'presentation',
-                type: 'meeting',
-                dueDate: '2025-06-12',
-                createdAt: new Date(Date.now() - 172800000).toISOString(),
+                id: 'sample_3',
+                title: 'Réunion équipe projet Alpha',
+                description: 'Point mensuel sur l\'avancement du projet Alpha',
+                priority: 'high',
+                status: 'in-progress',
+                category: 'meeting',
+                type: 'réunion',
                 hasEmail: false,
-                needsReply: false,
-                actions: [
-                    { text: 'Créer les slides', deadline: '2025-06-11' },
-                    { text: 'Préparer la démo', deadline: '2025-06-11' }
-                ],
-                keyInfo: ['Nouveau projet', 'Présentation stratégique'],
-                risks: [],
-                suggestedReplies: [],
-                tags: ['presentation', 'client'],
-                summary: 'Préparation présentation pour StartupXYZ'
-            },
-            {
-                id: 'task_4',
-                title: 'Analyse budget Q3',
-                description: 'Finaliser l\'analyse du budget Q3 avec les nouvelles directives.',
-                client: 'Finance Corp',
-                company: 'financecorp.com',
-                priority: 'medium',
-                status: 'completed',
-                category: 'finance',
-                type: 'task',
-                dueDate: '2025-06-05',
-                createdAt: new Date(Date.now() - 259200000).toISOString(),
-                hasEmail: false,
-                needsReply: false,
-                completedAt: new Date(Date.now() - 172800000).toISOString()
+                client: 'Interne',
+                createdAt: new Date(Date.now() - 7200000).toISOString(),
+                updatedAt: new Date(Date.now() - 1800000).toISOString(),
+                dueDate: '2025-06-09',
+                method: 'manual'
             }
         ];
         
@@ -237,7 +180,6 @@ Dans l'attente de votre retour,
         this.saveTasks();
     }
 
-    // Méthodes principales identiques mais simplifiées pour l'indépendance
     async createTaskFromEmail(taskData, email = null) {
         console.log('[TaskManager] Creating task from email:', taskData.title);
         
@@ -245,65 +187,575 @@ Dans l'attente de votre retour,
         const fullEmailContent = this.extractFullEmailContent(email, taskData);
         const htmlEmailContent = this.extractHtmlEmailContent(email, taskData);
         
+        let suggestedReplies = taskData.suggestedReplies || [];
+        
+        if ((!suggestedReplies || suggestedReplies.length === 0) && 
+            (email || taskData.emailFrom) && 
+            window.aiTaskAnalyzer) {
+            
+            try {
+                console.log('[TaskManager] Generating AI-powered reply suggestions...');
+                suggestedReplies = await this.generateIntelligentReplySuggestions(email || taskData, taskData);
+                console.log('[TaskManager] Generated', suggestedReplies.length, 'AI reply suggestions');
+            } catch (error) {
+                console.warn('[TaskManager] AI reply generation failed:', error);
+                suggestedReplies = this.generateBasicReplySuggestions(email || taskData, taskData);
+            }
+        }
+        
         const task = {
             id: taskId,
             title: taskData.title || 'Nouvelle tâche',
             description: taskData.description || '',
-            client: taskData.client || this.extractClient(taskData.emailFrom),
-            company: taskData.company || this.extractCompany(taskData.emailFrom),
+            priority: taskData.priority || 'medium',
+            status: taskData.status || 'todo',
+            dueDate: taskData.dueDate || null,
+            category: taskData.category || 'email',
+            type: taskData.type || 'email',
+            
+            emailId: taskData.emailId || null,
             emailFrom: taskData.emailFrom || (email?.from?.emailAddress?.address),
             emailFromName: taskData.emailFromName || (email?.from?.emailAddress?.name),
             emailSubject: taskData.emailSubject || email?.subject,
             emailContent: fullEmailContent,
             emailHtmlContent: htmlEmailContent,
-            priority: taskData.priority || 'medium',
-            status: taskData.status || 'todo',
-            category: taskData.category || 'email',
-            type: taskData.type || 'email',
-            dueDate: taskData.dueDate || null,
+            emailDomain: taskData.emailDomain || (taskData.emailFrom ? taskData.emailFrom.split('@')[1] : ''),
             hasEmail: true,
-            needsReply: taskData.needsReply !== false,
             emailReplied: false,
+            emailDate: taskData.emailDate || email?.receivedDateTime,
+            needsReply: taskData.needsReply !== false,
+            hasAttachments: email?.hasAttachments || false,
+            
             summary: taskData.summary || '',
             actions: taskData.actions || [],
             keyInfo: taskData.keyInfo || [],
             risks: taskData.risks || [],
+            aiAnalysis: taskData.aiAnalysis || null,
+            
+            suggestedReplies: suggestedReplies,
+            aiRepliesGenerated: suggestedReplies.length > 0,
+            aiRepliesGeneratedAt: suggestedReplies.length > 0 ? new Date().toISOString() : null,
+            
             tags: taskData.tags || [],
-            suggestedReplies: taskData.suggestedReplies || [],
+            client: taskData.client || 'Externe',
+            
             createdAt: taskData.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
+            
             method: taskData.method || 'ai'
         };
         
         this.tasks.push(task);
         this.saveTasks();
         this.emitTaskUpdate('create', task);
+        
+        console.log('[TaskManager] Task created successfully:', task.id);
         return task;
     }
 
+    async generateIntelligentReplySuggestions(email, taskData) {
+        if (!window.aiTaskAnalyzer) {
+            console.warn('[TaskManager] AITaskAnalyzer not available');
+            return this.generateBasicReplySuggestions(email, taskData);
+        }
+
+        try {
+            const senderName = email.from?.emailAddress?.name || taskData.emailFromName || 'l\'expéditeur';
+            const senderEmail = email.from?.emailAddress?.address || taskData.emailFrom || '';
+            const subject = email.subject || taskData.emailSubject || 'votre message';
+            const content = email.body?.content || email.bodyPreview || taskData.emailContent || '';
+            const urgency = taskData.priority || 'medium';
+            const hasActions = taskData.actions && taskData.actions.length > 0;
+            const keyInfo = taskData.keyInfo || [];
+            const risks = taskData.risks || [];
+
+            const replyPrompt = `Tu es un assistant expert en communication professionnelle. Génère 3 suggestions de réponse personnalisées pour cet email.
+
+CONTEXTE DE L'EMAIL:
+Expéditeur: ${senderName} <${senderEmail}>
+Sujet: ${subject}
+Priorité détectée: ${urgency}
+Actions requises: ${hasActions ? 'Oui' : 'Non'}
+
+CONTENU DE L'EMAIL:
+${content}
+
+${keyInfo.length > 0 ? `INFORMATIONS CLÉS IDENTIFIÉES:\n${keyInfo.map(info => `• ${info}`).join('\n')}\n` : ''}
+
+${risks.length > 0 ? `POINTS D'ATTENTION:\n${risks.map(risk => `• ${risk}`).join('\n')}\n` : ''}
+
+INSTRUCTIONS:
+1. Analyse le contexte, le ton et l'urgence de l'email
+2. Génère 3 réponses différentes adaptées au contexte
+3. Varie les tons: professionnel, urgent si nécessaire, et une version plus détaillée
+4. Personalise avec le nom de l'expéditeur et les éléments spécifiques mentionnés
+5. Inclus des éléments concrets de l'email original
+
+FORMAT DE RÉPONSE JSON:
+{
+  "suggestions": [
+    {
+      "tone": "professionnel",
+      "subject": "Re: [sujet original]",
+      "content": "Réponse complète et personnalisée...",
+      "description": "Réponse professionnelle standard"
+    },
+    {
+      "tone": "urgent",
+      "subject": "Re: [sujet] - Traitement prioritaire",
+      "content": "Réponse adaptée à l'urgence...",
+      "description": "Réponse pour traitement urgent"
+    },
+    {
+      "tone": "détaillé",
+      "subject": "Re: [sujet] - Réponse détaillée",
+      "content": "Réponse complète avec tous les détails...",
+      "description": "Réponse complète et détaillée"
+    }
+  ]
+}`;
+
+            const aiResponse = await this.callAIForReplySuggestions(replyPrompt);
+            
+            if (aiResponse && aiResponse.suggestions && Array.isArray(aiResponse.suggestions)) {
+                console.log('[TaskManager] AI generated', aiResponse.suggestions.length, 'reply suggestions');
+                return aiResponse.suggestions.map(suggestion => ({
+                    tone: suggestion.tone || 'neutre',
+                    subject: suggestion.subject || `Re: ${subject}`,
+                    content: suggestion.content || '',
+                    description: suggestion.description || '',
+                    generatedBy: 'claude-ai',
+                    generatedAt: new Date().toISOString()
+                }));
+            } else {
+                console.warn('[TaskManager] Invalid AI response format');
+                return this.generateBasicReplySuggestions(email, taskData);
+            }
+
+        } catch (error) {
+            console.error('[TaskManager] Error generating AI reply suggestions:', error);
+            return this.generateBasicReplySuggestions(email, taskData);
+        }
+    }
+
+    async callAIForReplySuggestions(prompt) {
+        if (!window.aiTaskAnalyzer) {
+            throw new Error('AITaskAnalyzer not available');
+        }
+
+        try {
+            if (window.aiTaskAnalyzer.apiKey) {
+                console.log('[TaskManager] Using Claude API for reply suggestions');
+                return await this.callClaudeAPI(prompt);
+            } else {
+                console.log('[TaskManager] No API key, using local generation');
+                return this.generateBasicReplySuggestionsFromPrompt(prompt);
+            }
+        } catch (error) {
+            console.error('[TaskManager] AI API call failed:', error);
+            throw error;
+        }
+    }
+
+    async callClaudeAPI(prompt) {
+        const apiUrl = 'https://api.anthropic.com/v1/messages';
+        const apiKey = window.aiTaskAnalyzer.apiKey;
+        
+        if (window.aiTaskAnalyzer.useLocalProxy && window.aiTaskAnalyzer.localProxyUrl) {
+            try {
+                const response = await fetch(window.aiTaskAnalyzer.localProxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        apiKey: apiKey,
+                        model: 'claude-3-haiku-20240307',
+                        max_tokens: 2048,
+                        messages: [{
+                            role: 'user',
+                            content: prompt
+                        }],
+                        temperature: 0.7,
+                        system: "Tu es un expert en communication professionnelle. Tu génères des réponses email personnalisées et adaptées au contexte. Réponds toujours en JSON valide avec des suggestions pratiques et utilisables."
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Local proxy error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return this.parseClaudeReplyResponse(data);
+                
+            } catch (error) {
+                console.warn('[TaskManager] Local proxy failed, trying CORS solutions:', error);
+            }
+        }
+
+        for (const proxyUrl of window.aiTaskAnalyzer.corsProxies) {
+            try {
+                const targetUrl = encodeURIComponent(apiUrl);
+                const response = await fetch(proxyUrl + targetUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKey,
+                        'anthropic-version': '2023-06-01'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-3-haiku-20240307',
+                        max_tokens: 2048,
+                        messages: [{
+                            role: 'user',
+                            content: prompt
+                        }],
+                        temperature: 0.7
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`CORS proxy error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return this.parseClaudeReplyResponse(data);
+                
+            } catch (error) {
+                console.warn(`[TaskManager] CORS proxy ${proxyUrl} failed:`, error);
+            }
+        }
+
+        throw new Error('All Claude API methods failed');
+    }
+
+    parseClaudeReplyResponse(response) {
+        try {
+            let jsonContent;
+            
+            if (typeof response === 'object' && response.content) {
+                if (Array.isArray(response.content)) {
+                    jsonContent = response.content[0]?.text || '';
+                } else {
+                    jsonContent = response.content;
+                }
+            } else if (typeof response === 'string') {
+                jsonContent = response;
+            } else {
+                jsonContent = JSON.stringify(response);
+            }
+            
+            const jsonMatch = jsonContent.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                throw new Error('No JSON found in Claude response');
+            }
+            
+            const parsed = JSON.parse(jsonMatch[0]);
+            
+            if (!parsed.suggestions || !Array.isArray(parsed.suggestions)) {
+                throw new Error('Invalid suggestions format');
+            }
+            
+            return parsed;
+            
+        } catch (error) {
+            console.error('[TaskManager] Parse Claude reply error:', error);
+            throw error;
+        }
+    }
+
+    generateBasicReplySuggestions(email, taskData) {
+        const senderName = email.from?.emailAddress?.name || taskData.emailFromName || 'l\'expéditeur';
+        const subject = email.subject || taskData.emailSubject || 'votre message';
+        const urgency = taskData.priority || 'medium';
+        const hasActions = taskData.actions && taskData.actions.length > 0;
+
+        const suggestions = [];
+
+        suggestions.push({
+            tone: 'professionnel',
+            subject: `Re: ${subject}`,
+            content: `Bonjour ${senderName},
+
+Merci pour votre message concernant "${subject}".
+
+J'ai bien pris connaissance de votre demande et je m'en occupe rapidement. Je vous tiendrai informé de l'avancement.
+
+${hasActions ? 'Je traite les points que vous avez mentionnés et je vous reviens avec les éléments demandés.' : ''}
+
+Cordialement,
+[Votre nom]`,
+            description: 'Réponse professionnelle standard',
+            generatedBy: 'local-fallback',
+            generatedAt: new Date().toISOString()
+        });
+
+        if (urgency === 'urgent' || urgency === 'high') {
+            suggestions.push({
+                tone: 'urgent',
+                subject: `Re: ${subject} - Traitement prioritaire`,
+                content: `Bonjour ${senderName},
+
+Je viens de prendre connaissance de votre message urgent.
+
+Je comprends l'importance de cette demande et je la traite en priorité absolue. Je vous reviens dans les meilleurs délais avec une réponse complète.
+
+${hasActions ? 'Toutes les actions nécessaires sont en cours de traitement.' : ''}
+
+Je reste à votre disposition pour toute information complémentaire.
+
+Cordialement,
+[Votre nom]`,
+                description: 'Réponse pour traitement urgent',
+                generatedBy: 'local-fallback',
+                generatedAt: new Date().toISOString()
+            });
+        }
+
+        suggestions.push({
+            tone: 'détaillé',
+            subject: `Re: ${subject} - Confirmation de réception`,
+            content: `Bonjour ${senderName},
+
+Je vous confirme la bonne réception de votre message du ${new Date().toLocaleDateString('fr-FR')}.
+
+${hasActions ? 'J\'ai identifié les actions suivantes à mettre en œuvre et je vais les traiter dans l\'ordre de priorité :' : 'J\'étudie attentivement votre demande et je prépare une réponse appropriée.'}
+
+${taskData.actions ? taskData.actions.map((action, idx) => `${idx + 1}. ${action.text}`).join('\n') : ''}
+
+Je vous tiendrai informé de l'avancement et je vous recontacte rapidement avec les éléments demandés.
+
+N'hésitez pas à me recontacter si vous avez des questions complémentaires.
+
+Cordialement,
+[Votre nom]`,
+            description: 'Réponse complète et détaillée',
+            generatedBy: 'local-fallback',
+            generatedAt: new Date().toISOString()
+        });
+
+        console.log('[TaskManager] Generated', suggestions.length, 'basic reply suggestions');
+        return suggestions;
+    }
+
+    extractFullEmailContent(email, taskData) {
+        console.log('[TaskManager] Extracting full email content...');
+        
+        if (taskData.emailContent && taskData.emailContent.length > 50) {
+            console.log('[TaskManager] Using email content from taskData');
+            return taskData.emailContent;
+        }
+        
+        if (email?.body?.content) {
+            console.log('[TaskManager] Using email body content');
+            return this.cleanEmailContent(email.body.content);
+        }
+        
+        if (email?.body?.type === 'html' && email?.body?.content) {
+            console.log('[TaskManager] Using HTML email content');
+            return this.convertHtmlToText(email.body.content);
+        }
+        
+        if (email?.bodyPreview && email.bodyPreview.length > 20) {
+            console.log('[TaskManager] Using extended email preview');
+            return this.buildExtendedPreview(email);
+        }
+        
+        console.log('[TaskManager] Building minimal email content');
+        return this.buildMinimalEmailContent(email, taskData);
+    }
+
+    extractHtmlEmailContent(email, taskData) {
+        console.log('[TaskManager] Extracting HTML email content...');
+        
+        if (taskData.emailHtmlContent && taskData.emailHtmlContent.length > 50) {
+            console.log('[TaskManager] Using HTML email content from taskData');
+            return taskData.emailHtmlContent;
+        }
+        
+        if (email?.body?.contentType === 'html' && email?.body?.content) {
+            console.log('[TaskManager] Using email HTML body content');
+            return this.cleanHtmlEmailContent(email.body.content);
+        }
+        
+        if (email?.body?.content) {
+            console.log('[TaskManager] Converting text to HTML');
+            return this.convertTextToHtml(email.body.content, email);
+        }
+        
+        const textContent = this.extractFullEmailContent(email, taskData);
+        return this.convertTextToHtml(textContent, email);
+    }
+
+    cleanEmailContent(content) {
+        if (!content) return '';
+        
+        const cleanContent = content
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/\s+/g, ' ')
+            .trim();
+            
+        return cleanContent.length > 100 ? cleanContent : '';
+    }
+
+    cleanHtmlEmailContent(htmlContent) {
+        if (!htmlContent) return '';
+        
+        let cleanHtml = htmlContent
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+            .replace(/on\w+="[^"]*"/gi, '')
+            .replace(/javascript:/gi, '')
+            
+            .replace(/style="[^"]*"/gi, (match) => {
+                const safeStyles = match.match(/(color|background|font-size|font-weight|text-align|margin|padding|border):[^;]*/gi);
+                return safeStyles ? `style="${safeStyles.join(';')}"` : '';
+            });
+        
+        return `<div class="email-content-viewer" style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            ${cleanHtml}
+        </div>`;
+    }
+
+    convertTextToHtml(textContent, email) {
+        if (!textContent) return '';
+        
+        const senderName = email?.from?.emailAddress?.name || 'Expéditeur';
+        const senderEmail = email?.from?.emailAddress?.address || '';
+        const subject = email?.subject || 'Sans sujet';
+        const date = email?.receivedDateTime ? new Date(email.receivedDateTime).toLocaleString('fr-FR') : '';
+        
+        const htmlContent = textContent
+            .replace(/\n/g, '<br>')
+            .replace(/Email de:([^\n]+)/g, '<strong>De:</strong>$1')
+            .replace(/Date:([^\n]+)/g, '<strong>Date:</strong>$1')
+            .replace(/Sujet:([^\n]+)/g, '<strong>Sujet:</strong>$1')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+        
+        return `<div class="email-content-viewer" style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <div style="background: #f8fafc; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #3b82f6;">
+                <div style="font-size: 14px; color: #6b7280; margin-bottom: 10px;">
+                    <strong>De:</strong> ${senderName} &lt;${senderEmail}&gt;<br>
+                    <strong>Date:</strong> ${date}<br>
+                    <strong>Sujet:</strong> ${subject}
+                </div>
+            </div>
+            <div style="font-size: 14px; line-height: 1.8;">
+                ${htmlContent}
+            </div>
+        </div>`;
+    }
+
+    convertHtmlToText(htmlContent) {
+        if (!htmlContent) return '';
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        
+        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+        
+        return textContent.trim();
+    }
+
+    buildExtendedPreview(email) {
+        const senderName = email.from?.emailAddress?.name || 'Inconnu';
+        const senderEmail = email.from?.emailAddress?.address || '';
+        const subject = email.subject || 'Sans sujet';
+        const date = email.receivedDateTime ? new Date(email.receivedDateTime).toLocaleString('fr-FR') : '';
+        const preview = email.bodyPreview || '';
+        
+        return `Email de: ${senderName} <${senderEmail}>
+Date: ${date}
+Sujet: ${subject}
+
+${preview}
+
+[Contenu complet non disponible - Aperçu seulement]`;
+    }
+
+    buildMinimalEmailContent(email, taskData) {
+        const senderName = taskData.emailFromName || email?.from?.emailAddress?.name || 'Inconnu';
+        const senderEmail = taskData.emailFrom || email?.from?.emailAddress?.address || '';
+        const subject = taskData.emailSubject || email?.subject || 'Sans sujet';
+        const date = taskData.emailDate || email?.receivedDateTime;
+        const formattedDate = date ? new Date(date).toLocaleString('fr-FR') : 'Date inconnue';
+        
+        let content = `Email de: ${senderName} <${senderEmail}>
+Date: ${formattedDate}
+Sujet: ${subject}
+
+`;
+
+        if (taskData.summary) {
+            content += `${taskData.summary}\n\n`;
+        }
+        
+        if (taskData.actions && taskData.actions.length > 0) {
+            content += `Actions mentionnées dans l'email:\n`;
+            taskData.actions.forEach((action, idx) => {
+                content += `${idx + 1}. ${action.text}\n`;
+            });
+            content += '\n';
+        }
+        
+        if (taskData.keyInfo && taskData.keyInfo.length > 0) {
+            content += `Informations importantes:\n`;
+            taskData.keyInfo.forEach(info => {
+                content += `• ${info}\n`;
+            });
+            content += '\n';
+        }
+        
+        content += `[Contenu complet de l'email non disponible - Résumé généré par IA]`;
+        
+        return content;
+    }
+
     createTask(taskData) {
+        console.log('[TaskManager] Creating normal task:', taskData.title || 'Untitled');
+        
         const task = {
             id: taskData.id || this.generateId(),
             title: taskData.title || 'Nouvelle tâche',
             description: taskData.description || '',
-            client: taskData.client || 'Client',
-            company: taskData.company || 'company.com',
             priority: taskData.priority || 'medium',
             status: taskData.status || 'todo',
-            category: taskData.category || 'other',
-            type: taskData.type || 'task',
             dueDate: taskData.dueDate || null,
-            hasEmail: false,
-            needsReply: false,
+            category: taskData.category || 'other',
+            type: taskData.type || 'tâche',
+            
+            emailId: taskData.emailId || null,
+            emailFrom: taskData.emailFrom || null,
+            emailFromName: taskData.emailFromName || null,
+            emailSubject: taskData.emailSubject || null,
+            emailContent: taskData.emailContent || '',
+            emailHtmlContent: taskData.emailHtmlContent || '',
+            hasEmail: !!(taskData.emailId || taskData.emailFrom || taskData.emailContent),
             emailReplied: false,
+            emailDate: taskData.emailDate || taskData.createdAt,
+            needsReply: taskData.needsReply || false,
+            
             summary: taskData.summary || '',
             actions: taskData.actions || [],
             keyInfo: taskData.keyInfo || [],
             risks: taskData.risks || [],
-            tags: taskData.tags || [],
             suggestedReplies: taskData.suggestedReplies || [],
+            
+            tags: taskData.tags || [],
+            client: taskData.client || 'Interne',
+            
             createdAt: taskData.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
+            
             method: taskData.method || 'manual'
         };
         
@@ -353,20 +805,53 @@ Dans l'attente de votre retour,
             filtered = filtered.filter(task => task.priority === filters.priority);
         }
         
-        if (filters.company && filters.company !== 'all') {
-            filtered = filtered.filter(task => task.company === filters.company);
+        if (filters.category && filters.category !== 'all') {
+            filtered = filtered.filter(task => task.category === filters.category);
         }
         
-        if (filters.type && filters.type !== 'all') {
-            filtered = filtered.filter(task => task.type === filters.type);
+        if (filters.client && filters.client !== 'all') {
+            filtered = filtered.filter(task => task.client === filters.client);
+        }
+        
+        if (filters.tag && filters.tag !== 'all') {
+            filtered = filtered.filter(task => 
+                task.tags && Array.isArray(task.tags) && task.tags.includes(filters.tag)
+            );
+        }
+        
+        if (filters.dateRange && filters.dateRange !== 'all') {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - today.getDay());
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            
+            filtered = filtered.filter(task => {
+                const taskDate = new Date(task.createdAt);
+                
+                switch (filters.dateRange) {
+                    case 'today':
+                        return taskDate >= today;
+                    case 'week':
+                        return taskDate >= weekStart;
+                    case 'month':
+                        return taskDate >= monthStart;
+                    case 'older':
+                        return taskDate < monthStart;
+                    default:
+                        return true;
+                }
+            });
         }
         
         if (filters.search) {
             const search = filters.search.toLowerCase();
             filtered = filtered.filter(task => 
                 task.title.toLowerCase().includes(search) ||
-                task.client.toLowerCase().includes(search) ||
-                (task.emailFromName && task.emailFromName.toLowerCase().includes(search))
+                task.description.toLowerCase().includes(search) ||
+                (task.emailFromName && task.emailFromName.toLowerCase().includes(search)) ||
+                (task.client && task.client.toLowerCase().includes(search)) ||
+                (task.tags && task.tags.some(tag => tag.toLowerCase().includes(search)))
             );
         }
         
@@ -379,7 +864,7 @@ Dans l'attente de votre retour,
         
         if (filters.needsReply) {
             filtered = filtered.filter(task => 
-                task.needsReply && !task.emailReplied && task.status !== 'completed'
+                task.needsReply || (task.hasEmail && !task.emailReplied && task.status !== 'completed')
             );
         }
         
@@ -402,8 +887,25 @@ Dans l'attente de votre retour,
                     return new Date(a.dueDate) - new Date(b.dueDate);
                 });
                 break;
-            case 'company':
-                sorted.sort((a, b) => a.company.localeCompare(b.company));
+            case 'title':
+                sorted.sort((a, b) => a.title.localeCompare(b.title));
+                break;
+            case 'sender':
+                sorted.sort((a, b) => {
+                    const senderA = (a.emailFromName || a.emailFrom || 'ZZZ').toLowerCase();
+                    const senderB = (b.emailFromName || b.emailFrom || 'ZZZ').toLowerCase();
+                    return senderA.localeCompare(senderB);
+                });
+                break;
+            case 'client':
+                sorted.sort((a, b) => {
+                    const clientA = (a.client || 'ZZZ').toLowerCase();
+                    const clientB = (b.client || 'ZZZ').toLowerCase();
+                    return clientA.localeCompare(clientB);
+                });
+                break;
+            case 'updated':
+                sorted.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
                 break;
             case 'created':
             default:
@@ -411,31 +913,6 @@ Dans l'attente de votre retour,
         }
         
         return sorted;
-    }
-
-    getGroupedTasks(tasks) {
-        const grouped = {};
-        
-        tasks.forEach(task => {
-            const key = task.company;
-            if (!grouped[key]) {
-                grouped[key] = {
-                    company: key,
-                    tasks: [],
-                    count: 0,
-                    urgent: 0,
-                    needsReply: 0
-                };
-            }
-            
-            grouped[key].tasks.push(task);
-            grouped[key].count++;
-            
-            if (task.priority === 'urgent') grouped[key].urgent++;
-            if (task.needsReply && !task.emailReplied) grouped[key].needsReply++;
-        });
-        
-        return Object.values(grouped).sort((a, b) => b.count - a.count);
     }
 
     getStats() {
@@ -456,52 +933,9 @@ Dans l'attente de votre retour,
                 return new Date(t.dueDate) < new Date();
             }).length,
             needsReply: this.tasks.filter(t => 
-                t.needsReply && !t.emailReplied && t.status !== 'completed'
+                t.needsReply || (t.hasEmail && !t.emailReplied && t.status !== 'completed')
             ).length
         };
-    }
-
-    // Méthodes utilitaires
-    extractClient(email) {
-        if (!email) return 'Client';
-        const domain = email.split('@')[1];
-        if (!domain) return 'Client';
-        
-        const name = domain.split('.')[0];
-        return name.charAt(0).toUpperCase() + name.slice(1);
-    }
-
-    extractCompany(email) {
-        if (!email) return 'company.com';
-        return email.split('@')[1] || 'company.com';
-    }
-
-    extractFullEmailContent(email, taskData) {
-        if (taskData.emailContent && taskData.emailContent.length > 50) {
-            return taskData.emailContent;
-        }
-        
-        if (email?.body?.content) {
-            return email.body.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-        }
-        
-        return `Email de: ${taskData.emailFromName || 'Inconnu'}
-Sujet: ${taskData.emailSubject || 'Sans sujet'}
-
-${taskData.summary || 'Contenu de l\'email...'}`;
-    }
-
-    extractHtmlEmailContent(email, taskData) {
-        if (taskData.emailHtmlContent && taskData.emailHtmlContent.length > 50) {
-            return taskData.emailHtmlContent;
-        }
-        
-        if (email?.body?.contentType === 'html' && email?.body?.content) {
-            return email.body.content;
-        }
-        
-        const textContent = this.extractFullEmailContent(email, taskData);
-        return `<div class="email-content-viewer">${textContent.replace(/\n/g, '<br>')}</div>`;
     }
 
     getTask(id) {
@@ -518,7 +952,7 @@ ${taskData.summary || 'Contenu de l\'email...'}`;
 
     saveTasks() {
         try {
-            localStorage.setItem('emailsort_tasks_v9', JSON.stringify(this.tasks));
+            localStorage.setItem('emailsort_tasks', JSON.stringify(this.tasks));
             console.log(`[TaskManager] Saved ${this.tasks.length} tasks`);
             return true;
         } catch (error) {
@@ -537,22 +971,24 @@ ${taskData.summary || 'Contenu de l\'email...'}`;
 }
 
 // =====================================
-// MODERN TASKS VIEW - INDÉPENDANTE
+// MODERN TASKS VIEW - INTERFACE ÉPURÉE
 // =====================================
 class TasksView {
     constructor() {
         this.currentFilters = {
             status: 'all',
-            priority: 'all',
-            company: 'all',
-            type: 'all',
+            priority: 'all', 
+            category: 'all',
+            client: 'all',
+            tag: 'all',
             search: '',
-            sortBy: 'created'
+            sortBy: 'created',
+            dateRange: 'all'
         };
         
         this.selectedTasks = new Set();
-        this.expandedGroups = new Set();
-        this.viewMode = 'grouped';
+        this.currentViewMode = 'condensed';
+        this.showCompleted = false;
         this.showAdvancedFilters = false;
         
         window.addEventListener('taskUpdate', () => {
@@ -560,105 +996,146 @@ class TasksView {
         });
     }
 
-    // MÉTHODE RENDER ADAPTÉE AU SYSTÈME EXISTANT
     render(container) {
         if (!container) {
             console.error('[TasksView] No container provided');
             return;
         }
 
-        console.log('[TasksView] Rendering tasks interface in container:', container);
-
-        // Force l'initialisation si nécessaire
         if (!window.taskManager || !window.taskManager.initialized) {
-            console.log('[TasksView] TaskManager not ready, forcing initialization...');
-            
             container.innerHTML = `
                 <div class="loading-state">
-                    <div class="loading-spinner"></div>
-                    <p>Initialisation du gestionnaire de tâches...</p>
+                    <div class="loading-icon">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                    <p>Chargement des tâches...</p>
                 </div>
             `;
             
-            // Forcer l'initialisation
-            if (!window.taskManager) {
-                window.taskManager = new TaskManager();
-            }
-            
-            // Retry après initialisation
-            const checkAndRender = () => {
+            setTimeout(() => {
                 if (window.taskManager && window.taskManager.initialized) {
-                    console.log('[TasksView] TaskManager ready, rendering...');
                     this.render(container);
-                } else {
-                    setTimeout(checkAndRender, 200);
                 }
-            };
-            
-            setTimeout(checkAndRender, 500);
+            }, 500);
             return;
         }
 
         const stats = window.taskManager.getStats();
-        console.log('[TasksView] Current stats:', stats);
         
         container.innerHTML = `
-            <div class="modern-tasks-app">
-                ${this.renderHeader(stats)}
-                ${this.renderStatusFilters(stats)}
-                ${this.renderAdvancedFilters()}
-                ${this.renderTasksContent()}
-            </div>
-        `;
-
-        this.addModernStyles();
-        this.setupEventListeners();
-        console.log('[TasksView] ✅ Modern interface rendered successfully');
-    }
-
-    renderHeader(stats) {
-        return `
-            <header class="tasks-header">
-                <div class="header-container">
-                    <div class="header-left">
-                        <h1 class="page-title">Tâches</h1>
-                        <span class="total-count">${stats.total} tâche${stats.total > 1 ? 's' : ''}</span>
+            <div class="tasks-page-modern">
+                <div class="tasks-main-toolbar">
+                    <div class="toolbar-left">
+                        <h1 class="tasks-title">Tâches</h1>
+                        <span class="tasks-count-large">${stats.total} tâche${stats.total > 1 ? 's' : ''}</span>
                     </div>
                     
-                    <div class="header-center">
-                        <div class="search-box">
+                    <div class="toolbar-center">
+                        <div class="search-wrapper-large">
+                            <i class="fas fa-search search-icon-large"></i>
                             <input type="text" 
-                                   class="search-input" 
+                                   class="search-input-large" 
+                                   id="taskSearchInput"
                                    placeholder="Rechercher dans les tâches..." 
-                                   value="${this.currentFilters.search}"
-                                   onInput="window.tasksView.handleSearch(this.value)">
-                            <i class="search-icon">🔍</i>
+                                   value="${this.currentFilters.search}">
+                            <button class="search-clear-large" id="searchClearBtn" 
+                                    style="display: ${this.currentFilters.search ? 'flex' : 'none'}"
+                                    onclick="window.tasksView.clearSearch()">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
                     </div>
                     
-                    <div class="header-right">
-                        <div class="view-toggle">
-                            <button class="toggle-btn ${this.viewMode === 'grouped' ? 'active' : ''}" 
-                                    onclick="window.tasksView.setViewMode('grouped')">
-                                <i class="icon">📁</i> Groupé
+                    <div class="toolbar-right">
+                        ${this.selectedTasks.size > 0 ? `
+                            <div class="selection-info-large">
+                                <span class="selection-count-large">${this.selectedTasks.size} sélectionné(s)</span>
+                                <button class="btn-large btn-secondary-large" onclick="window.tasksView.clearSelection()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <button class="btn-large btn-primary-large" onclick="window.tasksView.bulkActions()">
+                                <i class="fas fa-cog"></i>
+                                <span class="btn-text-large">Actions</span>
                             </button>
-                            <button class="toggle-btn ${this.viewMode === 'list' ? 'active' : ''}" 
-                                    onclick="window.tasksView.setViewMode('list')">
-                                <i class="icon">📄</i> Liste
-                            </button>
-                        </div>
-                        
-                        <button class="btn-primary" onclick="window.tasksView.showCreateModal()">
-                            <i class="icon">➕</i> Nouvelle tâche
+                        ` : ''}
+                        <button class="btn-large btn-primary-large" onclick="window.tasksView.showCreateModal()">
+                            <i class="fas fa-plus"></i>
+                            <span class="btn-text-large">Nouvelle tâche</span>
                         </button>
                     </div>
                 </div>
-            </header>
+
+                <div class="status-filters-large">
+                    ${this.buildLargeStatusPills(stats)}
+                    <button class="btn-large advanced-filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
+                            onclick="window.tasksView.toggleAdvancedFilters()">
+                        <i class="fas fa-filter"></i>
+                        <span class="btn-text-large">Filtres</span>
+                        <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'}"></i>
+                    </button>
+                </div>
+
+                <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
+                    <div class="advanced-filters-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-flag"></i> Priorité
+                            </label>
+                            <select class="filter-select" id="priorityFilter" 
+                                    onchange="window.tasksView.updateFilter('priority', this.value)">
+                                <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes</option>
+                                <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
+                                <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
+                                <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
+                                <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-building"></i> Client
+                            </label>
+                            <select class="filter-select" id="clientFilter" 
+                                    onchange="window.tasksView.updateFilter('client', this.value)">
+                                ${this.buildClientFilterOptions()}
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-sort"></i> Trier par
+                            </label>
+                            <select class="filter-select" id="sortByFilter" 
+                                    onchange="window.tasksView.updateFilter('sortBy', this.value)">
+                                <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
+                                <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
+                                <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
+                                <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-actions">
+                            <button class="btn-small btn-secondary" onclick="window.tasksView.resetAllFilters()">
+                                <i class="fas fa-undo"></i> Réinitialiser
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tasks-container-modern" id="tasksContainer">
+                    ${this.renderTasksList()}
+                </div>
+            </div>
         `;
+
+        this.addModernTaskStyles();
+        this.setupEventListeners();
+        console.log('[TasksView] Modern épuré interface rendered');
     }
 
-    renderStatusFilters(stats) {
-        const filters = [
+    buildLargeStatusPills(stats) {
+        const pills = [
             { id: 'all', name: 'Toutes', icon: '📋', count: stats.total },
             { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo },
             { id: 'in-progress', name: 'En cours', icon: '🔄', count: stats.inProgress },
@@ -667,257 +1144,266 @@ class TasksView {
             { id: 'completed', name: 'Terminées', icon: '✅', count: stats.completed }
         ];
 
-        return `
-            <div class="status-filters">
-                <div class="filters-container">
-                    ${filters.map(filter => `
-                        <button class="status-filter ${this.isFilterActive(filter.id) ? 'active' : ''}" 
-                                onclick="window.tasksView.quickFilter('${filter.id}')">
-                            <span class="filter-icon">${filter.icon}</span>
-                            <span class="filter-name">${filter.name}</span>
-                            <span class="filter-count">${filter.count}</span>
-                        </button>
-                    `).join('')}
-                    
-                    <button class="advanced-filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
-                            onclick="window.tasksView.toggleAdvancedFilters()">
-                        <i class="icon">🔧</i>
-                        Filtres avancés
-                        <i class="chevron ${this.showAdvancedFilters ? 'up' : 'down'}">▼</i>
-                    </button>
-                </div>
-            </div>
-        `;
+        return pills.map(pill => `
+            <button class="btn-large status-pill-large ${this.isFilterActive(pill.id) ? 'active' : ''}" 
+                    data-filter="${pill.id}"
+                    onclick="window.tasksView.quickFilter('${pill.id}')">
+                <span class="pill-icon-large">${pill.icon}</span>
+                <span class="pill-text-large">${pill.name}</span>
+                <span class="pill-count-large">${pill.count}</span>
+            </button>
+        `).join('');
     }
 
-    renderAdvancedFilters() {
-        const companies = [...new Set(window.taskManager.getAllTasks().map(t => t.company))].sort();
-        const types = [...new Set(window.taskManager.getAllTasks().map(t => t.type))].sort();
-        
-        return `
-            <div class="advanced-filters ${this.showAdvancedFilters ? 'show' : ''}">
-                <div class="filters-grid">
-                    <div class="filter-group">
-                        <label>Priorité</label>
-                        <select class="filter-select" onchange="window.tasksView.updateFilter('priority', this.value)">
-                            <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes priorités</option>
-                            <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🔥 Urgente</option>
-                            <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>🔴 Haute</option>
-                            <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>🟡 Normale</option>
-                            <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>🟢 Basse</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-group">
-                        <label>Société</label>
-                        <select class="filter-select" onchange="window.tasksView.updateFilter('company', this.value)">
-                            <option value="all" ${this.currentFilters.company === 'all' ? 'selected' : ''}>Toutes sociétés</option>
-                            ${companies.map(company => `
-                                <option value="${company}" ${this.currentFilters.company === company ? 'selected' : ''}>${company}</option>
-                            `).join('')}
-                        </select>
-                    </div>
-                    
-                    <div class="filter-group">
-                        <label>Type</label>
-                        <select class="filter-select" onchange="window.tasksView.updateFilter('type', this.value)">
-                            <option value="all" ${this.currentFilters.type === 'all' ? 'selected' : ''}>Tous types</option>
-                            ${types.map(type => `
-                                <option value="${type}" ${this.currentFilters.type === type ? 'selected' : ''}>${this.getTypeLabel(type)}</option>
-                            `).join('')}
-                        </select>
-                    </div>
-                    
-                    <div class="filter-group">
-                        <label>Tri</label>
-                        <select class="filter-select" onchange="window.tasksView.updateFilter('sortBy', this.value)">
-                            <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
-                            <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
-                            <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Échéance</option>
-                            <option value="company" ${this.currentFilters.sortBy === 'company' ? 'selected' : ''}>Société</option>
-                        </select>
-                    </div>
-                    
-                    <button class="filter-reset" onclick="window.tasksView.resetFilters()">
-                        <i class="icon">🔄</i> Reset
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-
-    renderTasksContent() {
+    renderTasksList() {
         const tasks = window.taskManager.filterTasks(this.currentFilters);
+        const filteredTasks = this.showCompleted ? tasks : tasks.filter(task => task.status !== 'completed');
         
-        if (tasks.length === 0) {
+        if (filteredTasks.length === 0) {
             return this.renderEmptyState();
         }
 
-        if (this.viewMode === 'grouped') {
-            return this.renderGroupedTasks(tasks);
-        } else {
-            return this.renderListTasks(tasks);
-        }
-    }
-
-    renderGroupedTasks(tasks) {
-        const groups = window.taskManager.getGroupedTasks(tasks);
-        
-        return `
-            <div class="tasks-container grouped-view">
-                ${groups.map(group => this.renderTaskGroup(group)).join('')}
-            </div>
-        `;
-    }
-
-    renderTaskGroup(group) {
-        const isExpanded = this.expandedGroups.has(group.company);
-        
-        return `
-            <div class="task-group ${isExpanded ? 'expanded' : ''}">
-                <div class="group-header" onclick="window.tasksView.toggleGroup('${group.company}')">
-                    <div class="group-info">
-                        <div class="company-avatar">
-                            ${group.company.charAt(0).toUpperCase()}
-                        </div>
-                        <div class="group-details">
-                            <h3 class="company-name">${group.company}</h3>
-                            <span class="task-count">${group.count} tâche${group.count > 1 ? 's' : ''}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="group-badges">
-                        ${group.urgent > 0 ? `<span class="badge urgent">${group.urgent} urgente${group.urgent > 1 ? 's' : ''}</span>` : ''}
-                        ${group.needsReply > 0 ? `<span class="badge reply">${group.needsReply} à répondre</span>` : ''}
-                        <i class="expand-icon ${isExpanded ? 'expanded' : ''}">▼</i>
-                    </div>
-                </div>
-                
-                <div class="group-tasks ${isExpanded ? 'show' : ''}">
-                    ${group.tasks.map(task => this.renderTaskCard(task)).join('')}
-                </div>
-            </div>
-        `;
-    }
-
-    renderListTasks(tasks) {
-        return `
-            <div class="tasks-container list-view">
-                ${tasks.map(task => this.renderTaskCard(task)).join('')}
-            </div>
-        `;
-    }
-
-    renderTaskCard(task) {
-        const priorityColor = this.getPriorityColor(task.priority);
-        const statusIcon = this.getStatusIcon(task.status);
-        const typeIcon = this.getTypeIcon(task.type);
-        const dueDateInfo = this.formatDueDate(task.dueDate);
-        const hasAiSuggestions = task.suggestedReplies && task.suggestedReplies.length > 0;
-        
-        return `
-            <div class="task-card ${task.status}" 
-                 data-task-id="${task.id}"
-                 onclick="window.tasksView.showTaskDetails('${task.id}')">
-                
-                <div class="task-left">
-                    <div class="priority-indicator" style="background: ${priorityColor}"></div>
-                    
-                    <div class="task-content">
-                        <div class="task-header">
-                            <h4 class="task-title">${this.escapeHtml(task.title)}</h4>
-                            <div class="task-meta">
-                                <span class="client-name">${task.client}</span>
-                                <span class="separator">•</span>
-                                <span class="company-domain">${task.company}</span>
-                            </div>
-                        </div>
-                        
-                        ${task.emailFromName ? `
-                            <div class="sender-info">
-                                <i class="icon">👤</i>
-                                <span>${task.emailFromName}</span>
-                                ${hasAiSuggestions ? '<span class="ai-badge">🤖 IA</span>' : ''}
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-                
-                <div class="task-right">
-                    <div class="task-badges">
-                        <span class="type-badge ${task.type}">
-                            ${typeIcon} ${this.getTypeLabel(task.type)}
-                        </span>
-                        
-                        ${task.needsReply && !task.emailReplied ? '<span class="reply-badge">📧 Réponse</span>' : ''}
-                        ${dueDateInfo.badge ? dueDateInfo.badge : ''}
-                    </div>
-                    
-                    <div class="task-actions">
-                        <span class="status-badge ${task.status}">
-                            ${statusIcon}
-                        </span>
-                        
-                        ${task.needsReply && !task.emailReplied ? `
-                            <button class="action-btn reply-btn" 
-                                    onclick="event.stopPropagation(); window.tasksView.replyToEmail('${task.id}')"
-                                    title="Répondre à l'email">
-                                📧
-                            </button>
-                        ` : ''}
-                        
-                        <button class="action-btn quick-complete" 
-                                onclick="event.stopPropagation(); window.tasksView.quickComplete('${task.id}')"
-                                title="Marquer terminé">
-                            ✅
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
+        return this.renderCondensedView(filteredTasks);
     }
 
     renderEmptyState() {
         return `
-            <div class="empty-state">
-                <div class="empty-icon">📋</div>
-                <h3>Aucune tâche trouvée</h3>
-                <p>Aucune tâche ne correspond à vos critères de recherche</p>
-                <button class="btn-primary" onclick="window.tasksView.resetFilters()">
-                    Réinitialiser les filtres
-                </button>
+            <div class="empty-state-modern">
+                <div class="empty-state-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <h3 class="empty-state-title">Aucune tâche trouvée</h3>
+                <p class="empty-state-text">
+                    ${this.hasActiveFilters() ? 'Aucune tâche ne correspond à vos critères' : 'Vous n\'avez aucune tâche'}
+                </p>
+                ${this.hasActiveFilters() ? `
+                    <button class="btn-large btn-primary-large" onclick="window.tasksView.resetAllFilters()">
+                        <i class="fas fa-undo"></i>
+                        <span>Réinitialiser les filtres</span>
+                    </button>
+                ` : `
+                    <button class="btn-large btn-primary-large" onclick="window.tasksView.showCreateModal()">
+                        <i class="fas fa-plus"></i>
+                        <span>Créer votre première tâche</span>
+                    </button>
+                `}
             </div>
         `;
     }
 
-    // Event handlers principaux
-    handleSearch(value) {
-        this.currentFilters.search = value;
-        this.refreshView();
+    renderCondensedView(tasks) {
+        return `
+            <div class="tasks-clean-list">
+                ${tasks.map(task => this.renderCleanTaskItem(task)).join('')}
+            </div>
+        `;
     }
 
-    updateFilter(type, value) {
-        this.currentFilters[type] = value;
-        this.refreshView();
+    // NOUVEAU RENDU ÉPURÉ ET MODERNE
+    renderCleanTaskItem(task) {
+        const isSelected = this.selectedTasks.has(task.id);
+        const isCompleted = task.status === 'completed';
+        
+        // Destinataire : priorité email > client > type
+        const recipient = task.hasEmail ? 
+            (task.emailFromName || this.extractNameFromEmail(task.emailFrom) || 'Email inconnu') :
+            (task.client !== 'Interne' ? task.client : task.type || 'Tâche');
+            
+        // Type visuel clair
+        const taskTypeDisplay = this.getTaskTypeDisplay(task);
+        
+        // Deadline formatting
+        const dueDateDisplay = this.formatDueDateSimple(task.dueDate);
+        
+        // Priority color
+        const priorityColor = this.getPriorityColor(task.priority);
+        
+        return `
+            <div class="task-clean-card ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
+                 data-task-id="${task.id}"
+                 onclick="window.tasksView.handleTaskClick(event, '${task.id}')">
+                
+                <!-- Checkbox de sélection -->
+                <input type="checkbox" 
+                       class="task-checkbox-clean" 
+                       ${isSelected ? 'checked' : ''}
+                       onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
+                
+                <!-- Indicateur de priorité (barre colorée) -->
+                <div class="priority-bar" style="background-color: ${priorityColor}"></div>
+                
+                <!-- Contenu principal -->
+                <div class="task-main-content">
+                    <div class="task-header-clean">
+                        <h3 class="task-title-clean">${this.escapeHtml(task.title)}</h3>
+                        <div class="task-meta-clean">
+                            <span class="task-type-badge">${taskTypeDisplay.icon} ${taskTypeDisplay.label}</span>
+                            ${dueDateDisplay.html}
+                        </div>
+                    </div>
+                    
+                    <div class="task-recipient-clean">
+                        <i class="fas ${task.hasEmail ? 'fa-envelope' : 'fa-user'}"></i>
+                        <span class="recipient-name">${this.escapeHtml(recipient)}</span>
+                        ${task.hasEmail && task.needsReply ? '<span class="reply-indicator">• Réponse requise</span>' : ''}
+                    </div>
+                </div>
+                
+                <!-- Actions rapides -->
+                <div class="task-actions-clean">
+                    ${this.renderCleanActions(task)}
+                </div>
+            </div>
+        `;
     }
 
-    resetFilters() {
-        this.currentFilters = {
-            status: 'all',
-            priority: 'all',
-            company: 'all',
-            type: 'all',
-            search: '',
-            sortBy: 'created'
+    renderCleanActions(task) {
+        const actions = [];
+        
+        // Bouton principal selon l'état
+        if (task.status !== 'completed') {
+            actions.push(`
+                <button class="action-btn-clean complete" 
+                        onclick="event.stopPropagation(); window.tasksView.markComplete('${task.id}')"
+                        title="Marquer comme terminé">
+                    <i class="fas fa-check"></i>
+                </button>
+            `);
+        }
+        
+        // Bouton répondre pour les emails
+        if (task.hasEmail && !task.emailReplied && task.status !== 'completed') {
+            actions.push(`
+                <button class="action-btn-clean reply" 
+                        onclick="event.stopPropagation(); window.tasksView.replyToEmailWithAI('${task.id}')"
+                        title="Répondre à l'email">
+                    <i class="fas fa-reply"></i>
+                </button>
+            `);
+        }
+        
+        // Bouton détails
+        actions.push(`
+            <button class="action-btn-clean details" 
+                    onclick="event.stopPropagation(); window.tasksView.showTaskDetails('${task.id}')"
+                    title="Voir les détails">
+                <i class="fas fa-eye"></i>
+            </button>
+        `);
+        
+        return actions.join('');
+    }
+
+    // NOUVELLES FONCTIONS UTILITAIRES POUR L'AFFICHAGE ÉPURÉ
+    getTaskTypeDisplay(task) {
+        if (task.hasEmail) {
+            return { 
+                icon: '📧', 
+                label: 'Email' 
+            };
+        }
+        
+        switch (task.category) {
+            case 'meeting':
+                return { icon: '🗓️', label: 'Réunion' };
+            case 'call':
+                return { icon: '📞', label: 'Appel' };
+            case 'document':
+                return { icon: '📄', label: 'Document' };
+            case 'project':
+                return { icon: '🎯', label: 'Projet' };
+            default:
+                return { icon: '✓', label: task.type || 'Tâche' };
+        }
+    }
+
+    getPriorityColor(priority) {
+        const colors = {
+            urgent: '#ef4444',   // Rouge vif
+            high: '#f97316',     // Orange
+            medium: '#3b82f6',   // Bleu
+            low: '#10b981'       // Vert
         };
-        this.refreshView();
-        this.showToast('Filtres réinitialisés', 'info');
+        return colors[priority] || colors.medium;
+    }
+
+    formatDueDateSimple(dateString) {
+        if (!dateString) {
+            return { html: '<span class="no-deadline">Pas d\'échéance</span>', text: '' };
+        }
+        
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+        
+        let className = 'deadline-normal';
+        let text = '';
+        let bgColor = '#f3f4f6';
+        let textColor = '#6b7280';
+        
+        if (diffDays < 0) {
+            className = 'deadline-overdue';
+            text = `En retard (${Math.abs(diffDays)}j)`;
+            bgColor = '#fef2f2';
+            textColor = '#dc2626';
+        } else if (diffDays === 0) {
+            className = 'deadline-today';
+            text = 'Aujourd\'hui';
+            bgColor = '#fef3c7';
+            textColor = '#d97706';
+        } else if (diffDays === 1) {
+            className = 'deadline-tomorrow';
+            text = 'Demain';
+            bgColor = '#fef3c7';
+            textColor = '#d97706';
+        } else if (diffDays <= 7) {
+            className = 'deadline-week';
+            text = `${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+            bgColor = '#eff6ff';
+            textColor = '#2563eb';
+        } else {
+            text = date.toLocaleDateString('fr-FR', { 
+                day: 'numeric', 
+                month: 'short',
+                year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+            });
+        }
+        
+        return {
+            html: `<span class="deadline-badge ${className}" style="background-color: ${bgColor}; color: ${textColor};">
+                📅 ${text}
+            </span>`,
+            text: text
+        };
+    }
+
+    extractNameFromEmail(email) {
+        if (!email) return null;
+        
+        // Extraire le nom avant @ et le formatter
+        const namePart = email.split('@')[0];
+        if (!namePart) return null;
+        
+        // Remplacer points et underscores par espaces, capitaliser
+        return namePart
+            .replace(/[._-]/g, ' ')
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+    }
+
+    // MÉTHODES EXISTANTES ADAPTÉES
+    handleTaskClick(event, taskId) {
+        this.showTaskDetails(taskId);
     }
 
     quickFilter(filterId) {
         this.currentFilters = {
-            ...this.currentFilters,
             status: 'all',
+            priority: 'all',
+            category: 'all',
+            search: this.currentFilters.search,
+            sortBy: this.currentFilters.sortBy,
             overdue: false,
             needsReply: false
         };
@@ -941,50 +1427,467 @@ class TasksView {
         this.refreshView();
     }
 
-    isFilterActive(filterId) {
-        switch (filterId) {
-            case 'all': 
-                return this.currentFilters.status === 'all' && !this.currentFilters.overdue && !this.currentFilters.needsReply;
-            case 'todo': 
-                return this.currentFilters.status === 'todo';
-            case 'in-progress': 
-                return this.currentFilters.status === 'in-progress';
-            case 'completed': 
-                return this.currentFilters.status === 'completed';
-            case 'overdue': 
-                return this.currentFilters.overdue;
-            case 'needsReply': 
-                return this.currentFilters.needsReply;
-            default: 
-                return false;
-        }
+    showTaskDetails(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task) return;
+
+        const uniqueId = 'task_details_modal_' + Date.now();
+        
+        const modalHTML = `
+            <div id="${uniqueId}" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 12px; max-width: 1000px; width: 100%; 
+                           max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
+                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 20px;">Détails de la tâche</h2>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 20px; cursor: pointer;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                        ${this.buildTaskDetailsContent(task)}
+                    </div>
+                    <div style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px;">
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
+                            Fermer
+                        </button>
+                        ${task.hasEmail && task.suggestedReplies && task.suggestedReplies.length > 0 ? `
+                            <button onclick="window.tasksView.showSuggestedReplies('${task.id}');"
+                                    style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                <i class="fas fa-reply"></i> Voir suggestions de réponse
+                            </button>
+                        ` : ''}
+                        ${task.status !== 'completed' ? `
+                            <button onclick="window.tasksView.markComplete('${task.id}'); document.getElementById('${uniqueId}').remove();"
+                                    style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                <i class="fas fa-check"></i> Marquer terminé
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
     }
 
-    toggleAdvancedFilters() {
-        this.showAdvancedFilters = !this.showAdvancedFilters;
-        this.refreshView();
+    buildTaskDetailsContent(task) {
+        const priorityIcon = this.getPriorityIcon(task.priority);
+        const statusLabel = this.getStatusLabel(task.status);
+        const dueDateInfo = this.formatDueDateSimple(task.dueDate);
+        
+        return `
+            <div class="task-details-content">
+                <div class="details-header">
+                    <h1 class="task-title-details">${this.escapeHtml(task.title)}</h1>
+                    <div class="task-meta-badges">
+                        <span class="priority-badge priority-${task.priority}">
+                            ${priorityIcon} ${this.getPriorityLabel(task.priority)}
+                        </span>
+                        <span class="status-badge status-${task.status}">
+                            ${this.getStatusIcon(task.status)} ${statusLabel}
+                        </span>
+                        ${dueDateInfo.html}
+                    </div>
+                </div>
+
+                ${task.hasEmail ? `
+                    <div class="details-section">
+                        <h3><i class="fas fa-envelope"></i> Informations Email</h3>
+                        <div class="email-details-grid">
+                            <div class="email-detail-item">
+                                <strong>Expéditeur:</strong>
+                                <span>${this.escapeHtml(task.emailFromName || task.emailFrom || 'Inconnu')}</span>
+                            </div>
+                            ${task.emailFrom ? `
+                                <div class="email-detail-item">
+                                    <strong>Email:</strong>
+                                    <span>${this.escapeHtml(task.emailFrom)}</span>
+                                </div>
+                            ` : ''}
+                            ${task.emailSubject ? `
+                                <div class="email-detail-item">
+                                    <strong>Sujet:</strong>
+                                    <span>${this.escapeHtml(task.emailSubject)}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.description && task.description !== task.title ? `
+                    <div class="details-section">
+                        <h3><i class="fas fa-align-left"></i> Description</h3>
+                        <div class="description-content">
+                            ${this.formatDescription(task.description)}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.actions && task.actions.length > 0 ? `
+                    <div class="details-section">
+                        <h3><i class="fas fa-tasks"></i> Actions Requises</h3>
+                        <div class="actions-list-details">
+                            ${task.actions.map((action, idx) => `
+                                <div class="action-item-details">
+                                    <span class="action-number">${idx + 1}</span>
+                                    <span class="action-text">${this.escapeHtml(action.text)}</span>
+                                    ${action.deadline ? `
+                                        <span class="action-deadline">${this.formatDeadline(action.deadline)}</span>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.keyInfo && task.keyInfo.length > 0 ? `
+                    <div class="details-section">
+                        <h3><i class="fas fa-info-circle"></i> Informations Clés</h3>
+                        <div class="info-grid">
+                            ${task.keyInfo.map(info => `
+                                <div class="info-item">
+                                    <i class="fas fa-chevron-right"></i>
+                                    <span>${this.escapeHtml(info)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.risks && task.risks.length > 0 ? `
+                    <div class="details-section attention-section">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Points d'Attention</h3>
+                        <div class="attention-list">
+                            ${task.risks.map(risk => `
+                                <div class="attention-item">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <span>${this.escapeHtml(risk)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.suggestedReplies && task.suggestedReplies.length > 0 ? `
+                    <div class="details-section suggested-replies-section">
+                        <h3><i class="fas fa-reply-all"></i> Suggestions de Réponse</h3>
+                        <div class="suggested-replies-container">
+                            ${task.suggestedReplies.slice(0, 2).map((reply, idx) => `
+                                <div class="suggested-reply-card-compact">
+                                    <div class="reply-header-compact">
+                                        <span class="reply-tone-badge ${reply.tone}">
+                                            ${this.getReplyToneIcon(reply.tone)} ${this.getReplyToneLabel(reply.tone)}
+                                        </span>
+                                        <button class="use-reply-btn-compact" onclick="window.tasksView.useReply('${task.id}', ${idx})">
+                                            <i class="fas fa-paper-plane"></i> Utiliser
+                                        </button>
+                                    </div>
+                                    <div class="reply-preview">
+                                        ${this.escapeHtml(reply.content.substring(0, 150))}${reply.content.length > 150 ? '...' : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                            ${task.suggestedReplies.length > 2 ? `
+                                <button class="show-all-replies-btn" onclick="window.tasksView.showSuggestedReplies('${task.id}')">
+                                    Voir toutes les suggestions (${task.suggestedReplies.length})
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.emailContent && task.emailContent.length > 100 ? `
+                    <div class="details-section">
+                        <h3><i class="fas fa-envelope-open"></i> Contenu de l'Email</h3>
+                        <div class="email-content-section">
+                            ${task.emailHtmlContent ? `
+                                <div class="email-content-tabs">
+                                    <button class="tab-btn active" onclick="window.tasksView.switchEmailTab('html', '${task.id}')">
+                                        <i class="fas fa-eye"></i> Vue formatée
+                                    </button>
+                                    <button class="tab-btn" onclick="window.tasksView.switchEmailTab('text', '${task.id}')">
+                                        <i class="fas fa-code"></i> Vue texte
+                                    </button>
+                                </div>
+                                <div class="email-content-box">
+                                    <div id="email-html-${task.id}" class="email-content-view active">
+                                        ${task.emailHtmlContent}
+                                    </div>
+                                    <div id="email-text-${task.id}" class="email-content-view" style="display: none;">
+                                        ${this.formatEmailContent(task.emailContent)}
+                                    </div>
+                                </div>
+                            ` : `
+                                <div class="email-content-box">
+                                    ${this.formatEmailContent(task.emailContent)}
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
     }
 
-    setViewMode(mode) {
-        this.viewMode = mode;
-        this.refreshView();
+    // MÉTHODES UTILITAIRES CONSERVÉES
+    getPriorityIcon(priority) {
+        const icons = { urgent: '🚨', high: '⚡', medium: '📌', low: '📄' };
+        return icons[priority] || '📌';
     }
 
-    toggleGroup(company) {
-        if (this.expandedGroups.has(company)) {
-            this.expandedGroups.delete(company);
+    getPriorityLabel(priority) {
+        const labels = { urgent: 'Urgente', high: 'Haute', medium: 'Normale', low: 'Basse' };
+        return labels[priority] || 'Normale';
+    }
+
+    getStatusIcon(status) {
+        const icons = { todo: '⏳', 'in-progress': '🔄', completed: '✅' };
+        return icons[status] || '⏳';
+    }
+
+    getStatusLabel(status) {
+        const labels = { todo: 'À faire', 'in-progress': 'En cours', completed: 'Terminé' };
+        return labels[status] || 'À faire';
+    }
+
+    getReplyToneIcon(tone) {
+        const icons = {
+            formel: '👔',
+            informel: '😊',
+            urgent: '🚨',
+            neutre: '📝',
+            amical: '🤝'
+        };
+        return icons[tone] || '📝';
+    }
+
+    getReplyToneLabel(tone) {
+        const labels = {
+            formel: 'Formel',
+            informel: 'Informel',
+            urgent: 'Urgent',
+            neutre: 'Neutre',
+            amical: 'Amical'
+        };
+        return labels[tone] || 'Neutre';
+    }
+
+    formatDescription(description) {
+        if (!description) return '';
+        
+        if (description.includes('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')) {
+            return `<div class="structured-description">${description.replace(/\n/g, '<br>')}</div>`;
         } else {
-            this.expandedGroups.add(company);
+            return `<div class="simple-description">${this.escapeHtml(description).replace(/\n/g, '<br>')}</div>`;
         }
-        this.refreshView();
     }
 
-    quickComplete(taskId) {
-        window.taskManager.updateTask(taskId, { status: 'completed' });
-        this.showToast('Tâche marquée comme terminée', 'success');
+    formatDeadline(deadline) {
+        if (!deadline) return '';
+        
+        try {
+            const deadlineDate = new Date(deadline);
+            const now = new Date();
+            const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) {
+                return `Échue il y a ${Math.abs(diffDays)}j`;
+            } else if (diffDays === 0) {
+                return 'Aujourd\'hui';
+            } else if (diffDays === 1) {
+                return 'Demain';
+            } else if (diffDays <= 7) {
+                return `${diffDays}j`;
+            } else {
+                return deadlineDate.toLocaleDateString('fr-FR', { 
+                    day: 'numeric', 
+                    month: 'short' 
+                });
+            }
+        } catch (error) {
+            return deadline;
+        }
     }
 
-    replyToEmail(taskId) {
+    formatEmailContent(content) {
+        if (!content) return '<p>Contenu non disponible</p>';
+        
+        const formattedContent = content
+            .replace(/\n/g, '<br>')
+            .replace(/Email de:/g, '<strong>Email de:</strong>')
+            .replace(/Date:/g, '<strong>Date:</strong>')
+            .replace(/Sujet:/g, '<strong>Sujet:</strong>');
+            
+        return `<div class="email-original-content">${formattedContent}</div>`;
+    }
+
+    switchEmailTab(tabType, taskId) {
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(tab => tab.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        const htmlView = document.getElementById(`email-html-${taskId}`);
+        const textView = document.getElementById(`email-text-${taskId}`);
+        
+        if (tabType === 'html') {
+            htmlView.style.display = 'block';
+            htmlView.classList.add('active');
+            textView.style.display = 'none';
+            textView.classList.remove('active');
+        } else {
+            htmlView.style.display = 'none';
+            htmlView.classList.remove('active');
+            textView.style.display = 'block';
+            textView.classList.add('active');
+        }
+    }
+
+    showSuggestedReplies(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.suggestedReplies || task.suggestedReplies.length === 0) return;
+
+        const uniqueId = 'replies_modal_' + Date.now();
+        
+        const modalHTML = `
+            <div id="${uniqueId}" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 12px; max-width: 800px; width: 100%; 
+                           max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
+                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 20px;"><i class="fas fa-reply-all"></i> Suggestions de Réponse</h2>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 20px; cursor: pointer;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                        <div class="replies-list">
+                            ${task.suggestedReplies.map((reply, idx) => `
+                                <div class="reply-suggestion-card">
+                                    <div class="reply-card-header">
+                                        <div class="reply-tone-badge ${reply.tone}">
+                                            ${this.getReplyToneIcon(reply.tone)} ${this.getReplyToneLabel(reply.tone)}
+                                        </div>
+                                        <div class="reply-card-actions">
+                                            <button class="btn-sm btn-secondary" onclick="window.tasksView.copyReplyToClipboard(${idx}, '${taskId}')">
+                                                <i class="fas fa-copy"></i> Copier
+                                            </button>
+                                            <button class="btn-sm btn-primary" onclick="window.tasksView.useReply('${taskId}', ${idx})">
+                                                <i class="fas fa-paper-plane"></i> Utiliser
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="reply-subject-line">
+                                        <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
+                                    </div>
+                                    <div class="reply-content-preview">
+                                        ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    async copyReplyToClipboard(replyIndex, taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
+
+        const reply = task.suggestedReplies[replyIndex];
+        const text = `Sujet: ${reply.subject}\n\n${reply.content}`;
+        
+        try {
+            await navigator.clipboard.writeText(text);
+            this.showToast('Réponse copiée dans le presse-papiers', 'success');
+        } catch (error) {
+            console.error('Error copying to clipboard:', error);
+            this.showToast('Erreur lors de la copie', 'error');
+        }
+    }
+
+    useReply(taskId, replyIndex) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
+
+        const reply = task.suggestedReplies[replyIndex];
+        const subject = reply.subject;
+        const body = reply.content;
+        const to = task.emailFrom;
+        
+        const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        
+        window.open(mailtoLink);
+        
+        window.taskManager.updateTask(taskId, { 
+            emailReplied: true,
+            status: task.status === 'todo' ? 'in-progress' : task.status
+        });
+        
+        this.showToast('Email de réponse ouvert dans votre client email', 'success');
+        
+        document.querySelectorAll('[id^="replies_modal_"], [id^="task_details_modal_"]').forEach(el => el.remove());
+        document.body.style.overflow = 'auto';
+    }
+
+    async replyToEmailWithAI(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.hasEmail) return;
+        
+        if (task.suggestedReplies && task.suggestedReplies.length > 0) {
+            this.showSuggestedReplies(taskId);
+            return;
+        }
+        
+        try {
+            this.showToast('Génération de suggestions IA...', 'info');
+            
+            const newSuggestions = await window.taskManager.generateIntelligentReplySuggestions(
+                { 
+                    from: { emailAddress: { name: task.emailFromName, address: task.emailFrom } },
+                    subject: task.emailSubject,
+                    body: { content: task.emailContent },
+                    bodyPreview: task.emailContent
+                }, 
+                task
+            );
+            
+            if (newSuggestions && newSuggestions.length > 0) {
+                window.taskManager.updateTask(taskId, { 
+                    suggestedReplies: newSuggestions,
+                    aiRepliesGenerated: true,
+                    aiRepliesGeneratedAt: new Date().toISOString()
+                });
+                
+                this.showToast('Suggestions IA générées !', 'success');
+                this.showSuggestedReplies(taskId);
+                this.refreshView();
+            } else {
+                this.showToast('Impossible de générer des suggestions', 'warning');
+                this.replyToEmailBasic(taskId);
+            }
+            
+        } catch (error) {
+            console.error('[TasksView] Error generating AI suggestions:', error);
+            this.showToast('Erreur IA, réponse basique', 'warning');
+            this.replyToEmailBasic(taskId);
+        }
+    }
+
+    replyToEmailBasic(taskId) {
         const task = window.taskManager.getTask(taskId);
         if (!task || !task.hasEmail) return;
         
@@ -999,140 +1902,375 @@ class TasksView {
         this.showToast('Email de réponse ouvert', 'success');
     }
 
-    showTaskDetails(taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task) return;
+    markComplete(taskId) {
+        window.taskManager.updateTask(taskId, { status: 'completed' });
+        this.showToast('Tâche marquée comme terminée', 'success');
+    }
 
-        console.log('[TasksView] Showing task details for:', task.title);
-        alert(`Détails de la tâche: ${task.title}\n\nClient: ${task.client}\nSociété: ${task.company}\nPriorité: ${task.priority}\nStatut: ${task.status}`);
+    toggleTaskSelection(taskId) {
+        if (this.selectedTasks.has(taskId)) {
+            this.selectedTasks.delete(taskId);
+        } else {
+            this.selectedTasks.add(taskId);
+        }
+        
+        this.updateSelectionUI();
+        this.render(document.querySelector('.tasks-page-modern')?.parentElement);
+    }
+
+    clearSelection() {
+        this.selectedTasks.clear();
+        this.render(document.querySelector('.tasks-page-modern')?.parentElement);
+    }
+
+    updateSelectionUI() {
+        document.querySelectorAll('[data-task-id]').forEach(item => {
+            const taskId = item.dataset.taskId;
+            const isSelected = this.selectedTasks.has(taskId);
+            
+            item.classList.toggle('selected', isSelected);
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            if (checkbox) checkbox.checked = isSelected;
+        });
     }
 
     showCreateModal() {
-        const title = prompt('Titre de la nouvelle tâche:');
-        if (!title) return;
+        const uniqueId = 'create_task_modal_' + Date.now();
         
-        const client = prompt('Client:') || 'Client';
-        const company = prompt('Société:') || 'company.com';
+        const modalHTML = `
+            <div id="${uniqueId}" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 12px; max-width: 600px; width: 100%; 
+                           max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
+                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 20px;">Créer une nouvelle tâche</h2>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 20px; cursor: pointer;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                        <div class="form-group">
+                            <label>Titre de la tâche *</label>
+                            <input type="text" id="new-task-title" class="form-input" placeholder="Titre de la tâche" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="new-task-description" class="form-textarea" rows="4" placeholder="Description détaillée..."></textarea>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Priorité</label>
+                                <select id="new-task-priority" class="form-select">
+                                    <option value="low">📄 Basse</option>
+                                    <option value="medium" selected>📌 Normale</option>
+                                    <option value="high">⚡ Haute</option>
+                                    <option value="urgent">🚨 Urgente</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Date d'échéance</label>
+                                <input type="date" id="new-task-duedate" class="form-input" />
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Client/Projet</label>
+                            <input type="text" id="new-task-client" class="form-input" placeholder="Nom du client ou projet" value="Interne" />
+                        </div>
+                    </div>
+                    <div style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px;">
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
+                            Annuler
+                        </button>
+                        <button onclick="window.tasksView.createNewTask('${uniqueId}');"
+                                style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            <i class="fas fa-plus"></i> Créer la tâche
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
         
+        setTimeout(() => {
+            const titleInput = document.getElementById('new-task-title');
+            if (titleInput) titleInput.focus();
+        }, 100);
+    }
+
+    createNewTask(modalId) {
+        const title = document.getElementById('new-task-title')?.value?.trim();
+        const description = document.getElementById('new-task-description')?.value?.trim();
+        const priority = document.getElementById('new-task-priority')?.value;
+        const dueDate = document.getElementById('new-task-duedate')?.value;
+        const client = document.getElementById('new-task-client')?.value?.trim();
+
+        if (!title) {
+            this.showToast('Le titre est requis', 'warning');
+            return;
+        }
+
         const taskData = {
             title,
-            client,
-            company,
-            priority: 'medium',
-            type: 'task'
+            description,
+            priority,
+            dueDate: dueDate || null,
+            client: client || 'Interne',
+            category: 'work',
+            type: 'tâche',
+            method: 'manual'
         };
 
-        window.taskManager.createTask(taskData);
-        this.showToast('Tâche créée avec succès', 'success');
+        try {
+            const task = window.taskManager.createTask(taskData);
+            document.getElementById(modalId).remove();
+            document.body.style.overflow = 'auto';
+            
+            this.showToast('Tâche créée avec succès', 'success');
+            this.refreshView();
+        } catch (error) {
+            console.error('[TasksView] Error creating task:', error);
+            this.showToast('Erreur lors de la création', 'error');
+        }
+    }
+
+    bulkActions() {
+        if (this.selectedTasks.size === 0) return;
+        
+        const actions = [
+            'Marquer comme terminé',
+            'Changer la priorité',
+            'Supprimer',
+            'Exporter'
+        ];
+        
+        const action = prompt(`Actions disponibles pour ${this.selectedTasks.size} tâche(s):\n\n${actions.map((a, i) => `${i + 1}. ${a}`).join('\n')}\n\nEntrez le numéro de l'action:`);
+        
+        if (!action) return;
+        
+        const actionIndex = parseInt(action) - 1;
+        
+        switch (actionIndex) {
+            case 0:
+                this.selectedTasks.forEach(taskId => {
+                    window.taskManager.updateTask(taskId, { status: 'completed' });
+                });
+                this.showToast(`${this.selectedTasks.size} tâche(s) marquée(s) comme terminée(s)`, 'success');
+                this.clearSelection();
+                break;
+                
+            case 1:
+                const priority = prompt('Nouvelle priorité:\n1. Basse\n2. Normale\n3. Haute\n4. Urgente\n\nEntrez le numéro:');
+                const priorities = ['', 'low', 'medium', 'high', 'urgent'];
+                if (priority && priorities[parseInt(priority)]) {
+                    this.selectedTasks.forEach(taskId => {
+                        window.taskManager.updateTask(taskId, { priority: priorities[parseInt(priority)] });
+                    });
+                    this.showToast(`Priorité mise à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
+                    this.clearSelection();
+                }
+                break;
+                
+            case 2:
+                if (confirm(`Êtes-vous sûr de vouloir supprimer ${this.selectedTasks.size} tâche(s) ?`)) {
+                    this.selectedTasks.forEach(taskId => {
+                        window.taskManager.deleteTask(taskId);
+                    });
+                    this.showToast(`${this.selectedTasks.size} tâche(s) supprimée(s)`, 'success');
+                    this.clearSelection();
+                }
+                break;
+                
+            case 3:
+                this.exportSelectedTasks();
+                break;
+        }
+    }
+
+    exportSelectedTasks() {
+        const tasks = Array.from(this.selectedTasks).map(id => window.taskManager.getTask(id)).filter(Boolean);
+        
+        const csvContent = [
+            ['Titre', 'Description', 'Priorité', 'Statut', 'Échéance', 'Client', 'Créé le'].join(','),
+            ...tasks.map(task => [
+                `"${task.title}"`,
+                `"${task.description || ''}"`,
+                task.priority,
+                task.status,
+                task.dueDate || '',
+                task.client || '',
+                new Date(task.createdAt).toLocaleDateString('fr-FR')
+            ].join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `taches_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        this.showToast('Export terminé', 'success');
+    }
+
+    clearSearch() {
+        this.currentFilters.search = '';
+        const searchInput = document.getElementById('taskSearchInput');
+        if (searchInput) searchInput.value = '';
+        this.refreshView();
+    }
+
+    toggleAdvancedFilters() {
+        this.showAdvancedFilters = !this.showAdvancedFilters;
+        
+        const panel = document.getElementById('advancedFiltersPanel');
+        const toggle = document.querySelector('.advanced-filters-toggle');
+        
+        if (panel) {
+            panel.classList.toggle('show', this.showAdvancedFilters);
+        }
+        
+        if (toggle) {
+            toggle.classList.toggle('active', this.showAdvancedFilters);
+            const chevron = toggle.querySelector('.fa-chevron-down, .fa-chevron-up');
+            if (chevron) {
+                chevron.classList.toggle('fa-chevron-down', !this.showAdvancedFilters);
+                chevron.classList.toggle('fa-chevron-up', this.showAdvancedFilters);
+            }
+        }
+    }
+
+    buildClientFilterOptions() {
+        const tasks = window.taskManager.getAllTasks();
+        const clients = new Set();
+        
+        tasks.forEach(task => {
+            if (task.client) {
+                clients.add(task.client);
+            }
+        });
+        
+        let options = `<option value="all" ${this.currentFilters.client === 'all' ? 'selected' : ''}>Tous les clients</option>`;
+        
+        Array.from(clients).sort().forEach(client => {
+            const count = tasks.filter(t => t.client === client).length;
+            options += `<option value="${client}" ${this.currentFilters.client === client ? 'selected' : ''}>${client} (${count})</option>`;
+        });
+        
+        return options;
+    }
+
+    updateFilter(filterType, value) {
+        this.currentFilters[filterType] = value;
+        this.refreshView();
+        console.log('[TasksView] Filter updated:', filterType, '=', value);
+    }
+
+    resetAllFilters() {
+        this.currentFilters = {
+            status: 'all',
+            priority: 'all',
+            category: 'all',
+            client: 'all',
+            tag: 'all',
+            search: '',
+            sortBy: 'created',
+            dateRange: 'all',
+            overdue: false,
+            needsReply: false
+        };
+        
+        const searchInput = document.getElementById('taskSearchInput');
+        if (searchInput) searchInput.value = '';
+        
+        document.querySelectorAll('.filter-select').forEach(select => {
+            if (select.querySelector('option[value="all"]')) {
+                select.value = 'all';
+            } else if (select.id === 'sortByFilter') {
+                select.value = 'created';
+            }
+        });
+        
+        this.refreshView();
+        this.showToast('Filtres réinitialisés', 'info');
+    }
+
+    isFilterActive(filterId) {
+        switch (filterId) {
+            case 'all': return this.currentFilters.status === 'all' && !this.currentFilters.overdue && !this.currentFilters.needsReply;
+            case 'todo': return this.currentFilters.status === 'todo';
+            case 'in-progress': return this.currentFilters.status === 'in-progress';
+            case 'completed': return this.currentFilters.status === 'completed';
+            case 'overdue': return this.currentFilters.overdue;
+            case 'needsReply': return this.currentFilters.needsReply;
+            default: return false;
+        }
+    }
+
+    hasActiveFilters() {
+        return this.currentFilters.status !== 'all' ||
+               this.currentFilters.priority !== 'all' ||
+               this.currentFilters.category !== 'all' ||
+               this.currentFilters.client !== 'all' ||
+               this.currentFilters.tag !== 'all' ||
+               this.currentFilters.dateRange !== 'all' ||
+               this.currentFilters.search !== '' ||
+               this.currentFilters.overdue ||
+               this.currentFilters.needsReply;
     }
 
     refreshView() {
-        const container = document.querySelector('.modern-tasks-app');
-        if (container && container.parentElement) {
-            console.log('[TasksView] Refreshing view...');
-            this.render(container.parentElement);
+        const container = document.getElementById('tasksContainer');
+        if (container) {
+            container.innerHTML = this.renderTasksList();
+        }
+        
+        const stats = window.taskManager.getStats();
+        document.querySelectorAll('.status-filters-large').forEach(container => {
+            container.innerHTML = this.buildLargeStatusPills(stats);
+        });
+    }
+
+    showToast(message, type = 'info') {
+        if (window.uiManager && window.uiManager.showToast) {
+            window.uiManager.showToast(message, type);
+        } else {
+            console.log(`[Toast] ${type}: ${message}`);
         }
     }
 
     setupEventListeners() {
-        // Event listeners handled via onclick for simplicity
-    }
-
-    showToast(message, type = 'info') {
-        console.log(`[TasksView] Toast: ${message} (${type})`);
-        
-        // Simple toast implementation
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.textContent = message;
-        toast.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            z-index: 100000;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        `;
-        
-        document.body.appendChild(toast);
-        
-        setTimeout(() => toast.style.opacity = '1', 100);
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
-
-    // Utility methods
-    getPriorityColor(priority) {
-        const colors = {
-            urgent: '#ef4444',
-            high: '#f97316', 
-            medium: '#eab308',
-            low: '#22c55e'
-        };
-        return colors[priority] || colors.medium;
-    }
-
-    getStatusIcon(status) {
-        const icons = {
-            todo: '⏳',
-            'in-progress': '🔄',
-            completed: '✅'
-        };
-        return icons[status] || icons.todo;
-    }
-
-    getTypeIcon(type) {
-        const icons = {
-            email: '📧',
-            meeting: '🤝',
-            call: '📞',
-            task: '📋'
-        };
-        return icons[type] || icons.task;
-    }
-
-    getTypeLabel(type) {
-        const labels = {
-            email: 'Email',
-            meeting: 'Réunion', 
-            call: 'Appel',
-            task: 'Tâche'
-        };
-        return labels[type] || labels.task;
-    }
-
-    formatDueDate(dateString) {
-        if (!dateString) return { badge: null };
-        
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
-        
-        if (diffDays < 0) {
-            return { 
-                badge: `<span class="due-badge overdue">⚠️ Retard ${Math.abs(diffDays)}j</span>` 
-            };
-        } else if (diffDays === 0) {
-            return { 
-                badge: `<span class="due-badge today">📅 Aujourd'hui</span>` 
-            };
-        } else if (diffDays === 1) {
-            return { 
-                badge: `<span class="due-badge tomorrow">📅 Demain</span>` 
-            };
-        } else if (diffDays <= 7) {
-            return { 
-                badge: `<span class="due-badge soon">📅 ${diffDays}j</span>` 
-            };
+        const searchInput = document.getElementById('taskSearchInput');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.handleSearch(e.target.value);
+                }, 300);
+            });
         }
+    }
+
+    handleSearch(value) {
+        this.currentFilters.search = value.trim();
+        this.refreshView();
         
-        return { badge: null };
+        const clearBtn = document.getElementById('searchClearBtn');
+        if (clearBtn) {
+            clearBtn.style.display = this.currentFilters.search ? 'flex' : 'none';
+        }
     }
 
     escapeHtml(text) {
@@ -1142,913 +2280,1533 @@ class TasksView {
         return div.innerHTML;
     }
 
-    addModernStyles() {
-        if (document.getElementById('modernTaskStyles')) return;
+    // STYLES ÉPURÉS ET MODERNES
+    addModernTaskStyles() {
+        if (document.getElementById('cleanTaskStyles')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'modernTaskStyles';
+        styles.id = 'cleanTaskStyles';
         styles.textContent = `
-            /* TaskManager Styles - Compact but complete */
-            .modern-tasks-app {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: #fafbfc;
+            /* Interface épurée et moderne pour TaskManager v9.0 */
+            .tasks-page-modern {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
                 min-height: 100vh;
-                color: #1a1a1a;
                 padding: 0;
-                margin: 0;
             }
-
-            .tasks-header {
-                background: white;
-                border-bottom: 1px solid #e5e7eb;
-                margin-bottom: 24px;
-                padding: 24px 32px;
-            }
-
-            .header-container {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                max-width: 1400px;
-                margin: 0 auto;
-            }
-
-            .header-left {
+            
+            .tasks-main-toolbar {
                 display: flex;
                 align-items: center;
                 gap: 16px;
-                min-width: 200px;
-            }
-
-            .page-title {
-                font-size: 32px;
-                font-weight: 700;
-                color: #1a1a1a;
-                margin: 0;
-            }
-
-            .total-count {
-                background: #f3f4f6;
-                color: #6b7280;
-                padding: 6px 12px;
+                padding: 8px 0;
+                margin: 0 0 16px 0;
+                min-height: 60px;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
                 border-radius: 16px;
-                font-size: 14px;
-                font-weight: 600;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+                border: 1px solid rgba(255, 255, 255, 0.18);
             }
-
-            .header-center {
+            
+            .toolbar-left {
+                display: flex;
+                align-items: baseline;
+                gap: 12px;
+                min-width: 200px;
+                flex-shrink: 0;
+                padding: 0 20px;
+            }
+            
+            .tasks-title {
+                margin: 0;
+                font-size: 32px;
+                font-weight: 800;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+            
+            .tasks-count-large {
+                font-size: 16px;
+                color: #6366f1;
+                font-weight: 700;
+                background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+                padding: 8px 16px;
+                border-radius: 20px;
+                border: 2px solid #c7d2fe;
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+            }
+            
+            .toolbar-center {
                 flex: 1;
                 max-width: 500px;
-                margin: 0 32px;
+                padding: 0 20px;
             }
-
-            .search-box {
+            
+            .search-wrapper-large {
                 position: relative;
                 width: 100%;
             }
-
-            .search-input {
-                padding: 14px 16px 14px 44px;
-                border: 2px solid #e5e7eb;
-                border-radius: 12px;
-                font-size: 16px;
+            
+            .search-input-large {
                 width: 100%;
-                background: white;
-                transition: border-color 0.2s ease;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                padding: 16px 24px 16px 56px;
+                border: 2px solid transparent;
+                border-radius: 24px;
+                font-size: 16px;
+                background: rgba(255, 255, 255, 0.9);
+                backdrop-filter: blur(10px);
+                transition: all 0.3s ease;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+                font-weight: 500;
+                color: #374151;
             }
-
-            .search-input:focus {
+            
+            .search-input-large:focus {
                 outline: none;
-                border-color: #3b82f6;
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                border-color: #6366f1;
+                background: white;
+                box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1), 0 8px 32px rgba(0, 0, 0, 0.12);
+                transform: translateY(-2px);
             }
-
-            .search-icon {
+            
+            .search-input-large::placeholder {
+                color: #9ca3af;
+                font-weight: 500;
+            }
+            
+            .search-icon-large {
                 position: absolute;
-                left: 16px;
+                left: 20px;
                 top: 50%;
                 transform: translateY(-50%);
-                font-size: 16px;
-                color: #9ca3af;
+                color: #6366f1;
+                font-size: 18px;
+                font-weight: 600;
             }
-
-            .header-right {
-                display: flex;
-                align-items: center;
-                gap: 16px;
-                min-width: 200px;
-                justify-content: flex-end;
-            }
-
-            .view-toggle {
-                display: flex;
+            
+            .search-clear-large {
+                position: absolute;
+                right: 16px;
+                top: 50%;
+                transform: translateY(-50%);
                 background: #f3f4f6;
-                border-radius: 10px;
-                padding: 4px;
-            }
-
-            .toggle-btn {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                padding: 10px 16px;
                 border: none;
-                background: transparent;
-                border-radius: 8px;
-                cursor: pointer;
-                font-size: 14px;
-                font-weight: 600;
                 color: #6b7280;
-                transition: all 0.2s ease;
-            }
-
-            .toggle-btn.active {
-                background: white;
-                color: #1a1a1a;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            }
-
-            .btn-primary {
+                cursor: pointer;
+                padding: 8px;
+                border-radius: 12px;
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                padding: 12px 20px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border: none;
-                border-radius: 10px;
-                font-size: 14px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
-            }
-
-            .btn-primary:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-            }
-
-            .status-filters {
-                margin-bottom: 24px;
-            }
-
-            .filters-container {
-                display: flex;
                 justify-content: center;
+                transition: all 0.2s ease;
+                font-weight: 600;
+            }
+            
+            .search-clear-large:hover {
+                background: #e5e7eb;
+                color: #374151;
+                transform: translateY(-50%) scale(1.05);
+            }
+            
+            .toolbar-right {
+                display: flex;
                 align-items: center;
                 gap: 12px;
-                flex-wrap: wrap;
-                max-width: 1400px;
-                margin: 0 auto;
-                padding: 0 32px;
+                flex-shrink: 0;
+                padding: 0 20px;
             }
-
-            .status-filter {
+            
+            .selection-info-large {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                padding: 12px 20px;
-                background: white;
-                border: 2px solid #e5e7eb;
-                border-radius: 12px;
-                cursor: pointer;
-                transition: all 0.2s ease;
+                gap: 12px;
+                padding: 12px 18px;
+                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+                border: 2px solid #93c5fd;
+                border-radius: 16px;
                 font-size: 14px;
+                color: #1e40af;
                 font-weight: 600;
-                color: #374151;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
             }
-
-            .status-filter:hover {
-                border-color: #3b82f6;
-                background: #f8fafc;
-                transform: translateY(-1px);
-            }
-
-            .status-filter.active {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border-color: #667eea;
-                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-            }
-
-            .filter-icon {
-                font-size: 16px;
-            }
-
-            .filter-name {
-                font-weight: 600;
-            }
-
-            .filter-count {
-                background: rgba(0,0,0,0.1);
-                padding: 2px 8px;
-                border-radius: 10px;
-                font-size: 12px;
+            
+            .selection-count-large {
                 font-weight: 700;
-                min-width: 20px;
-                text-align: center;
             }
-
-            .status-filter.active .filter-count {
-                background: rgba(255,255,255,0.25);
+            
+            .btn-large {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                padding: 14px 24px;
+                border: 2px solid transparent;
+                border-radius: 16px;
+                background: white;
+                color: #374151;
+                font-size: 15px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-decoration: none;
+                white-space: nowrap;
+                min-height: 50px;
+                box-sizing: border-box;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+                backdrop-filter: blur(10px);
             }
-
-            .advanced-filters-toggle {
+            
+            .btn-large:hover {
+                background: #f9fafb;
+                border-color: #6366f1;
+                color: #1f2937;
+                transform: translateY(-2px);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            }
+            
+            .btn-large.active, .btn-large.btn-primary-large {
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                color: white;
+                border-color: transparent;
+                box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+            }
+            
+            .btn-large.btn-primary-large:hover, .btn-large.active:hover {
+                background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
+                transform: translateY(-3px);
+                box-shadow: 0 12px 32px rgba(99, 102, 241, 0.4);
+            }
+            
+            .btn-large.btn-secondary-large {
                 background: #f8fafc;
-                border: 2px solid #e2e8f0;
                 color: #475569;
+                border-color: #e2e8f0;
             }
-
-            .advanced-filters-toggle:hover {
+            
+            .btn-large.btn-secondary-large:hover {
                 background: #f1f5f9;
+                color: #334155;
                 border-color: #cbd5e1;
             }
-
-            .advanced-filters-toggle.active {
-                background: #3b82f6;
-                color: white;
-                border-color: #3b82f6;
+            
+            .btn-text-large {
+                font-weight: 600;
             }
-
-            .chevron {
-                transition: transform 0.2s ease;
-                font-size: 12px;
-                margin-left: 4px;
+            
+            .status-filters-large {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+                margin: 0 0 20px 0;
+                padding: 20px;
+                background: rgba(255, 255, 255, 0.7);
+                backdrop-filter: blur(20px);
+                border-radius: 20px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+                border: 1px solid rgba(255, 255, 255, 0.2);
             }
-
-            .chevron.up {
-                transform: rotate(180deg);
-            }
-
-            .advanced-filters {
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 12px;
-                margin: 0 auto 24px;
-                max-width: 1400px;
-                margin-left: auto;
-                margin-right: auto;
-                margin-bottom: 24px;
-                overflow: hidden;
-                max-height: 0;
-                opacity: 0;
+            
+            .status-pill-large {
+                display: inline-flex;
+                align-items: center;
+                gap: 12px;
+                padding: 14px 24px;
+                border: 2px solid transparent;
+                border-radius: 20px;
+                background: rgba(255, 255, 255, 0.8);
+                color: #374151;
+                font-size: 15px;
+                font-weight: 600;
+                cursor: pointer;
                 transition: all 0.3s ease;
+                min-height: 52px;
+                box-sizing: border-box;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+                backdrop-filter: blur(10px);
             }
-
-            .advanced-filters.show {
-                max-height: 200px;
+            
+            .status-pill-large:hover {
+                border-color: #6366f1;
+                background: rgba(255, 255, 255, 0.95);
+                transform: translateY(-2px);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            }
+            
+            .status-pill-large.active {
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                color: white;
+                border-color: transparent;
+                transform: translateY(-2px);
+                box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+            }
+            
+            .pill-icon-large {
+                font-size: 18px;
+            }
+            
+            .pill-text-large {
+                font-weight: 700;
+                font-size: 15px;
+            }
+            
+            .pill-count-large {
+                background: rgba(0, 0, 0, 0.15);
+                padding: 6px 12px;
+                border-radius: 16px;
+                font-size: 13px;
+                font-weight: 800;
+                min-width: 24px;
+                text-align: center;
+            }
+            
+            .status-pill-large.active .pill-count-large {
+                background: rgba(255, 255, 255, 0.25);
+            }
+            
+            .advanced-filters-toggle {
+                background: rgba(248, 250, 252, 0.8);
+                border-color: #e2e8f0;
+                color: #475569;
+                backdrop-filter: blur(10px);
+            }
+            
+            .advanced-filters-toggle:hover {
+                background: rgba(241, 245, 249, 0.9);
+                border-color: #cbd5e1;
+            }
+            
+            .advanced-filters-toggle.active {
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                color: white;
+                border-color: transparent;
+            }
+            
+            .advanced-filters-panel {
+                background: rgba(255, 255, 255, 0.9);
+                backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 16px;
+                margin-bottom: 20px;
+                max-height: 0;
+                overflow: hidden;
+                transition: all 0.4s ease;
+                opacity: 0;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            }
+            
+            .advanced-filters-panel.show {
+                max-height: 300px;
                 opacity: 1;
-                padding: 20px 32px;
+                padding: 24px;
             }
-
-            .filters-grid {
+            
+            .advanced-filters-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 16px;
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                gap: 20px;
                 align-items: end;
             }
-
+            
             .filter-group {
                 display: flex;
                 flex-direction: column;
-                gap: 6px;
+                gap: 8px;
             }
-
-            .filter-group label {
-                font-weight: 600;
-                font-size: 14px;
-                color: #374151;
-            }
-
-            .filter-select {
-                padding: 10px 12px;
-                border: 2px solid #e5e7eb;
-                border-radius: 8px;
-                background: white;
-                font-size: 14px;
-                color: #374151;
-                cursor: pointer;
-                transition: border-color 0.2s ease;
-            }
-
-            .filter-select:focus {
-                outline: none;
-                border-color: #3b82f6;
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            }
-
-            .filter-reset {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                padding: 10px 16px;
-                background: #f3f4f6;
-                border: 2px solid #e5e7eb;
-                border-radius: 8px;
-                color: #6b7280;
-                cursor: pointer;
-                font-size: 14px;
-                font-weight: 500;
-                transition: all 0.2s ease;
-                height: fit-content;
-            }
-
-            .filter-reset:hover {
-                background: #e5e7eb;
-                color: #374151;
-            }
-
-            .tasks-container {
-                max-width: 1400px;
-                margin: 0 auto;
-                padding: 0 32px;
-            }
-
-            .task-group {
-                background: white;
-                border-radius: 16px;
-                margin-bottom: 16px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-                border: 1px solid #e5e7eb;
-                overflow: hidden;
-                transition: all 0.2s ease;
-            }
-
-            .task-group:hover {
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            }
-
-            .group-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 20px 24px;
-                cursor: pointer;
-                transition: background 0.2s ease;
-                border-bottom: 1px solid #f3f4f6;
-            }
-
-            .group-header:hover {
-                background: #f9fafb;
-            }
-
-            .group-info {
-                display: flex;
-                align-items: center;
-                gap: 16px;
-            }
-
-            .company-avatar {
-                width: 48px;
-                height: 48px;
-                border-radius: 12px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 20px;
-                font-weight: 700;
-                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-            }
-
-            .group-details h3 {
-                margin: 0;
-                font-size: 18px;
-                font-weight: 600;
-                color: #1a1a1a;
-            }
-
-            .task-count {
-                font-size: 14px;
-                color: #6b7280;
-                font-weight: 500;
-            }
-
-            .group-badges {
+            
+            .filter-label {
                 display: flex;
                 align-items: center;
                 gap: 8px;
-            }
-
-            .badge {
-                padding: 4px 12px;
-                border-radius: 16px;
-                font-size: 12px;
-                font-weight: 600;
-                color: white;
-            }
-
-            .badge.urgent { 
-                background: linear-gradient(135deg, #ef4444, #dc2626);
-                box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
-            }
-            .badge.reply { 
-                background: linear-gradient(135deg, #f59e0b, #d97706);
-                box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
-            }
-
-            .expand-icon {
+                font-weight: 700;
                 font-size: 14px;
-                color: #6b7280;
-                transition: transform 0.2s ease;
+                color: #374151;
             }
-
-            .expand-icon.expanded {
-                transform: rotate(180deg);
-            }
-
-            .group-tasks {
-                max-height: 0;
-                overflow: hidden;
-                transition: max-height 0.3s ease;
-            }
-
-            .group-tasks.show {
-                max-height: 2000px;
-            }
-
-            .task-card {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 18px 24px;
-                border-bottom: 1px solid #f3f4f6;
+            
+            .filter-select {
+                padding: 12px 16px;
+                border: 2px solid #e5e7eb;
+                border-radius: 12px;
+                background: white;
+                font-size: 14px;
+                color: #374151;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                background: white;
+                font-weight: 500;
             }
-
-            .task-card:hover {
+            
+            .filter-select:focus {
+                outline: none;
+                border-color: #6366f1;
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            }
+            
+            .filter-actions {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            .btn-small {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 16px;
+                border-radius: 10px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: 2px solid;
+            }
+            
+            .btn-small.btn-secondary {
                 background: #f8fafc;
+                color: #475569;
+                border-color: #e2e8f0;
+            }
+            
+            .btn-small.btn-secondary:hover {
+                background: #f1f5f9;
+                border-color: #cbd5e1;
                 transform: translateY(-1px);
             }
-
-            .task-card:last-child {
-                border-bottom: none;
-                border-radius: 0 0 16px 16px;
+            
+            .btn-small.btn-primary {
+                background: #6366f1;
+                color: white;
+                border-color: #6366f1;
             }
-
-            .task-card.completed {
-                opacity: 0.6;
+            
+            .btn-small.btn-primary:hover {
+                background: #5856eb;
+                border-color: #5856eb;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
             }
-
-            .task-card.completed .task-title {
-                text-decoration: line-through;
+            
+            /* CARTES DE TÂCHES ÉPURÉES */
+            .tasks-clean-list {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                background: transparent;
             }
-
-            .task-left {
+            
+            .task-clean-card {
                 display: flex;
                 align-items: center;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 20px;
+                padding: 20px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                position: relative;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                overflow: hidden;
+            }
+            
+            .task-clean-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 1px;
+                background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+                opacity: 0;
+                transition: all 0.3s ease;
+            }
+            
+            .task-clean-card:hover {
+                background: white;
+                transform: translateY(-4px);
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+                border-color: rgba(99, 102, 241, 0.2);
+            }
+            
+            .task-clean-card:hover::before {
+                opacity: 1;
+            }
+            
+            .task-clean-card.selected {
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                border-color: #3b82f6;
+                transform: translateY(-2px);
+                box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2);
+            }
+            
+            .task-clean-card.completed {
+                opacity: 0.7;
+                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+                border-color: #22c55e;
+            }
+            
+            .task-clean-card.completed .task-title-clean {
+                text-decoration: line-through;
+                color: #6b7280;
+            }
+            
+            .task-checkbox-clean {
+                margin-right: 20px;
+                cursor: pointer;
+                width: 20px;
+                height: 20px;
+                border-radius: 6px;
+                border: 2px solid #d1d5db;
+                background: white;
+                transition: all 0.2s ease;
+            }
+            
+            .task-checkbox-clean:checked {
+                background: #6366f1;
+                border-color: #6366f1;
+            }
+            
+            .priority-bar {
+                width: 6px;
+                height: 60px;
+                border-radius: 3px;
+                margin-right: 20px;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+            
+            .task-clean-card:hover .priority-bar {
+                height: 70px;
+                width: 8px;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            }
+            
+            .task-main-content {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .task-header-clean {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 8px;
                 gap: 16px;
+            }
+            
+            .task-title-clean {
+                font-weight: 700;
+                color: #1f2937;
+                font-size: 18px;
+                margin: 0;
+                line-height: 1.3;
                 flex: 1;
                 min-width: 0;
-            }
-
-            .priority-indicator {
-                width: 4px;
-                height: 48px;
-                border-radius: 2px;
-                flex-shrink: 0;
-            }
-
-            .task-content {
-                flex: 1;
-                min-width: 0;
-            }
-
-            .task-header {
-                margin-bottom: 6px;
-            }
-
-            .task-title {
-                font-size: 16px;
-                font-weight: 600;
-                color: #1a1a1a;
-                margin: 0 0 4px 0;
-                line-height: 1.4;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
-
-            .task-meta {
+            
+            .task-meta-clean {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                font-size: 14px;
-                color: #6b7280;
-            }
-
-            .client-name {
-                font-weight: 600;
-                color: #374151;
-            }
-
-            .separator {
-                color: #d1d5db;
-                font-weight: bold;
-            }
-
-            .company-domain {
-                font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-                background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-                color: #6b7280;
-                padding: 2px 8px;
-                border-radius: 6px;
-                font-size: 12px;
-                font-weight: 500;
-                border: 1px solid #e5e7eb;
-            }
-
-            .sender-info {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                font-size: 13px;
-                color: #6b7280;
-                margin-top: 4px;
-            }
-
-            .ai-badge {
-                background: linear-gradient(135deg, #10b981, #059669);
-                color: white;
-                padding: 2px 6px;
-                border-radius: 8px;
-                font-size: 10px;
-                font-weight: 600;
-                animation: aiGlow 2s infinite alternate;
-            }
-
-            @keyframes aiGlow {
-                0% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.5); }
-                100% { box-shadow: 0 0 10px rgba(16, 185, 129, 0.8); }
-            }
-
-            .task-right {
-                display: flex;
-                align-items: center;
-                gap: 16px;
+                gap: 12px;
                 flex-shrink: 0;
             }
-
-            .task-badges {
+            
+            .task-type-badge {
                 display: flex;
-                flex-direction: column;
-                align-items: flex-end;
+                align-items: center;
                 gap: 6px;
+                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                color: #475569;
+                padding: 6px 12px;
+                border-radius: 12px;
+                font-size: 13px;
+                font-weight: 600;
+                border: 1px solid #e2e8f0;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                white-space: nowrap;
             }
-
-            .type-badge {
+            
+            .deadline-badge {
                 display: flex;
                 align-items: center;
                 gap: 4px;
-                padding: 6px 12px;
-                border-radius: 12px;
                 font-size: 12px;
                 font-weight: 600;
-                color: white;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-            }
-
-            .type-badge.email { 
-                background: linear-gradient(135deg, #3b82f6, #2563eb);
-            }
-            .type-badge.meeting { 
-                background: linear-gradient(135deg, #10b981, #059669);
-            }
-            .type-badge.call { 
-                background: linear-gradient(135deg, #f59e0b, #d97706);
-            }
-            .type-badge.task { 
-                background: linear-gradient(135deg, #6b7280, #4b5563);
-            }
-
-            .reply-badge {
-                background: linear-gradient(135deg, #f59e0b, #d97706);
-                color: white;
-                padding: 3px 8px;
-                border-radius: 10px;
-                font-size: 11px;
-                font-weight: 600;
-                box-shadow: 0 1px 3px rgba(245, 158, 11, 0.3);
-                animation: replyPulse 2s infinite;
-            }
-
-            @keyframes replyPulse {
-                0%, 100% { transform: scale(1); }
-                50% { transform: scale(1.05); }
-            }
-
-            .due-badge {
-                padding: 4px 8px;
-                border-radius: 10px;
-                font-size: 11px;
-                font-weight: 600;
+                padding: 6px 12px;
+                border-radius: 12px;
+                white-space: nowrap;
                 border: 1px solid;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             }
-
-            .due-badge.overdue {
-                background: linear-gradient(135deg, #fef2f2, #fee2e2);
-                color: #dc2626;
-                border-color: #fecaca;
-                animation: urgentBlink 1s infinite;
+            
+            .deadline-normal {
+                background: #f8fafc;
+                color: #64748b;
+                border-color: #e2e8f0;
             }
-
-            @keyframes urgentBlink {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.7; }
-            }
-
-            .due-badge.today {
-                background: linear-gradient(135deg, #fef3c7, #fde68a);
-                color: #d97706;
-                border-color: #fde68a;
-            }
-
-            .due-badge.tomorrow {
-                background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-                color: #059669;
-                border-color: #a7f3d0;
-            }
-
-            .due-badge.soon {
-                background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            
+            .deadline-week {
+                background: #eff6ff;
                 color: #2563eb;
                 border-color: #bfdbfe;
             }
-
-            .task-actions {
+            
+            .deadline-today, .deadline-tomorrow {
+                background: #fef3c7;
+                color: #d97706;
+                border-color: #fde68a;
+            }
+            
+            .deadline-overdue {
+                background: #fef2f2;
+                color: #dc2626;
+                border-color: #fecaca;
+                animation: pulse 2s infinite;
+            }
+            
+            .no-deadline {
+                color: #9ca3af;
+                font-style: italic;
+                font-size: 12px;
+            }
+            
+            .task-recipient-clean {
                 display: flex;
                 align-items: center;
                 gap: 8px;
+                color: #6b7280;
+                font-size: 14px;
+                font-weight: 500;
             }
-
-            .status-badge {
-                width: 36px;
-                height: 36px;
-                border-radius: 10px;
+            
+            .task-recipient-clean i {
+                color: #9ca3af;
+                font-size: 14px;
+            }
+            
+            .recipient-name {
+                font-weight: 600;
+                color: #374151;
+            }
+            
+            .reply-indicator {
+                color: #dc2626;
+                font-weight: 600;
+                font-size: 12px;
+            }
+            
+            .task-actions-clean {
                 display: flex;
                 align-items: center;
-                justify-content: center;
-                font-size: 16px;
-                border: 2px solid;
-                background: white;
-                transition: all 0.2s ease;
+                gap: 8px;
+                margin-left: 20px;
             }
-
-            .status-badge.todo {
-                color: #d97706;
-                border-color: #fde68a;
-                background: linear-gradient(135deg, #fef3c7, #fde68a);
-            }
-
-            .status-badge.in-progress {
-                color: #2563eb;
-                border-color: #bfdbfe;
-                background: linear-gradient(135deg, #eff6ff, #dbeafe);
-            }
-
-            .status-badge.completed {
-                color: #059669;
-                border-color: #a7f3d0;
-                background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-            }
-
-            .action-btn {
-                width: 36px;
-                height: 36px;
-                border: none;
-                border-radius: 10px;
-                background: white;
+            
+            .action-btn-clean {
+                width: 40px;
+                height: 40px;
+                border: 2px solid transparent;
+                border-radius: 12px;
+                background: rgba(255, 255, 255, 0.8);
+                color: #6b7280;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                transition: all 0.3s ease;
                 font-size: 16px;
-                transition: all 0.2s ease;
-                border: 2px solid #e5e7eb;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                backdrop-filter: blur(10px);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             }
-
-            .action-btn:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+            
+            .action-btn-clean:hover {
+                background: white;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
             }
-
-            .quick-complete {
-                border-color: #a7f3d0;
-                background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-                color: #059669;
+            
+            .action-btn-clean.complete {
+                color: #16a34a;
+                border-color: transparent;
             }
-
-            .quick-complete:hover {
-                background: linear-gradient(135deg, #059669, #047857);
-                color: white;
-                border-color: #059669;
+            
+            .action-btn-clean.complete:hover {
+                background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+                border-color: #16a34a;
+                color: #15803d;
             }
-
-            .reply-btn {
-                border-color: #bfdbfe;
-                background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            
+            .action-btn-clean.reply {
+                color: #3b82f6;
+                border-color: transparent;
+            }
+            
+            .action-btn-clean.reply:hover {
+                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+                border-color: #3b82f6;
                 color: #2563eb;
             }
-
-            .reply-btn:hover {
-                background: linear-gradient(135deg, #2563eb, #1d4ed8);
-                color: white;
-                border-color: #2563eb;
+            
+            .action-btn-clean.details {
+                color: #8b5cf6;
+                border-color: transparent;
             }
-
-            .list-view .task-card {
-                border-radius: 12px;
-                margin-bottom: 8px;
-                border: 1px solid #e5e7eb;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            
+            .action-btn-clean.details:hover {
+                background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+                border-color: #8b5cf6;
+                color: #7c3aed;
             }
-
-            .list-view .task-card:hover {
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            }
-
-            .empty-state {
+            
+            /* ÉTAT VIDE */
+            .empty-state-modern {
                 text-align: center;
-                padding: 80px 32px;
-                color: #6b7280;
-                background: white;
-                border-radius: 16px;
-                margin: 0 auto;
-                max-width: 500px;
+                padding: 80px 40px;
+                background: rgba(255, 255, 255, 0.8);
+                backdrop-filter: blur(20px);
+                border-radius: 24px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
             }
-
-            .empty-icon {
+            
+            .empty-state-icon {
                 font-size: 64px;
                 margin-bottom: 24px;
-                opacity: 0.6;
+                color: #d1d5db;
+                background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
             }
-
-            .empty-state h3 {
-                font-size: 24px;
-                font-weight: 600;
+            
+            .empty-state-title {
+                font-size: 28px;
+                font-weight: 700;
                 color: #374151;
-                margin-bottom: 12px;
+                margin-bottom: 16px;
+                background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
             }
-
-            .empty-state p {
-                font-size: 16px;
+            
+            .empty-state-text {
+                font-size: 18px;
                 margin-bottom: 32px;
-                line-height: 1.5;
-            }
-
-            .loading-state {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                padding: 80px 32px;
+                max-width: 500px;
+                margin-left: auto;
+                margin-right: auto;
+                line-height: 1.6;
                 color: #6b7280;
-                background: white;
-                border-radius: 16px;
-                margin: 0 auto;
-                max-width: 400px;
+                font-weight: 500;
             }
-
-            .loading-spinner {
-                width: 48px;
-                height: 48px;
-                border: 4px solid #f3f4f6;
-                border-top: 4px solid #3b82f6;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
+            
+            /* STYLES DES MODALS */
+            .form-group {
                 margin-bottom: 20px;
             }
-
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
+            
+            .form-group label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 700;
+                color: #374151;
+                font-size: 15px;
             }
-
-            .toast {
-                position: fixed;
-                bottom: 24px;
-                right: 24px;
-                padding: 16px 24px;
+            
+            .form-input, .form-select, .form-textarea {
+                width: 100%;
+                padding: 14px 16px;
+                border: 2px solid #e5e7eb;
                 border-radius: 12px;
-                color: white;
-                font-weight: 600;
+                font-size: 15px;
+                background: white;
+                transition: all 0.2s ease;
+                font-weight: 500;
+                color: #374151;
+            }
+            
+            .form-input:focus, .form-select:focus, .form-textarea:focus {
+                outline: none;
+                border-color: #6366f1;
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+                background: #fafafa;
+            }
+            
+            .form-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
+            
+            .form-textarea {
+                resize: vertical;
+                min-height: 100px;
+                font-family: inherit;
+            }
+            
+            /* DÉTAILS DES TÂCHES */
+            .task-details-content {
+                max-width: none;
+            }
+            
+            .details-header {
+                margin-bottom: 32px;
+                padding-bottom: 20px;
+                border-bottom: 2px solid #f3f4f6;
+            }
+            
+            .task-title-details {
+                font-size: 32px;
+                font-weight: 800;
+                color: #1f2937;
+                margin: 0 0 16px 0;
+                line-height: 1.2;
+                background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+            
+            .task-meta-badges {
+                display: flex;
+                gap: 16px;
+                flex-wrap: wrap;
+            }
+            
+            .priority-badge, .status-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 16px;
+                border-radius: 12px;
                 font-size: 14px;
-                z-index: 100000;
-                box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-                backdrop-filter: blur(10px);
-                border: 1px solid rgba(255,255,255,0.2);
+                font-weight: 700;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                border: 2px solid;
             }
-
-            .toast-success { 
-                background: linear-gradient(135deg, #10b981, #059669);
+            
+            .priority-urgent {
+                background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+                color: #dc2626;
+                border-color: #fecaca;
             }
-            .toast-error { 
-                background: linear-gradient(135deg, #ef4444, #dc2626);
+            
+            .priority-high {
+                background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+                color: #d97706;
+                border-color: #fde68a;
             }
-            .toast-info { 
-                background: linear-gradient(135deg, #3b82f6, #2563eb);
+            
+            .priority-medium {
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                color: #2563eb;
+                border-color: #bfdbfe;
             }
-
-            /* Responsive */
+            
+            .priority-low {
+                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+                color: #16a34a;
+                border-color: #bbf7d0;
+            }
+            
+            .status-todo {
+                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                color: #d97706;
+                border-color: #f59e0b;
+            }
+            
+            .status-in-progress {
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                color: #2563eb;
+                border-color: #3b82f6;
+            }
+            
+            .status-completed {
+                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+                color: #16a34a;
+                border-color: #22c55e;
+            }
+            
+            .details-section {
+                margin-bottom: 32px;
+                background: rgba(255, 255, 255, 0.8);
+                backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 16px;
+                overflow: hidden;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            }
+            
+            .details-section h3 {
+                margin: 0;
+                padding: 20px 24px;
+                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                border-bottom: 1px solid #e2e8f0;
+                font-size: 18px;
+                font-weight: 700;
+                color: #1f2937;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            
+            .email-details-grid {
+                padding: 20px 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .email-detail-item {
+                display: flex;
+                gap: 16px;
+                font-size: 15px;
+                padding: 12px 16px;
+                background: #f8fafc;
+                border-radius: 10px;
+                border: 1px solid #e2e8f0;
+            }
+            
+            .email-detail-item strong {
+                min-width: 100px;
+                color: #374151;
+                font-weight: 700;
+            }
+            
+            .email-detail-item span {
+                color: #4b5563;
+                font-weight: 500;
+            }
+            
+            .description-content {
+                padding: 20px 24px;
+            }
+            
+            .structured-description {
+                font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+                font-size: 14px;
+                line-height: 1.6;
+                background: #f8fafc;
+                padding: 20px;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+                color: #374151;
+            }
+            
+            .simple-description {
+                font-size: 15px;
+                line-height: 1.7;
+                color: #374151;
+                font-weight: 500;
+            }
+            
+            .actions-list-details {
+                padding: 20px 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .action-item-details {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 16px 20px;
+                background: #f8fafc;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+                transition: all 0.2s ease;
+            }
+            
+            .action-item-details:hover {
+                background: #f1f5f9;
+                border-color: #cbd5e1;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            }
+            
+            .action-number {
+                width: 32px;
+                height: 32px;
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                font-weight: 700;
+                flex-shrink: 0;
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            }
+            
+            .action-text {
+                flex: 1;
+                font-size: 15px;
+                color: #374151;
+                font-weight: 600;
+            }
+            
+            .action-deadline {
+                font-size: 12px;
+                color: #dc2626;
+                font-weight: 700;
+                background: #fef2f2;
+                padding: 6px 12px;
+                border-radius: 8px;
+                border: 1px solid #fecaca;
+            }
+            
+            .info-grid {
+                padding: 20px 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .info-item {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                font-size: 15px;
+                color: #374151;
+                line-height: 1.5;
+                padding: 12px 16px;
+                background: #f8fafc;
+                border-radius: 10px;
+                border: 1px solid #e2e8f0;
+                font-weight: 500;
+            }
+            
+            .info-item i {
+                color: #6366f1;
+                margin-top: 2px;
+                font-weight: 600;
+            }
+            
+            .attention-section {
+                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                border-color: #f59e0b;
+            }
+            
+            .attention-section h3 {
+                background: linear-gradient(135deg, #fef9e8 0%, #fef3c7 100%);
+                border-bottom-color: #f59e0b;
+                color: #92400e;
+            }
+            
+            .attention-list {
+                padding: 20px 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+            }
+            
+            .attention-item {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                background: #fffbeb;
+                border: 1px solid #fde68a;
+                border-radius: 12px;
+                padding: 16px 20px;
+                transition: all 0.2s ease;
+            }
+            
+            .attention-item:hover {
+                background: #fef9e8;
+                border-color: #f59e0b;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+            }
+            
+            .attention-item i {
+                font-size: 16px;
+                color: #f59e0b;
+                margin-top: 2px;
+                font-weight: 600;
+            }
+            
+            .attention-item span {
+                flex: 1;
+                font-size: 14px;
+                color: #92400e;
+                line-height: 1.5;
+                font-weight: 600;
+            }
+            
+            /* SUGGESTIONS DE RÉPONSE COMPACTES */
+            .suggested-replies-section {
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                border-color: #0ea5e9;
+            }
+            
+            .suggested-replies-section h3 {
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                border-bottom-color: #0ea5e9;
+                color: #075985;
+            }
+            
+            .suggested-replies-container {
+                padding: 20px 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .suggested-reply-card-compact {
+                background: white;
+                border: 1px solid #bae6fd;
+                border-radius: 12px;
+                padding: 16px;
+                transition: all 0.2s ease;
+                box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
+            }
+            
+            .suggested-reply-card-compact:hover {
+                border-color: #0ea5e9;
+                box-shadow: 0 4px 16px rgba(14, 165, 233, 0.15);
+                transform: translateY(-1px);
+            }
+            
+            .reply-header-compact {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+            
+            .reply-tone-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                border-radius: 16px;
+                font-size: 12px;
+                font-weight: 700;
+                text-transform: capitalize;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            
+            .reply-tone-badge.formel {
+                background: #f3f4f6;
+                color: #374151;
+                border: 1px solid #d1d5db;
+            }
+            
+            .reply-tone-badge.urgent {
+                background: #fef2f2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+            }
+            
+            .reply-tone-badge.neutre {
+                background: #eff6ff;
+                color: #2563eb;
+                border: 1px solid #bfdbfe;
+            }
+            
+            .reply-tone-badge.amical {
+                background: #f0fdf4;
+                color: #16a34a;
+                border: 1px solid #bbf7d0;
+            }
+            
+            .use-reply-btn-compact {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 16px;
+                background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 12px;
+                font-weight: 700;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+            }
+            
+            .use-reply-btn-compact:hover {
+                background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            }
+            
+            .reply-preview {
+                font-size: 13px;
+                color: #374151;
+                line-height: 1.5;
+                background: #f8fafc;
+                padding: 12px;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+                font-weight: 500;
+            }
+            
+            .show-all-replies-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 12px 20px;
+                background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+                color: #475569;
+                border: 2px solid #cbd5e1;
+                border-radius: 12px;
+                font-size: 14px;
+                font-weight: 700;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                text-align: center;
+                width: 100%;
+            }
+            
+            .show-all-replies-btn:hover {
+                background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+                border-color: #94a3b8;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(71, 85, 105, 0.15);
+            }
+            
+            /* CONTENU EMAIL */
+            .email-content-section {
+                padding: 20px 24px;
+            }
+            
+            .email-content-tabs {
+                display: flex;
+                gap: 6px;
+                margin-bottom: 20px;
+                background: #f3f4f6;
+                padding: 6px;
+                border-radius: 12px;
+            }
+            
+            .tab-btn {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 10px 16px;
+                background: transparent;
+                border: none;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                color: #6b7280;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                flex: 1;
+                justify-content: center;
+            }
+            
+            .tab-btn.active {
+                background: white;
+                color: #1f2937;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+            
+            .tab-btn:hover:not(.active) {
+                background: rgba(255, 255, 255, 0.5);
+                color: #374151;
+            }
+            
+            .email-content-box {
+                background: white;
+                border: 2px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 20px;
+                max-height: 500px;
+                overflow-y: auto;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            }
+            
+            .email-content-view {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 14px;
+                line-height: 1.7;
+                color: #374151;
+                font-weight: 500;
+            }
+            
+            .email-content-viewer {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                line-height: 1.7;
+                color: #333;
+            }
+            
+            .email-original-content {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 14px;
+                line-height: 1.7;
+                color: #374151;
+                white-space: pre-wrap;
+                font-weight: 500;
+            }
+            
+            .email-original-content strong {
+                color: #1f2937;
+                font-weight: 700;
+            }
+            
+            /* SUGGESTIONS DE RÉPONSE MODAL */
+            .replies-list {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .reply-suggestion-card {
+                background: white;
+                border: 2px solid #e5e7eb;
+                border-radius: 16px;
+                padding: 20px;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            }
+            
+            .reply-suggestion-card:hover {
+                border-color: #6366f1;
+                box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15);
+                transform: translateY(-2px);
+            }
+            
+            .reply-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+            }
+            
+            .reply-card-actions {
+                display: flex;
+                gap: 12px;
+            }
+            
+            .reply-subject-line {
+                font-size: 14px;
+                color: #4b5563;
+                margin-bottom: 12px;
+                padding-bottom: 12px;
+                border-bottom: 1px solid #e5e7eb;
+                font-weight: 600;
+            }
+            
+            .reply-content-preview {
+                font-size: 14px;
+                color: #374151;
+                line-height: 1.6;
+                white-space: pre-wrap;
+                background: #f8fafc;
+                padding: 16px;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+                max-height: 200px;
+                overflow-y: auto;
+                font-weight: 500;
+            }
+            
+            /* ANIMATIONS */
+            @keyframes pulse {
+                0%, 100% { 
+                    opacity: 1; 
+                    transform: scale(1);
+                }
+                50% { 
+                    opacity: 0.8; 
+                    transform: scale(1.02);
+                }
+            }
+            
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            .task-clean-card {
+                animation: fadeInUp 0.3s ease-out;
+            }
+            
+            /* RESPONSIVE */
             @media (max-width: 768px) {
-                .tasks-header {
-                    padding: 16px;
+                .tasks-main-toolbar {
+                    flex-direction: column;
+                    gap: 12px;
+                    align-items: stretch;
+                    padding: 12px;
                 }
                 
-                .header-container {
-                    flex-direction: column;
-                    gap: 16px;
-                    align-items: stretch;
-                }
-
-                .header-left {
-                    justify-content: center;
-                    min-width: auto;
-                }
-
-                .header-center {
-                    margin: 0;
+                .toolbar-left, .toolbar-center, .toolbar-right {
+                    width: 100%;
                     max-width: none;
+                    padding: 0;
                 }
-
-                .header-right {
-                    justify-content: center;
-                    min-width: auto;
-                }
-
-                .page-title {
-                    font-size: 28px;
-                }
-
-                .view-toggle {
+                
+                .toolbar-right {
                     justify-content: center;
                 }
-
-                .filters-container {
-                    flex-wrap: wrap;
-                    justify-content: center;
-                    padding: 0 16px;
+                
+                .status-filters-large {
+                    padding: 16px;
                     gap: 8px;
                 }
-
-                .status-filter {
-                    padding: 10px 16px;
-                    font-size: 13px;
+                
+                .btn-large {
+                    padding: 12px 20px;
+                    font-size: 14px;
+                    min-height: 48px;
                 }
-
-                .filter-name {
+                
+                .status-pill-large {
+                    padding: 12px 18px;
+                    font-size: 14px;
+                    min-height: 48px;
+                }
+                
+                .btn-text-large, .pill-text-large {
                     display: none;
                 }
-
-                .advanced-filters.show {
+                
+                .task-clean-card {
                     padding: 16px;
+                    border-radius: 16px;
                 }
-
-                .filters-grid {
-                    grid-template-columns: 1fr;
-                    gap: 12px;
-                }
-
-                .task-card {
+                
+                .task-header-clean {
                     flex-direction: column;
                     align-items: flex-start;
-                    gap: 12px;
-                    padding: 16px;
+                    gap: 8px;
                 }
-
-                .task-left {
-                    width: 100%;
+                
+                .task-title-clean {
+                    font-size: 16px;
+                    white-space: normal;
                 }
-
-                .task-right {
+                
+                .task-meta-clean {
                     width: 100%;
                     justify-content: space-between;
                 }
-
-                .task-title {
-                    white-space: normal;
-                    line-height: 1.4;
+                
+                .priority-bar {
+                    height: 50px;
+                    margin-right: 16px;
                 }
-
-                .task-meta {
+                
+                .task-actions-clean {
+                    margin-left: 16px;
+                    gap: 6px;
+                }
+                
+                .action-btn-clean {
+                    width: 36px;
+                    height: 36px;
+                    font-size: 14px;
+                }
+                
+                .form-row {
+                    grid-template-columns: 1fr;
+                }
+                
+                .advanced-filters-grid {
+                    grid-template-columns: 1fr;
+                    gap: 16px;
+                }
+                
+                .task-meta-badges {
                     flex-direction: column;
-                    align-items: flex-start;
-                    gap: 4px;
+                    gap: 8px;
                 }
-
-                .separator {
-                    display: none;
+                
+                .email-details-grid {
+                    padding: 16px 20px;
                 }
-
-                .tasks-container {
-                    padding: 0 16px;
+                
+                .details-section {
+                    margin-bottom: 24px;
+                }
+                
+                .details-section h3 {
+                    padding: 16px 20px;
+                    font-size: 16px;
+                }
+                
+                .task-title-details {
+                    font-size: 24px;
+                }
+                
+                .empty-state-modern {
+                    padding: 60px 20px;
+                }
+                
+                .empty-state-title {
+                    font-size: 24px;
+                }
+                
+                .empty-state-text {
+                    font-size: 16px;
+                }
+            }
+            
+            @media (max-width: 480px) {
+                .tasks-title {
+                    font-size: 28px;
+                }
+                
+                .tasks-count-large {
+                    font-size: 14px;
+                    padding: 6px 12px;
+                }
+                
+                .search-input-large {
+                    padding: 14px 20px 14px 48px;
+                    font-size: 15px;
+                }
+                
+                .task-clean-card {
+                    padding: 12px;
+                }
+                
+                .task-title-clean {
+                    font-size: 15px;
+                }
+                
+                .task-type-badge {
+                    font-size: 12px;
+                    padding: 4px 8px;
+                }
+                
+                .deadline-badge {
+                    font-size: 11px;
+                    padding: 4px 8px;
+                }
+                
+                .task-recipient-clean {
+                    font-size: 13px;
+                }
+                
+                .priority-bar {
+                    width: 4px;
+                    height: 40px;
+                    margin-right: 12px;
+                }
+                
+                .action-btn-clean {
+                    width: 32px;
+                    height: 32px;
+                    font-size: 13px;
                 }
             }
         `;
@@ -2058,15 +3816,13 @@ class TasksView {
 }
 
 // =====================================
-// AUTO-REGISTRATION ET INTÉGRATION SYSTÈME
+// GLOBAL INITIALIZATION
 // =====================================
 
-// Fonction d'initialisation globale auto-suffisante
-function initializeTaskManagerModule() {
-    console.log('[TaskManager] Auto-initializing independent module v9.2...');
+function initializeTaskManager() {
+    console.log('[TaskManager] Initializing global instances v9.0...');
     
-    // Créer les instances globales
-    if (!window.taskManager) {
+    if (!window.taskManager || !window.taskManager.initialized) {
         window.taskManager = new TaskManager();
     }
     
@@ -2074,7 +3830,6 @@ function initializeTaskManagerModule() {
         window.tasksView = new TasksView();
     }
     
-    // Bind toutes les méthodes
     Object.getOwnPropertyNames(TaskManager.prototype).forEach(name => {
         if (name !== 'constructor' && typeof window.taskManager[name] === 'function') {
             window.taskManager[name] = window.taskManager[name].bind(window.taskManager);
@@ -2087,227 +3842,21 @@ function initializeTaskManagerModule() {
         }
     });
     
-    // AUTO-REGISTRATION avec PageManager (si disponible)
-    const registerWithPageManager = () => {
-        if (window.pageManager) {
-            console.log('[TaskManager] PageManager detected, attempting auto-registration...');
-            
-            try {
-                // Méthode 1: Essayer registerPageRenderer
-                if (typeof window.pageManager.registerPageRenderer === 'function') {
-                    window.pageManager.registerPageRenderer('tasks', (container) => {
-                        console.log('[TaskManager] PageManager rendering tasks page');
-                        if (window.tasksView && container) {
-                            window.tasksView.render(container);
-                        }
-                    });
-                    console.log('[TaskManager] ✅ Registered via registerPageRenderer');
-                    return true;
-                }
-                
-                // Méthode 2: Injection directe si pageRenderers existe
-                if (window.pageManager.pageRenderers && typeof window.pageManager.pageRenderers === 'object') {
-                    window.pageManager.pageRenderers.tasks = (container) => {
-                        console.log('[TaskManager] Direct pageRenderers method called');
-                        if (window.tasksView && container) {
-                            window.tasksView.render(container);
-                        }
-                    };
-                    console.log('[TaskManager] ✅ Registered via direct pageRenderers injection');
-                    return true;
-                }
-                
-                // Méthode 3: Override loadPage
-                if (window.pageManager.loadPage && !window.pageManager._taskManagerOverride) {
-                    const originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
-                    window.pageManager._taskManagerOverride = true;
-                    
-                    window.pageManager.loadPage = function(pageName) {
-                        if (pageName === 'tasks') {
-                            console.log('[TaskManager] Intercepted loadPage for tasks');
-                            
-                            // Chercher le container
-                            const selectors = ['.content-area', '#content', '.page-content', 'main'];
-                            let container = null;
-                            
-                            for (const selector of selectors) {
-                                container = document.querySelector(selector);
-                                if (container) break;
-                            }
-                            
-                            if (container && window.tasksView) {
-                                container.innerHTML = '';
-                                window.tasksView.render(container);
-                                
-                                // Simuler le succès
-                                if (window.uiManager && window.uiManager.hideLoading) {
-                                    setTimeout(() => window.uiManager.hideLoading(), 100);
-                                }
-                                
-                                return Promise.resolve();
-                            }
-                        }
-                        
-                        return originalLoadPage(pageName);
-                    };
-                    
-                    console.log('[TaskManager] ✅ Registered via loadPage override');
-                    return true;
-                }
-                
-            } catch (error) {
-                console.warn('[TaskManager] PageManager registration failed:', error);
-            }
-        }
-        
-        return false;
-    };
-    
-    // Essayer l'enregistrement immédiatement
-    if (!registerWithPageManager()) {
-        console.log('[TaskManager] PageManager not ready, setting up watcher...');
-        
-        // Watcher pour détecter quand PageManager devient disponible
-        const checkPageManager = setInterval(() => {
-            if (registerWithPageManager()) {
-                clearInterval(checkPageManager);
-            }
-        }, 500);
-        
-        // Arrêter le watcher après 10 secondes
-        setTimeout(() => {
-            clearInterval(checkPageManager);
-            console.log('[TaskManager] PageManager watcher stopped');
-        }, 10000);
-    }
-    
-    console.log('✅ TaskManager v9.2 - Module indépendant et auto-suffisant chargé');
+    console.log('✅ TaskManager v9.0 loaded - Interface épurée et moderne');
 }
 
-// MÉTHODES GLOBALES D'ACCÈS DIRECT
-window.renderTasksPage = function(container) {
-    console.log('[TaskManager] Global renderTasksPage called');
-    
-    if (!window.tasksView) {
-        initializeTaskManagerModule();
-        setTimeout(() => {
-            if (window.tasksView && container) {
-                window.tasksView.render(container);
-            }
-        }, 200);
-    } else if (container) {
-        window.tasksView.render(container);
-    }
-};
+initializeTaskManager();
 
-window.showTasksPage = function() {
-    console.log('[TaskManager] Global showTasksPage called');
-    
-    const selectors = ['.content-area', '#content', '.page-content', 'main', '.container'];
-    let container = null;
-    
-    for (const selector of selectors) {
-        container = document.querySelector(selector);
-        if (container) {
-            console.log('[TaskManager] Found container:', selector);
-            break;
-        }
-    }
-    
-    if (container) {
-        window.renderTasksPage(container);
-    } else {
-        console.error('[TaskManager] No suitable container found');
-    }
-};
-
-// DÉTECTION AUTOMATIQUE DE NAVIGATION
-window.addEventListener('hashchange', () => {
-    const hash = window.location.hash;
-    if (hash.includes('tasks')) {
-        setTimeout(() => {
-            console.log('[TaskManager] Hash change detected, showing tasks...');
-            window.showTasksPage();
-        }, 300);
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('[TaskManager] DOM ready, ensuring initialization...');
+    initializeTaskManager();
 });
 
-// DÉTECTION DE CHANGEMENTS DE PAGE VIA MUTATION OBSERVER
-if (typeof MutationObserver !== 'undefined') {
-    const observer = new MutationObserver((mutations) => {
-        if (window.location.hash.includes('tasks')) {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                    for (let node of mutation.addedNodes) {
-                        if (node.nodeType === Node.ELEMENT_NODE) {
-                            const container = node.querySelector && (
-                                node.querySelector('.content-area') ||
-                                node.querySelector('#content') ||
-                                node.querySelector('.page-content')
-                            ) || (
-                                (node.classList && (
-                                    node.classList.contains('content-area') ||
-                                    node.classList.contains('page-content') ||
-                                    node.id === 'content'
-                                )) ? node : null
-                            );
-                            
-                            if (container && window.tasksView) {
-                                console.log('[TaskManager] Container detected via MutationObserver');
-                                setTimeout(() => window.tasksView.render(container), 100);
-                            }
-                        }
-                    }
-                }
-            });
-        }
-    });
-    
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
-}
-
-// INITIALISATION AUTOMATIQUE À DIFFÉRENTS MOMENTS
-console.log('[TaskManager] Setting up auto-initialization...');
-
-// Immédiat
-initializeTaskManagerModule();
-
-// DOM Ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('[TaskManager] DOM ready, re-initializing...');
-        initializeTaskManagerModule();
-        
-        // Vérifier si on est déjà sur tasks
-        if (window.location.hash.includes('tasks')) {
-            setTimeout(() => window.showTasksPage(), 500);
-        }
-    });
-} else {
-    console.log('[TaskManager] DOM already ready');
-    if (window.location.hash.includes('tasks')) {
-        setTimeout(() => window.showTasksPage(), 200);
-    }
-}
-
-// Window Load
 window.addEventListener('load', () => {
-    console.log('[TaskManager] Window loaded, final check...');
-    
-    if (!window.taskManager || !window.taskManager.initialized) {
-        initializeTaskManagerModule();
-    }
-    
-    // Si on est sur tasks, forcer l'affichage
-    if (window.location.hash.includes('tasks')) {
-        setTimeout(() => {
-            console.log('[TaskManager] On tasks page after load, forcing display...');
-            window.showTasksPage();
-        }, 1000);
-    }
+    setTimeout(() => {
+        if (!window.taskManager || !window.taskManager.initialized) {
+            console.log('[TaskManager] Fallback initialization...');
+            initializeTaskManager();
+        }
+    }, 1000);
 });
-
-console.log('🚀 TaskManager v9.2 - Module indépendant et auto-suffisant initialisé');
