@@ -1,5 +1,5 @@
-// TaskManager Pro v9.0 - Interface Moderne et Minimaliste
-// Structure claire avec regroupement par domaine/expéditeur
+// TaskManager Pro v9.1 - Interface Moderne avec TOUTES les Fonctionnalités
+// Menu centré + Email complet + Suggestions IA + Modification + etc.
 
 // =====================================
 // ENHANCED TASK MANAGER CLASS
@@ -14,7 +14,7 @@ class TaskManager {
 
     async init() {
         try {
-            console.log('[TaskManager] Initializing v9.0 - Interface moderne...');
+            console.log('[TaskManager] Initializing v9.1 - Interface moderne avec toutes fonctionnalités...');
             await this.loadTasks();
             this.initialized = true;
             console.log('[TaskManager] Initialization complete with', this.tasks.length, 'tasks');
@@ -46,10 +46,49 @@ class TaskManager {
             {
                 id: 'task_1',
                 title: 'Validation campagne marketing Q2',
+                description: '📧 RÉSUMÉ EXÉCUTIF\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nDe: Sarah Martin (acme-corp.com)\nObjet: Demande de validation pour la campagne marketing Q2\n📮 Réponse attendue\n\n🎯 ACTIONS REQUISES:\n1. Valider les visuels de la campagne\n2. Confirmer le budget alloué\n3. Définir les dates de lancement\n\n💡 INFORMATIONS CLÉS:\n• Budget proposé : 50k€\n• Cible : 25-45 ans\n• Canaux : LinkedIn, Google Ads\n\n⚠️ POINTS D\'ATTENTION:\n• Deadline serrée pour le lancement\n• Coordination avec l\'équipe commerciale requise',
                 client: 'ACME Corp',
                 company: 'acme-corp.com',
                 emailFrom: 'sarah.martin@acme-corp.com',
                 emailFromName: 'Sarah Martin',
+                emailSubject: 'Validation campagne marketing Q2',
+                emailContent: `Email de: Sarah Martin <sarah.martin@acme-corp.com>
+Date: ${new Date().toLocaleString('fr-FR')}
+Sujet: Validation campagne marketing Q2
+
+Bonjour,
+
+J'espère que vous allez bien. Je vous contacte concernant notre campagne marketing Q2 qui nécessite votre validation.
+
+Nous avons préparé les éléments suivants :
+- Visuels créatifs pour les réseaux sociaux
+- Budget détaillé de 50k€
+- Calendrier de lancement
+
+Pourriez-vous valider ces éléments avant vendredi ? Nous devons coordonner avec l'équipe commerciale pour le lancement.
+
+Merci d'avance,
+Sarah Martin`,
+                emailHtmlContent: `<div style="font-family: Arial, sans-serif; max-width: 600px;">
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+                        <h1 style="margin: 0; font-size: 24px;">ACME Corp</h1>
+                        <p style="margin: 5px 0 0 0; opacity: 0.9;">Marketing Department</p>
+                    </div>
+                    <div style="background: white; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+                        <p>Bonjour,</p>
+                        <p>J'espère que vous allez bien. Je vous contacte concernant notre <strong>campagne marketing Q2</strong> qui nécessite votre validation.</p>
+                        <div style="background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; padding: 15px; margin: 20px 0;">
+                            <h3 style="margin: 0 0 10px 0; color: #1f2937;">Éléments préparés :</h3>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>Visuels créatifs pour les réseaux sociaux</li>
+                                <li><strong>Budget détaillé de 50k€</strong></li>
+                                <li>Calendrier de lancement</li>
+                            </ul>
+                        </div>
+                        <p><strong>Pourriez-vous valider ces éléments avant vendredi ?</strong> Nous devons coordonner avec l'équipe commerciale pour le lancement.</p>
+                        <p style="margin-top: 30px;">Merci d'avance,<br><strong>Sarah Martin</strong></p>
+                    </div>
+                </div>`,
                 priority: 'high',
                 status: 'todo',
                 category: 'marketing',
@@ -57,15 +96,80 @@ class TaskManager {
                 dueDate: '2025-06-10',
                 createdAt: new Date().toISOString(),
                 hasEmail: true,
-                needsReply: true
+                needsReply: true,
+                emailReplied: false,
+                actions: [
+                    { text: 'Valider les visuels de la campagne', deadline: null },
+                    { text: 'Confirmer le budget alloué', deadline: '2025-06-07' },
+                    { text: 'Définir les dates de lancement', deadline: null }
+                ],
+                keyInfo: [
+                    'Budget proposé : 50k€',
+                    'Cible : 25-45 ans',
+                    'Canaux : LinkedIn, Google Ads'
+                ],
+                risks: [
+                    'Deadline serrée pour le lancement',
+                    'Coordination avec l\'équipe commerciale requise'
+                ],
+                suggestedReplies: [
+                    {
+                        tone: 'formel',
+                        subject: 'Re: Validation campagne marketing Q2 - Approuvé',
+                        content: `Bonjour Sarah,
+
+Merci pour ce dossier complet sur la campagne marketing Q2.
+
+Après examen des éléments fournis, je valide :
+✓ Les visuels créatifs - très bien conçus
+✓ Le budget de 50k€ - approuvé 
+✓ Le calendrier de lancement - cohérent avec nos objectifs
+
+Vous pouvez procéder au lancement en coordination avec l'équipe commerciale comme prévu.
+
+Excellente initiative, félicitations à toute l'équipe !
+
+Cordialement,
+[Votre nom]`,
+                        description: 'Réponse professionnelle d\'approbation',
+                        generatedBy: 'claude-ai'
+                    },
+                    {
+                        tone: 'urgent',
+                        subject: 'Re: Validation campagne marketing Q2 - Questions urgentes',
+                        content: `Bonjour Sarah,
+
+J'ai examiné le dossier campagne Q2 avec attention.
+
+Avant validation finale, j'ai quelques questions urgentes :
+
+1. Budget 50k€ : quelle répartition LinkedIn vs Google Ads ?
+2. Cible 25-45 ans : avez-vous les personas détaillés ?
+3. Coordination commerciale : qui est le référent côté vente ?
+
+Pouvons-nous organiser un point rapidement demain pour clarifier ces aspects ?
+
+Dans l'attente de votre retour,
+[Votre nom]`,
+                        description: 'Réponse avec questions complémentaires',
+                        generatedBy: 'claude-ai'
+                    }
+                ],
+                tags: ['marketing', 'validation', 'q2'],
+                summary: 'Validation urgente de la campagne marketing Q2 avec budget de 50k€',
+                aiRepliesGenerated: true,
+                aiRepliesGeneratedAt: new Date().toISOString()
             },
             {
                 id: 'task_2', 
                 title: 'Révision contrat partenariat',
+                description: 'Révision complète du contrat de partenariat avec TechFlow pour la nouvelle année.',
                 client: 'TechFlow',
                 company: 'techflow.io',
                 emailFrom: 'legal@techflow.io',
                 emailFromName: 'Marie Dubois',
+                emailSubject: 'Révision contrat partenariat 2025',
+                emailContent: 'Email concernant la révision du contrat de partenariat pour 2025...',
                 priority: 'urgent',
                 status: 'in-progress',
                 category: 'legal',
@@ -73,11 +177,22 @@ class TaskManager {
                 dueDate: '2025-06-08',
                 createdAt: new Date(Date.now() - 86400000).toISOString(),
                 hasEmail: true,
-                needsReply: true
+                needsReply: true,
+                emailReplied: false,
+                actions: [
+                    { text: 'Examiner les nouvelles clauses', deadline: '2025-06-08' },
+                    { text: 'Valider les conditions financières', deadline: '2025-06-08' }
+                ],
+                keyInfo: ['Contrat annuel', 'Conditions modifiées'],
+                risks: ['Délai très serré'],
+                suggestedReplies: [],
+                tags: ['legal', 'contrat', 'urgent'],
+                summary: 'Révision urgente du contrat de partenariat TechFlow'
             },
             {
                 id: 'task_3',
                 title: 'Préparation présentation client',
+                description: 'Préparer la présentation pour le client StartupXYZ concernant leur nouveau projet.',
                 client: 'StartupXYZ',
                 company: 'startup-xyz.fr',
                 emailFrom: 'ceo@startup-xyz.fr',
@@ -89,23 +204,16 @@ class TaskManager {
                 dueDate: '2025-06-12',
                 createdAt: new Date(Date.now() - 172800000).toISOString(),
                 hasEmail: false,
-                needsReply: false
-            },
-            {
-                id: 'task_4',
-                title: 'Analyse budget Q3',
-                client: 'Finance Corp',
-                company: 'financecorp.com',
-                emailFrom: 'finance@financecorp.com',
-                emailFromName: 'Julie Chen',
-                priority: 'medium',
-                status: 'completed',
-                category: 'finance',
-                type: 'email',
-                dueDate: '2025-06-05',
-                createdAt: new Date(Date.now() - 259200000).toISOString(),
-                hasEmail: true,
-                needsReply: false
+                needsReply: false,
+                actions: [
+                    { text: 'Créer les slides', deadline: '2025-06-11' },
+                    { text: 'Préparer la démo', deadline: '2025-06-11' }
+                ],
+                keyInfo: ['Nouveau projet', 'Présentation stratégique'],
+                risks: [],
+                suggestedReplies: [],
+                tags: ['presentation', 'client'],
+                summary: 'Préparation présentation pour StartupXYZ'
             }
         ];
         
@@ -113,18 +221,44 @@ class TaskManager {
         this.saveTasks();
     }
 
-    createTaskFromEmail(taskData, email = null) {
-        console.log('[TaskManager] Creating task from email:', taskData.title);
+    // MÉTHODE PRINCIPALE POUR CRÉER UNE TÂCHE À PARTIR D'UN EMAIL - AVEC TOUTES LES FONCTIONNALITÉS
+    async createTaskFromEmail(taskData, email = null) {
+        console.log('[TaskManager] Creating task from email with all features:', taskData.title);
         
         const taskId = taskData.id || this.generateId();
+        
+        // EXTRAIRE LE CONTENU COMPLET DE L'EMAIL
+        const fullEmailContent = this.extractFullEmailContent(email, taskData);
+        const htmlEmailContent = this.extractHtmlEmailContent(email, taskData);
+        
+        // GÉNÉRER DES SUGGESTIONS DE RÉPONSE VIA IA SI NÉCESSAIRE
+        let suggestedReplies = taskData.suggestedReplies || [];
+        
+        if ((!suggestedReplies || suggestedReplies.length === 0) && 
+            (email || taskData.emailFrom) && 
+            window.aiTaskAnalyzer) {
+            
+            try {
+                console.log('[TaskManager] Generating AI-powered reply suggestions...');
+                suggestedReplies = await this.generateIntelligentReplySuggestions(email || taskData, taskData);
+                console.log('[TaskManager] Generated', suggestedReplies.length, 'AI reply suggestions');
+            } catch (error) {
+                console.warn('[TaskManager] AI reply generation failed:', error);
+                suggestedReplies = this.generateBasicReplySuggestions(email || taskData, taskData);
+            }
+        }
         
         const task = {
             id: taskId,
             title: taskData.title || 'Nouvelle tâche',
+            description: taskData.description || '',
             client: taskData.client || this.extractClient(taskData.emailFrom),
             company: taskData.company || this.extractCompany(taskData.emailFrom),
             emailFrom: taskData.emailFrom || (email?.from?.emailAddress?.address),
             emailFromName: taskData.emailFromName || (email?.from?.emailAddress?.name),
+            emailSubject: taskData.emailSubject || email?.subject,
+            emailContent: fullEmailContent,
+            emailHtmlContent: htmlEmailContent,
             priority: taskData.priority || 'medium',
             status: taskData.status || 'todo',
             category: taskData.category || 'email',
@@ -132,26 +266,248 @@ class TaskManager {
             dueDate: taskData.dueDate || null,
             hasEmail: true,
             needsReply: taskData.needsReply !== false,
+            emailReplied: false,
+            emailDate: taskData.emailDate || email?.receivedDateTime,
+            
+            // DONNÉES STRUCTURÉES COMPLÈTES
+            summary: taskData.summary || '',
+            actions: taskData.actions || [],
+            keyInfo: taskData.keyInfo || [],
+            risks: taskData.risks || [],
+            tags: taskData.tags || [],
+            
+            // SUGGESTIONS DE RÉPONSE IA
+            suggestedReplies: suggestedReplies,
+            aiRepliesGenerated: suggestedReplies.length > 0,
+            aiRepliesGeneratedAt: suggestedReplies.length > 0 ? new Date().toISOString() : null,
+            
             createdAt: taskData.createdAt || new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            method: taskData.method || 'ai'
         };
         
         this.tasks.push(task);
         this.saveTasks();
         this.emitTaskUpdate('create', task);
         
-        console.log('[TaskManager] Task created successfully:', task.id);
+        console.log('[TaskManager] Task created with all features:', task.id);
         return task;
+    }
+
+    // NOUVELLE MÉTHODE POUR GÉNÉRER DES SUGGESTIONS DE RÉPONSE INTELLIGENTES VIA IA
+    async generateIntelligentReplySuggestions(email, taskData) {
+        if (!window.aiTaskAnalyzer) {
+            console.warn('[TaskManager] AITaskAnalyzer not available');
+            return this.generateBasicReplySuggestions(email, taskData);
+        }
+
+        try {
+            const senderName = email.from?.emailAddress?.name || taskData.emailFromName || 'l\'expéditeur';
+            const senderEmail = email.from?.emailAddress?.address || taskData.emailFrom || '';
+            const subject = email.subject || taskData.emailSubject || 'votre message';
+            const content = email.body?.content || email.bodyPreview || taskData.emailContent || '';
+            const urgency = taskData.priority || 'medium';
+            const hasActions = taskData.actions && taskData.actions.length > 0;
+
+            const replyPrompt = `Tu es un assistant expert en communication professionnelle. Génère 3 suggestions de réponse personnalisées pour cet email.
+
+CONTEXTE DE L'EMAIL:
+Expéditeur: ${senderName} <${senderEmail}>
+Sujet: ${subject}
+Priorité détectée: ${urgency}
+Actions requises: ${hasActions ? 'Oui' : 'Non'}
+
+CONTENU DE L'EMAIL:
+${content}
+
+INSTRUCTIONS:
+1. Analyse le contexte, le ton et l'urgence de l'email
+2. Génère 3 réponses différentes adaptées au contexte
+3. Varie les tons: professionnel, urgent si nécessaire, et une version plus détaillée
+4. Personalise avec le nom de l'expéditeur et les éléments spécifiques mentionnés
+5. Inclus des éléments concrets de l'email original
+
+FORMAT DE RÉPONSE JSON:
+{
+  "suggestions": [
+    {
+      "tone": "professionnel",
+      "subject": "Re: [sujet original]",
+      "content": "Réponse complète et personnalisée...",
+      "description": "Réponse professionnelle standard"
+    },
+    {
+      "tone": "urgent", 
+      "subject": "Re: [sujet] - Traitement prioritaire",
+      "content": "Réponse adaptée à l'urgence...",
+      "description": "Réponse pour traitement urgent"
+    },
+    {
+      "tone": "détaillé",
+      "subject": "Re: [sujet] - Réponse détaillée", 
+      "content": "Réponse complète avec tous les détails...",
+      "description": "Réponse complète et détaillée"
+    }
+  ]
+}`;
+
+            const aiResponse = await this.callAIForReplySuggestions(replyPrompt);
+            
+            if (aiResponse && aiResponse.suggestions && Array.isArray(aiResponse.suggestions)) {
+                return aiResponse.suggestions.map(suggestion => ({
+                    tone: suggestion.tone || 'neutre',
+                    subject: suggestion.subject || `Re: ${subject}`,
+                    content: suggestion.content || '',
+                    description: suggestion.description || '',
+                    generatedBy: 'claude-ai',
+                    generatedAt: new Date().toISOString()
+                }));
+            } else {
+                return this.generateBasicReplySuggestions(email, taskData);
+            }
+
+        } catch (error) {
+            console.error('[TaskManager] Error generating AI reply suggestions:', error);
+            return this.generateBasicReplySuggestions(email, taskData);
+        }
+    }
+
+    async callAIForReplySuggestions(prompt) {
+        if (!window.aiTaskAnalyzer) {
+            throw new Error('AITaskAnalyzer not available');
+        }
+
+        try {
+            if (window.aiTaskAnalyzer.apiKey) {
+                return await this.callClaudeAPI(prompt);
+            } else {
+                return this.generateBasicReplySuggestionsFromPrompt(prompt);
+            }
+        } catch (error) {
+            console.error('[TaskManager] AI API call failed:', error);
+            throw error;
+        }
+    }
+
+    generateBasicReplySuggestions(email, taskData) {
+        const senderName = email.from?.emailAddress?.name || taskData.emailFromName || 'l\'expéditeur';
+        const subject = email.subject || taskData.emailSubject || 'votre message';
+        
+        return [
+            {
+                tone: 'professionnel',
+                subject: `Re: ${subject}`,
+                content: `Bonjour ${senderName},
+
+Merci pour votre message concernant "${subject}".
+
+J'ai bien pris connaissance de votre demande et je m'en occupe rapidement. Je vous tiendrai informé de l'avancement.
+
+Cordialement,
+[Votre nom]`,
+                description: 'Réponse professionnelle standard',
+                generatedBy: 'local-fallback'
+            }
+        ];
+    }
+
+    // MÉTHODES POUR EXTRAIRE LE CONTENU EMAIL COMPLET
+    extractFullEmailContent(email, taskData) {
+        if (taskData.emailContent && taskData.emailContent.length > 50) {
+            return taskData.emailContent;
+        }
+        
+        if (email?.body?.content) {
+            return this.cleanEmailContent(email.body.content);
+        }
+        
+        return this.buildMinimalEmailContent(email, taskData);
+    }
+
+    extractHtmlEmailContent(email, taskData) {
+        if (taskData.emailHtmlContent && taskData.emailHtmlContent.length > 50) {
+            return taskData.emailHtmlContent;
+        }
+        
+        if (email?.body?.contentType === 'html' && email?.body?.content) {
+            return this.cleanHtmlEmailContent(email.body.content);
+        }
+        
+        const textContent = this.extractFullEmailContent(email, taskData);
+        return this.convertTextToHtml(textContent, email);
+    }
+
+    cleanEmailContent(content) {
+        if (!content) return '';
+        
+        return content
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    cleanHtmlEmailContent(htmlContent) {
+        if (!htmlContent) return '';
+        
+        return htmlContent
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+            .replace(/on\w+="[^"]*"/gi, '')
+            .replace(/javascript:/gi, '');
+    }
+
+    convertTextToHtml(textContent, email) {
+        if (!textContent) return '';
+        
+        const senderName = email?.from?.emailAddress?.name || 'Expéditeur';
+        const senderEmail = email?.from?.emailAddress?.address || '';
+        const subject = email?.subject || 'Sans sujet';
+        const date = email?.receivedDateTime ? new Date(email.receivedDateTime).toLocaleString('fr-FR') : '';
+        
+        const htmlContent = textContent
+            .replace(/\n/g, '<br>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        return `<div class="email-content-viewer">
+            <div class="email-header">
+                <strong>De:</strong> ${senderName} &lt;${senderEmail}&gt;<br>
+                <strong>Date:</strong> ${date}<br>
+                <strong>Sujet:</strong> ${subject}
+            </div>
+            <div class="email-body">
+                ${htmlContent}
+            </div>
+        </div>`;
+    }
+
+    buildMinimalEmailContent(email, taskData) {
+        const senderName = taskData.emailFromName || email?.from?.emailAddress?.name || 'Inconnu';
+        const senderEmail = taskData.emailFrom || email?.from?.emailAddress?.address || '';
+        const subject = taskData.emailSubject || email?.subject || 'Sans sujet';
+        
+        return `Email de: ${senderName} <${senderEmail}>
+Sujet: ${subject}
+
+${taskData.summary || 'Contenu de l\'email...'}`;
     }
 
     createTask(taskData) {
         const task = {
             id: taskData.id || this.generateId(),
             title: taskData.title || 'Nouvelle tâche',
+            description: taskData.description || '',
             client: taskData.client || 'Client',
             company: taskData.company || 'company.com',
             emailFrom: taskData.emailFrom || null,
             emailFromName: taskData.emailFromName || null,
+            emailSubject: taskData.emailSubject || null,
+            emailContent: taskData.emailContent || '',
+            emailHtmlContent: taskData.emailHtmlContent || '',
             priority: taskData.priority || 'medium',
             status: taskData.status || 'todo',
             category: taskData.category || 'other',
@@ -159,8 +515,18 @@ class TaskManager {
             dueDate: taskData.dueDate || null,
             hasEmail: false,
             needsReply: false,
+            emailReplied: false,
+            
+            summary: taskData.summary || '',
+            actions: taskData.actions || [],
+            keyInfo: taskData.keyInfo || [],
+            risks: taskData.risks || [],
+            tags: taskData.tags || [],
+            suggestedReplies: taskData.suggestedReplies || [],
+            
             createdAt: taskData.createdAt || new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            method: taskData.method || 'manual'
         };
         
         this.tasks.push(task);
@@ -226,6 +592,19 @@ class TaskManager {
             );
         }
         
+        if (filters.overdue) {
+            filtered = filtered.filter(task => {
+                if (!task.dueDate || task.status === 'completed') return false;
+                return new Date(task.dueDate) < new Date();
+            });
+        }
+        
+        if (filters.needsReply) {
+            filtered = filtered.filter(task => 
+                task.needsReply && !task.emailReplied && task.status !== 'completed'
+            );
+        }
+        
         return this.sortTasks(filtered, filters.sortBy || 'created');
     }
 
@@ -275,7 +654,7 @@ class TaskManager {
             grouped[key].count++;
             
             if (task.priority === 'urgent') grouped[key].urgent++;
-            if (task.needsReply) grouped[key].needsReply++;
+            if (task.needsReply && !task.emailReplied) grouped[key].needsReply++;
         });
         
         return Object.values(grouped).sort((a, b) => b.count - a.count);
@@ -298,7 +677,9 @@ class TaskManager {
                 if (!t.dueDate || t.status === 'completed') return false;
                 return new Date(t.dueDate) < new Date();
             }).length,
-            needsReply: this.tasks.filter(t => t.needsReply && t.status !== 'completed').length
+            needsReply: this.tasks.filter(t => 
+                t.needsReply && !t.emailReplied && t.status !== 'completed'
+            ).length
         };
     }
 
@@ -349,7 +730,7 @@ class TaskManager {
 }
 
 // =====================================
-// MODERN MINIMALIST TASKS VIEW
+// MODERN TASKS VIEW - MENU CENTRÉ + TOUTES FONCTIONNALITÉS
 // =====================================
 class TasksView {
     constructor() {
@@ -364,7 +745,8 @@ class TasksView {
         
         this.selectedTasks = new Set();
         this.expandedGroups = new Set();
-        this.viewMode = 'grouped'; // grouped | list
+        this.viewMode = 'grouped';
+        this.showAdvancedFilters = false;
         
         window.addEventListener('taskUpdate', () => {
             this.refreshView();
@@ -398,103 +780,143 @@ class TasksView {
         container.innerHTML = `
             <div class="modern-tasks-app">
                 ${this.renderHeader(stats)}
-                ${this.renderFilters()}
+                ${this.renderStatusFilters(stats)}
+                ${this.renderAdvancedFilters()}
                 ${this.renderTasksContent()}
             </div>
         `;
 
         this.addModernStyles();
         this.setupEventListeners();
-        console.log('[TasksView] Modern minimalist interface rendered');
+        console.log('[TasksView] Modern interface with all features rendered');
     }
 
     renderHeader(stats) {
         return `
             <header class="tasks-header">
-                <div class="header-left">
-                    <h1 class="page-title">Tâches</h1>
-                    <div class="stats-pills">
-                        <span class="stat-pill stat-primary">${stats.total} total</span>
-                        <span class="stat-pill stat-urgent">${stats.overdue} urgente${stats.overdue > 1 ? 's' : ''}</span>
-                        <span class="stat-pill stat-reply">${stats.needsReply} à répondre</span>
-                    </div>
-                </div>
-                
-                <div class="header-actions">
-                    <div class="search-box">
-                        <input type="text" 
-                               class="search-input" 
-                               placeholder="Rechercher..." 
-                               value="${this.currentFilters.search}"
-                               onInput="window.tasksView.handleSearch(this.value)">
-                        <i class="search-icon">🔍</i>
+                <div class="header-container">
+                    <div class="header-left">
+                        <h1 class="page-title">Tâches</h1>
+                        <span class="total-count">${stats.total} tâche${stats.total > 1 ? 's' : ''}</span>
                     </div>
                     
-                    <div class="view-toggle">
-                        <button class="toggle-btn ${this.viewMode === 'grouped' ? 'active' : ''}" 
-                                onclick="window.tasksView.setViewMode('grouped')">
-                            <i class="icon">📁</i> Groupé
-                        </button>
-                        <button class="toggle-btn ${this.viewMode === 'list' ? 'active' : ''}" 
-                                onclick="window.tasksView.setViewMode('list')">
-                            <i class="icon">📄</i> Liste
-                        </button>
+                    <div class="header-center">
+                        <div class="search-box">
+                            <input type="text" 
+                                   class="search-input" 
+                                   placeholder="Rechercher dans les tâches..." 
+                                   value="${this.currentFilters.search}"
+                                   onInput="window.tasksView.handleSearch(this.value)">
+                            <i class="search-icon">🔍</i>
+                        </div>
                     </div>
                     
-                    <button class="btn-primary" onclick="window.tasksView.showCreateModal()">
-                        <i class="icon">➕</i> Nouvelle tâche
-                    </button>
+                    <div class="header-right">
+                        <div class="view-toggle">
+                            <button class="toggle-btn ${this.viewMode === 'grouped' ? 'active' : ''}" 
+                                    onclick="window.tasksView.setViewMode('grouped')">
+                                <i class="icon">📁</i> Groupé
+                            </button>
+                            <button class="toggle-btn ${this.viewMode === 'list' ? 'active' : ''}" 
+                                    onclick="window.tasksView.setViewMode('list')">
+                                <i class="icon">📄</i> Liste
+                            </button>
+                        </div>
+                        
+                        <button class="btn-primary" onclick="window.tasksView.showCreateModal()">
+                            <i class="icon">➕</i> Nouvelle tâche
+                        </button>
+                    </div>
                 </div>
             </header>
         `;
     }
 
-    renderFilters() {
+    renderStatusFilters(stats) {
+        const filters = [
+            { id: 'all', name: 'Toutes', icon: '📋', count: stats.total },
+            { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo },
+            { id: 'in-progress', name: 'En cours', icon: '🔄', count: stats.inProgress },
+            { id: 'overdue', name: 'En retard', icon: '⚠️', count: stats.overdue },
+            { id: 'needsReply', name: 'À répondre', icon: '📧', count: stats.needsReply },
+            { id: 'completed', name: 'Terminées', icon: '✅', count: stats.completed }
+        ];
+
+        return `
+            <div class="status-filters">
+                <div class="filters-container">
+                    ${filters.map(filter => `
+                        <button class="status-filter ${this.isFilterActive(filter.id) ? 'active' : ''}" 
+                                onclick="window.tasksView.quickFilter('${filter.id}')">
+                            <span class="filter-icon">${filter.icon}</span>
+                            <span class="filter-name">${filter.name}</span>
+                            <span class="filter-count">${filter.count}</span>
+                        </button>
+                    `).join('')}
+                    
+                    <button class="advanced-filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
+                            onclick="window.tasksView.toggleAdvancedFilters()">
+                        <i class="icon">🔧</i>
+                        Filtres avancés
+                        <i class="chevron ${this.showAdvancedFilters ? 'up' : 'down'}">▼</i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    renderAdvancedFilters() {
         const companies = [...new Set(window.taskManager.getAllTasks().map(t => t.company))].sort();
         const types = [...new Set(window.taskManager.getAllTasks().map(t => t.type))].sort();
         
         return `
-            <div class="filters-bar">
-                <div class="filter-group">
-                    <select class="filter-select" onchange="window.tasksView.updateFilter('status', this.value)">
-                        <option value="all" ${this.currentFilters.status === 'all' ? 'selected' : ''}>Tous les statuts</option>
-                        <option value="todo" ${this.currentFilters.status === 'todo' ? 'selected' : ''}>À faire</option>
-                        <option value="in-progress" ${this.currentFilters.status === 'in-progress' ? 'selected' : ''}>En cours</option>
-                        <option value="completed" ${this.currentFilters.status === 'completed' ? 'selected' : ''}>Terminé</option>
-                    </select>
+            <div class="advanced-filters ${this.showAdvancedFilters ? 'show' : ''}">
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label>Priorité</label>
+                        <select class="filter-select" onchange="window.tasksView.updateFilter('priority', this.value)">
+                            <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes priorités</option>
+                            <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🔥 Urgente</option>
+                            <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>🔴 Haute</option>
+                            <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>🟡 Normale</option>
+                            <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>🟢 Basse</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Société</label>
+                        <select class="filter-select" onchange="window.tasksView.updateFilter('company', this.value)">
+                            <option value="all" ${this.currentFilters.company === 'all' ? 'selected' : ''}>Toutes sociétés</option>
+                            ${companies.map(company => `
+                                <option value="${company}" ${this.currentFilters.company === company ? 'selected' : ''}>${company}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Type</label>
+                        <select class="filter-select" onchange="window.tasksView.updateFilter('type', this.value)">
+                            <option value="all" ${this.currentFilters.type === 'all' ? 'selected' : ''}>Tous types</option>
+                            ${types.map(type => `
+                                <option value="${type}" ${this.currentFilters.type === type ? 'selected' : ''}>${this.getTypeLabel(type)}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Tri</label>
+                        <select class="filter-select" onchange="window.tasksView.updateFilter('sortBy', this.value)">
+                            <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
+                            <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
+                            <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Échéance</option>
+                            <option value="company" ${this.currentFilters.sortBy === 'company' ? 'selected' : ''}>Société</option>
+                        </select>
+                    </div>
+                    
+                    <button class="filter-reset" onclick="window.tasksView.resetFilters()">
+                        <i class="icon">🔄</i> Reset
+                    </button>
                 </div>
-                
-                <div class="filter-group">
-                    <select class="filter-select" onchange="window.tasksView.updateFilter('priority', this.value)">
-                        <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes priorités</option>
-                        <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🔥 Urgente</option>
-                        <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>🔴 Haute</option>
-                        <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>🟡 Normale</option>
-                        <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>🟢 Basse</option>
-                    </select>
-                </div>
-                
-                <div class="filter-group">
-                    <select class="filter-select" onchange="window.tasksView.updateFilter('company', this.value)">
-                        <option value="all" ${this.currentFilters.company === 'all' ? 'selected' : ''}>Toutes sociétés</option>
-                        ${companies.map(company => `
-                            <option value="${company}" ${this.currentFilters.company === company ? 'selected' : ''}>${company}</option>
-                        `).join('')}
-                    </select>
-                </div>
-                
-                <div class="filter-group">
-                    <select class="filter-select" onchange="window.tasksView.updateFilter('type', this.value)">
-                        <option value="all" ${this.currentFilters.type === 'all' ? 'selected' : ''}>Tous types</option>
-                        ${types.map(type => `
-                            <option value="${type}" ${this.currentFilters.type === type ? 'selected' : ''}>${this.getTypeLabel(type)}</option>
-                        `).join('')}
-                    </select>
-                </div>
-                
-                <button class="filter-reset" onclick="window.tasksView.resetFilters()">
-                    <i class="icon">🔄</i> Reset
-                </button>
             </div>
         `;
     }
@@ -566,6 +988,7 @@ class TasksView {
         const statusIcon = this.getStatusIcon(task.status);
         const typeIcon = this.getTypeIcon(task.type);
         const dueDateInfo = this.formatDueDate(task.dueDate);
+        const hasAiSuggestions = task.suggestedReplies && task.suggestedReplies.length > 0;
         
         return `
             <div class="task-card ${task.status}" 
@@ -589,6 +1012,7 @@ class TasksView {
                             <div class="sender-info">
                                 <i class="icon">👤</i>
                                 <span>${task.emailFromName}</span>
+                                ${hasAiSuggestions ? '<span class="ai-badge">🤖 IA</span>' : ''}
                             </div>
                         ` : ''}
                     </div>
@@ -600,8 +1024,7 @@ class TasksView {
                             ${typeIcon} ${this.getTypeLabel(task.type)}
                         </span>
                         
-                        ${task.needsReply ? '<span class="reply-badge">📧 Réponse</span>' : ''}
-                        
+                        ${task.needsReply && !task.emailReplied ? '<span class="reply-badge">📧 Réponse</span>' : ''}
                         ${dueDateInfo.badge ? dueDateInfo.badge : ''}
                     </div>
                     
@@ -609,6 +1032,14 @@ class TasksView {
                         <span class="status-badge ${task.status}">
                             ${statusIcon}
                         </span>
+                        
+                        ${task.needsReply && !task.emailReplied ? `
+                            <button class="action-btn reply-btn" 
+                                    onclick="event.stopPropagation(); window.tasksView.replyToEmail('${task.id}')"
+                                    title="Répondre à l'email">
+                                📧
+                            </button>
+                        ` : ''}
                         
                         <button class="action-btn quick-complete" 
                                 onclick="event.stopPropagation(); window.tasksView.quickComplete('${task.id}')"
@@ -634,48 +1065,7 @@ class TasksView {
         `;
     }
 
-    // Event Handlers
-    handleSearch(value) {
-        this.currentFilters.search = value;
-        this.refreshView();
-    }
-
-    updateFilter(type, value) {
-        this.currentFilters[type] = value;
-        this.refreshView();
-    }
-
-    resetFilters() {
-        this.currentFilters = {
-            status: 'all',
-            priority: 'all', 
-            company: 'all',
-            type: 'all',
-            search: '',
-            sortBy: 'created'
-        };
-        this.refreshView();
-    }
-
-    setViewMode(mode) {
-        this.viewMode = mode;
-        this.refreshView();
-    }
-
-    toggleGroup(company) {
-        if (this.expandedGroups.has(company)) {
-            this.expandedGroups.delete(company);
-        } else {
-            this.expandedGroups.add(company);
-        }
-        this.refreshView();
-    }
-
-    quickComplete(taskId) {
-        window.taskManager.updateTask(taskId, { status: 'completed' });
-        this.showToast('Tâche marquée comme terminée', 'success');
-    }
-
+    // MODAL DÉTAILS COMPLET AVEC TOUTES LES FONCTIONNALITÉS
     showTaskDetails(taskId) {
         const task = window.taskManager.getTask(taskId);
         if (!task) return;
@@ -689,6 +1079,7 @@ class TasksView {
                     </div>
                     
                     <div class="modal-content">
+                        <!-- Informations principales -->
                         <div class="detail-grid">
                             <div class="detail-item">
                                 <label>Client</label>
@@ -716,11 +1107,147 @@ class TasksView {
                             </div>
                         </div>
                         
-                        ${task.emailFromName ? `
-                            <div class="email-info">
-                                <h3>Information email</h3>
-                                <p><strong>De:</strong> ${task.emailFromName} (${task.emailFrom})</p>
-                                ${task.needsReply ? '<p class="needs-reply">📧 Réponse requise</p>' : ''}
+                        <!-- Description -->
+                        ${task.description ? `
+                            <div class="detail-section">
+                                <h3>Description</h3>
+                                <div class="description-content">
+                                    ${this.formatDescription(task.description)}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Actions requises -->
+                        ${task.actions && task.actions.length > 0 ? `
+                            <div class="detail-section">
+                                <h3>Actions requises</h3>
+                                <div class="actions-list">
+                                    ${task.actions.map((action, idx) => `
+                                        <div class="action-item">
+                                            <span class="action-number">${idx + 1}</span>
+                                            <span class="action-text">${this.escapeHtml(action.text)}</span>
+                                            ${action.deadline ? `
+                                                <span class="action-deadline">${this.formatDeadline(action.deadline)}</span>
+                                            ` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Informations clés -->
+                        ${task.keyInfo && task.keyInfo.length > 0 ? `
+                            <div class="detail-section">
+                                <h3>Informations clés</h3>
+                                <div class="info-list">
+                                    ${task.keyInfo.map(info => `
+                                        <div class="info-item">
+                                            <i class="info-icon">▶</i>
+                                            <span>${this.escapeHtml(info)}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Points d'attention -->
+                        ${task.risks && task.risks.length > 0 ? `
+                            <div class="detail-section risks-section">
+                                <h3>Points d'attention</h3>
+                                <div class="risks-list">
+                                    ${task.risks.map(risk => `
+                                        <div class="risk-item">
+                                            <i class="risk-icon">⚠️</i>
+                                            <span>${this.escapeHtml(risk)}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Informations email -->
+                        ${task.hasEmail ? `
+                            <div class="detail-section email-section">
+                                <h3>Informations email</h3>
+                                <div class="email-info">
+                                    <p><strong>De:</strong> ${task.emailFromName || 'Inconnu'} (${task.emailFrom || 'email inconnu'})</p>
+                                    <p><strong>Sujet:</strong> ${task.emailSubject || 'Sans sujet'}</p>
+                                    ${task.needsReply && !task.emailReplied ? '<p class="needs-reply">📧 Réponse requise</p>' : ''}
+                                    ${task.emailReplied ? '<p class="replied">✅ Réponse envoyée</p>' : ''}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Contenu email complet -->
+                        ${task.emailContent && task.emailContent.length > 100 ? `
+                            <div class="detail-section">
+                                <h3>Contenu de l'email</h3>
+                                <div class="email-content-tabs">
+                                    ${task.emailHtmlContent ? `
+                                        <button class="tab-btn active" onclick="window.tasksView.switchEmailTab('html', '${task.id}')">
+                                            Vue formatée
+                                        </button>
+                                        <button class="tab-btn" onclick="window.tasksView.switchEmailTab('text', '${task.id}')">
+                                            Vue texte
+                                        </button>
+                                    ` : ''}
+                                </div>
+                                <div class="email-content-box">
+                                    ${task.emailHtmlContent ? `
+                                        <div id="email-html-${task.id}" class="email-content-view active">
+                                            ${task.emailHtmlContent}
+                                        </div>
+                                        <div id="email-text-${task.id}" class="email-content-view" style="display: none;">
+                                            ${this.formatEmailContent(task.emailContent)}
+                                        </div>
+                                    ` : `
+                                        <div class="email-content-view">
+                                            ${this.formatEmailContent(task.emailContent)}
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Suggestions de réponse IA -->
+                        ${task.suggestedReplies && task.suggestedReplies.length > 0 ? `
+                            <div class="detail-section suggestions-section">
+                                <h3>Suggestions de réponse IA</h3>
+                                <div class="suggestions-container">
+                                    ${task.suggestedReplies.map((reply, idx) => `
+                                        <div class="suggestion-card">
+                                            <div class="suggestion-header">
+                                                <span class="suggestion-tone ${reply.tone}">${this.getReplyToneLabel(reply.tone)}</span>
+                                                <button class="copy-btn" onclick="window.tasksView.copyReply('${task.id}', ${idx})">
+                                                    📋 Copier
+                                                </button>
+                                            </div>
+                                            <div class="suggestion-subject">
+                                                <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
+                                            </div>
+                                            <div class="suggestion-content">
+                                                ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
+                                            </div>
+                                            <div class="suggestion-actions">
+                                                <button class="use-reply-btn" onclick="window.tasksView.useReply('${task.id}', ${idx})">
+                                                    📧 Utiliser cette réponse
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Tags -->
+                        ${task.tags && task.tags.length > 0 ? `
+                            <div class="detail-section">
+                                <h3>Tags</h3>
+                                <div class="tags-list">
+                                    ${task.tags.map(tag => `
+                                        <span class="tag">#${tag}</span>
+                                    `).join('')}
+                                </div>
                             </div>
                         ` : ''}
                     </div>
@@ -729,6 +1256,17 @@ class TasksView {
                         <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">
                             Fermer
                         </button>
+                        
+                        <button class="btn-secondary" onclick="window.tasksView.showEditModal('${task.id}')">
+                            ✏️ Modifier
+                        </button>
+                        
+                        ${task.needsReply && !task.emailReplied ? `
+                            <button class="btn-primary" onclick="window.tasksView.replyToEmail('${task.id}')">
+                                📧 Répondre
+                            </button>
+                        ` : ''}
+                        
                         ${task.status !== 'completed' ? `
                             <button class="btn-primary" onclick="window.tasksView.completeTask('${task.id}'); this.closest('.modal-overlay').remove();">
                                 ✅ Marquer terminé
@@ -742,6 +1280,100 @@ class TasksView {
         document.body.insertAdjacentHTML('beforeend', modalHTML);
     }
 
+    // MODAL DE MODIFICATION COMPLÈTE
+    showEditModal(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task) return;
+
+        const modalHTML = `
+            <div class="modal-overlay" onclick="this.remove()">
+                <div class="edit-task-modal" onclick="event.stopPropagation()">
+                    <div class="modal-header">
+                        <h2>Modifier la tâche</h2>
+                        <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <div class="form-group">
+                            <label>Titre *</label>
+                            <input type="text" id="edit-task-title" class="form-input" value="${this.escapeHtml(task.title)}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="edit-task-description" class="form-textarea" rows="4">${this.escapeHtml(task.description || '')}</textarea>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Client</label>
+                                <input type="text" id="edit-task-client" class="form-input" value="${this.escapeHtml(task.client)}">
+                            </div>
+                            <div class="form-group">
+                                <label>Société</label>
+                                <input type="text" id="edit-task-company" class="form-input" value="${this.escapeHtml(task.company)}">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Priorité</label>
+                                <select id="edit-task-priority" class="form-select">
+                                    <option value="low" ${task.priority === 'low' ? 'selected' : ''}>🟢 Basse</option>
+                                    <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>🟡 Normale</option>
+                                    <option value="high" ${task.priority === 'high' ? 'selected' : ''}>🔴 Haute</option>
+                                    <option value="urgent" ${task.priority === 'urgent' ? 'selected' : ''}>🔥 Urgente</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Statut</label>
+                                <select id="edit-task-status" class="form-select">
+                                    <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>⏳ À faire</option>
+                                    <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>🔄 En cours</option>
+                                    <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>✅ Terminé</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Type</label>
+                                <select id="edit-task-type" class="form-select">
+                                    <option value="task" ${task.type === 'task' ? 'selected' : ''}>📋 Tâche</option>
+                                    <option value="email" ${task.type === 'email' ? 'selected' : ''}>📧 Email</option>
+                                    <option value="meeting" ${task.type === 'meeting' ? 'selected' : ''}>🤝 Réunion</option>
+                                    <option value="call" ${task.type === 'call' ? 'selected' : ''}>📞 Appel</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Échéance</label>
+                                <input type="date" id="edit-task-duedate" class="form-input" value="${task.dueDate || ''}">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Tags (séparés par des virgules)</label>
+                            <input type="text" id="edit-task-tags" class="form-input" value="${task.tags ? task.tags.join(', ') : ''}">
+                        </div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">
+                            Annuler
+                        </button>
+                        <button class="btn-primary" onclick="window.tasksView.saveTaskEdit('${task.id}')">
+                            💾 Sauvegarder
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.getElementById('edit-task-title').focus();
+    }
+
+    // MODAL DE CRÉATION AVEC TOUTES LES OPTIONS
     showCreateModal() {
         const modalHTML = `
             <div class="modal-overlay" onclick="this.remove()">
@@ -755,6 +1387,11 @@ class TasksView {
                         <div class="form-group">
                             <label>Titre *</label>
                             <input type="text" id="task-title" class="form-input" placeholder="Titre de la tâche">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="task-description" class="form-textarea" rows="4" placeholder="Description détaillée..."></textarea>
                         </div>
                         
                         <div class="form-row">
@@ -793,6 +1430,11 @@ class TasksView {
                             <label>Échéance</label>
                             <input type="date" id="task-duedate" class="form-input">
                         </div>
+                        
+                        <div class="form-group">
+                            <label>Tags (séparés par des virgules)</label>
+                            <input type="text" id="task-tags" class="form-input" placeholder="tag1, tag2, tag3">
+                        </div>
                     </div>
                     
                     <div class="modal-actions">
@@ -811,13 +1453,242 @@ class TasksView {
         document.getElementById('task-title').focus();
     }
 
+    // Event Handlers complets
+    handleSearch(value) {
+        this.currentFilters.search = value;
+        this.refreshView();
+    }
+
+    updateFilter(type, value) {
+        this.currentFilters[type] = value;
+        this.refreshView();
+    }
+
+    resetFilters() {
+        this.currentFilters = {
+            status: 'all',
+            priority: 'all',
+            company: 'all',
+            type: 'all',
+            search: '',
+            sortBy: 'created'
+        };
+        this.refreshView();
+        this.showToast('Filtres réinitialisés', 'info');
+    }
+
+    quickFilter(filterId) {
+        // Reset other filters
+        this.currentFilters = {
+            ...this.currentFilters,
+            status: 'all',
+            overdue: false,
+            needsReply: false
+        };
+
+        switch (filterId) {
+            case 'all':
+                break;
+            case 'todo':
+            case 'in-progress':
+            case 'completed':
+                this.currentFilters.status = filterId;
+                break;
+            case 'overdue':
+                this.currentFilters.overdue = true;
+                break;
+            case 'needsReply':
+                this.currentFilters.needsReply = true;
+                break;
+        }
+
+        this.refreshView();
+    }
+
+    isFilterActive(filterId) {
+        switch (filterId) {
+            case 'all': 
+                return this.currentFilters.status === 'all' && !this.currentFilters.overdue && !this.currentFilters.needsReply;
+            case 'todo': 
+                return this.currentFilters.status === 'todo';
+            case 'in-progress': 
+                return this.currentFilters.status === 'in-progress';
+            case 'completed': 
+                return this.currentFilters.status === 'completed';
+            case 'overdue': 
+                return this.currentFilters.overdue;
+            case 'needsReply': 
+                return this.currentFilters.needsReply;
+            default: 
+                return false;
+        }
+    }
+
+    toggleAdvancedFilters() {
+        this.showAdvancedFilters = !this.showAdvancedFilters;
+        this.refreshView();
+    }
+
+    setViewMode(mode) {
+        this.viewMode = mode;
+        this.refreshView();
+    }
+
+    toggleGroup(company) {
+        if (this.expandedGroups.has(company)) {
+            this.expandedGroups.delete(company);
+        } else {
+            this.expandedGroups.add(company);
+        }
+        this.refreshView();
+    }
+
+    quickComplete(taskId) {
+        window.taskManager.updateTask(taskId, { status: 'completed' });
+        this.showToast('Tâche marquée comme terminée', 'success');
+    }
+
+    completeTask(taskId) {
+        window.taskManager.updateTask(taskId, { status: 'completed' });
+        this.showToast('Tâche marquée comme terminée', 'success');
+    }
+
+    // NOUVELLES MÉTHODES POUR LES FONCTIONNALITÉS EMAIL
+    replyToEmail(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.hasEmail) return;
+        
+        // Si on a des suggestions IA, les montrer
+        if (task.suggestedReplies && task.suggestedReplies.length > 0) {
+            this.showReplySuggestions(taskId);
+        } else {
+            // Sinon, réponse basique
+            this.replyToEmailBasic(taskId);
+        }
+    }
+
+    showReplySuggestions(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task) return;
+
+        const modalHTML = `
+            <div class="modal-overlay" onclick="this.remove()">
+                <div class="reply-suggestions-modal" onclick="event.stopPropagation()">
+                    <div class="modal-header">
+                        <h2>Suggestions de réponse IA</h2>
+                        <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <div class="ai-info">
+                            <div class="ai-badge">🤖 Suggestions générées par Claude AI</div>
+                            <p>Réponses personnalisées pour l'email de <strong>${task.emailFromName}</strong></p>
+                        </div>
+                        
+                        <div class="suggestions-list">
+                            ${task.suggestedReplies.map((reply, idx) => `
+                                <div class="suggestion-card">
+                                    <div class="suggestion-header">
+                                        <span class="suggestion-tone ${reply.tone}">${this.getReplyToneLabel(reply.tone)}</span>
+                                        <div class="suggestion-actions">
+                                            <button class="copy-btn" onclick="window.tasksView.copyReply('${taskId}', ${idx})">
+                                                📋 Copier
+                                            </button>
+                                            <button class="use-btn" onclick="window.tasksView.useReply('${taskId}', ${idx})">
+                                                📧 Utiliser
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="suggestion-subject">
+                                        <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
+                                    </div>
+                                    <div class="suggestion-content">
+                                        ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">
+                            Fermer
+                        </button>
+                        <button class="btn-secondary" onclick="window.tasksView.replyToEmailBasic('${taskId}')">
+                            📧 Réponse basique
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+
+    async copyReply(taskId, replyIndex) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
+
+        const reply = task.suggestedReplies[replyIndex];
+        const text = `Sujet: ${reply.subject}\n\n${reply.content}`;
+        
+        try {
+            await navigator.clipboard.writeText(text);
+            this.showToast('Réponse copiée dans le presse-papiers', 'success');
+        } catch (error) {
+            this.showToast('Erreur lors de la copie', 'error');
+        }
+    }
+
+    useReply(taskId, replyIndex) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
+
+        const reply = task.suggestedReplies[replyIndex];
+        const subject = reply.subject;
+        const body = reply.content;
+        const to = task.emailFrom;
+        
+        // Créer le lien mailto
+        const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.open(mailtoLink);
+        
+        // Marquer comme répondu
+        window.taskManager.updateTask(taskId, { 
+            emailReplied: true,
+            status: task.status === 'todo' ? 'in-progress' : task.status
+        });
+        
+        this.showToast('Email de réponse ouvert dans votre client email', 'success');
+        
+        // Fermer les modals
+        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+    }
+
+    replyToEmailBasic(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.hasEmail) return;
+        
+        const subject = `Re: ${task.emailSubject || 'Votre message'}`;
+        const to = task.emailFrom;
+        const body = `Bonjour ${task.emailFromName || ''},\n\nMerci pour votre message.\n\nCordialement,`;
+        
+        const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.open(mailtoLink);
+        
+        window.taskManager.updateTask(taskId, { emailReplied: true });
+        this.showToast('Email de réponse ouvert', 'success');
+    }
+
     createTask() {
         const title = document.getElementById('task-title').value.trim();
+        const description = document.getElementById('task-description').value.trim();
         const client = document.getElementById('task-client').value.trim();
         const company = document.getElementById('task-company').value.trim();
         const priority = document.getElementById('task-priority').value;
         const type = document.getElementById('task-type').value;
         const dueDate = document.getElementById('task-duedate').value;
+        const tagsInput = document.getElementById('task-tags').value.trim();
 
         if (!title) {
             this.showToast('Le titre est requis', 'error');
@@ -826,11 +1697,13 @@ class TasksView {
 
         const taskData = {
             title,
+            description,
             client: client || 'Client',
             company: company || 'company.com',
             priority,
             type,
-            dueDate: dueDate || null
+            dueDate: dueDate || null,
+            tags: tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : []
         };
 
         window.taskManager.createTask(taskData);
@@ -838,9 +1711,59 @@ class TasksView {
         this.showToast('Tâche créée avec succès', 'success');
     }
 
-    completeTask(taskId) {
-        window.taskManager.updateTask(taskId, { status: 'completed' });
-        this.showToast('Tâche marquée comme terminée', 'success');
+    saveTaskEdit(taskId) {
+        const title = document.getElementById('edit-task-title').value.trim();
+        const description = document.getElementById('edit-task-description').value.trim();
+        const client = document.getElementById('edit-task-client').value.trim();
+        const company = document.getElementById('edit-task-company').value.trim();
+        const priority = document.getElementById('edit-task-priority').value;
+        const status = document.getElementById('edit-task-status').value;
+        const type = document.getElementById('edit-task-type').value;
+        const dueDate = document.getElementById('edit-task-duedate').value;
+        const tagsInput = document.getElementById('edit-task-tags').value.trim();
+
+        if (!title) {
+            this.showToast('Le titre est requis', 'error');
+            return;
+        }
+
+        const updates = {
+            title,
+            description,
+            client,
+            company,
+            priority,
+            status,
+            type,
+            dueDate: dueDate || null,
+            tags: tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : []
+        };
+
+        window.taskManager.updateTask(taskId, updates);
+        document.querySelector('.modal-overlay').remove();
+        this.showToast('Tâche mise à jour avec succès', 'success');
+    }
+
+    // MÉTHODES POUR GÉRER LES ONGLETS EMAIL
+    switchEmailTab(tabType, taskId) {
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(tab => tab.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        const htmlView = document.getElementById(`email-html-${taskId}`);
+        const textView = document.getElementById(`email-text-${taskId}`);
+        
+        if (tabType === 'html') {
+            htmlView.style.display = 'block';
+            htmlView.classList.add('active');
+            textView.style.display = 'none';
+            textView.classList.remove('active');
+        } else {
+            htmlView.style.display = 'none';
+            htmlView.classList.remove('active');
+            textView.style.display = 'block';
+            textView.classList.add('active');
+        }
     }
 
     refreshView() {
@@ -914,6 +1837,17 @@ class TasksView {
         return labels[type] || labels.task;
     }
 
+    getReplyToneLabel(tone) {
+        const labels = {
+            formel: '👔 Formel',
+            urgent: '🚨 Urgent',
+            neutre: '📝 Neutre',
+            détaillé: '📋 Détaillé',
+            professionnel: '💼 Professionnel'
+        };
+        return labels[tone] || '📝 Neutre';
+    }
+
     formatDueDate(dateString) {
         if (!dateString) return { badge: null };
         
@@ -942,7 +1876,52 @@ class TasksView {
         return { badge: null };
     }
 
+    formatDeadline(deadline) {
+        if (!deadline) return '';
+        
+        try {
+            const deadlineDate = new Date(deadline);
+            const now = new Date();
+            const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) {
+                return `Échue il y a ${Math.abs(diffDays)}j`;
+            } else if (diffDays === 0) {
+                return 'Aujourd\'hui';
+            } else if (diffDays === 1) {
+                return 'Demain';
+            } else {
+                return deadlineDate.toLocaleDateString('fr-FR');
+            }
+        } catch (error) {
+            return deadline;
+        }
+    }
+
+    formatDescription(description) {
+        if (!description) return '';
+        
+        if (description.includes('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')) {
+            return `<div class="structured-description">${description.replace(/\n/g, '<br>')}</div>`;
+        } else {
+            return `<div class="simple-description">${this.escapeHtml(description).replace(/\n/g, '<br>')}</div>`;
+        }
+    }
+
+    formatEmailContent(content) {
+        if (!content) return '<p>Contenu non disponible</p>';
+        
+        const formattedContent = content
+            .replace(/\n/g, '<br>')
+            .replace(/Email de:/g, '<strong>Email de:</strong>')
+            .replace(/Date:/g, '<strong>Date:</strong>')
+            .replace(/Sujet:/g, '<strong>Sujet:</strong>');
+            
+        return `<div class="email-original-content">${formattedContent}</div>`;
+    }
+
     escapeHtml(text) {
+        if (!text) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
@@ -968,7 +1947,7 @@ class TasksView {
         const styles = document.createElement('style');
         styles.id = 'modernTaskStyles';
         styles.textContent = `
-            /* Modern Minimalist Task Manager Styles */
+            /* Modern Minimalist Task Manager Styles - Menu centré + Toutes fonctionnalités */
             .modern-tasks-app {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 background: #fafbfc;
@@ -976,21 +1955,27 @@ class TasksView {
                 color: #1a1a1a;
             }
 
-            /* Header */
+            /* Header centré comme avant */
             .tasks-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 24px 32px;
                 background: white;
                 border-bottom: 1px solid #e5e7eb;
                 margin-bottom: 24px;
+                padding: 24px 32px;
+            }
+
+            .header-container {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                max-width: 1400px;
+                margin: 0 auto;
             }
 
             .header-left {
                 display: flex;
                 align-items: center;
-                gap: 24px;
+                gap: 16px;
+                min-width: 200px;
             }
 
             .page-title {
@@ -1000,46 +1985,41 @@ class TasksView {
                 margin: 0;
             }
 
-            .stats-pills {
-                display: flex;
-                gap: 12px;
-            }
-
-            .stat-pill {
-                padding: 6px 16px;
-                border-radius: 20px;
+            .total-count {
+                background: #f3f4f6;
+                color: #6b7280;
+                padding: 6px 12px;
+                border-radius: 16px;
                 font-size: 14px;
                 font-weight: 600;
-                color: white;
             }
 
-            .stat-primary { background: #3b82f6; }
-            .stat-urgent { background: #ef4444; }
-            .stat-reply { background: #f59e0b; }
-
-            .header-actions {
-                display: flex;
-                align-items: center;
-                gap: 16px;
+            .header-center {
+                flex: 1;
+                max-width: 500px;
+                margin: 0 32px;
             }
 
             .search-box {
                 position: relative;
+                width: 100%;
             }
 
             .search-input {
-                padding: 12px 16px 12px 44px;
+                padding: 14px 16px 14px 44px;
                 border: 2px solid #e5e7eb;
                 border-radius: 12px;
-                font-size: 14px;
-                width: 280px;
+                font-size: 16px;
+                width: 100%;
                 background: white;
                 transition: border-color 0.2s ease;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             }
 
             .search-input:focus {
                 outline: none;
                 border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
 
             .search-icon {
@@ -1048,13 +2028,21 @@ class TasksView {
                 top: 50%;
                 transform: translateY(-50%);
                 font-size: 16px;
-                color: #6b7280;
+                color: #9ca3af;
+            }
+
+            .header-right {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                min-width: 200px;
+                justify-content: flex-end;
             }
 
             .view-toggle {
                 display: flex;
                 background: #f3f4f6;
-                border-radius: 8px;
+                border-radius: 10px;
                 padding: 4px;
             }
 
@@ -1062,13 +2050,13 @@ class TasksView {
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                padding: 8px 16px;
+                padding: 10px 16px;
                 border: none;
                 background: transparent;
-                border-radius: 6px;
+                border-radius: 8px;
                 cursor: pointer;
                 font-size: 14px;
-                font-weight: 500;
+                font-weight: 600;
                 color: #6b7280;
                 transition: all 0.2s ease;
             }
@@ -1083,30 +2071,32 @@ class TasksView {
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                padding: 12px 24px;
-                background: #3b82f6;
+                padding: 12px 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
                 border: none;
-                border-radius: 8px;
+                border-radius: 10px;
                 font-size: 14px;
                 font-weight: 600;
                 cursor: pointer;
-                transition: background 0.2s ease;
+                transition: all 0.2s ease;
+                box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
             }
 
             .btn-primary:hover {
-                background: #2563eb;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
             }
 
             .btn-secondary {
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                padding: 12px 24px;
+                padding: 12px 20px;
                 background: white;
                 color: #374151;
                 border: 2px solid #e5e7eb;
-                border-radius: 8px;
+                border-radius: 10px;
                 font-size: 14px;
                 font-weight: 600;
                 cursor: pointer;
@@ -1116,43 +2106,166 @@ class TasksView {
             .btn-secondary:hover {
                 border-color: #d1d5db;
                 background: #f9fafb;
+                transform: translateY(-1px);
             }
 
-            /* Filters */
-            .filters-bar {
+            /* Status Filters - Centrés */
+            .status-filters {
+                margin-bottom: 24px;
+            }
+
+            .filters-container {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 0 32px;
+            }
+
+            .status-filter {
                 display: flex;
                 align-items: center;
+                gap: 8px;
+                padding: 12px 20px;
+                background: white;
+                border: 2px solid #e5e7eb;
+                border-radius: 12px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                font-size: 14px;
+                font-weight: 600;
+                color: #374151;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            }
+
+            .status-filter:hover {
+                border-color: #3b82f6;
+                background: #f8fafc;
+                transform: translateY(-1px);
+            }
+
+            .status-filter.active {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border-color: #667eea;
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            }
+
+            .filter-icon {
+                font-size: 16px;
+            }
+
+            .filter-name {
+                font-weight: 600;
+            }
+
+            .filter-count {
+                background: rgba(0,0,0,0.1);
+                padding: 2px 8px;
+                border-radius: 10px;
+                font-size: 12px;
+                font-weight: 700;
+                min-width: 20px;
+                text-align: center;
+            }
+
+            .status-filter.active .filter-count {
+                background: rgba(255,255,255,0.25);
+            }
+
+            .advanced-filters-toggle {
+                background: #f8fafc;
+                border: 2px solid #e2e8f0;
+                color: #475569;
+            }
+
+            .advanced-filters-toggle:hover {
+                background: #f1f5f9;
+                border-color: #cbd5e1;
+            }
+
+            .advanced-filters-toggle.active {
+                background: #3b82f6;
+                color: white;
+                border-color: #3b82f6;
+            }
+
+            .chevron {
+                transition: transform 0.2s ease;
+                font-size: 12px;
+                margin-left: 4px;
+            }
+
+            .chevron.up {
+                transform: rotate(180deg);
+            }
+
+            /* Advanced Filters */
+            .advanced-filters {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                margin: 0 auto 24px;
+                max-width: 1400px;
+                margin-left: auto;
+                margin-right: auto;
+                margin-bottom: 24px;
+                overflow: hidden;
+                max-height: 0;
+                opacity: 0;
+                transition: all 0.3s ease;
+            }
+
+            .advanced-filters.show {
+                max-height: 200px;
+                opacity: 1;
+                padding: 20px 32px;
+            }
+
+            .filters-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
                 gap: 16px;
-                padding: 0 32px 24px;
+                align-items: end;
             }
 
             .filter-group {
                 display: flex;
                 flex-direction: column;
-                gap: 4px;
+                gap: 6px;
+            }
+
+            .filter-group label {
+                font-weight: 600;
+                font-size: 14px;
+                color: #374151;
             }
 
             .filter-select {
-                padding: 8px 12px;
+                padding: 10px 12px;
                 border: 2px solid #e5e7eb;
                 border-radius: 8px;
                 background: white;
                 font-size: 14px;
                 color: #374151;
                 cursor: pointer;
-                min-width: 150px;
+                transition: border-color 0.2s ease;
             }
 
             .filter-select:focus {
                 outline: none;
                 border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
 
             .filter-reset {
                 display: flex;
                 align-items: center;
                 gap: 6px;
-                padding: 8px 16px;
+                padding: 10px 16px;
                 background: #f3f4f6;
                 border: 2px solid #e5e7eb;
                 border-radius: 8px;
@@ -1161,6 +2274,7 @@ class TasksView {
                 font-size: 14px;
                 font-weight: 500;
                 transition: all 0.2s ease;
+                height: fit-content;
             }
 
             .filter-reset:hover {
@@ -1170,19 +2284,24 @@ class TasksView {
 
             /* Tasks Container */
             .tasks-container {
-                padding: 0 32px;
-                max-width: 1200px;
+                max-width: 1400px;
                 margin: 0 auto;
+                padding: 0 32px;
             }
 
             /* Grouped View */
             .task-group {
                 background: white;
-                border-radius: 12px;
+                border-radius: 16px;
                 margin-bottom: 16px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                box-shadow: 0 1px 3px rgba(0,0,0,0.08);
                 border: 1px solid #e5e7eb;
                 overflow: hidden;
+                transition: all 0.2s ease;
+            }
+
+            .task-group:hover {
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             }
 
             .group-header {
@@ -1216,6 +2335,7 @@ class TasksView {
                 justify-content: center;
                 font-size: 20px;
                 font-weight: 700;
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
             }
 
             .group-details h3 {
@@ -1245,8 +2365,14 @@ class TasksView {
                 color: white;
             }
 
-            .badge.urgent { background: #ef4444; }
-            .badge.reply { background: #f59e0b; }
+            .badge.urgent { 
+                background: linear-gradient(135deg, #ef4444, #dc2626);
+                box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+            }
+            .badge.reply { 
+                background: linear-gradient(135deg, #f59e0b, #d97706);
+                box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+            }
 
             .expand-icon {
                 font-size: 14px;
@@ -1268,28 +2394,34 @@ class TasksView {
                 max-height: 2000px;
             }
 
-            /* Task Cards */
+            /* Task Cards - Design moderne minimaliste */
             .task-card {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 16px 24px;
+                padding: 18px 24px;
                 border-bottom: 1px solid #f3f4f6;
                 cursor: pointer;
                 transition: all 0.2s ease;
+                background: white;
             }
 
             .task-card:hover {
-                background: #f9fafb;
+                background: #f8fafc;
                 transform: translateY(-1px);
             }
 
             .task-card:last-child {
                 border-bottom: none;
+                border-radius: 0 0 16px 16px;
             }
 
             .task-card.completed {
                 opacity: 0.6;
+            }
+
+            .task-card.completed .task-title {
+                text-decoration: line-through;
             }
 
             .task-left {
@@ -1297,20 +2429,23 @@ class TasksView {
                 align-items: center;
                 gap: 16px;
                 flex: 1;
+                min-width: 0;
             }
 
             .priority-indicator {
                 width: 4px;
-                height: 40px;
+                height: 48px;
                 border-radius: 2px;
+                flex-shrink: 0;
             }
 
             .task-content {
                 flex: 1;
+                min-width: 0;
             }
 
             .task-header {
-                margin-bottom: 4px;
+                margin-bottom: 6px;
             }
 
             .task-title {
@@ -1318,6 +2453,10 @@ class TasksView {
                 font-weight: 600;
                 color: #1a1a1a;
                 margin: 0 0 4px 0;
+                line-height: 1.4;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
 
             .task-meta {
@@ -1329,35 +2468,55 @@ class TasksView {
             }
 
             .client-name {
-                font-weight: 500;
+                font-weight: 600;
                 color: #374151;
             }
 
             .separator {
                 color: #d1d5db;
+                font-weight: bold;
             }
 
             .company-domain {
-                font-family: monospace;
-                background: #f3f4f6;
+                font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+                background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+                color: #6b7280;
                 padding: 2px 8px;
-                border-radius: 4px;
+                border-radius: 6px;
                 font-size: 12px;
+                font-weight: 500;
+                border: 1px solid #e5e7eb;
             }
 
             .sender-info {
                 display: flex;
                 align-items: center;
-                gap: 6px;
-                font-size: 14px;
+                gap: 8px;
+                font-size: 13px;
                 color: #6b7280;
                 margin-top: 4px;
+            }
+
+            .ai-badge {
+                background: linear-gradient(135deg, #10b981, #059669);
+                color: white;
+                padding: 2px 6px;
+                border-radius: 8px;
+                font-size: 10px;
+                font-weight: 600;
+                animation: aiGlow 2s infinite alternate;
+            }
+
+            @keyframes aiGlow {
+                0% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.5); }
+                100% { box-shadow: 0 0 10px rgba(16, 185, 129, 0.8); }
             }
 
             .task-right {
                 display: flex;
                 align-items: center;
                 gap: 16px;
+                flex-shrink: 0;
             }
 
             .task-badges {
@@ -1371,25 +2530,41 @@ class TasksView {
                 display: flex;
                 align-items: center;
                 gap: 4px;
-                padding: 4px 10px;
+                padding: 6px 12px;
                 border-radius: 12px;
                 font-size: 12px;
-                font-weight: 500;
+                font-weight: 600;
                 color: white;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.2);
             }
 
-            .type-badge.email { background: #3b82f6; }
-            .type-badge.meeting { background: #10b981; }
-            .type-badge.call { background: #f59e0b; }
-            .type-badge.task { background: #6b7280; }
+            .type-badge.email { 
+                background: linear-gradient(135deg, #3b82f6, #2563eb);
+            }
+            .type-badge.meeting { 
+                background: linear-gradient(135deg, #10b981, #059669);
+            }
+            .type-badge.call { 
+                background: linear-gradient(135deg, #f59e0b, #d97706);
+            }
+            .type-badge.task { 
+                background: linear-gradient(135deg, #6b7280, #4b5563);
+            }
 
             .reply-badge {
-                background: #f59e0b;
+                background: linear-gradient(135deg, #f59e0b, #d97706);
                 color: white;
-                padding: 2px 8px;
+                padding: 3px 8px;
                 border-radius: 10px;
                 font-size: 11px;
                 font-weight: 600;
+                box-shadow: 0 1px 3px rgba(245, 158, 11, 0.3);
+                animation: replyPulse 2s infinite;
+            }
+
+            @keyframes replyPulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.05); }
             }
 
             .due-badge {
@@ -1397,30 +2572,37 @@ class TasksView {
                 border-radius: 10px;
                 font-size: 11px;
                 font-weight: 600;
+                border: 1px solid;
             }
 
             .due-badge.overdue {
-                background: #fef2f2;
+                background: linear-gradient(135deg, #fef2f2, #fee2e2);
                 color: #dc2626;
-                border: 1px solid #fecaca;
+                border-color: #fecaca;
+                animation: urgentBlink 1s infinite;
+            }
+
+            @keyframes urgentBlink {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.7; }
             }
 
             .due-badge.today {
-                background: #fef3c7;
+                background: linear-gradient(135deg, #fef3c7, #fde68a);
                 color: #d97706;
-                border: 1px solid #fde68a;
+                border-color: #fde68a;
             }
 
             .due-badge.tomorrow {
-                background: #ecfdf5;
+                background: linear-gradient(135deg, #ecfdf5, #d1fae5);
                 color: #059669;
-                border: 1px solid #a7f3d0;
+                border-color: #a7f3d0;
             }
 
             .due-badge.soon {
-                background: #eff6ff;
+                background: linear-gradient(135deg, #eff6ff, #dbeafe);
                 color: #2563eb;
-                border: 1px solid #bfdbfe;
+                border-color: #bfdbfe;
             }
 
             .task-actions {
@@ -1430,88 +2612,121 @@ class TasksView {
             }
 
             .status-badge {
-                width: 32px;
-                height: 32px;
-                border-radius: 8px;
+                width: 36px;
+                height: 36px;
+                border-radius: 10px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 font-size: 16px;
                 border: 2px solid;
+                background: white;
+                transition: all 0.2s ease;
             }
 
             .status-badge.todo {
-                background: #fef3c7;
                 color: #d97706;
                 border-color: #fde68a;
+                background: linear-gradient(135deg, #fef3c7, #fde68a);
             }
 
             .status-badge.in-progress {
-                background: #eff6ff;
                 color: #2563eb;
                 border-color: #bfdbfe;
+                background: linear-gradient(135deg, #eff6ff, #dbeafe);
             }
 
             .status-badge.completed {
-                background: #ecfdf5;
                 color: #059669;
                 border-color: #a7f3d0;
+                background: linear-gradient(135deg, #ecfdf5, #d1fae5);
             }
 
             .action-btn {
-                width: 32px;
-                height: 32px;
+                width: 36px;
+                height: 36px;
                 border: none;
-                border-radius: 8px;
-                background: #f3f4f6;
+                border-radius: 10px;
+                background: white;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 14px;
+                font-size: 16px;
                 transition: all 0.2s ease;
+                border: 2px solid #e5e7eb;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             }
 
             .action-btn:hover {
-                background: #e5e7eb;
-                transform: scale(1.05);
+                transform: translateY(-1px);
+                box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+            }
+
+            .quick-complete {
+                border-color: #a7f3d0;
+                background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+                color: #059669;
             }
 
             .quick-complete:hover {
-                background: #ecfdf5;
+                background: linear-gradient(135deg, #059669, #047857);
+                color: white;
+                border-color: #059669;
+            }
+
+            .reply-btn {
+                border-color: #bfdbfe;
+                background: linear-gradient(135deg, #eff6ff, #dbeafe);
+                color: #2563eb;
+            }
+
+            .reply-btn:hover {
+                background: linear-gradient(135deg, #2563eb, #1d4ed8);
+                color: white;
+                border-color: #2563eb;
             }
 
             /* List View */
             .list-view .task-card {
-                background: white;
                 border-radius: 12px;
                 margin-bottom: 8px;
                 border: 1px solid #e5e7eb;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             }
 
+            .list-view .task-card:hover {
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            }
+
             /* Empty State */
             .empty-state {
                 text-align: center;
-                padding: 64px 32px;
+                padding: 80px 32px;
                 color: #6b7280;
+                background: white;
+                border-radius: 16px;
+                margin: 0 auto;
+                max-width: 500px;
             }
 
             .empty-icon {
                 font-size: 64px;
-                margin-bottom: 16px;
+                margin-bottom: 24px;
+                opacity: 0.6;
             }
 
             .empty-state h3 {
                 font-size: 24px;
                 font-weight: 600;
                 color: #374151;
-                margin-bottom: 8px;
+                margin-bottom: 12px;
             }
 
             .empty-state p {
                 font-size: 16px;
-                margin-bottom: 24px;
+                margin-bottom: 32px;
+                line-height: 1.5;
             }
 
             /* Modal Styles */
@@ -1527,25 +2742,30 @@ class TasksView {
                 align-items: center;
                 justify-content: center;
                 padding: 20px;
+                backdrop-filter: blur(4px);
             }
 
             .task-details-modal,
-            .create-task-modal {
+            .create-task-modal,
+            .edit-task-modal,
+            .reply-suggestions-modal {
                 background: white;
-                border-radius: 16px;
-                max-width: 600px;
+                border-radius: 20px;
+                max-width: 900px;
                 width: 100%;
                 max-height: 90vh;
                 overflow-y: auto;
-                box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                border: 1px solid #e5e7eb;
             }
 
             .modal-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 24px;
+                padding: 24px 32px;
                 border-bottom: 1px solid #e5e7eb;
+                background: linear-gradient(135deg, #f8fafc, #f1f5f9);
             }
 
             .modal-header h2 {
@@ -1556,51 +2776,59 @@ class TasksView {
             }
 
             .close-btn {
-                width: 32px;
-                height: 32px;
+                width: 36px;
+                height: 36px;
                 border: none;
                 background: #f3f4f6;
-                border-radius: 8px;
+                border-radius: 10px;
                 cursor: pointer;
-                font-size: 16px;
+                font-size: 18px;
                 color: #6b7280;
                 transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
 
             .close-btn:hover {
                 background: #e5e7eb;
                 color: #374151;
+                transform: scale(1.05);
             }
 
             .modal-content {
-                padding: 24px;
+                padding: 32px;
             }
 
             .detail-grid {
                 display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 16px;
-                margin-bottom: 24px;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+                margin-bottom: 32px;
+                background: #f8fafc;
+                padding: 24px;
+                border-radius: 12px;
+                border: 1px solid #e5e7eb;
             }
 
             .detail-item {
                 display: flex;
                 flex-direction: column;
-                gap: 4px;
+                gap: 6px;
             }
 
             .detail-item label {
                 font-size: 12px;
-                font-weight: 600;
+                font-weight: 700;
                 color: #6b7280;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
             }
 
             .detail-item span {
-                font-size: 14px;
+                font-size: 15px;
                 color: #1a1a1a;
-                font-weight: 500;
+                font-weight: 600;
             }
 
             .priority-urgent { color: #ef4444; }
@@ -1612,68 +2840,507 @@ class TasksView {
             .status-in-progress { color: #2563eb; }
             .status-completed { color: #059669; }
 
-            .email-info {
-                background: #f9fafb;
+            .detail-section {
+                margin-bottom: 32px;
+                background: white;
                 border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                padding: 16px;
+                border-radius: 12px;
+                overflow: hidden;
             }
 
-            .email-info h3 {
-                font-size: 16px;
+            .detail-section h3 {
+                font-size: 18px;
                 font-weight: 600;
                 color: #1a1a1a;
+                margin: 0;
+                padding: 20px 24px;
+                background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+                border-bottom: 1px solid #e5e7eb;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .description-content {
+                padding: 24px;
+            }
+
+            .structured-description {
+                font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+                font-size: 13px;
+                line-height: 1.6;
+                background: #f8fafc;
+                padding: 20px;
+                border-radius: 8px;
+                border: 1px solid #e5e7eb;
+                color: #374151;
+            }
+
+            .simple-description {
+                font-size: 15px;
+                line-height: 1.6;
+                color: #374151;
+            }
+
+            .actions-list {
+                padding: 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .action-item {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 16px 20px;
+                background: #f8fafc;
+                border-radius: 10px;
+                border: 1px solid #e5e7eb;
+                transition: all 0.2s ease;
+            }
+
+            .action-item:hover {
+                background: #f1f5f9;
+                border-color: #cbd5e1;
+            }
+
+            .action-number {
+                width: 28px;
+                height: 28px;
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 13px;
+                font-weight: 700;
+                flex-shrink: 0;
+                box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+            }
+
+            .action-text {
+                flex: 1;
+                font-size: 15px;
+                color: #374151;
+                font-weight: 500;
+            }
+
+            .action-deadline {
+                font-size: 12px;
+                color: #dc2626;
+                font-weight: 600;
+                background: #fef2f2;
+                padding: 4px 8px;
+                border-radius: 6px;
+                border: 1px solid #fecaca;
+            }
+
+            .info-list,
+            .risks-list {
+                padding: 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .info-item,
+            .risk-item {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                font-size: 15px;
+                color: #374151;
+                line-height: 1.5;
+                padding: 12px;
+                background: #f8fafc;
+                border-radius: 8px;
+                border: 1px solid #e5e7eb;
+            }
+
+            .info-icon {
+                color: #3b82f6;
+                font-size: 12px;
+                margin-top: 2px;
+            }
+
+            .risk-item {
+                background: #fef9e8;
+                border-color: #fde68a;
+            }
+
+            .risk-icon {
+                font-size: 14px;
+                margin-top: 1px;
+            }
+
+            .risks-section {
+                background: #fef9e8;
+                border-color: #fde68a;
+            }
+
+            .risks-section h3 {
+                background: #fef3c7;
+                border-bottom-color: #fde68a;
+                color: #92400e;
+            }
+
+            .email-section {
+                background: #eff6ff;
+                border-color: #bfdbfe;
+            }
+
+            .email-section h3 {
+                background: #dbeafe;
+                border-bottom-color: #bfdbfe;
+                color: #1e40af;
+            }
+
+            .email-info {
+                padding: 24px;
+            }
+
+            .email-info p {
                 margin: 0 0 12px 0;
+                font-size: 15px;
+                line-height: 1.5;
             }
 
             .needs-reply {
                 color: #f59e0b;
                 font-weight: 600;
                 font-size: 14px;
+                background: #fef3c7;
+                padding: 8px 12px;
+                border-radius: 8px;
+                border: 1px solid #fde68a;
+                display: inline-block;
+            }
+
+            .replied {
+                color: #059669;
+                font-weight: 600;
+                font-size: 14px;
+                background: #ecfdf5;
+                padding: 8px 12px;
+                border-radius: 8px;
+                border: 1px solid #a7f3d0;
+                display: inline-block;
+            }
+
+            .email-content-tabs {
+                display: flex;
+                gap: 4px;
+                margin-bottom: 16px;
+                background: #f3f4f6;
+                padding: 4px;
+                border-radius: 8px;
+            }
+
+            .tab-btn {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 16px;
+                background: transparent;
+                border: none;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: 500;
+                color: #6b7280;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .tab-btn.active {
+                background: white;
+                color: #1a1a1a;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+
+            .email-content-box {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 10px;
+                padding: 20px;
+                max-height: 400px;
+                overflow-y: auto;
+            }
+
+            .email-content-view {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+                color: #374151;
+            }
+
+            .email-content-viewer {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                line-height: 1.6;
+                color: #333;
+            }
+
+            .email-header {
+                background: #f8fafc;
+                padding: 12px 16px;
+                border-radius: 8px;
+                border: 1px solid #e5e7eb;
+                margin-bottom: 16px;
+                font-size: 14px;
+            }
+
+            .email-body {
+                font-size: 14px;
+                line-height: 1.6;
+            }
+
+            .email-original-content {
+                font-size: 14px;
+                line-height: 1.6;
+                color: #374151;
+                white-space: pre-wrap;
+            }
+
+            /* Suggestions de réponse IA */
+            .suggestions-section {
+                background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+                border-color: #7dd3fc;
+            }
+
+            .suggestions-section h3 {
+                background: #f0f9ff;
+                border-bottom-color: #7dd3fc;
+                color: #075985;
+            }
+
+            .suggestions-container,
+            .suggestions-list {
+                padding: 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .suggestion-card {
+                background: white;
+                border: 1px solid #bae6fd;
+                border-radius: 12px;
+                padding: 20px;
+                transition: all 0.2s ease;
+            }
+
+            .suggestion-card:hover {
+                border-color: #7dd3fc;
+                box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
+            }
+
+            .suggestion-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+            }
+
+            .suggestion-tone {
+                padding: 6px 16px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                text-transform: capitalize;
+            }
+
+            .suggestion-tone.formel {
+                background: #f3f4f6;
+                color: #374151;
+                border: 1px solid #d1d5db;
+            }
+
+            .suggestion-tone.urgent {
+                background: #fef2f2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+            }
+
+            .suggestion-tone.neutre {
+                background: #eff6ff;
+                color: #2563eb;
+                border: 1px solid #bfdbfe;
+            }
+
+            .suggestion-tone.détaillé {
+                background: #f0fdf4;
+                color: #16a34a;
+                border: 1px solid #bbf7d0;
+            }
+
+            .suggestion-tone.professionnel {
+                background: #fef3c7;
+                color: #d97706;
+                border: 1px solid #fde68a;
+            }
+
+            .suggestion-actions {
+                display: flex;
+                gap: 8px;
+            }
+
+            .copy-btn,
+            .use-btn {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                border-radius: 8px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: 1px solid;
+            }
+
+            .copy-btn {
+                background: #f3f4f6;
+                color: #374151;
+                border-color: #d1d5db;
+            }
+
+            .copy-btn:hover {
+                background: #e5e7eb;
+                border-color: #9ca3af;
+            }
+
+            .use-btn {
+                background: #3b82f6;
+                color: white;
+                border-color: #3b82f6;
+            }
+
+            .use-btn:hover {
+                background: #2563eb;
+                border-color: #2563eb;
+            }
+
+            .suggestion-subject {
+                font-size: 14px;
+                color: #4b5563;
+                margin-bottom: 12px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            .suggestion-content {
+                font-size: 13px;
+                color: #374151;
+                line-height: 1.6;
+                white-space: pre-wrap;
+                background: #f8fafc;
+                padding: 16px;
+                border-radius: 8px;
+                border: 1px solid #e5e7eb;
+                margin-bottom: 12px;
+            }
+
+            .ai-info {
+                background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+                border: 1px solid #7dd3fc;
+                border-radius: 12px;
+                padding: 20px;
+                margin-bottom: 24px;
+            }
+
+            .ai-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background: linear-gradient(135deg, #0ea5e9, #0284c7);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                margin-bottom: 12px;
+                box-shadow: 0 2px 4px rgba(14, 165, 233, 0.3);
+            }
+
+            .ai-info p {
+                margin: 0;
+                color: #075985;
+                font-size: 14px;
+                line-height: 1.5;
+            }
+
+            .tags-list {
+                padding: 24px;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .tag {
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                padding: 6px 12px;
+                border-radius: 16px;
+                font-size: 12px;
+                font-weight: 500;
+                border: 1px solid rgba(255,255,255,0.2);
+                box-shadow: 0 1px 3px rgba(102, 126, 234, 0.3);
             }
 
             .modal-actions {
                 display: flex;
                 justify-content: flex-end;
                 gap: 12px;
-                padding: 24px;
+                padding: 24px 32px;
                 border-top: 1px solid #e5e7eb;
+                background: linear-gradient(135deg, #f8fafc, #f1f5f9);
             }
 
             /* Form Styles */
             .form-group {
-                margin-bottom: 16px;
+                margin-bottom: 20px;
             }
 
             .form-group label {
                 display: block;
-                margin-bottom: 6px;
+                margin-bottom: 8px;
                 font-weight: 600;
                 color: #374151;
                 font-size: 14px;
             }
 
             .form-input,
-            .form-select {
+            .form-select,
+            .form-textarea {
                 width: 100%;
                 padding: 12px 16px;
                 border: 2px solid #e5e7eb;
-                border-radius: 8px;
+                border-radius: 10px;
                 font-size: 14px;
                 background: white;
-                transition: border-color 0.2s ease;
+                transition: all 0.2s ease;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             }
 
             .form-input:focus,
-            .form-select:focus {
+            .form-select:focus,
+            .form-textarea:focus {
                 outline: none;
                 border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
 
             .form-row {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: 16px;
+                gap: 20px;
+            }
+
+            .form-textarea {
+                resize: vertical;
+                min-height: 100px;
+                font-family: inherit;
             }
 
             /* Loading State */
@@ -1682,18 +3349,22 @@ class TasksView {
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                padding: 64px 32px;
+                padding: 80px 32px;
                 color: #6b7280;
+                background: white;
+                border-radius: 16px;
+                margin: 0 auto;
+                max-width: 400px;
             }
 
             .loading-spinner {
-                width: 40px;
-                height: 40px;
+                width: 48px;
+                height: 48px;
                 border: 4px solid #f3f4f6;
                 border-top: 4px solid #3b82f6;
                 border-radius: 50%;
                 animation: spin 1s linear infinite;
-                margin-bottom: 16px;
+                margin-bottom: 20px;
             }
 
             @keyframes spin {
@@ -1701,19 +3372,23 @@ class TasksView {
                 100% { transform: rotate(360deg); }
             }
 
-            /* Toast */
+            /* Toast Notifications */
             .toast {
                 position: fixed;
-                bottom: 20px;
-                right: 20px;
-                padding: 12px 20px;
-                border-radius: 8px;
+                bottom: 24px;
+                right: 24px;
+                padding: 16px 24px;
+                border-radius: 12px;
                 color: white;
                 font-weight: 600;
+                font-size: 14px;
                 z-index: 100000;
                 transform: translateY(100px);
                 opacity: 0;
                 transition: all 0.3s ease;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255,255,255,0.2);
             }
 
             .toast.show {
@@ -1721,40 +3396,88 @@ class TasksView {
                 opacity: 1;
             }
 
-            .toast-success { background: #10b981; }
-            .toast-error { background: #ef4444; }
-            .toast-info { background: #3b82f6; }
+            .toast-success { 
+                background: linear-gradient(135deg, #10b981, #059669);
+            }
+            .toast-error { 
+                background: linear-gradient(135deg, #ef4444, #dc2626);
+            }
+            .toast-info { 
+                background: linear-gradient(135deg, #3b82f6, #2563eb);
+            }
 
-            /* Responsive */
+            /* Responsive Design */
+            @media (max-width: 1024px) {
+                .header-container {
+                    padding: 0 16px;
+                }
+                
+                .tasks-container {
+                    padding: 0 16px;
+                }
+                
+                .filters-container {
+                    padding: 0 16px;
+                }
+            }
+
             @media (max-width: 768px) {
                 .tasks-header {
+                    padding: 16px;
+                }
+                
+                .header-container {
                     flex-direction: column;
                     gap: 16px;
                     align-items: stretch;
-                    padding: 16px;
                 }
 
                 .header-left {
                     justify-content: center;
+                    min-width: auto;
                 }
 
-                .header-actions {
+                .header-center {
+                    margin: 0;
+                    max-width: none;
+                }
+
+                .header-right {
                     justify-content: center;
+                    min-width: auto;
+                }
+
+                .page-title {
+                    font-size: 28px;
+                }
+
+                .view-toggle {
+                    justify-content: center;
+                }
+
+                .filters-container {
                     flex-wrap: wrap;
-                }
-
-                .search-input {
-                    width: 100%;
-                    max-width: 280px;
-                }
-
-                .filters-bar {
-                    flex-wrap: wrap;
-                    padding: 0 16px 16px;
-                }
-
-                .tasks-container {
+                    justify-content: center;
                     padding: 0 16px;
+                    gap: 8px;
+                }
+
+                .status-filter {
+                    padding: 10px 16px;
+                    font-size: 13px;
+                }
+
+                .filter-name {
+                    display: none;
+                }
+
+                .advanced-filters.show {
+                    padding: 16px;
+                }
+
+                .filters-grid {
+                    grid-template-columns: 1fr;
+                    gap: 12px;
                 }
 
                 .task-card {
@@ -1764,17 +3487,75 @@ class TasksView {
                     padding: 16px;
                 }
 
+                .task-left {
+                    width: 100%;
+                }
+
                 .task-right {
                     width: 100%;
                     justify-content: space-between;
                 }
 
+                .task-title {
+                    white-space: normal;
+                    line-height: 1.4;
+                }
+
                 .detail-grid {
                     grid-template-columns: 1fr;
+                    padding: 16px;
                 }
 
                 .form-row {
                     grid-template-columns: 1fr;
+                }
+
+                .modal-content {
+                    padding: 20px;
+                }
+
+                .modal-header {
+                    padding: 16px 20px;
+                }
+
+                .modal-actions {
+                    padding: 16px 20px;
+                    flex-direction: column;
+                    gap: 8px;
+                }
+
+                .task-details-modal,
+                .create-task-modal,
+                .edit-task-modal,
+                .reply-suggestions-modal {
+                    margin: 10px;
+                    border-radius: 16px;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .page-title {
+                    font-size: 24px;
+                }
+
+                .search-input {
+                    font-size: 16px; /* Prevent zoom on iOS */
+                }
+
+                .task-meta {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 4px;
+                }
+
+                .separator {
+                    display: none;
+                }
+
+                .toast {
+                    left: 16px;
+                    right: 16px;
+                    bottom: 16px;
                 }
             }
         `;
@@ -1784,10 +3565,10 @@ class TasksView {
 }
 
 // =====================================
-// GLOBAL INITIALIZATION
+// GLOBAL INITIALIZATION GARANTIE
 // =====================================
 function initializeModernTaskManager() {
-    console.log('[TaskManager] Initializing modern interface v9.0...');
+    console.log('[TaskManager] Initializing modern interface v9.1 with all features...');
     
     if (!window.taskManager || !window.taskManager.initialized) {
         window.taskManager = new TaskManager();
@@ -1797,7 +3578,7 @@ function initializeModernTaskManager() {
         window.tasksView = new TasksView();
     }
     
-    // Bind methods
+    // Bind methods pour éviter les erreurs de contexte
     Object.getOwnPropertyNames(TaskManager.prototype).forEach(name => {
         if (name !== 'constructor' && typeof window.taskManager[name] === 'function') {
             window.taskManager[name] = window.taskManager[name].bind(window.taskManager);
@@ -1810,10 +3591,10 @@ function initializeModernTaskManager() {
         }
     });
     
-    console.log('✅ TaskManager v9.0 - Interface moderne et minimaliste chargé');
+    console.log('✅ TaskManager v9.1 - Interface moderne avec TOUTES les fonctionnalités chargé');
 }
 
-// Initialize immediately and on DOM ready
+// Initialisation immédiate ET sur DOMContentLoaded
 initializeModernTaskManager();
 
 document.addEventListener('DOMContentLoaded', initializeModernTaskManager);
