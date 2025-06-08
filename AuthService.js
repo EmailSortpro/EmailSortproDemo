@@ -1,598 +1,500 @@
-// AuthService.js - Service d'authentification Microsoft Graph CORRIGÉ v6.0
+// AuthService.js - Version 8.0 - CORRECTION AUTHENTIFICATION
 
 class AuthService {
     constructor() {
+        console.log('[AuthService] Constructor v8.0 - Correction authentification');
+        console.log('[AuthService] Current domain:', window.CURRENT_HOSTNAME);
+        console.log('[AuthService] Test environment:', window.IS_TEST_ENV);
+
         this.msalInstance = null;
-        this.account = null;
         this.isInitialized = false;
-        this.initializationPromise = null;
-        this.configCheckAttempts = 0;
-        this.maxConfigCheckAttempts = 100; // 10 secondes max
-        
-        this.currentDomain = window.location.hostname;
-        this.isTestEnvironment = this.currentDomain.includes('coruscating-dodol') || 
-                                 this.currentDomain.includes('localhost') || 
-                                 this.currentDomain.includes('127.0.0.1') ||
-                                 this.currentDomain.includes('preview');
-        
-        console.log('[AuthService] Constructor v6.0 - Multi-domain support');
-        console.log('[AuthService] Current domain:', this.currentDomain);
-        console.log('[AuthService] Test environment:', this.isTestEnvironment);
-        
-        // Attendre que la configuration soit disponible
+        this.config = null;
+        this.currentUser = null;
+        this.isAuthenticating = false;
+
         this.waitForConfiguration();
     }
 
     async waitForConfiguration() {
         console.log('[AuthService] Waiting for configuration...');
         
-        const checkConfig = () => {
-            this.configCheckAttempts++;
-            
-            if (window.AppConfig && !window.AppConfig.error) {
-                console.log('[AuthService] ✅ Configuration available after', this.configCheckAttempts, 'attempts');
-                this.validateConfiguration();
-                return true;
-            }
-            
-            if (this.configCheckAttempts >= this.maxConfigCheckAttempts) {
-                console.error('[AuthService] ❌ Configuration timeout after', this.maxConfigCheckAttempts, 'attempts');
-                this.handleConfigurationError('Configuration timeout');
-                return false;
-            }
-            
-            console.log(`[AuthService] Configuration not ready, attempt ${this.configCheckAttempts}/${this.maxConfigCheckAttempts}`);
-            setTimeout(checkConfig, 100);
-            return false;
-        };
+        let attempts = 0;
+        const maxAttempts = 50;
         
-        checkConfig();
+        while (!window.AppConfig && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        console.log(`[AuthService] ✅ Configuration available after ${attempts} attempts`);
+        this.validateConfiguration();
     }
 
     validateConfiguration() {
         if (!window.AppConfig) {
-            throw new Error('AppConfig not available');
+            throw new Error('AppConfig not available after waiting');
         }
-        
+
+        if (window.AppConfig.error) {
+            throw new Error(`Configuration error: ${window.AppConfig.message}`);
+        }
+
         const validation = window.AppConfig.validate();
         console.log('[AuthService] Configuration validation:', validation);
         
         if (!validation.valid) {
-            console.warn('[AuthService] Configuration issues:', validation.issues);
-            // Continuer quand même mais noter les problèmes
+            throw new Error(`Configuration invalid: ${validation.issues.join(', ')}`);
         }
-        
-        // Vérifier la compatibilité du domaine
-        const configuredDomain = new URL(window.AppConfig.msal.redirectUri).hostname;
-        if (configuredDomain !== this.currentDomain) {
-            console.warn('[AuthService] ⚠️ Domain mismatch detected');
-            console.warn('[AuthService] Current:', this.currentDomain);
-            console.warn('[AuthService] Configured:', configuredDomain);
-        }
-        
-        console.log('[AuthService] ✅ Configuration validated for', this.currentDomain);
-    }
 
-    handleConfigurationError(message) {
-        console.error('[AuthService] Configuration error:', message);
-        
-        // Créer un service de fallback
-        this.createFallbackService(message);
-    }
+        this.config = {
+            clientId: window.AppConfig.msal.clientId,
+            authority: window.AppConfig.msal.authority,
+            redirectUri: window.AppConfig.msal.redirectUri,
+            postLogoutRedirectUri: window.AppConfig.msal.postLogoutRedirectUri,
+            scopes: window.AppConfig.scopes.login,
+            domain: window.CURRENT_HOSTNAME
+        };
 
-    createFallbackService(error) {
-        console.log('[AuthService] Creating fallback service due to:', error);
-        
-        // Service minimal pour éviter les erreurs
-        this.isInitialized = false;
-        this.account = null;
-        this.msalInstance = null;
-        
-        console.warn('[AuthService] ⚠️ Fallback mode active - limited functionality');
+        console.log('[AuthService] ✅ Configuration validated for', this.config.domain);
     }
 
     async initialize() {
-        console.log('[AuthService] Initialize called for', this.currentDomain);
-        
-        if (this.initializationPromise) {
-            console.log('[AuthService] Already initializing, waiting...');
-            return this.initializationPromise;
-        }
-        
         if (this.isInitialized) {
             console.log('[AuthService] Already initialized');
-            return Promise.resolve();
+            return;
         }
 
-        this.initializationPromise = this._doInitialize();
-        return this.initializationPromise;
-    }
+        console.log('[AuthService] Initialize called for', this.config.domain);
 
-    async _doInitialize() {
         try {
-            console.log('[AuthService] Starting initialization for', this.currentDomain);
-            
-            // Attendre la configuration si nécessaire
-            if (!window.AppConfig || window.AppConfig.error) {
-                console.log('[AuthService] Waiting for configuration...');
-                await this.waitForConfigurationPromise();
-            }
-            
-            // Vérifier MSAL
-            if (typeof msal === 'undefined') {
-                throw new Error('MSAL library not loaded');
-            }
-            console.log('[AuthService] ✅ MSAL library available');
-
-            // Vérifier la configuration
-            if (!window.AppConfig || window.AppConfig.error) {
-                throw new Error('AppConfig not available or has errors');
-            }
-
-            // Validation finale
-            const validation = window.AppConfig.validate();
-            if (!validation.valid) {
-                console.warn('[AuthService] Configuration validation issues:', validation.issues);
-                // Continuer quand même pour permettre l'affichage des erreurs
-            }
-
-            console.log('[AuthService] Using configuration:', {
-                clientId: window.AppConfig.msal.clientId ? window.AppConfig.msal.clientId.substring(0, 8) + '...' : 'MISSING',
-                authority: window.AppConfig.msal.authority,
-                redirectUri: window.AppConfig.msal.redirectUri,
-                domain: this.currentDomain
-            });
-
-            // Créer l'instance MSAL
-            const msalConfig = {
-                auth: {
-                    clientId: window.AppConfig.msal.clientId,
-                    authority: window.AppConfig.msal.authority,
-                    redirectUri: window.AppConfig.msal.redirectUri,
-                    postLogoutRedirectUri: window.AppConfig.msal.postLogoutRedirectUri
-                },
-                cache: window.AppConfig.msal.cache,
-                system: window.AppConfig.msal.system
-            };
-            
-            // Validation finale avant création
-            if (!msalConfig.auth.clientId || msalConfig.auth.clientId === 'CONFIGURATION_REQUIRED') {
-                throw new Error('Client ID is missing or invalid');
-            }
-            
-            if (!/^[a-f0-9-]{36}$/i.test(msalConfig.auth.clientId)) {
-                throw new Error(`Invalid Client ID format: ${msalConfig.auth.clientId}`);
-            }
-            
-            this.msalInstance = new msal.PublicClientApplication(msalConfig);
-            console.log('[AuthService] ✅ MSAL instance created for', this.currentDomain);
-            
-            // Initialiser MSAL
-            await this.msalInstance.initialize();
-            console.log('[AuthService] ✅ MSAL instance initialized');
-            
-            // Gérer la redirection
-            try {
-                console.log('[AuthService] Checking for redirect response...');
-                const response = await this.msalInstance.handleRedirectPromise();
-                
-                if (response) {
-                    console.log('[AuthService] ✅ Redirect response received:', {
-                        username: response.account?.username,
-                        name: response.account?.name
-                    });
-                    this.account = response.account;
-                    this.msalInstance.setActiveAccount(this.account);
-                } else {
-                    console.log('[AuthService] No redirect response');
-                    
-                    // Vérifier le cache
-                    const accounts = this.msalInstance.getAllAccounts();
-                    console.log('[AuthService] Accounts in cache:', accounts.length);
-                    
-                    if (accounts.length > 0) {
-                        this.account = accounts[0];
-                        this.msalInstance.setActiveAccount(this.account);
-                        console.log('[AuthService] ✅ Account restored from cache:', this.account.username);
-                    }
-                }
-            } catch (redirectError) {
-                console.warn('[AuthService] Redirect handling error (non-critical):', redirectError);
-                
-                if (redirectError.message && redirectError.message.includes('redirect_uri')) {
-                    console.error('[AuthService] ❌ REDIRECT URI ERROR');
-                    throw new Error(`Redirect URI error for ${this.currentDomain}: Configure ${window.AppConfig.msal.redirectUri} in Azure Portal`);
-                }
-            }
-
+            await this.initializeMsal();
             this.isInitialized = true;
-            console.log('[AuthService] ✅ Initialization completed for', this.currentDomain);
-            
-            return true;
-
+            console.log('[AuthService] ✅ Initialization completed for', this.config.domain);
         } catch (error) {
             console.error('[AuthService] ❌ Initialization failed:', error);
-            this.isInitialized = false;
-            this.initializationPromise = null;
-            
-            // Gestion d'erreurs spécifiques
-            this.handleInitializationError(error);
             throw error;
         }
     }
 
-    async waitForConfigurationPromise() {
-        return new Promise((resolve, reject) => {
-            const maxWait = 10000; // 10 secondes max
-            const startTime = Date.now();
-            
-            const checkConfig = () => {
-                if (window.AppConfig && !window.AppConfig.error) {
-                    resolve();
-                    return;
-                }
-                
-                if (Date.now() - startTime > maxWait) {
-                    reject(new Error('Configuration timeout'));
-                    return;
-                }
-                
-                setTimeout(checkConfig, 100);
-            };
-            
-            checkConfig();
-        });
-    }
-
-    handleInitializationError(error) {
-        if (error.message.includes('unauthorized_client')) {
-            console.error('[AuthService] AZURE CONFIG ERROR: Client ID incorrect for', this.currentDomain);
-        } else if (error.message.includes('redirect_uri') || error.message.includes('Redirect URI')) {
-            console.error('[AuthService] REDIRECT URI ERROR:', error.message);
-        }
+    async initializeMsal() {
+        console.log('[AuthService] Starting initialization for', this.config.domain);
         
-        // Notifier l'interface utilisateur si disponible
-        if (window.uiManager) {
-            let errorMessage = 'Erreur d\'initialisation de l\'authentification.';
-            
-            if (error.message.includes('unauthorized_client')) {
-                errorMessage = `Configuration Azure incorrecte pour ${this.currentDomain}. Vérifiez votre Client ID.`;
-            } else if (error.message.includes('redirect_uri')) {
-                errorMessage = `URI de redirection invalide. Configurez: ${window.AppConfig?.msal?.redirectUri || 'URI_MANQUANTE'}`;
+        // Vérifier que MSAL est disponible
+        if (typeof msal === 'undefined') {
+            throw new Error('MSAL library not loaded');
+        }
+        console.log('[AuthService] ✅ MSAL library available');
+
+        // Configuration MSAL
+        const msalConfig = {
+            auth: {
+                clientId: this.config.clientId,
+                authority: this.config.authority,
+                redirectUri: this.config.redirectUri,
+                postLogoutRedirectUri: this.config.postLogoutRedirectUri
+            },
+            cache: {
+                cacheLocation: 'localStorage',
+                storeAuthStateInCookie: true
+            },
+            system: {
+                loggerOptions: {
+                    loggerCallback: (level, message, containsPii) => {
+                        if (window.IS_TEST_ENV) {
+                            console.log(`[MSAL ${level}] ${message}`);
+                        }
+                    },
+                    piiLoggingEnabled: false,
+                    logLevel: window.IS_TEST_ENV ? 'Verbose' : 'Warning'
+                }
             }
+        };
+
+        console.log('[AuthService] Using configuration:', {
+            clientId: this.config.clientId.substring(0, 8) + '...',
+            authority: this.config.authority,
+            redirectUri: this.config.redirectUri,
+            domain: this.config.domain
+        });
+
+        // Créer l'instance MSAL
+        this.msalInstance = new msal.PublicClientApplication(msalConfig);
+        console.log('[AuthService] ✅ MSAL instance created for', this.config.domain);
+
+        // Initialiser MSAL
+        await this.msalInstance.initialize();
+        console.log('[AuthService] ✅ MSAL instance initialized');
+
+        // Gérer la réponse de redirection
+        console.log('[AuthService] Checking for redirect response...');
+        const response = await this.msalInstance.handleRedirectPromise();
+        
+        if (response) {
+            console.log('[AuthService] ✅ Redirect response received:', {
+                username: response.account?.username,
+                name: response.account?.name
+            });
+            this.currentUser = response.account;
+        } else {
+            console.log('[AuthService] No redirect response, checking existing accounts...');
             
-            window.uiManager.showToast(errorMessage, 'error', 15000);
+            // Vérifier s'il y a déjà un compte connecté
+            const accounts = this.msalInstance.getAllAccounts();
+            if (accounts.length > 0) {
+                console.log('[AuthService] ✅ Found existing account:', {
+                    username: accounts[0].username,
+                    name: accounts[0].name
+                });
+                this.currentUser = accounts[0];
+            } else {
+                console.log('[AuthService] No existing accounts found');
+                this.currentUser = null;
+            }
         }
     }
 
+    // =====================================
+    // MÉTHODES D'AUTHENTIFICATION - CORRIGÉES
+    // =====================================
     isAuthenticated() {
-        const authenticated = this.account !== null && this.isInitialized;
-        console.log('[AuthService] Authentication check:', {
-            hasAccount: !!this.account,
-            isInitialized: this.isInitialized,
-            result: authenticated,
-            domain: this.currentDomain
-        });
-        return authenticated;
-    }
+        if (!this.isInitialized || !this.msalInstance) {
+            console.log('[AuthService] Not initialized, returning false');
+            return {
+                isAuthenticated: false,
+                hasAccount: false,
+                isInitialized: false,
+                result: false,
+                domain: this.config?.domain || window.CURRENT_HOSTNAME
+            };
+        }
 
-    getAccount() {
-        return this.account;
+        const accounts = this.msalInstance.getAllAccounts();
+        const hasAccount = accounts.length > 0;
+        
+        // CORRECTION CRITIQUE : Utiliser les comptes MSAL, pas seulement currentUser
+        const isAuthenticated = hasAccount && accounts[0] != null;
+        
+        if (isAuthenticated && !this.currentUser) {
+            // Mettre à jour currentUser si on a trouvé un compte
+            this.currentUser = accounts[0];
+        }
+
+        const result = {
+            isAuthenticated: isAuthenticated,
+            hasAccount: hasAccount,
+            isInitialized: this.isInitialized,
+            result: isAuthenticated, // CORRECTION : retourner isAuthenticated, pas hasAccount
+            domain: this.config.domain,
+            account: isAuthenticated ? accounts[0] : null
+        };
+
+        console.log('[AuthService] Authentication check:', result);
+        return result;
     }
 
     async login() {
-        console.log('[AuthService] Login attempt for', this.currentDomain);
-        
-        if (!this.isInitialized) {
-            console.log('[AuthService] Not initialized, initializing first...');
-            await this.initialize();
+        if (this.isAuthenticating) {
+            console.log('[AuthService] Login already in progress');
+            return;
         }
 
+        this.isAuthenticating = true;
+
         try {
-            // Vérifier la configuration avant le login
-            if (!window.AppConfig || window.AppConfig.error) {
-                throw new Error('Configuration not available for login');
+            console.log('[AuthService] Starting login process...');
+
+            if (!this.isInitialized || !this.msalInstance) {
+                throw new Error('AuthService not initialized');
             }
-            
-            const validation = window.AppConfig.validate();
-            if (!validation.valid) {
-                console.warn('[AuthService] Configuration issues before login:', validation.issues);
-                // Continuer quand même
+
+            // Vérifier si déjà connecté
+            const authStatus = this.isAuthenticated();
+            if (authStatus.isAuthenticated) {
+                console.log('[AuthService] Already authenticated, skipping login');
+                this.isAuthenticating = false;
+                return authStatus.account;
             }
 
             const loginRequest = {
-                scopes: window.AppConfig.scopes.login,
+                scopes: this.config.scopes,
                 prompt: 'select_account'
             };
 
-            console.log('[AuthService] Login request prepared:', {
-                scopes: loginRequest.scopes,
-                clientId: this.msalInstance?.getConfiguration()?.auth?.clientId ? '✅ Present' : '❌ Missing',
-                redirectUri: this.msalInstance?.getConfiguration()?.auth?.redirectUri,
-                domain: this.currentDomain
-            });
+            console.log('[AuthService] Attempting popup login...');
             
-            if (!this.msalInstance) {
-                throw new Error('MSAL instance not available');
-            }
-            
-            const msalConfig = this.msalInstance.getConfiguration();
-            if (!msalConfig?.auth?.clientId) {
-                throw new Error('Client ID missing in MSAL instance');
-            }
-
-            console.log('[AuthService] Initiating login redirect for', this.currentDomain);
-            await this.msalInstance.loginRedirect(loginRequest);
-            
-        } catch (error) {
-            console.error('[AuthService] ❌ Login error:', error);
-            this.handleLoginError(error);
-            throw error;
-        }
-    }
-
-    handleLoginError(error) {
-        let userMessage = 'Erreur de connexion';
-        
-        if (error.errorCode) {
-            const errorCode = error.errorCode;
-            console.log('[AuthService] MSAL Error code:', errorCode);
-            
-            if (window.AppConfig?.errors?.[errorCode]) {
-                userMessage = window.AppConfig.errors[errorCode];
-            } else {
-                switch (errorCode) {
-                    case 'unauthorized_client':
-                        userMessage = `Configuration Azure incorrecte pour ${this.currentDomain}. Vérifiez votre Client ID.`;
-                        break;
-                    case 'invalid_request':
-                        userMessage = `URI de redirection invalide. Configurez: ${window.AppConfig?.msal?.redirectUri}`;
-                        break;
-                    default:
-                        userMessage = `Erreur MSAL: ${errorCode}`;
+            try {
+                // Essayer le login popup d'abord
+                const response = await this.msalInstance.loginPopup(loginRequest);
+                
+                if (response && response.account) {
+                    this.currentUser = response.account;
+                    console.log('[AuthService] ✅ Popup login successful:', {
+                        username: response.account.username,
+                        name: response.account.name
+                    });
+                    return response.account;
                 }
+            } catch (popupError) {
+                console.log('[AuthService] Popup failed, trying redirect:', popupError.message);
+                
+                // Si popup échoue, utiliser redirect
+                await this.msalInstance.loginRedirect(loginRequest);
+                return null; // Le redirect va recharger la page
             }
-        } else if (error.message) {
-            if (error.message.includes('Configuration not available')) {
-                userMessage = 'Configuration manquante. Vérifiez la configuration de l\'application.';
-            } else if (error.message.includes('Client ID')) {
-                userMessage = 'Configuration Client ID invalide.';
-            }
-        }
-        
-        if (window.uiManager) {
-            window.uiManager.showToast(userMessage, 'error', 12000);
+
+        } catch (error) {
+            console.error('[AuthService] ❌ Login failed:', error);
+            throw this.processError(error);
+        } finally {
+            this.isAuthenticating = false;
         }
     }
 
     async logout() {
-        console.log('[AuthService] Logout initiated for', this.currentDomain);
-        
-        if (!this.isInitialized) {
-            console.warn('[AuthService] Not initialized for logout, force cleanup');
-            this.forceCleanup();
-            return;
-        }
-
         try {
-            const logoutRequest = {
-                account: this.account,
-                postLogoutRedirectUri: window.location.origin
-            };
+            console.log('[AuthService] Starting logout...');
 
-            console.log('[AuthService] Logout request for', this.currentDomain);
-            await this.msalInstance.logoutRedirect(logoutRequest);
-            
-        } catch (error) {
-            console.error('[AuthService] Logout error:', error);
-            this.forceCleanup();
-        }
-    }
-
-    async getAccessToken() {
-        if (!this.isAuthenticated()) {
-            console.warn('[AuthService] Not authenticated for token request');
-            return null;
-        }
-
-        try {
-            const tokenRequest = {
-                scopes: window.AppConfig.scopes.silent,
-                account: this.account,
-                forceRefresh: false
-            };
-
-            console.log('[AuthService] Requesting access token for scopes:', tokenRequest.scopes);
-            const response = await this.msalInstance.acquireTokenSilent(tokenRequest);
-            
-            if (response && response.accessToken) {
-                console.log('[AuthService] ✅ Token acquired successfully');
-                return response.accessToken;
-            } else {
-                throw new Error('No access token in response');
+            if (!this.isInitialized || !this.msalInstance) {
+                throw new Error('AuthService not initialized');
             }
-            
+
+            const logoutRequest = {
+                postLogoutRedirectUri: this.config.postLogoutRedirectUri,
+                mainWindowRedirectUri: this.config.postLogoutRedirectUri
+            };
+
+            // Nettoyer l'état local
+            this.currentUser = null;
+
+            // Déconnexion MSAL
+            await this.msalInstance.logoutPopup(logoutRequest);
+            console.log('[AuthService] ✅ Logout successful');
+
         } catch (error) {
-            console.warn('[AuthService] Silent token acquisition failed:', error);
+            console.error('[AuthService] ❌ Logout failed:', error);
             
-            if (error instanceof msal.InteractionRequiredAuthError) {
-                console.log('[AuthService] Interaction required, redirecting to login...');
-                await this.login();
-                return null;
-            } else {
-                console.error('[AuthService] Token acquisition error:', error);
-                return null;
+            // Fallback : nettoyer manuellement et rediriger
+            this.currentUser = null;
+            if (this.msalInstance) {
+                try {
+                    await this.msalInstance.logoutRedirect({
+                        postLogoutRedirectUri: this.config.postLogoutRedirectUri
+                    });
+                } catch (redirectError) {
+                    console.error('[AuthService] Redirect logout also failed:', redirectError);
+                    // Dernière option : recharger la page
+                    window.location.href = this.config.postLogoutRedirectUri;
+                }
             }
         }
     }
 
     async getUserInfo() {
-        const token = await this.getAccessToken();
-        if (!token) {
-            throw new Error('No access token available');
+        if (!this.isInitialized || !this.msalInstance) {
+            throw new Error('AuthService not initialized');
+        }
+
+        // Vérifier l'authentification
+        const authStatus = this.isAuthenticated();
+        if (!authStatus.isAuthenticated) {
+            throw new Error('User not authenticated');
+        }
+
+        // Utiliser le compte existant
+        const account = authStatus.account || this.currentUser;
+        if (!account) {
+            throw new Error('No account found');
         }
 
         try {
+            // Essayer d'obtenir un token pour accéder à Graph API
+            console.log('[AuthService] Requesting access token for scopes:', this.config.scopes);
+            
+            const tokenRequest = {
+                scopes: this.config.scopes,
+                account: account,
+                forceRefresh: false
+            };
+
+            const response = await this.msalInstance.acquireTokenSilent(tokenRequest);
+            console.log('[AuthService] ✅ Token acquired successfully');
+
+            // Récupérer les infos utilisateur depuis Graph API
             console.log('[AuthService] Fetching user info from Graph API');
-            const response = await fetch('https://graph.microsoft.com/v1.0/me', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('[AuthService] Graph API error:', response.status, errorText);
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const userInfo = await response.json();
+            const userInfo = await this.fetchUserInfoFromGraph(response.accessToken);
             console.log('[AuthService] ✅ User info retrieved:', userInfo.displayName);
+
             return userInfo;
 
         } catch (error) {
             console.error('[AuthService] Error getting user info:', error);
-            throw error;
+            
+            // Fallback : utiliser les informations du compte MSAL
+            return {
+                id: account.localAccountId,
+                displayName: account.name || account.username,
+                mail: account.username,
+                userPrincipalName: account.username
+            };
         }
     }
 
-    async reset() {
-        console.log('[AuthService] Resetting authentication for', this.currentDomain);
-        
+    async fetchUserInfoFromGraph(accessToken) {
+        const response = await fetch('https://graph.microsoft.com/v1.0/me', {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Graph API error: ${response.status} ${response.statusText}`);
+        }
+
+        return await response.json();
+    }
+
+    async getAccessToken(scopes = null) {
+        if (!this.isInitialized || !this.msalInstance) {
+            throw new Error('AuthService not initialized');
+        }
+
+        const authStatus = this.isAuthenticated();
+        if (!authStatus.isAuthenticated) {
+            throw new Error('User not authenticated');
+        }
+
+        const account = authStatus.account || this.currentUser;
+        const requestScopes = scopes || this.config.scopes;
+
         try {
-            if (this.msalInstance && this.account) {
-                await this.msalInstance.logoutSilent({
-                    account: this.account
-                });
-            }
+            const tokenRequest = {
+                scopes: requestScopes,
+                account: account,
+                forceRefresh: false
+            };
+
+            const response = await this.msalInstance.acquireTokenSilent(tokenRequest);
+            return response.accessToken;
+
         } catch (error) {
-            console.warn('[AuthService] Silent logout failed during reset:', error);
-        }
+            console.log('[AuthService] Silent token acquisition failed, trying popup...');
+            
+            try {
+                const tokenRequest = {
+                    scopes: requestScopes,
+                    account: account
+                };
 
-        this.forceCleanup();
-    }
+                const response = await this.msalInstance.acquireTokenPopup(tokenRequest);
+                return response.accessToken;
 
-    forceCleanup() {
-        console.log('[AuthService] Force cleanup for', this.currentDomain);
-        
-        this.account = null;
-        this.isInitialized = false;
-        this.msalInstance = null;
-        this.initializationPromise = null;
-        this.configCheckAttempts = 0;
-        
-        // Nettoyer le cache MSAL
-        if (window.localStorage) {
-            const keysToRemove = [];
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && (key.includes('msal') || key.includes('auth') || key.includes('login'))) {
-                    keysToRemove.push(key);
-                }
+            } catch (popupError) {
+                console.error('[AuthService] Token acquisition failed:', popupError);
+                throw this.processError(popupError);
             }
-            keysToRemove.forEach(key => {
-                try {
-                    localStorage.removeItem(key);
-                } catch (e) {
-                    console.warn('[AuthService] Error removing key:', key);
-                }
-            });
         }
-        
-        console.log('[AuthService] ✅ Cleanup completed');
     }
 
-    getDiagnosticInfo() {
+    // =====================================
+    // GESTION D'ERREURS
+    // =====================================
+    processError(error) {
+        const errorCode = error.errorCode || error.code || error.name || 'unknown_error';
+        const errorMessage = error.errorMessage || error.message || 'Erreur inconnue';
+
+        console.error('[AuthService] Processing error:', {
+            code: errorCode,
+            message: errorMessage,
+            original: error
+        });
+
+        // Messages d'erreur personnalisés
+        const friendlyMessages = {
+            'popup_window_error': 'Popup bloquée. Autorisez les popups pour ce site.',
+            'user_cancelled': 'Connexion annulée par l\'utilisateur.',
+            'network_error': 'Erreur réseau. Vérifiez votre connexion.',
+            'invalid_client': 'Configuration invalide. Contactez l\'administrateur.',
+            'unauthorized_client': 'Application non autorisée pour ce domaine.',
+            'consent_required': 'Autorisation requise. Acceptez les permissions.',
+            'interaction_required': 'Interaction requise. Reconnectez-vous.',
+            'login_required': 'Connexion requise.',
+            'token_expired': 'Session expirée. Reconnectez-vous.',
+            'invalid_request': 'Requête invalide. Vérifiez la configuration.',
+            'temporarily_unavailable': 'Service temporairement indisponible. Réessayez plus tard.'
+        };
+
+        const friendlyMessage = friendlyMessages[errorCode] || errorMessage;
+
+        return {
+            code: errorCode,
+            message: friendlyMessage,
+            originalError: error,
+            timestamp: new Date().toISOString()
+        };
+    }
+
+    // =====================================
+    // MÉTHODES UTILITAIRES
+    // =====================================
+    getConfiguration() {
+        return {
+            domain: this.config?.domain,
+            clientId: this.config?.clientId?.substring(0, 8) + '...',
+            redirectUri: this.config?.redirectUri,
+            isInitialized: this.isInitialized,
+            hasUser: !!this.currentUser
+        };
+    }
+
+    getDebugInfo() {
+        const accounts = this.msalInstance?.getAllAccounts() || [];
+        
         return {
             isInitialized: this.isInitialized,
-            hasAccount: !!this.account,
-            accountUsername: this.account?.username,
-            msalInstanceExists: !!this.msalInstance,
-            configCheckAttempts: this.configCheckAttempts,
-            currentDomain: this.currentDomain,
-            isTestEnvironment: this.isTestEnvironment,
-            msalConfig: this.msalInstance ? {
-                clientId: this.msalInstance.getConfiguration()?.auth?.clientId?.substring(0, 8) + '...',
-                authority: this.msalInstance.getConfiguration()?.auth?.authority,
-                redirectUri: this.msalInstance.getConfiguration()?.auth?.redirectUri,
-                postLogoutRedirectUri: this.msalInstance.getConfiguration()?.auth?.postLogoutRedirectUri
+            hasInstance: !!this.msalInstance,
+            currentUser: this.currentUser ? {
+                username: this.currentUser.username,
+                name: this.currentUser.name
             } : null,
-            appConfig: window.AppConfig ? {
-                exists: true,
-                hasError: !!window.AppConfig.error,
-                environment: window.AppConfig.app?.environment,
-                validation: window.AppConfig.validate ? window.AppConfig.validate() : { valid: false, issues: ['validate method missing'] }
-            } : { exists: false },
+            accountsCount: accounts.length,
+            accounts: accounts.map(acc => ({
+                username: acc.username,
+                name: acc.name
+            })),
+            config: this.getConfiguration(),
             timestamp: new Date().toISOString()
         };
     }
 }
 
-// Créer l'instance globale avec gestion d'erreur renforcée
-try {
-    window.authService = new AuthService();
-    console.log('[AuthService] ✅ Global instance created for', window.location.hostname);
-} catch (error) {
-    console.error('[AuthService] ❌ Failed to create global instance:', error);
-    
-    // Instance de fallback
-    window.authService = {
-        isInitialized: false,
-        initialize: () => Promise.reject(new Error('AuthService creation failed: ' + error.message)),
-        login: () => Promise.reject(new Error('AuthService not available')),
-        isAuthenticated: () => false,
-        getAccount: () => null,
-        reset: () => {},
-        forceCleanup: () => {},
-        getDiagnosticInfo: () => ({ 
-            error: 'AuthService creation failed: ' + error.message,
-            currentDomain: window.location.hostname,
-            configExists: !!window.AppConfig,
-            timestamp: new Date().toISOString()
-        })
-    };
-}
+// Créer l'instance globale
+window.authService = new AuthService();
 
-// Fonction de diagnostic globale
-window.diagnoseMSAL = function() {
-    console.group('🔍 MSAL DIAGNOSTIC v6.0 - ' + window.location.hostname);
-    
-    try {
-        const authDiag = window.authService.getDiagnosticInfo();
+// Bind des méthodes pour préserver le contexte
+Object.getOwnPropertyNames(AuthService.prototype).forEach(name => {
+    if (name !== 'constructor' && typeof window.authService[name] === 'function') {
+        window.authService[name] = window.authService[name].bind(window.authService);
+    }
+});
+
+console.log('[AuthService] ✅ Global instance created for', window.CURRENT_HOSTNAME);
+
+// Debug function globale
+window.checkAuth = function() {
+    console.log('=== AUTH DEBUG ===');
+    if (window.authService) {
+        const debug = window.authService.getDebugInfo();
+        console.log('Auth Debug Info:', debug);
         
-        console.log('🔐 AuthService Status:', {
-            initialized: authDiag.isInitialized,
-            hasAccount: authDiag.hasAccount,
-            domain: authDiag.currentDomain,
-            isTest: authDiag.isTestEnvironment
-        });
+        const authStatus = window.authService.isAuthenticated();
+        console.log('Auth Status:', authStatus);
         
-        console.log('⚙️ Configuration:', {
-            exists: authDiag.appConfig.exists,
-            hasError: authDiag.appConfig.hasError,
-            validation: authDiag.appConfig.validation
-        });
-        
-        console.log('📚 MSAL Library:', typeof msal !== 'undefined' ? 'Available' : 'Missing');
-        console.log('🌐 Current URL:', window.location.href);
-        
-        if (authDiag.msalConfig) {
-            console.log('🔗 MSAL Config:', authDiag.msalConfig);
-        }
-        
-        if (authDiag.appConfig.validation && !authDiag.appConfig.validation.valid) {
-            console.log('🚨 Configuration Issues:', authDiag.appConfig.validation.issues);
-        }
-        
-        return authDiag;
-        
-    } catch (error) {
-        console.error('❌ Diagnostic failed:', error);
-        return { error: error.message };
-    } finally {
-        console.groupEnd();
+        return { debug, authStatus };
+    } else {
+        console.log('AuthService not available');
+        return null;
     }
 };
 
-console.log('✅ AuthService v6.0 loaded with guaranteed configuration support');
+console.log('✅ AuthService v8.0 loaded - Correction authentification');
