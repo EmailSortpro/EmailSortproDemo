@@ -1,4 +1,4 @@
-// app.js - Application NETTOYÉE avec initialisation garantie des modules pour coruscating-dodol-f30e8d.netlify.app - CORRIGÉE
+// app.js - Application CORRIGÉE pour éviter le mode démo forcé v4.2
 
 class App {
     constructor() {
@@ -63,7 +63,8 @@ class App {
             // INITIALISER LES MODULES CRITIQUES
             await this.initializeCriticalModules();
             
-            await this.checkAuthenticationStatus();
+            // CORRECTION: Vérifier l'authentification SANS forcer le mode démo
+            await this.checkAuthenticationStatusFixed();
             
         } catch (error) {
             await this.handleInitializationError(error);
@@ -73,8 +74,124 @@ class App {
         }
     }
 
+    // CORRECTION: Nouvelle méthode pour vérifier l'authentification sans forcer le démo
+    async checkAuthenticationStatusFixed() {
+        console.log('[App] 🔍 Checking authentication status (FIXED VERSION)...');
+        
+        // Vérifier d'abord si AuthService est initialisé
+        if (!window.authService || !window.authService.isInitialized) {
+            console.warn('[App] AuthService not properly initialized, showing login');
+            this.showLogin();
+            return;
+        }
+
+        // Vérifier l'authentification
+        const isAuthenticated = window.authService.isAuthenticated();
+        console.log('[App] Authentication check result:', isAuthenticated);
+
+        if (isAuthenticated) {
+            const account = window.authService.getAccount();
+            console.log('[App] Account found:', account?.username);
+            
+            if (account) {
+                try {
+                    console.log('[App] 🔄 Getting user info for authenticated user...');
+                    
+                    // CORRECTION: Essayer de récupérer les infos utilisateur
+                    this.user = await window.authService.getUserInfo();
+                    this.isAuthenticated = true;
+                    
+                    console.log('[App] ✅ User authenticated successfully:', this.user.displayName || this.user.mail);
+                    
+                    // CORRECTION: Configurer les services pour le mode réel
+                    await this.configureServicesForRealMode();
+                    
+                    // Afficher l'application
+                    this.showAppWithTransition();
+                    
+                } catch (userInfoError) {
+                    console.error('[App] ❌ Error getting user info:', userInfoError);
+                    
+                    // CORRECTION: Ne pas forcer le mode démo en cas d'erreur temporaire
+                    if (userInfoError.message.includes('401') || userInfoError.message.includes('403')) {
+                        console.log('[App] Token seems invalid, clearing auth and showing login');
+                        await window.authService.reset();
+                        this.showLogin();
+                    } else {
+                        console.warn('[App] Temporary error, but user is authenticated - proceeding with limited info');
+                        
+                        // Utiliser les infos du compte MSAL
+                        this.user = {
+                            displayName: account.name || account.username,
+                            mail: account.username,
+                            userPrincipalName: account.username
+                        };
+                        this.isAuthenticated = true;
+                        
+                        // Configurer pour le mode réel malgré l'erreur
+                        await this.configureServicesForRealMode();
+                        this.showAppWithTransition();
+                    }
+                }
+            } else {
+                console.log('[App] No active account found despite isAuthenticated=true');
+                this.showLogin();
+            }
+        } else {
+            console.log('[App] User not authenticated on', this.expectedDomain);
+            this.showLogin();
+        }
+    }
+
+    // NOUVELLE MÉTHODE: Configuration des services pour le mode réel
+    async configureServicesForRealMode() {
+        console.log('[App] 🔧 Configuring services for REAL mode...');
+        
+        try {
+            // 1. Configurer MailService pour le mode réel
+            if (window.mailService) {
+                if (typeof window.mailService.enableRealMode === 'function') {
+                    window.mailService.enableRealMode();
+                    console.log('[App] ✅ MailService configured for real mode');
+                }
+                
+                // Vérifier le statut d'authentification du MailService
+                if (typeof window.mailService.checkAuthenticationStatus === 'function') {
+                    const mailAuthStatus = await window.mailService.checkAuthenticationStatus();
+                    console.log('[App] MailService auth status:', mailAuthStatus);
+                }
+            }
+            
+            // 2. Configurer le scanner pour les emails réels
+            if (window.minimalScanModule) {
+                if (window.minimalScanModule.forceRealEmails !== undefined) {
+                    window.minimalScanModule.forceRealEmails = true;
+                    console.log('[App] ✅ Scanner configured for real emails');
+                }
+            }
+            
+            // 3. Vider les caches de démo s'ils existent
+            try {
+                localStorage.removeItem('emailsort_demo_emails');
+                localStorage.removeItem('emailsort_demo_mode');
+                console.log('[App] ✅ Demo caches cleared');
+            } catch (error) {
+                console.warn('[App] Could not clear demo caches:', error);
+            }
+            
+            // 4. Définir des variables globales pour indiquer le mode réel
+            window.APP_REAL_MODE = true;
+            window.APP_DEMO_MODE = false;
+            
+            console.log('[App] ✅ All services configured for REAL mode');
+            
+        } catch (error) {
+            console.error('[App] ❌ Error configuring services for real mode:', error);
+        }
+    }
+
     // =====================================
-    // INITIALISATION DES MODULES CRITIQUES - CORRIGÉE
+    // INITIALISATION DES MODULES CRITIQUES - INCHANGÉE
     // =====================================
     async initializeCriticalModules() {
         console.log('[App] Initializing critical modules for', this.expectedDomain, '...');
@@ -88,7 +205,7 @@ class App {
         // 3. Vérifier TasksView
         await this.ensureTasksViewReady();
         
-        // 4. CORRECTION: Vérifier EmailScanner
+        // 4. Vérifier EmailScanner
         await this.ensureEmailScannerReady();
         
         // 5. Bind methods
@@ -100,15 +217,13 @@ class App {
     async ensureTaskManagerReady() {
         console.log('[App] Ensuring TaskManager is ready...');
         
-        // Vérifier si TaskManager existe déjà
         if (window.taskManager && window.taskManager.initialized) {
             console.log('[App] ✅ TaskManager already ready');
             return true;
         }
         
-        // Attendre que TaskManager soit initialisé (il est chargé avant app.js)
         let attempts = 0;
-        const maxAttempts = 50; // 5 secondes max
+        const maxAttempts = 50;
         
         while ((!window.taskManager || !window.taskManager.initialized) && attempts < maxAttempts) {
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -120,7 +235,6 @@ class App {
             return false;
         }
         
-        // Vérifier que les méthodes essentielles existent
         const essentialMethods = ['createTaskFromEmail', 'createTask', 'updateTask', 'deleteTask', 'getStats'];
         for (const method of essentialMethods) {
             if (typeof window.taskManager[method] !== 'function') {
@@ -141,7 +255,6 @@ class App {
             return true;
         }
         
-        // Attendre que PageManager soit chargé
         let attempts = 0;
         const maxAttempts = 30;
         
@@ -167,7 +280,6 @@ class App {
             return true;
         }
         
-        // TasksView est créé dans TaskManager.js, attendre
         let attempts = 0;
         const maxAttempts = 30;
         
@@ -185,23 +297,23 @@ class App {
         return true;
     }
 
-    // CORRECTION: Nouvelle méthode pour s'assurer qu'EmailScanner est prêt
     async ensureEmailScannerReady() {
         console.log('[App] Ensuring EmailScanner is ready...');
         
-        // Si EmailScanner n'existe pas, le créer
         if (!window.emailScanner) {
             console.log('[App] 🔧 Creating EmailScanner instance...');
             window.emailScanner = {
                 emails: [],
+                mode: 'real', // CORRECTION: Mode réel par défaut
                 getAllEmails: function() {
-                    console.log(`[EmailScanner] Returning ${this.emails.length} emails`);
+                    console.log(`[EmailScanner] Returning ${this.emails.length} emails (mode: ${this.mode})`);
                     return this.emails || [];
                 },
                 setEmails: function(emails) {
                     if (Array.isArray(emails)) {
                         this.emails = emails;
-                        console.log(`[EmailScanner] ✅ ${emails.length} emails stored`);
+                        this.mode = emails.some(e => e.isDemo) ? 'demo' : 'real';
+                        console.log(`[EmailScanner] ✅ ${emails.length} emails stored (mode: ${this.mode})`);
                     } else {
                         console.warn('[EmailScanner] Invalid emails array provided');
                         this.emails = [];
@@ -209,20 +321,34 @@ class App {
                 },
                 scan: async function(options = {}) {
                     console.log('[EmailScanner] Scan requested with options:', options);
-                    // Simulation de scan si pas d'autre implémentation
+                    // Déléguer au MailService pour un scan réel
+                    if (window.mailService && typeof window.mailService.scanEmailsForCategories === 'function') {
+                        return await window.mailService.scanEmailsForCategories(options);
+                    }
                     return {
                         success: true,
                         total: this.emails.length,
-                        processed: this.emails.length
+                        processed: this.emails.length,
+                        mode: this.mode
                     };
+                },
+                getMode: function() {
+                    return this.mode;
+                },
+                setRealMode: function() {
+                    this.mode = 'real';
+                    console.log('[EmailScanner] ✅ Switched to real mode');
                 }
             };
-            console.log('[App] ✅ EmailScanner created successfully');
+            console.log('[App] ✅ EmailScanner created successfully (real mode)');
         } else {
             console.log('[App] ✅ EmailScanner already exists');
+            // S'assurer qu'il est en mode réel
+            if (typeof window.emailScanner.setRealMode === 'function') {
+                window.emailScanner.setRealMode();
+            }
         }
         
-        // Vérifier que les méthodes essentielles existent
         const essentialMethods = ['getAllEmails', 'setEmails'];
         for (const method of essentialMethods) {
             if (typeof window.emailScanner[method] !== 'function') {
@@ -278,7 +404,7 @@ class App {
             }
         }
         
-        // CORRECTION: Bind EmailScanner methods si c'est un objet avec prototype
+        // Bind EmailScanner methods si c'est un objet avec prototype
         if (window.emailScanner && Object.getPrototypeOf(window.emailScanner) !== Object.prototype) {
             try {
                 Object.getOwnPropertyNames(Object.getPrototypeOf(window.emailScanner)).forEach(name => {
@@ -322,34 +448,10 @@ class App {
         return true;
     }
 
+    // MÉTHODE ORIGINALE CONSERVÉE POUR COMPATIBILITÉ (mais non utilisée)
     async checkAuthenticationStatus() {
-        if (window.authService.isAuthenticated()) {
-            const account = window.authService.getAccount();
-            if (account) {
-                console.log('[App] Getting user info for', this.expectedDomain, '...');
-                try {
-                    this.user = await window.authService.getUserInfo();
-                    this.isAuthenticated = true;
-                    console.log('[App] User authenticated on', this.expectedDomain, ':', this.user.displayName || this.user.mail);
-                    this.showAppWithTransition();
-                } catch (userInfoError) {
-                    console.error('[App] Error getting user info:', userInfoError);
-                    if (userInfoError.message.includes('401') || userInfoError.message.includes('403')) {
-                        console.log('[App] Token seems invalid, clearing auth and showing login');
-                        await window.authService.reset();
-                        this.showLogin();
-                    } else {
-                        this.showLogin();
-                    }
-                }
-            } else {
-                console.log('[App] No active account found');
-                this.showLogin();
-            }
-        } else {
-            console.log('[App] User not authenticated on', this.expectedDomain);
-            this.showLogin();
-        }
+        console.log('[App] 🚨 OLD checkAuthenticationStatus called - redirecting to FIXED version');
+        return this.checkAuthenticationStatusFixed();
     }
 
     async handleInitializationError(error) {
@@ -476,7 +578,6 @@ class App {
         window.addEventListener('unhandledrejection', (event) => {
             console.error('[App] Unhandled promise rejection on', this.expectedDomain, ':', event.reason);
             
-            // Vérifier s'il s'agit d'une erreur de TaskManager
             if (event.reason && event.reason.message && 
                 event.reason.message.includes('Cannot read properties of undefined')) {
                 
@@ -620,13 +721,11 @@ class App {
     showLogin() {
         console.log('[App] Showing login page on', this.expectedDomain);
         
-        // S'assurer que la page de login est visible
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.style.display = 'flex';
         }
         
-        // S'assurer que l'app n'est pas en mode actif
         document.body.classList.remove('app-active');
         
         this.hideModernLoading();
@@ -637,13 +736,18 @@ class App {
     }
 
     showAppWithTransition() {
-        console.log('[App] Showing application with transition on', this.expectedDomain);
+        console.log('[App] 🎯 Showing application with transition (REAL MODE)');
         
         this.hideModernLoading();
         
+        // Définir des variables globales pour confirmer le mode réel
+        window.APP_REAL_MODE = true;
+        window.APP_DEMO_MODE = false;
+        window.APP_AUTHENTICATED_USER = this.user;
+        
         // Activer le mode app
         document.body.classList.add('app-active');
-        console.log('[App] App mode activated on', this.expectedDomain);
+        console.log('[App] ✅ App mode activated (REAL MODE) on', this.expectedDomain);
         
         // Afficher les éléments
         const loginPage = document.getElementById('loginPage');
@@ -695,7 +799,8 @@ class App {
         // Forcer l'affichage avec CSS
         this.forceAppDisplay();
         
-        console.log('[App] ✅ Application fully displayed on', this.expectedDomain);
+        console.log('[App] ✅ Application fully displayed in REAL MODE on', this.expectedDomain);
+        console.log('[App] 👤 Authenticated user:', this.user?.displayName || this.user?.mail);
     }
 
     forceAppDisplay() {
@@ -814,6 +919,22 @@ class App {
             methods: Object.keys(window.scanStartModule)
         };
     }
+
+    // NOUVELLE MÉTHODE: Diagnostic du mode de l'application
+    getAppStatus() {
+        return {
+            domain: this.expectedDomain,
+            isAuthenticated: this.isAuthenticated,
+            user: this.user,
+            realMode: window.APP_REAL_MODE || false,
+            demoMode: window.APP_DEMO_MODE || false,
+            mailServiceMode: window.mailService?.getStatus?.() || 'unknown',
+            scannerMode: window.minimalScanModule?.getStatus?.() || 'unknown',
+            emailScannerMode: window.emailScanner?.getMode?.() || 'unknown',
+            initializationComplete: !this.isInitializing,
+            timestamp: new Date().toISOString()
+        };
+    }
 }
 
 // =====================================
@@ -852,12 +973,53 @@ window.forceShowApp = function() {
     }
 };
 
+// NOUVELLE FONCTION: Forcer le mode réel
+window.forceRealMode = function() {
+    console.log('[Global] 🔧 Forcing REAL mode for all services...');
+    
+    // Forcer le mode réel dans tous les services
+    if (window.mailService && typeof window.mailService.enableRealMode === 'function') {
+        window.mailService.enableRealMode();
+        console.log('[Global] ✅ MailService forced to real mode');
+    }
+    
+    if (window.minimalScanModule) {
+        window.minimalScanModule.forceRealEmails = true;
+        console.log('[Global] ✅ Scanner forced to real mode');
+    }
+    
+    if (window.emailScanner && typeof window.emailScanner.setRealMode === 'function') {
+        window.emailScanner.setRealMode();
+        console.log('[Global] ✅ EmailScanner forced to real mode');
+    }
+    
+    // Définir les variables globales
+    window.APP_REAL_MODE = true;
+    window.APP_DEMO_MODE = false;
+    
+    // Vider les caches de démo
+    try {
+        localStorage.removeItem('emailsort_demo_emails');
+        localStorage.removeItem('emailsort_demo_mode');
+        console.log('[Global] ✅ Demo caches cleared');
+    } catch (error) {
+        console.warn('[Global] Could not clear demo caches:', error);
+    }
+    
+    console.log('[Global] ✅ REAL mode forced for all services');
+    
+    // Retourner le statut
+    if (window.app && typeof window.app.getAppStatus === 'function') {
+        return window.app.getAppStatus();
+    }
+};
+
 // =====================================
-// VÉRIFICATION DES SERVICES - CORRIGÉE
+// VÉRIFICATION DES SERVICES
 // =====================================
 function checkServicesReady() {
     const requiredServices = ['authService', 'uiManager'];
-    const optionalServices = ['mailService', 'categoryManager']; // CORRECTION: Retirer emailScanner car il est créé dans app.js
+    const optionalServices = ['mailService', 'categoryManager'];
     
     const missingRequired = requiredServices.filter(service => !window[service]);
     const missingOptional = optionalServices.filter(service => !window[service]);
@@ -933,4 +1095,35 @@ window.addEventListener('load', () => {
     }, 5000);
 });
 
-console.log('✅ App loaded - CLEAN VERSION for coruscating-dodol-f30e8d.netlify.app - CORRIGÉE');
+// Fonction de diagnostic globale
+window.diagnoseApp = function() {
+    console.group('🔍 DIAGNOSTIC APP v4.2 - REAL MODE FIXED');
+    try {
+        if (window.app && typeof window.app.getAppStatus === 'function') {
+            const status = window.app.getAppStatus();
+            console.log('📊 App Status:', status);
+            
+            if (status.realMode) {
+                console.log('✅ Application in REAL mode');
+            } else if (status.demoMode) {
+                console.warn('⚠️ Application in DEMO mode');
+            } else {
+                console.log('❓ Mode unknown');
+            }
+            
+            return status;
+        } else {
+            console.error('❌ App instance not available');
+            return { error: 'App not available' };
+        }
+    } catch (error) {
+        console.error('❌ Diagnostic failed:', error);
+        return { error: error.message };
+    } finally {
+        console.groupEnd();
+    }
+};
+
+console.log('✅ App loaded - FIXED VERSION v4.2 - No more forced demo mode');
+console.log('🎯 Use forceRealMode() to ensure real email access');
+console.log('🔍 Use diagnoseApp() for detailed status information');
