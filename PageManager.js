@@ -1,4 +1,4 @@
-// PageManager.js - Gestionnaire de pages CORRIGÉ sans mode démo v11.1
+// PageManager.js - Gestionnaire de pages avec délégation aux modules v11.2
 
 class PageManager {
     constructor() {
@@ -6,52 +6,52 @@ class PageManager {
         this.isLoading = false;
         this.pages = new Map();
         this.loadedPages = new Set();
-        this.realDataOnly = true; // CORRECTION: Forcer l'utilisation de données réelles uniquement
+        this.realDataOnly = true;
         
-        console.log('[PageManager] Initialized v11.1 - REAL DATA ONLY MODE');
+        console.log('[PageManager] Initialized v11.2 - Module delegation system');
         this.initializePages();
     }
 
     initializePages() {
-        // Configuration des pages SANS contenu de démo
+        // Configuration des pages avec leurs modules correspondants
         this.pages.set('dashboard', {
             title: 'Dashboard',
-            component: 'dashboard',
+            module: null, // Géré directement par PageManager
             requiresAuth: true,
-            requiresRealData: true // CORRECTION: Exiger des données réelles
+            requiresRealData: true
         });
         
         this.pages.set('scanner', {
             title: 'Scanner',
-            component: 'scanner',
+            module: 'minimalScanModule', // StartScan.js
             requiresAuth: true,
             requiresRealData: true
         });
         
         this.pages.set('emails', {
             title: 'Emails',
-            component: 'emails',
+            module: 'EmailsModule', // Créé dans index.html
             requiresAuth: true,
             requiresRealData: true
         });
         
         this.pages.set('tasks', {
             title: 'Tâches',
-            component: 'tasks',
+            module: 'TasksModule', // Créé dans index.html
             requiresAuth: true,
-            requiresRealData: true
+            requiresRealData: false
         });
         
         this.pages.set('ranger', {
             title: 'Ranger',
-            component: 'ranger',
+            module: 'RangerModule', // Créé dans index.html
             requiresAuth: true,
-            requiresRealData: true
+            requiresRealData: false
         });
         
         this.pages.set('settings', {
             title: 'Paramètres',
-            component: 'settings',
+            module: 'SettingsModule', // Créé dans index.html
             requiresAuth: true,
             requiresRealData: false
         });
@@ -67,13 +67,14 @@ class PageManager {
 
         const pageConfig = this.pages.get(pageName);
         
-        // CORRECTION: Vérifier l'authentification et les données réelles
+        // Vérifier l'authentification
         if (pageConfig.requiresAuth && !this.isAuthenticated()) {
             console.warn('[PageManager] Page requires authentication:', pageName);
             this.showAuthRequired();
             return;
         }
 
+        // Vérifier les données réelles si nécessaire
         if (pageConfig.requiresRealData && !this.hasRealData()) {
             console.warn('[PageManager] Page requires real data, ensuring data is loaded...');
             await this.ensureRealDataLoaded();
@@ -107,62 +108,6 @@ class PageManager {
         }
     }
 
-    // CORRECTION: Vérification de l'authentification
-    isAuthenticated() {
-        return window.authService?.isAuthenticated() && window.APP_REAL_MODE === true;
-    }
-
-    // CORRECTION: Vérification des données réelles
-    hasRealData() {
-        // Vérifier si nous avons des emails réels
-        if (window.emailScanner) {
-            const emails = window.emailScanner.getAllEmails();
-            if (emails.length === 0) return false;
-            
-            // Vérifier qu'il n'y a pas d'emails de démo
-            const demoEmails = emails.filter(e => e.isDemo || e.source === 'demo');
-            return demoEmails.length === 0;
-        }
-        
-        return false;
-    }
-
-    // CORRECTION: S'assurer que les données réelles sont chargées
-    async ensureRealDataLoaded() {
-        console.log('[PageManager] Ensuring real data is loaded...');
-        
-        try {
-            if (window.mailService && this.isAuthenticated()) {
-                // Forcer le chargement des emails réels
-                const emails = await window.mailService.getEmails({ 
-                    limit: 10, 
-                    forceRefresh: true 
-                });
-                
-                if (emails && emails.length > 0) {
-                    // Vérifier que ce ne sont pas des emails de démo
-                    const realEmails = emails.filter(e => !e.isDemo && e.source !== 'demo');
-                    
-                    if (realEmails.length > 0) {
-                        // Mettre à jour EmailScanner avec les emails réels
-                        if (window.emailScanner) {
-                            window.emailScanner.setEmails(realEmails);
-                        }
-                        console.log('[PageManager] ✅ Real data loaded successfully');
-                        return true;
-                    }
-                }
-            }
-            
-            console.warn('[PageManager] Could not load real data');
-            return false;
-            
-        } catch (error) {
-            console.error('[PageManager] Error loading real data:', error);
-            return false;
-        }
-    }
-
     async renderPage(pageName) {
         console.log('[PageManager] Rendering page:', pageName);
         
@@ -172,50 +117,116 @@ class PageManager {
             return;
         }
 
+        const pageConfig = this.pages.get(pageName);
         let content = '';
 
-        switch (pageName) {
-            case 'dashboard':
-                content = await this.renderDashboard();
-                break;
-            case 'scanner':
-                content = await this.renderScanner();
-                break;
-            case 'emails':
-                content = await this.renderEmails();
-                break;
-            case 'tasks':
-                content = await this.renderTasks();
-                break;
-            case 'ranger':
-                content = await this.renderRanger();
-                break;
-            case 'settings':
-                content = await this.renderSettings();
-                break;
-            default:
-                content = this.renderNotFound();
+        // Déléguer au module approprié ou gérer directement
+        if (pageConfig.module) {
+            content = await this.delegateToModule(pageConfig.module);
+        } else {
+            // Pages gérées directement (dashboard uniquement)
+            switch (pageName) {
+                case 'dashboard':
+                    content = await this.renderDashboard();
+                    break;
+                default:
+                    content = this.renderNotFound();
+            }
         }
 
         pageContent.innerHTML = content;
+        
+        // Initialiser le module après le rendu
+        if (pageConfig.module) {
+            this.initializeModule(pageConfig.module);
+        }
         
         // Initialiser les événements de la page
         this.initializePageEvents(pageName);
     }
 
-    // CORRECTION: Dashboard avec données réelles uniquement
-    async renderDashboard() {
-        console.log('[PageManager] Rendering dashboard with REAL data...');
+    async delegateToModule(moduleName) {
+        console.log('[PageManager] Delegating to module:', moduleName);
         
-        // Récupérer les vraies statistiques
+        const module = window[moduleName];
+        
+        if (!module) {
+            console.error('[PageManager] Module not found:', moduleName);
+            return `
+                <div class="page-container">
+                    <div style="text-align: center; padding: 60px 20px;">
+                        <div style="font-size: 4rem; color: #ef4444; margin-bottom: 20px;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h2>Module non disponible</h2>
+                        <p>Le module ${moduleName} n'est pas chargé.</p>
+                        <button onclick="location.reload()" class="btn btn-primary">
+                            <i class="fas fa-refresh"></i>
+                            Actualiser
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (typeof module.render !== 'function') {
+            console.error('[PageManager] Module missing render method:', moduleName);
+            return `
+                <div class="page-container">
+                    <div style="text-align: center; padding: 60px 20px;">
+                        <h2>Erreur de module</h2>
+                        <p>Le module ${moduleName} ne peut pas être affiché.</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        try {
+            return await module.render();
+        } catch (error) {
+            console.error('[PageManager] Error rendering module:', moduleName, error);
+            return `
+                <div class="page-container">
+                    <div style="text-align: center; padding: 60px 20px;">
+                        <h2>Erreur de rendu</h2>
+                        <p>Impossible d'afficher le module ${moduleName}.</p>
+                        <button onclick="window.pageManager.loadPage('dashboard')" class="btn btn-primary">
+                            <i class="fas fa-home"></i>
+                            Retour au dashboard
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    initializeModule(moduleName) {
+        console.log('[PageManager] Initializing module:', moduleName);
+        
+        const module = window[moduleName];
+        
+        if (module && typeof module.init === 'function') {
+            try {
+                module.init();
+                console.log('[PageManager] ✅ Module initialized:', moduleName);
+            } catch (error) {
+                console.error('[PageManager] Error initializing module:', moduleName, error);
+            }
+        }
+    }
+
+    // Dashboard géré directement par PageManager
+    async renderDashboard() {
+        console.log('[PageManager] Rendering dashboard...');
+        
         const stats = await this.getRealStats();
         const user = window.APP_AUTHENTICATED_USER || window.authService?.getAccount();
         
         return `
-            <div class="dashboard-container">
-                <div class="dashboard-header">
-                    <h1>Bienvenue ${user?.displayName || user?.name || 'Utilisateur'}</h1>
-                    <p class="dashboard-subtitle">Votre tableau de bord EmailSortPro</p>
+            <div class="page-container">
+                <div class="page-header">
+                    <h1 class="page-title">Bienvenue ${user?.displayName || user?.name || 'Utilisateur'}</h1>
+                    <p class="page-subtitle">Votre tableau de bord EmailSortPro</p>
                 </div>
                 
                 <div class="stats-grid">
@@ -317,340 +328,251 @@ class PageManager {
                     </div>
                 ` : ''}
             </div>
+            
+            <style>
+                .stats-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 20px;
+                    margin-bottom: 40px;
+                }
+                
+                .stat-card {
+                    background: white;
+                    padding: 20px;
+                    border-radius: 12px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
+                }
+                
+                .stat-icon {
+                    font-size: 2rem;
+                    color: #667eea;
+                    width: 50px;
+                    text-align: center;
+                }
+                
+                .stat-content {
+                    flex: 1;
+                }
+                
+                .stat-number {
+                    font-size: 1.8rem;
+                    font-weight: 700;
+                    color: #1f2937;
+                }
+                
+                .stat-label {
+                    font-size: 0.9rem;
+                    color: #6b7280;
+                }
+                
+                .dashboard-actions {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                    gap: 24px;
+                    margin-top: 40px;
+                }
+                
+                .action-card {
+                    background: white;
+                    border-radius: 16px;
+                    padding: 32px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    text-align: center;
+                    border: 2px solid transparent;
+                }
+                
+                .action-card:hover {
+                    transform: translateY(-4px);
+                    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+                    border-color: #667eea;
+                }
+                
+                .action-icon {
+                    font-size: 3.5rem;
+                    margin-bottom: 20px;
+                    color: #667eea;
+                }
+                
+                .action-title {
+                    font-size: 1.25rem;
+                    font-weight: 700;
+                    color: #1f2937;
+                    margin-bottom: 12px;
+                }
+                
+                .action-description {
+                    font-size: 0.95rem;
+                    color: #6b7280;
+                    line-height: 1.6;
+                    margin-bottom: 20px;
+                }
+                
+                .action-button {
+                    background: linear-gradient(135deg, #667eea, #764ba2);
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                
+                .action-button:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                }
+                
+                .recent-activity {
+                    background: white;
+                    border-radius: 12px;
+                    padding: 24px;
+                    margin-top: 40px;
+                }
+                
+                .activity-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 15px;
+                }
+                
+                .activity-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
+                    padding: 12px;
+                    border-radius: 8px;
+                    background: #f8f9fa;
+                }
+                
+                .activity-icon {
+                    color: #667eea;
+                    font-size: 1.2rem;
+                }
+                
+                .activity-title {
+                    font-weight: 600;
+                    color: #1f2937;
+                }
+                
+                .activity-time {
+                    font-size: 0.85rem;
+                    color: #6b7280;
+                }
+                
+                @media (max-width: 768px) {
+                    .stats-grid {
+                        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                        gap: 15px;
+                    }
+                    
+                    .dashboard-actions {
+                        grid-template-columns: 1fr;
+                        gap: 16px;
+                    }
+                    
+                    .action-card {
+                        padding: 24px;
+                    }
+                }
+            </style>
         `;
     }
 
-    // CORRECTION: Scanner avec gestion d'authentification
-    async renderScanner() {
-        console.log('[PageManager] Rendering scanner...');
-        
-        if (!this.isAuthenticated()) {
-            return this.renderAuthRequired();
-        }
-        
-        // Utiliser le module de scan
-        if (window.minimalScanModule && typeof window.minimalScanModule.render === 'function') {
-            return window.minimalScanModule.render();
-        }
-        
-        // Fallback si le module n'est pas disponible
+    renderAuthRequired() {
         return `
-            <div class="scanner-page">
-                <div class="scanner-container">
-                    <h1><i class="fas fa-search"></i> Scanner d'emails</h1>
-                    <p>Le module de scan n'est pas disponible. Veuillez actualiser la page.</p>
-                    <button onclick="location.reload()" class="btn btn-primary">
-                        <i class="fas fa-refresh"></i>
-                        Actualiser
+            <div class="page-container">
+                <div style="text-align: center; padding: 60px 20px;">
+                    <div style="font-size: 4rem; color: #f59e0b; margin-bottom: 20px;">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h2>Authentification requise</h2>
+                    <p>Vous devez être connecté pour accéder à cette page.</p>
+                    <button onclick="window.app.login()" class="btn btn-primary" style="margin-top: 20px;">
+                        <i class="fab fa-microsoft"></i>
+                        Se connecter
                     </button>
                 </div>
             </div>
         `;
     }
 
-    // CORRECTION: Emails avec données réelles uniquement
-    async renderEmails() {
-        console.log('[PageManager] Rendering emails with REAL data...');
-        
-        if (!this.isAuthenticated()) {
-            return this.renderAuthRequired();
-        }
-        
-        const emails = await this.getRealEmails();
-        
-        if (emails.length === 0) {
-            return `
-                <div class="emails-page">
-                    <div class="emails-header">
-                        <h1><i class="fas fa-inbox"></i> Vos emails</h1>
-                        <div class="emails-actions">
-                            <button onclick="window.pageManager.refreshEmails()" class="btn btn-primary">
-                                <i class="fas fa-sync"></i>
-                                Actualiser
-                            </button>
-                            <button onclick="window.pageManager.loadPage('scanner')" class="btn btn-secondary">
-                                <i class="fas fa-search"></i>
-                                Scanner
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-inbox"></i>
-                        </div>
-                        <h2>Aucun email trouvé</h2>
-                        <p>Commencez par scanner vos emails pour les voir apparaître ici.</p>
-                        <button onclick="window.pageManager.loadPage('scanner')" class="btn btn-primary">
-                            <i class="fas fa-search"></i>
-                            Scanner mes emails
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Grouper par catégories
-        const emailsByCategory = this.groupEmailsByCategory(emails);
-        
-        return `
-            <div class="emails-page">
-                <div class="emails-header">
-                    <h1><i class="fas fa-inbox"></i> Vos emails (${emails.length})</h1>
-                    <div class="emails-actions">
-                        <button onclick="window.pageManager.refreshEmails()" class="btn btn-primary">
-                            <i class="fas fa-sync"></i>
-                            Actualiser
-                        </button>
-                        <button onclick="window.pageManager.loadPage('scanner')" class="btn btn-secondary">
-                            <i class="fas fa-search"></i>
-                            Nouveau scan
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="emails-content">
-                    ${Object.entries(emailsByCategory).map(([category, categoryEmails]) => `
-                        <div class="category-section">
-                            <h2 class="category-title">
-                                <i class="fas fa-folder"></i>
-                                ${category} (${categoryEmails.length})
-                            </h2>
-                            <div class="emails-list">
-                                ${categoryEmails.slice(0, 10).map(email => `
-                                    <div class="email-item ${email.isRead ? 'read' : 'unread'}">
-                                        <div class="email-sender">
-                                            <strong>${email.from?.name || email.from?.address || 'Inconnu'}</strong>
-                                        </div>
-                                        <div class="email-subject">${email.subject || '(Sans objet)'}</div>
-                                        <div class="email-preview">${email.bodyPreview || email.body?.substring(0, 100) || ''}</div>
-                                        <div class="email-date">${this.formatDate(email.date)}</div>
-                                        <div class="email-actions">
-                                            <button onclick="window.pageManager.viewEmail('${email.id}')" class="btn-small">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                            ${window.taskManager ? `
-                                                <button onclick="window.taskManager.createTaskFromEmail('${email.id}')" class="btn-small">
-                                                    <i class="fas fa-plus"></i>
-                                                </button>
-                                            ` : ''}
-                                        </div>
-                                    </div>
-                                `).join('')}
-                                ${categoryEmails.length > 10 ? `
-                                    <div class="load-more">
-                                        <button onclick="window.pageManager.loadMoreEmails('${category}')" class="btn btn-outline">
-                                            Voir plus (${categoryEmails.length - 10} restants)
-                                        </button>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    }
-
-    // CORRECTION: Tâches avec données réelles
-    async renderTasks() {
-        console.log('[PageManager] Rendering tasks...');
-        
-        if (!window.taskManager) {
-            return `
-                <div class="tasks-page">
-                    <div class="error-message">
-                        <h2>Gestionnaire de tâches non disponible</h2>
-                        <p>Veuillez actualiser la page.</p>
-                        <button onclick="location.reload()" class="btn btn-primary">Actualiser</button>
-                    </div>
-                </div>
-            `;
-        }
-        
-        const tasks = window.taskManager.getAllTasks();
-        
-        return `
-            <div class="tasks-page">
-                <div class="tasks-header">
-                    <h1><i class="fas fa-tasks"></i> Vos tâches (${tasks.length})</h1>
-                    <div class="tasks-actions">
-                        <button onclick="window.taskManager.showCreateTaskModal()" class="btn btn-primary">
-                            <i class="fas fa-plus"></i>
-                            Nouvelle tâche
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="tasks-content">
-                    ${tasks.length === 0 ? `
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="fas fa-clipboard-list"></i>
-                            </div>
-                            <h2>Aucune tâche</h2>
-                            <p>Créez votre première tâche ou générez-en depuis vos emails.</p>
-                            <div class="empty-actions">
-                                <button onclick="window.taskManager.showCreateTaskModal()" class="btn btn-primary">
-                                    <i class="fas fa-plus"></i>
-                                    Créer une tâche
-                                </button>
-                                <button onclick="window.pageManager.loadPage('emails')" class="btn btn-secondary">
-                                    <i class="fas fa-inbox"></i>
-                                    Voir mes emails
-                                </button>
-                            </div>
-                        </div>
-                    ` : `
-                        <div class="tasks-list">
-                            ${tasks.map(task => `
-                                <div class="task-item ${task.completed ? 'completed' : ''}">
-                                    <div class="task-checkbox">
-                                        <input type="checkbox" ${task.completed ? 'checked' : ''} 
-                                               onchange="window.taskManager.toggleTaskCompletion('${task.id}')">
-                                    </div>
-                                    <div class="task-content">
-                                        <div class="task-title">${task.title}</div>
-                                        <div class="task-description">${task.description || ''}</div>
-                                        ${task.emailSubject ? `
-                                            <div class="task-email">
-                                                <i class="fas fa-envelope"></i>
-                                                ${task.emailSubject}
-                                            </div>
-                                        ` : ''}
-                                        <div class="task-meta">
-                                            <span class="task-priority priority-${task.priority}">${task.priority}</span>
-                                            <span class="task-date">${this.formatDate(task.createdAt)}</span>
-                                        </div>
-                                    </div>
-                                    <div class="task-actions">
-                                        <button onclick="window.taskManager.editTask('${task.id}')" class="btn-small">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button onclick="window.taskManager.deleteTask('${task.id}')" class="btn-small btn-danger">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    `}
-                </div>
-            </div>
-        `;
-    }
-
-    // Ranger - page simple pour organiser
-    async renderRanger() {
-        return `
-            <div class="ranger-page">
-                <div class="ranger-header">
-                    <h1><i class="fas fa-folder-tree"></i> Ranger vos emails</h1>
-                    <p>Organisez automatiquement vos emails par dossiers</p>
-                </div>
-                
-                <div class="ranger-content">
-                    <div class="coming-soon">
-                        <div class="coming-soon-icon">
-                            <i class="fas fa-tools"></i>
-                        </div>
-                        <h2>Fonctionnalité en développement</h2>
-                        <p>La fonction de rangement automatique sera bientôt disponible.</p>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // Paramètres
-    async renderSettings() {
-        const user = window.APP_AUTHENTICATED_USER || window.authService?.getAccount();
-        
-        return `
-            <div class="settings-page">
-                <div class="settings-header">
-                    <h1><i class="fas fa-cog"></i> Paramètres</h1>
-                </div>
-                
-                <div class="settings-content">
-                    <div class="settings-section">
-                        <h2>Compte</h2>
-                        <div class="setting-item">
-                            <label>Utilisateur connecté</label>
-                            <div class="setting-value">${user?.displayName || user?.name || user?.username || 'Inconnu'}</div>
-                        </div>
-                        <div class="setting-item">
-                            <label>Email</label>
-                            <div class="setting-value">${user?.mail || user?.username || 'Inconnu'}</div>
-                        </div>
-                        <div class="setting-actions">
-                            <button onclick="window.app.logout()" class="btn btn-danger">
-                                <i class="fas fa-sign-out-alt"></i>
-                                Se déconnecter
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-section">
-                        <h2>Données</h2>
-                        <div class="setting-item">
-                            <label>Mode</label>
-                            <div class="setting-value">
-                                <span class="badge badge-success">
-                                    <i class="fas fa-check"></i>
-                                    Mode réel activé
-                                </span>
-                            </div>
-                        </div>
-                        <div class="setting-actions">
-                            <button onclick="window.pageManager.refreshAllData()" class="btn btn-primary">
-                                <i class="fas fa-sync"></i>
-                                Actualiser les données
-                            </button>
-                            <button onclick="window.emergencyReset()" class="btn btn-outline">
-                                <i class="fas fa-undo"></i>
-                                Réinitialiser
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    renderAuthRequired() {
-        return `
-            <div class="auth-required">
-                <div class="auth-icon">
-                    <i class="fas fa-lock"></i>
-                </div>
-                <h2>Authentification requise</h2>
-                <p>Vous devez être connecté pour accéder à cette page.</p>
-                <button onclick="window.app.login()" class="btn btn-primary">
-                    <i class="fab fa-microsoft"></i>
-                    Se connecter
-                </button>
-            </div>
-        `;
-    }
-
     renderNotFound() {
         return `
-            <div class="not-found">
-                <div class="not-found-icon">
-                    <i class="fas fa-question-circle"></i>
+            <div class="page-container">
+                <div style="text-align: center; padding: 60px 20px;">
+                    <div style="font-size: 4rem; color: #6b7280; margin-bottom: 20px;">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <h2>Page non trouvée</h2>
+                    <p>La page demandée n'existe pas.</p>
+                    <button onclick="window.pageManager.loadPage('dashboard')" class="btn btn-primary" style="margin-top: 20px;">
+                        <i class="fas fa-home"></i>
+                        Retour au dashboard
+                    </button>
                 </div>
-                <h2>Page non trouvée</h2>
-                <p>La page demandée n'existe pas.</p>
-                <button onclick="window.pageManager.loadPage('dashboard')" class="btn btn-primary">
-                    <i class="fas fa-home"></i>
-                    Retour au dashboard
-                </button>
             </div>
         `;
     }
 
-    // CORRECTION: Récupération des vraies statistiques
+    // Vérifications et utilitaires
+    isAuthenticated() {
+        return window.authService?.isAuthenticated() && window.APP_REAL_MODE === true;
+    }
+
+    hasRealData() {
+        if (window.emailScanner) {
+            const emails = window.emailScanner.getAllEmails();
+            if (emails.length === 0) return false;
+            
+            const demoEmails = emails.filter(e => e.isDemo || e.source === 'demo');
+            return demoEmails.length === 0;
+        }
+        
+        return false;
+    }
+
+    async ensureRealDataLoaded() {
+        console.log('[PageManager] Ensuring real data is loaded...');
+        
+        try {
+            if (window.mailService && this.isAuthenticated()) {
+                const emails = await window.mailService.getEmails({ 
+                    limit: 10, 
+                    forceRefresh: true 
+                });
+                
+                if (emails && emails.length > 0) {
+                    const realEmails = emails.filter(e => !e.isDemo && e.source !== 'demo');
+                    
+                    if (realEmails.length > 0) {
+                        if (window.emailScanner) {
+                            window.emailScanner.setEmails(realEmails);
+                        }
+                        console.log('[PageManager] ✅ Real data loaded successfully');
+                        return true;
+                    }
+                }
+            }
+            
+            console.warn('[PageManager] Could not load real data');
+            return false;
+            
+        } catch (error) {
+            console.error('[PageManager] Error loading real data:', error);
+            return false;
+        }
+    }
+
     async getRealStats() {
         const defaultStats = {
             totalEmails: 0,
@@ -669,7 +591,6 @@ class PageManager {
                 defaultStats.totalEmails = realEmails.length;
                 defaultStats.unreadEmails = realEmails.filter(e => !e.isRead).length;
                 
-                // Compter les catégories uniques
                 const categories = new Set(realEmails.map(e => e.category).filter(c => c));
                 defaultStats.categories = categories.size;
             }
@@ -679,7 +600,6 @@ class PageManager {
                 const tasks = window.taskManager.getAllTasks();
                 defaultStats.tasks = tasks.length;
                 
-                // Activité récente des tâches
                 const recentTasks = tasks
                     .filter(t => new Date(t.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
                     .slice(0, 5);
@@ -699,42 +619,6 @@ class PageManager {
         }
     }
 
-    // CORRECTION: Récupération des vrais emails
-    async getRealEmails() {
-        try {
-            if (window.emailScanner) {
-                const emails = window.emailScanner.getAllEmails();
-                return emails.filter(e => !e.isDemo && e.source !== 'demo');
-            }
-            
-            if (window.mailService) {
-                const emails = await window.mailService.getEmails({ limit: 50 });
-                return emails.filter(e => !e.isDemo && e.source !== 'demo');
-            }
-            
-            return [];
-            
-        } catch (error) {
-            console.error('[PageManager] Error getting real emails:', error);
-            return [];
-        }
-    }
-
-    groupEmailsByCategory(emails) {
-        const grouped = {};
-        
-        emails.forEach(email => {
-            const category = email.category || 'Non catégorisé';
-            if (!grouped[category]) {
-                grouped[category] = [];
-            }
-            grouped[category].push(email);
-        });
-        
-        return grouped;
-    }
-
-    // Méthodes utilitaires
     formatDate(date) {
         if (!date) return 'Date inconnue';
         
@@ -759,8 +643,26 @@ class PageManager {
     }
 
     initializePageEvents(pageName) {
-        // Réinitialiser les événements spécifiques à chaque page
         console.log('[PageManager] Initializing events for page:', pageName);
+        
+        // Événements spécifiques selon la page
+        switch (pageName) {
+            case 'dashboard':
+                this.initializeDashboardEvents();
+                break;
+        }
+    }
+
+    initializeDashboardEvents() {
+        // Ajouter des événements spécifiques au dashboard si nécessaire
+        console.log('[PageManager] Dashboard events initialized');
+    }
+
+    showAuthRequired() {
+        const pageContent = document.getElementById('pageContent');
+        if (pageContent) {
+            pageContent.innerHTML = this.renderAuthRequired();
+        }
     }
 
     // Méthodes publiques pour les actions
@@ -781,7 +683,7 @@ class PageManager {
                 }
             }
             
-            // Recharger la page emails
+            // Recharger la page emails si c'est la page actuelle
             if (this.currentPage === 'emails') {
                 await this.loadPage('emails');
             }
@@ -831,20 +733,36 @@ class PageManager {
         }
     }
 
-    viewEmail(emailId) {
-        console.log('[PageManager] Viewing email:', emailId);
-        // TODO: Implémenter la vue détail email
-        if (window.uiManager) {
-            window.uiManager.showToast('Vue détaillée - Bientôt disponible', 'info');
-        }
+    // Méthodes pour les modules
+    getAvailableModules() {
+        const modules = {};
+        
+        this.pages.forEach((config, pageName) => {
+            if (config.module) {
+                modules[pageName] = {
+                    module: config.module,
+                    available: !!window[config.module],
+                    hasRender: window[config.module] && typeof window[config.module].render === 'function',
+                    hasInit: window[config.module] && typeof window[config.module].init === 'function'
+                };
+            }
+        });
+        
+        return modules;
     }
 
-    loadMoreEmails(category) {
-        console.log('[PageManager] Loading more emails for category:', category);
-        // TODO: Implémenter le chargement progressif
-        if (window.uiManager) {
-            window.uiManager.showToast('Chargement progressif - Bientôt disponible', 'info');
-        }
+    // Diagnostic
+    getStatus() {
+        return {
+            currentPage: this.currentPage,
+            isLoading: this.isLoading,
+            loadedPages: Array.from(this.loadedPages),
+            realDataOnly: this.realDataOnly,
+            isAuthenticated: this.isAuthenticated(),
+            hasRealData: this.hasRealData(),
+            availableModules: this.getAvailableModules(),
+            pageConfigs: Object.fromEntries(this.pages)
+        };
     }
 }
 
@@ -860,15 +778,60 @@ try {
         currentPage: 'dashboard',
         loadPage: (page) => {
             console.error('[PageManager] Service not available, cannot load page:', page);
-            document.getElementById('pageContent').innerHTML = `
-                <div class="error-message">
-                    <h2>Erreur de chargement</h2>
-                    <p>Le gestionnaire de pages n'est pas disponible.</p>
-                    <button onclick="location.reload()">Actualiser</button>
-                </div>
-            `;
-        }
+            const pageContent = document.getElementById('pageContent');
+            if (pageContent) {
+                pageContent.innerHTML = `
+                    <div class="page-container">
+                        <div style="text-align: center; padding: 60px 20px;">
+                            <h2>Erreur de chargement</h2>
+                            <p>Le gestionnaire de pages n'est pas disponible.</p>
+                            <button onclick="location.reload()" class="btn btn-primary">Actualiser</button>
+                        </div>
+                    </div>
+                `;
+            }
+        },
+        getStatus: () => ({ error: 'PageManager failed to initialize: ' + error.message })
     };
 }
 
-console.log('✅ PageManager v11.1 loaded - NO DEMO MODE - REAL DATA ONLY');
+// Fonction de diagnostic pour les modules
+window.diagnosePageModules = function() {
+    console.group('🔍 DIAGNOSTIC PAGE MODULES v11.2');
+    
+    try {
+        if (window.pageManager && typeof window.pageManager.getStatus === 'function') {
+            const status = window.pageManager.getStatus();
+            console.log('📊 PageManager Status:', status);
+            
+            console.log('\n📦 Modules disponibles:');
+            Object.entries(status.availableModules).forEach(([page, moduleInfo]) => {
+                const status = moduleInfo.available && moduleInfo.hasRender ? '✅' : '❌';
+                console.log(`  ${status} ${page}: ${moduleInfo.module}`);
+                if (!moduleInfo.available) {
+                    console.log(`    ❌ Module ${moduleInfo.module} non trouvé`);
+                } else if (!moduleInfo.hasRender) {
+                    console.log(`    ❌ Méthode render() manquante`);
+                }
+            });
+            
+            console.log('\n🏠 Pages configurées:');
+            Object.entries(status.pageConfigs).forEach(([page, config]) => {
+                console.log(`  📄 ${page}: ${config.title} (${config.module || 'direct'})`);
+            });
+            
+            return status;
+        } else {
+            console.error('❌ PageManager not available');
+            return { error: 'PageManager not available' };
+        }
+    } catch (error) {
+        console.error('❌ Diagnostic failed:', error);
+        return { error: error.message };
+    } finally {
+        console.groupEnd();
+    }
+};
+
+console.log('✅ PageManager v11.2 loaded - Module delegation system');
+console.log('🔍 Use diagnosePageModules() for detailed module diagnostic');
