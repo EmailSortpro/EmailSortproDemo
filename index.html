@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EmailSortPro - Scanner d'Emails Intelligent avec IA</title>
+    <title id="page-title">EmailSortPro - Scanner d'Emails Intelligent avec IA</title>
     
-    <!-- SEO Meta Tags -->
+    <!-- SEO Meta Tags - Adaptatives -->
     <meta name="description" content="Organisez vos emails Outlook intelligemment avec l'IA. Catégorisation automatique et organisation par domaine.">
     <meta name="keywords" content="email, outlook, microsoft, gestion, ia, productivité, organisation">
     <meta name="author" content="EmailSortPro">
     
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph / Facebook - Adaptatifs -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://emailsortpro.netlify.app/">
+    <meta property="og:url" id="og-url" content="">
     <meta property="og:title" content="EmailSortPro - Scanner d'Emails Intelligent">
     <meta property="og:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
     
-    <!-- Twitter -->
+    <!-- Twitter - Adaptatifs -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://emailsortpro.netlify.app/">
+    <meta property="twitter:url" id="twitter-url" content="">
     <meta property="twitter:title" content="EmailSortPro - Scanner d'Emails Intelligent">
     <meta property="twitter:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
     
@@ -34,41 +34,50 @@
     <!-- Styles principaux -->
     <link rel="stylesheet" href="styles.css">
     
-    <!-- CONFIGURATION NETLIFY CORRIGÉE -->
+    <!-- CONFIGURATION ADAPTATIVE MULTI-DOMAINES -->
     <script>
         // =====================================================
-        // CONFIGURATION NETLIFY POUR emailsortpro.netlify.app
+        // CONFIGURATION ADAPTATIVE POUR TOUS LES DOMAINES
         // =====================================================
-        console.log('[INDEX] 🚀 Loading Netlify configuration for emailsortpro.netlify.app...');
         
-        // Client ID par défaut fonctionnel pour le nouveau domaine
+        // Détection automatique du domaine actuel
+        const CURRENT_HOSTNAME = window.location.hostname;
+        const CURRENT_ORIGIN = window.location.origin;
+        const IS_TEST_ENVIRONMENT = CURRENT_HOSTNAME.includes('coruscating-dodol') || 
+                                   CURRENT_HOSTNAME.includes('localhost') || 
+                                   CURRENT_HOSTNAME.includes('127.0.0.1');
+        
+        console.log('[INDEX] 🚀 Loading adaptive configuration for', CURRENT_HOSTNAME);
+        console.log('[INDEX] Test environment:', IS_TEST_ENVIRONMENT);
+        
+        // Client ID par défaut fonctionnel pour tous les domaines
         window.NETLIFY_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
         
-        console.log('[INDEX] ✅ Netlify Client ID configured for new domain');
+        console.log('[INDEX] ✅ Client ID configured for current domain');
         
         // =====================================================
-        // DÉTECTION DE L'ENVIRONNEMENT CORRIGÉE
+        // DÉTECTION DE L'ENVIRONNEMENT ADAPTATIVE
         // =====================================================
         (function() {
-            // Détection de l'environnement mis à jour
-            const hostname = window.location.hostname;
-            const isNetlify = hostname.includes('netlify.app') || hostname.includes('netlifyapp.com');
-            const isGitHubPages = hostname.includes('github.io');
-            const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+            // Détection de l'environnement basée sur le domaine actuel
+            const isNetlify = CURRENT_HOSTNAME.includes('netlify.app') || CURRENT_HOSTNAME.includes('netlifyapp.com');
+            const isGitHubPages = CURRENT_HOSTNAME.includes('github.io');
+            const isLocalhost = CURRENT_HOSTNAME === 'localhost' || CURRENT_HOSTNAME === '127.0.0.1';
             
-            console.log('[INDEX] Environment detection for new domain:', {
-                hostname,
+            console.log('[INDEX] Environment detection for current domain:', {
+                hostname: CURRENT_HOSTNAME,
                 isNetlify,
                 isGitHubPages,
                 isLocalhost,
-                origin: window.location.origin
+                origin: CURRENT_ORIGIN,
+                isTest: IS_TEST_ENVIRONMENT
             });
             
             // Fonction pour obtenir le Client ID
             function getClientIdForEnvironment() {
-                // Priorité 1: Client ID configuré directement pour Netlify
-                if (isNetlify && window.NETLIFY_CLIENT_ID) {
-                    console.log('[INDEX] ✅ Using configured Netlify client ID for new domain');
+                // Priorité 1: Client ID configuré directement
+                if (window.NETLIFY_CLIENT_ID) {
+                    console.log('[INDEX] ✅ Using configured client ID for current domain');
                     return window.NETLIFY_CLIENT_ID;
                 }
                 
@@ -95,23 +104,24 @@
                     return 'CONFIGURATION_REQUIRED';
                 }
                 
-                console.log('[INDEX] ✅ Netlify with default client ID for new domain');
+                console.log('[INDEX] ✅ Using default client ID for current domain');
                 return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
             }
             
-            // Fonction pour créer la configuration corrigée
+            // Fonction pour créer la configuration adaptative
             function createConfig(clientId) {
                 // Base path toujours vide pour Netlify
                 const basePath = '';
                 
-                // URIs corrigées pour le nouveau domaine
-                const redirectUri = 'https://emailsortpro.netlify.app/auth-callback.html';
-                const postLogoutRedirectUri = 'https://emailsortpro.netlify.app/';
+                // URIs adaptatives basées sur le domaine actuel
+                const redirectUri = CURRENT_ORIGIN + '/auth-callback.html';
+                const postLogoutRedirectUri = CURRENT_ORIGIN + '/';
                 
-                console.log('[INDEX] Creating config with corrected URIs:', {
+                console.log('[INDEX] Creating config with adaptive URIs:', {
                     redirectUri,
                     postLogoutRedirectUri,
-                    clientId: clientId.substring(0, 8) + '...'
+                    clientId: clientId.substring(0, 8) + '...',
+                    domain: CURRENT_HOSTNAME
                 });
                 
                 window.AppConfig = {
@@ -122,17 +132,17 @@
                         postLogoutRedirectUri: postLogoutRedirectUri,
                         cache: {
                             cacheLocation: 'localStorage',
-                            storeAuthStateInCookie: true // Important pour Netlify
+                            storeAuthStateInCookie: true
                         },
                         system: {
                             loggerOptions: {
                                 loggerCallback: (level, message, containsPii) => {
-                                    if (window.debugMode || isLocalhost) {
+                                    if (window.debugMode || isLocalhost || IS_TEST_ENVIRONMENT) {
                                         console.log(`[MSAL ${level}] ${message}`);
                                     }
                                 },
                                 piiLoggingEnabled: false,
-                                logLevel: isLocalhost ? 'Verbose' : 'Warning'
+                                logLevel: (isLocalhost || IS_TEST_ENVIRONMENT) ? 'Verbose' : 'Warning'
                             },
                             allowNativeBroker: false
                         }
@@ -151,10 +161,13 @@
                     },
                     app: {
                         name: 'EmailSortPro',
-                        version: '3.0.1',
-                        debug: isLocalhost,
-                        environment: isNetlify ? 'netlify' : isGitHubPages ? 'github' : isLocalhost ? 'localhost' : 'other',
-                        domain: 'emailsortpro.netlify.app'
+                        version: '4.0.0',
+                        debug: isLocalhost || IS_TEST_ENVIRONMENT,
+                        environment: IS_TEST_ENVIRONMENT ? 'test' : 
+                                   isNetlify ? 'netlify' : 
+                                   isGitHubPages ? 'github' : 
+                                   isLocalhost ? 'localhost' : 'other',
+                        domain: CURRENT_HOSTNAME
                     },
                     email: {
                         defaultFolder: 'inbox',
@@ -163,24 +176,24 @@
                         maxEmails: 10000
                     },
                     errors: {
-                        'unauthorized_client': 'Configuration Azure incorrecte. Vérifiez votre Client ID.',
+                        'unauthorized_client': `Configuration Azure incorrecte pour ${CURRENT_HOSTNAME}. Vérifiez votre Client ID.`,
                         'invalid_client': 'Application non autorisée. Contactez l\'administrateur.',
                         'consent_required': 'Autorisation requise. Veuillez accepter les permissions.',
                         'interaction_required': 'Reconnexion requise.',
                         'login_required': 'Connexion requise.',
                         'network_error': 'Erreur réseau. Vérifiez votre connexion.',
                         'token_expired': 'Session expirée. Reconnexion nécessaire.',
-                        'invalid_request': 'URI de redirection invalide. Configuration Azure requise.'
+                        'invalid_request': `URI de redirection invalide pour ${CURRENT_HOSTNAME}. Configuration Azure requise.`
                     },
                     validate() {
                         const issues = [];
                         if (!this.msal.clientId || this.msal.clientId === 'VOTRE_CLIENT_ID_ICI' || this.msal.clientId === 'CONFIGURATION_REQUIRED') {
-                            issues.push('Client ID non configuré pour emailsortpro.netlify.app');
+                            issues.push(`Client ID non configuré pour ${CURRENT_HOSTNAME}`);
                         }
                         
-                        // Vérifier que les URIs correspondent au nouveau domaine
-                        if (!this.msal.redirectUri.includes('emailsortpro.netlify.app')) {
-                            issues.push('URI de redirection ne correspond pas au nouveau domaine');
+                        // Vérifier que les URIs correspondent au domaine actuel
+                        if (!this.msal.redirectUri.includes(CURRENT_HOSTNAME)) {
+                            issues.push(`URI de redirection ne correspond pas au domaine actuel: ${CURRENT_HOSTNAME}`);
                         }
                         
                         return { 
@@ -193,26 +206,27 @@
                     },
                     getDebugInfo() {
                         return {
-                            hostname: window.location.hostname,
-                            origin: window.location.origin,
+                            hostname: CURRENT_HOSTNAME,
+                            origin: CURRENT_ORIGIN,
                             environment: this.app.environment,
                             domain: this.app.domain,
                             configValid: this.validate().valid,
                             clientId: this.msal.clientId.substring(0, 8) + '...',
                             redirectUri: this.msal.redirectUri,
                             postLogoutRedirectUri: this.msal.postLogoutRedirectUri,
-                            isCorrectDomain: window.location.hostname === 'emailsortpro.netlify.app',
+                            isCurrentDomain: true, // Toujours true maintenant car adaptatif
+                            isTestEnvironment: IS_TEST_ENVIRONMENT,
                             timestamp: new Date().toISOString()
                         };
                     }
                 };
                 
-                console.log('[INDEX] ✅ Configuration créée pour le nouveau domaine:', {
+                console.log('[INDEX] ✅ Configuration créée pour le domaine actuel:', {
                     environment: window.AppConfig.app.environment,
                     domain: window.AppConfig.app.domain,
                     clientId: clientId.substring(0, 8) + '...',
                     redirectUri: window.AppConfig.msal.redirectUri,
-                    isCorrectDomain: window.location.hostname === 'emailsortpro.netlify.app'
+                    isTestEnvironment: IS_TEST_ENVIRONMENT
                 });
             }
             
@@ -220,22 +234,21 @@
             const clientId = getClientIdForEnvironment();
             createConfig(clientId);
             
-            // Vérification spéciale pour le nouveau domaine
-            if (window.location.hostname !== 'emailsortpro.netlify.app' && !isLocalhost) {
-                console.warn('[INDEX] ⚠️ Not on correct domain! Current:', window.location.hostname);
-                console.warn('[INDEX] Expected: emailsortpro.netlify.app');
-                
-                // Rediriger vers le bon domaine si nécessaire
-                if (window.location.hostname.includes('netlify') && !window.location.hostname.includes('emailsortpro.netlify.app')) {
-                    console.log('[INDEX] Redirecting to correct Netlify domain...');
-                    window.location.href = 'https://emailsortpro.netlify.app/';
-                    return;
+            // Mettre à jour les meta tags avec le domaine actuel
+            document.getElementById('og-url').setAttribute('content', CURRENT_ORIGIN + '/');
+            document.getElementById('twitter-url').setAttribute('content', CURRENT_ORIGIN + '/');
+            
+            // Adapter le titre en mode test
+            if (IS_TEST_ENVIRONMENT) {
+                const titleElement = document.getElementById('page-title');
+                if (titleElement) {
+                    titleElement.textContent = `EmailSortPro [TEST] - ${CURRENT_HOSTNAME}`;
                 }
             }
             
             // Vérification et redirection si nécessaire
             if (clientId === 'CONFIGURATION_REQUIRED') {
-                console.log('[INDEX] ⚠️ Configuration requise pour le nouveau domaine');
+                console.log('[INDEX] ⚠️ Configuration requise pour', CURRENT_HOSTNAME);
                 
                 if (isGitHubPages && window.location.pathname !== '/emailsortpro/setup.html') {
                     console.log('[INDEX] Redirection vers setup pour GitHub Pages');
@@ -249,7 +262,7 @@
                     }, 1000);
                 }
             } else {
-                console.log('[INDEX] ✅ Configuration valide pour emailsortpro.netlify.app');
+                console.log('[INDEX] ✅ Configuration valide pour', CURRENT_HOSTNAME);
             }
         })();
     </script>
@@ -358,6 +371,21 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
+        }
+
+        /* Badge d'environnement de test */
+        .test-badge {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #f59e0b;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 99999;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
 
         /* === STYLES POUR L'APPLICATION === */
@@ -633,21 +661,6 @@
             background: rgba(255, 255, 255, 0.3);
         }
 
-        /* Domain warning banner */
-        .domain-warning {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: #f59e0b;
-            color: white;
-            padding: 12px;
-            text-align: center;
-            z-index: 99998;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
         /* Responsive */
         @media (max-width: 768px) {
             .login-container {
@@ -708,21 +721,13 @@
     </style>
 </head>
 <body>
-    <!-- Vérification du domaine -->
+    <!-- Badge d'environnement de test (affiché automatiquement si nécessaire) -->
     <script>
-        if (window.location.hostname !== 'emailsortpro.netlify.app' && 
-            window.location.hostname !== 'localhost' && 
-            window.location.hostname !== '127.0.0.1') {
-            const banner = document.createElement('div');
-            banner.className = 'domain-warning';
-            banner.innerHTML = `
-                ⚠️ Domaine incorrect détecté: ${window.location.hostname} | 
-                Domaine attendu: emailsortpro.netlify.app | 
-                <a href="https://emailsortpro.netlify.app/" style="color: white; text-decoration: underline;">
-                    Cliquez ici pour aller sur le bon domaine
-                </a>
-            `;
-            document.body.appendChild(banner);
+        if (IS_TEST_ENVIRONMENT) {
+            const testBadge = document.createElement('div');
+            testBadge.className = 'test-badge';
+            testBadge.innerHTML = `🧪 TEST: ${CURRENT_HOSTNAME}`;
+            document.body.appendChild(testBadge);
         }
     </script>
 
@@ -734,6 +739,12 @@
                     <i class="fas fa-envelope-open-text"></i>
                     <span>EmailSortPro</span>
                     <span class="ai-badge">AI</span>
+                    <script>
+                        // Ajouter le badge TEST dans le header si nécessaire
+                        if (IS_TEST_ENVIRONMENT) {
+                            document.write('<span style="background: #f59e0b; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-left: 5px;">TEST</span>');
+                        }
+                    </script>
                 </div>
                 <div id="authStatus" class="auth-status">
                     <span class="text-muted">Initialisation...</span>
@@ -781,6 +792,12 @@
                     </div>
                     
                     <h1 class="login-title">EmailSortPro</h1>
+                    <script>
+                        // Adapter le titre en mode test
+                        if (IS_TEST_ENVIRONMENT) {
+                            document.write('<p style="font-size: 1rem; background: rgba(245, 158, 11, 0.2); padding: 8px 16px; border-radius: 20px; margin: 10px auto; display: inline-block;">🧪 Environnement de test</p>');
+                        }
+                    </script>
                     
                     <p class="login-subtitle">
                         Organisez vos emails Outlook avec l'IA
@@ -805,6 +822,12 @@
                     <div class="dashboard-header">
                         <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
                         <p class="dashboard-subtitle">Organisez vos emails intelligemment avec l'IA</p>
+                        <script>
+                            // Ajouter info de domaine en mode test
+                            if (IS_TEST_ENVIRONMENT) {
+                                document.write('<p style="color: #f59e0b; font-weight: 600; margin-top: 10px;">🧪 Environnement de test - ' + CURRENT_HOSTNAME + '</p>');
+                            }
+                        </script>
                     </div>
                     
                     <div class="dashboard-actions">
@@ -919,7 +942,7 @@
 
         // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('[INDEX] DOM loaded for emailsortpro.netlify.app...');
+            console.log('[INDEX] DOM loaded for', CURRENT_HOSTNAME);
             
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
@@ -942,19 +965,19 @@
             setTimeout(function() {
                 if (window.AppConfig) {
                     const validation = window.AppConfig.validate();
-                    console.log('[INDEX] Configuration validation for new domain:', validation);
+                    console.log('[INDEX] Configuration validation for current domain:', validation);
                     
                     const debugInfo = window.AppConfig.getDebugInfo();
-                    console.log('[INDEX] Debug info for emailsortpro.netlify.app:', debugInfo);
+                    console.log('[INDEX] Debug info for', CURRENT_HOSTNAME, debugInfo);
                     
                     if (!validation.valid) {
-                        console.log('[INDEX] Configuration invalid for new domain:', validation.issues);
+                        console.log('[INDEX] Configuration invalid for current domain:', validation.issues);
                         
                         const errorBanner = document.createElement('div');
                         errorBanner.className = 'config-error-banner';
                         errorBanner.innerHTML = `
                             <div>
-                                ⚠️ <strong>CONFIGURATION:</strong> URI de redirection invalide pour emailsortpro.netlify.app
+                                ⚠️ <strong>CONFIGURATION:</strong> URI de redirection invalide pour ${CURRENT_HOSTNAME}
                             </div>
                             <div>
                                 Vérifiez votre configuration Azure App Registration
@@ -967,7 +990,7 @@
                         `;
                         document.body.appendChild(errorBanner);
                     } else {
-                        console.log('[INDEX] ✅ Configuration valid for emailsortpro.netlify.app');
+                        console.log('[INDEX] ✅ Configuration valid for', CURRENT_HOSTNAME);
                     }
                 } else {
                     console.warn('[INDEX] AppConfig not available');
@@ -977,7 +1000,7 @@
         
         // Fonction de diagnostic accessible globalement
         window.checkServices = function() {
-            console.log('=== Diagnostic des services pour emailsortpro.netlify.app ===');
+            console.log('=== Diagnostic des services pour', CURRENT_HOSTNAME, '===');
             console.log('AppConfig:', window.AppConfig ? 'OK' : 'MANQUANT');
             if (window.AppConfig) {
                 console.log('Environment:', window.AppConfig.app.environment);
@@ -993,8 +1016,8 @@
             console.log('tasksView:', window.tasksView ? 'OK' : 'MANQUANT');
             console.log('pageManager:', window.pageManager ? 'OK' : 'MANQUANT');
             console.log('categoryManager:', window.categoryManager ? 'OK' : 'MANQUANT');
-            console.log('Current hostname:', window.location.hostname);
-            console.log('Expected hostname: emailsortpro.netlify.app');
+            console.log('Current hostname:', CURRENT_HOSTNAME);
+            console.log('Test environment:', IS_TEST_ENVIRONMENT);
             console.log('=== Ordre de chargement ===');
             console.log('1. TaskManager chargé AVANT PageManager');
             console.log('2. TasksView créé dans TaskManager');
@@ -1018,10 +1041,9 @@
         }
 
         // Log de confirmation du domaine
-        console.log('[INDEX] ✅ Configuration loaded for emailsortpro.netlify.app');
-        console.log('[INDEX] Current hostname:', window.location.hostname);
-        console.log('[INDEX] Expected hostname: ${window.location.hostname};
-        console.log('[INDEX] Domain match:', window.location.hostname === 'emailsortpro.netlify.app');
+        console.log('[INDEX] ✅ Configuration loaded for', CURRENT_HOSTNAME);
+        console.log('[INDEX] Current hostname:', CURRENT_HOSTNAME);
+        console.log('[INDEX] Test environment:', IS_TEST_ENVIRONMENT);
         console.log('[INDEX] 🎯 ORDRE DE CHARGEMENT CORRIGÉ:');
         console.log('[INDEX] 1. TaskManager.js AVANT PageManager.js');
         console.log('[INDEX] 2. Interface unifiée pour emails et tâches');
