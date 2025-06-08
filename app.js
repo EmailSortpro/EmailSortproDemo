@@ -1,8 +1,8 @@
-// app.js - Version 7.0 - CORRECTION BOUCLE INITIALISATION
+// app.js - Version 8.0 - CORRECTION LOGIQUE AUTHENTIFICATION
 
 class App {
     constructor() {
-        console.log('[App] Constructor v7.0 - Correction boucle initialisation...');
+        console.log('[App] Constructor v8.0 - Correction logique authentification...');
         console.log('[App] Current domain:', window.CURRENT_HOSTNAME);
         
         this.initAttempts = 0;
@@ -20,7 +20,6 @@ class App {
     }
 
     async initialize() {
-        // Éviter les multiples initialisations simultanées
         if (this.isInitializing || this.isInitialized) {
             console.log('[App] Already initializing or initialized, skipping...');
             return;
@@ -32,19 +31,11 @@ class App {
         console.log(`[App] Starting initialization attempt ${this.initAttempts}`);
 
         try {
-            // Attendre que tous les services critiques soient disponibles
             await this.waitForCriticalServices();
-            
-            // Vérifier les prérequis
             this.checkPrerequisites();
-            
-            // Initialiser l'authentification
             await this.initializeAuth();
-            
-            // Configurer l'application
             await this.setupApplication();
             
-            // Marquer comme initialisé
             this.isInitialized = true;
             console.log('[App] ✅ Initialization completed successfully');
 
@@ -69,12 +60,8 @@ class App {
     async waitForCriticalServices() {
         console.log('[App] Waiting for critical services...');
         
-        const requiredServices = [
-            'authService', 'uiManager', 'mailService', 
-            'taskManager', 'pageManager'
-        ];
-        
-        const maxWait = 10000; // 10 secondes max
+        const requiredServices = ['authService', 'uiManager', 'mailService', 'taskManager', 'pageManager'];
+        const maxWait = 10000;
         const checkInterval = 100;
         let waited = 0;
         
@@ -86,7 +73,7 @@ class App {
                 return true;
             }
             
-            if (waited % 1000 === 0) { // Log toutes les secondes
+            if (waited % 1000 === 0) {
                 console.log(`[App] Waiting for services: ${missing.join(', ')}`);
             }
             
@@ -100,7 +87,6 @@ class App {
     checkPrerequisites() {
         console.log('[App] Checking prerequisites...');
         
-        // Vérifier la configuration
         if (!window.AppConfig) {
             throw new Error('AppConfig not available');
         }
@@ -109,13 +95,11 @@ class App {
             throw new Error(`Configuration error: ${window.AppConfig.message}`);
         }
         
-        // Valider la configuration
         const validation = window.AppConfig.validate();
         if (!validation.valid) {
             throw new Error(`Configuration invalid: ${validation.issues.join(', ')}`);
         }
         
-        // Vérifier MSAL
         if (typeof msal === 'undefined') {
             throw new Error('MSAL library not loaded');
         }
@@ -133,7 +117,7 @@ class App {
         await window.authService.initialize();
         console.log('[App] ✅ Auth service initialized');
 
-        // Vérifier l'état d'authentification
+        // CORRECTION CRITIQUE : Vérifier l'authentification correctement
         await this.checkAuthenticationStatus();
     }
 
@@ -142,17 +126,29 @@ class App {
         
         try {
             const authResult = window.authService.isAuthenticated();
+            console.log('[App] Auth result received:', authResult);
             
-            if (authResult.isAuthenticated) {
+            // CORRECTION : Utiliser authResult.isAuthenticated au lieu de authResult.result
+            if (authResult.isAuthenticated && authResult.account) {
                 console.log('[App] User is authenticated, getting user info...');
-                const userInfo = await window.authService.getUserInfo();
-                console.log('[App] ✅ User authenticated:', userInfo.displayName);
                 
-                await this.showApplication();
+                try {
+                    const userInfo = await window.authService.getUserInfo();
+                    console.log('[App] ✅ User authenticated:', userInfo.displayName);
+                    
+                    // Montrer l'application immédiatement
+                    await this.showApplication();
+                    
+                } catch (userInfoError) {
+                    console.log('[App] Could not get user info, but user is authenticated:', userInfoError);
+                    // Même si on ne peut pas récupérer les infos, on peut montrer l'app
+                    await this.showApplication();
+                }
             } else {
                 console.log('[App] User not authenticated, showing login page');
                 this.showLoginPage();
             }
+            
         } catch (error) {
             console.error('[App] Auth check error:', error);
             this.showLoginPage();
@@ -161,13 +157,8 @@ class App {
 
     async setupApplication() {
         console.log('[App] Setting up application...');
-        
-        // Initialiser les gestionnaires d'événements
         this.setupEventListeners();
-        
-        // Bind des méthodes globales pour éviter les erreurs
         this.bindGlobalMethods();
-        
         console.log('[App] ✅ Application setup completed');
     }
 
@@ -177,29 +168,26 @@ class App {
         // Gestion de la connexion
         const loginBtn = document.getElementById('loginBtn');
         if (loginBtn) {
-            loginBtn.addEventListener('click', (e) => {
+            // Supprimer les anciens listeners
+            const newLoginBtn = loginBtn.cloneNode(true);
+            loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
+            
+            newLoginBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.login();
             });
         }
         
         // Gestion de la navigation (event delegation)
-        document.addEventListener('click', (e) => {
+        document.removeEventListener('click', this.navigationHandler);
+        this.navigationHandler = (e) => {
             const navItem = e.target.closest('.nav-item');
             if (navItem && navItem.dataset.page) {
                 e.preventDefault();
                 this.handleNavigation(navItem.dataset.page);
             }
-        });
-        
-        // Gestion de la déconnexion
-        const logoutElements = document.querySelectorAll('[data-action="logout"]');
-        logoutElements.forEach(element => {
-            element.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.logout();
-            });
-        });
+        };
+        document.addEventListener('click', this.navigationHandler);
         
         console.log('[App] ✅ Event listeners setup completed');
     }
@@ -246,13 +234,24 @@ class App {
             
             // Tenter la connexion
             const result = await window.authService.login();
-            console.log('[App] ✅ Login successful:', result);
+            console.log('[App] Login attempt completed:', result);
             
             // Cacher l'overlay de chargement
             this.hideLoadingOverlay();
             
-            // Afficher l'application
-            await this.showApplication();
+            // CORRECTION : Vérifier l'état d'authentification après la tentative de connexion
+            setTimeout(async () => {
+                const authStatus = window.authService.isAuthenticated();
+                console.log('[App] Post-login auth status:', authStatus);
+                
+                if (authStatus.isAuthenticated) {
+                    console.log('[App] ✅ Login successful, showing application');
+                    await this.showApplication();
+                } else {
+                    console.log('[App] Login did not complete, keeping login page');
+                    this.showLoginPage();
+                }
+            }, 500); // Petit délai pour laisser MSAL se stabiliser
             
         } catch (error) {
             console.error('[App] ❌ Login failed:', error);
@@ -264,10 +263,7 @@ class App {
                 loginBtn.disabled = false;
             }
             
-            // Cacher l'overlay de chargement
             this.hideLoadingOverlay();
-            
-            // Afficher l'erreur
             this.showLoginError(error);
         }
     }
@@ -279,10 +275,7 @@ class App {
             await window.authService.logout();
             console.log('[App] ✅ Logout successful');
             
-            // Réinitialiser l'état de l'application
             this.resetApplicationState();
-            
-            // Afficher la page de connexion
             this.showLoginPage();
             
         } catch (error) {
@@ -298,16 +291,9 @@ class App {
         console.log('[App] Showing application...');
         
         try {
-            // Masquer la page de connexion
             this.hideLoginPage();
-            
-            // Afficher l'interface de l'application
             this.showAppInterface();
-            
-            // Mettre à jour le statut d'authentification
             this.updateAuthStatus();
-            
-            // Charger la page par défaut (dashboard)
             await this.loadDefaultPage();
             
             console.log('[App] ✅ Application fully displayed');
@@ -350,12 +336,7 @@ class App {
 
     showAppInterface() {
         console.log('[App] Activating app interface...');
-        
-        // Ajouter la classe app-active
         document.body.classList.add('app-active');
-        
-        // Les styles CSS gèrent automatiquement l'affichage des éléments
-        // grâce à la classe app-active
     }
 
     hideAppInterface() {
@@ -364,14 +345,26 @@ class App {
 
     updateAuthStatus() {
         if (window.uiManager && typeof window.uiManager.updateAuthStatus === 'function') {
-            window.uiManager.updateAuthStatus('authenticated');
+            // Récupérer les informations utilisateur
+            if (window.authService && window.authService.isAuthenticated().isAuthenticated) {
+                window.authService.getUserInfo()
+                    .then(userInfo => {
+                        window.uiManager.updateAuthStatus('authenticated', userInfo);
+                    })
+                    .catch(error => {
+                        console.log('[App] Could not get user info for status update:', error);
+                        window.uiManager.updateAuthStatus('authenticated', { displayName: 'Utilisateur' });
+                    });
+            } else {
+                window.uiManager.updateAuthStatus('disconnected');
+            }
         }
     }
 
     async loadDefaultPage() {
         console.log('[App] Loading default page...');
         
-        // Petit délai pour laisser l'interface se stabiliser
+        // Attendre que l'interface soit stable
         setTimeout(() => {
             if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
                 window.pageManager.loadPage('dashboard');
@@ -382,7 +375,7 @@ class App {
     showLoadingOverlay(message = 'Chargement...') {
         const overlay = document.getElementById('loadingOverlay');
         if (overlay) {
-            const textElement = overlay.querySelector('.login-loading-text div');
+            const textElement = overlay.querySelector('.loading-text');
             if (textElement) {
                 textElement.textContent = message;
             }
@@ -440,48 +433,30 @@ class App {
     getErrorMessage(error) {
         if (!error) return 'Erreur inconnue';
         
-        const errorCode = error.errorCode || error.code || error.name;
+        if (error.message) return error.message;
+        if (error.code) return `Erreur ${error.code}`;
         
-        // Messages d'erreur personnalisés
-        const errorMessages = {
-            'popup_window_error': 'Popup bloquée. Autorisez les popups pour ce site.',
-            'user_cancelled': 'Connexion annulée par l\'utilisateur.',
-            'network_error': 'Erreur réseau. Vérifiez votre connexion.',
-            'invalid_client': 'Configuration invalide. Contactez l\'administrateur.',
-            'unauthorized_client': 'Application non autorisée.',
-            'consent_required': 'Autorisation requise. Acceptez les permissions.',
-            'interaction_required': 'Interaction requise. Reconnectez-vous.',
-            'login_required': 'Connexion requise.',
-            'token_expired': 'Session expirée. Reconnectez-vous.',
-            'invalid_request': 'Requête invalide.',
-            'temporarily_unavailable': 'Service temporairement indisponible.'
-        };
-        
-        return errorMessages[errorCode] || error.message || 'Erreur de connexion';
+        return 'Erreur de connexion';
     }
 
     resetApplicationState() {
         console.log('[App] Resetting application state...');
         
-        // Réinitialiser les gestionnaires
         if (window.pageManager) {
             window.pageManager.currentPage = null;
-            window.pageManager.selectedEmails.clear();
+            window.pageManager.selectedEmails?.clear();
             window.pageManager.isLoading = false;
         }
         
-        // Vider le contenu des pages
         const pageContent = document.getElementById('pageContent');
         if (pageContent) {
             pageContent.innerHTML = '';
         }
         
-        // Réinitialiser la navigation
         document.querySelectorAll('.nav-item').forEach(item => {
             item.classList.remove('active');
         });
         
-        // Activer le premier élément de navigation
         const firstNavItem = document.querySelector('.nav-item[data-page="dashboard"]');
         if (firstNavItem) {
             firstNavItem.classList.add('active');
@@ -507,7 +482,6 @@ function initializeApp() {
         
         if (missing.length > 0) {
             console.log(`[App] Waiting for critical services: ${missing.join(', ')}`);
-            // Réessayer dans 100ms
             setTimeout(initializeApp, 100);
             return null;
         }
@@ -520,27 +494,6 @@ function initializeApp() {
         
     } catch (error) {
         console.error('[App] ❌ Failed to create app instance:', error);
-        
-        // Afficher une erreur critique
-        const errorDiv = document.createElement('div');
-        errorDiv.style.cssText = `
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: #dc2626; color: white; display: flex; align-items: center; justify-content: center;
-            z-index: 99999; text-align: center; padding: 20px;
-        `;
-        errorDiv.innerHTML = `
-            <div>
-                <h2>Erreur critique</h2>
-                <p>${error.message}</p>
-                <button onclick="window.location.reload()" 
-                        style="background: white; color: #dc2626; border: none; padding: 10px 20px; 
-                               border-radius: 4px; cursor: pointer; margin-top: 10px;">
-                    Recharger
-                </button>
-            </div>
-        `;
-        document.body.appendChild(errorDiv);
-        
         return null;
     }
 }
@@ -549,7 +502,6 @@ function initializeApp() {
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeApp);
 } else {
-    // DOM déjà chargé
     initializeApp();
 }
 
@@ -557,4 +509,4 @@ if (document.readyState === 'loading') {
 window.App = App;
 window.initializeApp = initializeApp;
 
-console.log('✅ App v7.0 loaded - Correction boucle initialisation');
+console.log('✅ App v8.0 loaded - Correction logique authentification');
