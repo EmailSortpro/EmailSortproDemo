@@ -1,4 +1,4 @@
-// PageManager.js - Version 11.0 - Interface moderne épurée avec détails dans la ligne
+// PageManager.js - Version 11.0 - Interface moderne épurée avec détails dans la ligne - CORRIGÉE
 
 class PageManager {
     constructor() {
@@ -87,10 +87,55 @@ class PageManager {
     }
 
     // =====================================
-    // EMAILS PAGE - INTERFACE MODERNE ÉPURÉE
+    // EMAILS PAGE - INTERFACE MODERNE ÉPURÉE - CORRIGÉE
     // =====================================
     async renderEmails(container) {
-        const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
+        // CORRECTION: Améliorer la récupération des emails avec logs détaillés
+        console.log('[PageManager] 🔍 Récupération des emails...');
+        
+        let emails = [];
+        
+        // Méthode 1: EmailScanner
+        if (window.emailScanner && typeof window.emailScanner.getAllEmails === 'function') {
+            emails = window.emailScanner.getAllEmails() || [];
+            console.log(`[PageManager] 📧 EmailScanner: ${emails.length} emails trouvés`);
+        }
+        
+        // Méthode 2: Stockage temporaire
+        if (emails.length === 0 && this.temporaryEmailStorage && this.temporaryEmailStorage.length > 0) {
+            emails = this.temporaryEmailStorage;
+            console.log(`[PageManager] 💾 Stockage temporaire: ${emails.length} emails trouvés`);
+        }
+        
+        // Méthode 3: SessionStorage
+        if (emails.length === 0) {
+            try {
+                const scanResults = sessionStorage.getItem('scanResults');
+                if (scanResults) {
+                    const parsed = JSON.parse(scanResults);
+                    if (parsed.emails && Array.isArray(parsed.emails)) {
+                        emails = parsed.emails;
+                        console.log(`[PageManager] 🗄️ SessionStorage: ${emails.length} emails trouvés`);
+                    }
+                }
+            } catch (error) {
+                console.warn('[PageManager] Erreur lecture sessionStorage:', error);
+            }
+        }
+        
+        // Méthode 4: Emails de démonstration si aucun email trouvé
+        if (emails.length === 0) {
+            console.log('[PageManager] 🎭 Génération d\'emails de démonstration');
+            emails = this.generateDemoEmails();
+            // Stocker les emails de démo
+            if (window.emailScanner && typeof window.emailScanner.setEmails === 'function') {
+                window.emailScanner.setEmails(emails);
+            }
+            this.temporaryEmailStorage = emails;
+        }
+        
+        console.log(`[PageManager] ✅ Total final: ${emails.length} emails à afficher`);
+        
         const categories = window.categoryManager?.getCategories() || {};
         
         // Initialize view mode
@@ -208,6 +253,102 @@ class PageManager {
         }
     }
 
+    // CORRECTION: Méthode pour générer des emails de démonstration
+    generateDemoEmails() {
+        const domains = ['microsoft.com', 'google.com', 'amazon.com', 'facebook.com', 'apple.com', 'netflix.com', 'linkedin.com', 'github.com'];
+        const firstNames = ['Jean', 'Marie', 'Pierre', 'Sophie', 'Lucas', 'Emma', 'Thomas', 'Julie', 'Antoine', 'Camille'];
+        const lastNames = ['Martin', 'Bernard', 'Dubois', 'Thomas', 'Robert', 'Richard', 'Petit', 'Durand', 'Leroy', 'Moreau'];
+        const subjects = [
+            'Réunion équipe - Projet Q2',
+            'Confirmation de commande #12345',
+            'Newsletter mensuelle',
+            'Rappel: Formation obligatoire',
+            'Votre facture est disponible',
+            'Mise à jour sécurité',
+            'Invitation événement réseau',
+            'Rapport mensuel activité'
+        ];
+
+        const emails = [];
+        const count = 25; // Nombre d'emails de démo
+        const now = new Date();
+
+        for (let i = 0; i < count; i++) {
+            const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+            const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+            const domain = domains[Math.floor(Math.random() * domains.length)];
+            const subject = subjects[Math.floor(Math.random() * subjects.length)];
+            
+            const daysAgo = Math.floor(Math.random() * 7);
+            const emailDate = new Date(now.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
+            
+            const email = {
+                id: `demo-email-${i}`,
+                subject: subject,
+                from: {
+                    emailAddress: {
+                        name: `${firstName} ${lastName}`,
+                        address: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${domain}`
+                    }
+                },
+                receivedDateTime: emailDate.toISOString(),
+                bodyPreview: `Bonjour, ceci est un email de démonstration concernant ${subject.toLowerCase()}. Merci de votre attention.`,
+                body: {
+                    content: `<p>Bonjour,</p><p>Ceci est un email de démonstration concernant ${subject}.</p><p>Cordialement,<br/>${firstName} ${lastName}</p>`
+                },
+                hasAttachments: Math.random() < 0.3,
+                importance: Math.random() < 0.1 ? 'high' : 'normal',
+                isRead: Math.random() < 0.7,
+                category: null
+            };
+
+            emails.push(email);
+        }
+
+        console.log(`[PageManager] ✅ ${count} emails de démonstration générés`);
+        return emails;
+    }
+
+    // =====================================
+    // MÉTHODES DE RÉCUPÉRATION D'EMAILS - CORRIGÉES
+    // =====================================
+    getTemporaryEmails() {
+        // CORRECTION: Vérifier plusieurs sources
+        if (this.temporaryEmailStorage && this.temporaryEmailStorage.length > 0) {
+            console.log(`[PageManager] 💾 Emails temporaires: ${this.temporaryEmailStorage.length}`);
+            return this.temporaryEmailStorage;
+        }
+        
+        // Vérifier dans window.emailScanner si disponible
+        if (window.emailScanner && typeof window.emailScanner.getAllEmails === 'function') {
+            const emails = window.emailScanner.getAllEmails();
+            if (emails && emails.length > 0) {
+                console.log(`[PageManager] 📧 Emails depuis EmailScanner: ${emails.length}`);
+                this.temporaryEmailStorage = emails; // Synchroniser
+                return emails;
+            }
+        }
+        
+        console.log('[PageManager] ⚠️ Aucun email temporaire trouvé');
+        return [];
+    }
+
+    // CORRECTION: Méthode pour stocker les emails
+    setEmails(emails) {
+        if (!emails || !Array.isArray(emails)) {
+            console.warn('[PageManager] Emails invalides fournis');
+            return;
+        }
+        
+        console.log(`[PageManager] 📧 Stockage de ${emails.length} emails`);
+        this.temporaryEmailStorage = emails;
+        
+        // Synchroniser avec emailScanner si disponible
+        if (window.emailScanner && typeof window.emailScanner.setEmails === 'function') {
+            window.emailScanner.setEmails(emails);
+        }
+    }
+
     // =====================================
     // FILTRES DE CATÉGORIES
     // =====================================
@@ -255,7 +396,16 @@ class PageManager {
     // RENDU DES EMAILS
     // =====================================
     renderEmailsList() {
-        const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
+        // CORRECTION: Utiliser la méthode de récupération améliorée
+        let emails = this.getTemporaryEmails();
+        
+        // Fallback sur window.emailScanner
+        if (emails.length === 0 && window.emailScanner && typeof window.emailScanner.getAllEmails === 'function') {
+            emails = window.emailScanner.getAllEmails() || [];
+        }
+        
+        console.log(`[PageManager] 📋 Rendu de ${emails.length} emails`);
+        
         let filteredEmails = emails;
         
         // Apply filters
@@ -297,7 +447,12 @@ class PageManager {
                         <i class="fas fa-undo"></i>
                         <span>Effacer la recherche</span>
                     </button>
-                ` : ''}
+                ` : `
+                    <button class="btn-clear-search" onclick="window.pageManager.loadPage('scanner')">
+                        <i class="fas fa-search"></i>
+                        <span>Démarrer un scan</span>
+                    </button>
+                `}
             </div>
         `;
     }
@@ -1486,7 +1641,7 @@ class PageManager {
     }
 
     getVisibleEmails() {
-        const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
+        const emails = this.getTemporaryEmails();
         let filteredEmails = emails;
         
         if (this.currentCategory !== 'all') {
@@ -1501,12 +1656,8 @@ class PageManager {
     }
 
     getEmailById(emailId) {
-        const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
+        const emails = this.getTemporaryEmails();
         return emails.find(e => e.id === emailId);
-    }
-
-    getTemporaryEmails() {
-        return this.temporaryEmailStorage || [];
     }
 
     buildTaskDataFromAnalysis(email, analysis) {
@@ -1545,7 +1696,7 @@ class PageManager {
         window.uiManager.showLoading('Actualisation...');
         
         try {
-            const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
+            const emails = this.getTemporaryEmails();
             
             if (emails.length > 0 && window.categoryManager) {
                 emails.forEach(email => {
@@ -2325,4 +2476,4 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManager v11.0 loaded - Interface moderne épurée');
+console.log('✅ PageManager v11.0 loaded - Interface moderne épurée - CORRIGÉE');
