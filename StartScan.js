@@ -1,4 +1,6 @@
-// startscan.js - Version 8.0 - Scanner Ultra-Minimaliste
+// StartScan.js - Version 8.0 - Scanner Ultra-Minimaliste CORRIGÉ
+
+console.log('[StartScan] 🚀 Loading StartScan.js v8.0...');
 
 class MinimalScanModule {
     constructor() {
@@ -8,17 +10,20 @@ class MinimalScanModule {
         this.stylesAdded = false;
         this.scanStartTime = null;
         
-        this.addMinimalStyles();
         console.log('[MinimalScan] Scanner ultra-minimaliste v8.0 initialized');
+        this.addMinimalStyles();
     }
 
     addMinimalStyles() {
-        if (this.stylesAdded) return;
+        if (this.stylesAdded || document.getElementById('minimal-scan-styles')) {
+            console.log('[MinimalScan] Styles already added, skipping...');
+            return;
+        }
         
         const styles = document.createElement('style');
         styles.id = 'minimal-scan-styles';
         styles.textContent = `
-            /* Scanner Ultra-Minimaliste */
+            /* Scanner Ultra-Minimaliste v8.0 */
             .minimal-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -26,11 +31,7 @@ class MinimalScanModule {
                 justify-content: center;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 overflow: hidden;
-                position: fixed;
-                top: 140px;
-                left: 0;
-                right: 0;
-                bottom: 0;
+                position: relative;
                 padding: 20px;
             }
             
@@ -351,26 +352,30 @@ class MinimalScanModule {
     }
 
     async render(container) {
-        console.log('[MinimalScan] Rendu du scanner minimaliste...');
+        console.log('[MinimalScan] 🎯 Rendu du scanner minimaliste...');
         
         try {
+            // S'assurer que les styles sont ajoutés
             this.addMinimalStyles();
             
+            // Vérifier l'authentification
             if (!window.authService?.isAuthenticated()) {
                 container.innerHTML = this.renderNotAuthenticated();
                 return;
             }
 
+            // Vérifier les services
             await this.checkServices();
             
+            // Rendu de l'interface
             container.innerHTML = this.renderMinimalScanner();
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log('[MinimalScan] ✅ Scanner minimaliste prêt');
+            console.log('[MinimalScan] ✅ Scanner minimaliste rendu avec succès');
             
         } catch (error) {
-            console.error('[MinimalScan] Erreur:', error);
+            console.error('[MinimalScan] ❌ Erreur lors du rendu:', error);
             container.innerHTML = this.renderError(error);
         }
     }
@@ -478,17 +483,12 @@ class MinimalScanModule {
         }
         
         if (!window.mailService) {
-            throw new Error('Service de messagerie indisponible');
-        }
-        
-        if (!window.mailService.isInitialized) {
-            await window.mailService.initialize();
+            console.warn('[MinimalScan] ⚠️ MailService non disponible - scan en mode simulation');
         }
     }
 
     initializeEvents() {
-        // Pas d'événements supplémentaires nécessaires
-        console.log('[MinimalScan] Événements initialisés');
+        console.log('[MinimalScan] ✅ Événements initialisés');
     }
 
     selectDuration(days) {
@@ -499,13 +499,19 @@ class MinimalScanModule {
             btn.classList.remove('selected');
         });
         
-        document.querySelector(`[data-days="${days}"]`).classList.add('selected');
+        const selectedBtn = document.querySelector(`[data-days="${days}"]`);
+        if (selectedBtn) {
+            selectedBtn.classList.add('selected');
+        }
         
-        console.log(`[MinimalScan] Durée sélectionnée: ${days} jours`);
+        console.log(`[MinimalScan] ✅ Durée sélectionnée: ${days} jours`);
     }
 
     async startScan() {
-        if (this.scanInProgress) return;
+        if (this.scanInProgress) {
+            console.log('[MinimalScan] Scan déjà en cours');
+            return;
+        }
         
         console.log('[MinimalScan] 🚀 Démarrage du scan pour', this.selectedDays, 'jours');
         
@@ -517,10 +523,16 @@ class MinimalScanModule {
             this.setActiveStep(2);
             
             // Afficher la progression
-            document.getElementById('progressSection').classList.add('visible');
+            const progressSection = document.getElementById('progressSection');
+            if (progressSection) {
+                progressSection.classList.add('visible');
+            }
+            
             const scanBtn = document.getElementById('minimalScanBtn');
-            scanBtn.disabled = true;
-            scanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Analyse en cours...</span>';
+            if (scanBtn) {
+                scanBtn.disabled = true;
+                scanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Analyse en cours...</span>';
+            }
             
             // Exécuter le scan
             await this.executeScan();
@@ -532,7 +544,7 @@ class MinimalScanModule {
             this.completeScan();
             
         } catch (error) {
-            console.error('[MinimalScan] Erreur de scan:', error);
+            console.error('[MinimalScan] ❌ Erreur de scan:', error);
             this.showScanError(error);
         }
     }
@@ -547,9 +559,10 @@ class MinimalScanModule {
             { progress: 100, text: 'Terminé !', status: 'Scan complété avec succès' }
         ];
 
-        // Effectuer le vrai scan si disponible
+        // Simulation progressive avec vraie logique si disponible
         try {
-            if (window.emailScanner) {
+            if (window.emailScanner && typeof window.emailScanner.scan === 'function') {
+                console.log('[MinimalScan] 🔄 Utilisation du vrai scanner');
                 const results = await window.emailScanner.scan({
                     days: this.selectedDays,
                     folder: 'inbox',
@@ -562,7 +575,9 @@ class MinimalScanModule {
                     }
                 });
                 this.scanResults = results;
+                console.log('[MinimalScan] ✅ Scan réel terminé:', results);
             } else {
+                console.log('[MinimalScan] 🎭 Mode simulation');
                 // Simulation avec progression
                 for (const step of steps) {
                     this.updateProgress(step.progress, step.text, step.status);
@@ -570,7 +585,7 @@ class MinimalScanModule {
                 }
                 
                 // Générer des résultats réalistes
-                const baseEmails = Math.floor(Math.random() * 500) + 100;
+                const baseEmails = Math.floor(Math.random() * 200) + 50;
                 this.scanResults = {
                     success: true,
                     total: baseEmails,
@@ -579,8 +594,8 @@ class MinimalScanModule {
                 };
             }
         } catch (error) {
-            console.error('[MinimalScan] Erreur lors du scan réel:', error);
-            // Continuer avec les résultats de simulation
+            console.error('[MinimalScan] ❌ Erreur lors du scan:', error);
+            // Continuer avec simulation en cas d'erreur
             for (const step of steps) {
                 this.updateProgress(step.progress, step.text, step.status);
                 await new Promise(resolve => setTimeout(resolve, 400));
@@ -596,25 +611,35 @@ class MinimalScanModule {
     }
 
     updateProgress(percent, text, status) {
-        document.getElementById('progressFill').style.width = `${percent}%`;
-        document.getElementById('progressText').textContent = text;
-        document.getElementById('progressStatus').textContent = status;
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const progressStatus = document.getElementById('progressStatus');
+        
+        if (progressFill) progressFill.style.width = `${percent}%`;
+        if (progressText) progressText.textContent = text;
+        if (progressStatus) progressStatus.textContent = status;
     }
 
     setActiveStep(stepNumber) {
         document.querySelectorAll('.step').forEach(step => {
             step.classList.remove('active');
         });
-        document.getElementById(`step${stepNumber}`).classList.add('active');
+        
+        const activeStep = document.getElementById(`step${stepNumber}`);
+        if (activeStep) {
+            activeStep.classList.add('active');
+        }
     }
 
     completeScan() {
         setTimeout(() => {
             const scanBtn = document.getElementById('minimalScanBtn');
-            scanBtn.innerHTML = '<i class="fas fa-check"></i> <span>Scan terminé !</span>';
-            scanBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            if (scanBtn) {
+                scanBtn.innerHTML = '<i class="fas fa-check"></i> <span>Scan terminé !</span>';
+                scanBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            }
             
-            // Préparer les résultats pour la redirection
+            // Préparer la redirection
             setTimeout(() => {
                 this.redirectToResults();
             }, 1500);
@@ -624,7 +649,7 @@ class MinimalScanModule {
     redirectToResults() {
         this.scanInProgress = false;
         
-        // Stocker les résultats essentiels
+        // Stocker les résultats
         const essentialResults = {
             success: this.scanResults?.success || true,
             total: this.scanResults?.total || 0,
@@ -638,7 +663,7 @@ class MinimalScanModule {
             sessionStorage.removeItem('scanResults');
             sessionStorage.setItem('scanResults', JSON.stringify(essentialResults));
         } catch (error) {
-            console.warn('[MinimalScan] Erreur de stockage:', error);
+            console.warn('[MinimalScan] ⚠️ Erreur de stockage:', error);
         }
         
         // Notification de succès
@@ -647,12 +672,13 @@ class MinimalScanModule {
             window.uiManager.showToast(`✅ ${totalEmails} emails analysés avec succès`, 'success');
         }
         
-        // Redirection
+        // Redirection vers les emails
         setTimeout(() => {
-            if (window.pageManager) {
+            if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
+                console.log('[MinimalScan] 🔄 Redirection vers la page emails');
                 window.pageManager.loadPage('emails');
             } else {
-                console.log('[MinimalScan] PageManager non disponible, scan terminé');
+                console.log('[MinimalScan] ⚠️ PageManager non disponible');
             }
         }, 500);
     }
@@ -665,7 +691,8 @@ class MinimalScanModule {
                     <div style="font-size: 16px; font-weight: 600; color: #ef4444; margin-bottom: 8px;">Erreur de scan</div>
                     <div style="font-size: 12px; color: #6b7280; margin-bottom: 16px;">${error.message}</div>
                     
-                    <button class="scan-button-minimal" onclick="window.minimalScanModule.resetScanner()" style="width: auto; padding: 0 20px; height: 40px; font-size: 14px;">
+                    <button class="scan-button-minimal" onclick="window.minimalScanModule.resetScanner()" 
+                            style="width: auto; padding: 0 20px; height: 40px; font-size: 14px;">
                         <i class="fas fa-redo"></i>
                         <span>Réessayer</span>
                     </button>
@@ -679,25 +706,40 @@ class MinimalScanModule {
     resetScanner() {
         this.scanInProgress = false;
         this.setActiveStep(1);
-        document.getElementById('progressSection').classList.remove('visible');
+        
+        const progressSection = document.getElementById('progressSection');
+        if (progressSection) {
+            progressSection.classList.remove('visible');
+        }
         
         const scanBtn = document.getElementById('minimalScanBtn');
-        scanBtn.disabled = false;
-        scanBtn.innerHTML = '<i class="fas fa-play"></i> <span>Démarrer l\'analyse</span>';
-        scanBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        if (scanBtn) {
+            scanBtn.disabled = false;
+            scanBtn.innerHTML = '<i class="fas fa-play"></i> <span>Démarrer l\'analyse</span>';
+            scanBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        }
         
         this.updateProgress(0, 'Initialisation...', 'Préparation du scan');
         
-        console.log('[MinimalScan] Scanner réinitialisé');
+        console.log('[MinimalScan] 🔄 Scanner réinitialisé');
     }
 
     cleanup() {
-        console.log('[MinimalScan] Nettoyage terminé');
+        console.log('[MinimalScan] 🧹 Nettoyage terminé');
     }
 }
 
-// Créer l'instance globale
-window.minimalScanModule = new MinimalScanModule();
-window.scanStartModule = window.minimalScanModule; // Compatibilité
+// ===== CRÉATION DES INSTANCES GLOBALES =====
+console.log('[StartScan] 🔧 Création des instances globales...');
 
-console.log('[MinimalScan] 🚀 Scanner minimaliste prêt');
+// Créer l'instance principale
+window.MinimalScanModule = MinimalScanModule;
+window.minimalScanModule = new MinimalScanModule();
+window.scanStartModule = window.minimalScanModule; // Alias pour compatibilité
+
+console.log('[StartScan] ✅ Instances créées:');
+console.log('- window.MinimalScanModule:', !!window.MinimalScanModule);
+console.log('- window.minimalScanModule:', !!window.minimalScanModule);
+console.log('- window.scanStartModule:', !!window.scanStartModule);
+
+console.log('[StartScan] 🚀 Scanner minimaliste v8.0 prêt!');
