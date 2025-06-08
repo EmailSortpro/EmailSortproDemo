@@ -1,4 +1,4 @@
-// AuthService.js - Service d'authentification Microsoft Graph CORRIGÉ pour coruscating-dodol-f30e8d.netlify.app v4.0
+// AuthService.js - Service d'authentification Microsoft Graph CORRIGÉ pour coruscating-dodol-f30e8d.netlify.app v4.1
 
 class AuthService {
     constructor() {
@@ -114,7 +114,8 @@ class AuthService {
                 throw new Error('AppConfig not loaded - check if config.js is included before AuthService.js');
             }
 
-            const validation = window.AppConfig.forceValidate();
+            // Utiliser la méthode validate() standard au lieu de forceValidate()
+            const validation = window.AppConfig.validate();
             console.log(`[AuthService] Configuration validation result for ${this.targetDomain}:`, validation);
             
             if (!validation.valid) {
@@ -142,11 +143,11 @@ class AuthService {
             
             // Log de la configuration utilisée (sans exposer de secrets)
             console.log(`[AuthService] Using configuration for ${this.targetDomain}:`, {
-                clientId: window.AppConfig.msal.clientId ? window.AppConfig.msal.clientId.substring(0, 8) + '...' : 'MISSING',
-                authority: window.AppConfig.msal.authority,
-                redirectUri: window.AppConfig.msal.redirectUri,
-                postLogoutRedirectUri: window.AppConfig.msal.postLogoutRedirectUri,
-                cacheLocation: window.AppConfig.msal.cache.cacheLocation,
+                clientId: window.AppConfig.msal?.clientId ? window.AppConfig.msal.clientId.substring(0, 8) + '...' : 'MISSING',
+                authority: window.AppConfig.msal?.authority,
+                redirectUri: window.AppConfig.msal?.redirectUri,
+                postLogoutRedirectUri: window.AppConfig.msal?.postLogoutRedirectUri,
+                cacheLocation: window.AppConfig.msal?.cache?.cacheLocation,
                 environment: window.AppConfig.app?.environment || 'unknown',
                 domain: window.AppConfig.app?.domain,
                 expectedRedirectUri: expectedRedirectUri,
@@ -154,17 +155,17 @@ class AuthService {
             });
 
             // Vérification critique des URIs pour le domaine cible
-            if (window.AppConfig.msal.redirectUri !== expectedRedirectUri) {
+            if (window.AppConfig.msal?.redirectUri !== expectedRedirectUri) {
                 console.error(`[AuthService] ❌ CRITICAL: Redirect URI mismatch for ${this.targetDomain}!`);
                 console.error('[AuthService] Expected:', expectedRedirectUri);
-                console.error('[AuthService] Configured:', window.AppConfig.msal.redirectUri);
+                console.error('[AuthService] Configured:', window.AppConfig.msal?.redirectUri);
                 throw new Error(`Redirect URI must be configured as: ${expectedRedirectUri}`);
             }
             
-            if (window.AppConfig.msal.postLogoutRedirectUri !== expectedLogoutUri) {
+            if (window.AppConfig.msal?.postLogoutRedirectUri !== expectedLogoutUri) {
                 console.warn(`[AuthService] ⚠️ Logout URI mismatch for ${this.targetDomain} (non-critical)`);
                 console.warn('[AuthService] Expected:', expectedLogoutUri);
-                console.warn('[AuthService] Configured:', window.AppConfig.msal.postLogoutRedirectUri);
+                console.warn('[AuthService] Configured:', window.AppConfig.msal?.postLogoutRedirectUri);
             }
 
             // Créer l'instance MSAL avec validation renforcée
@@ -409,7 +410,7 @@ class AuthService {
                     correlationId: error.correlationId
                 });
                 
-                if (window.AppConfig.errors[errorCode]) {
+                if (window.AppConfig.errors && window.AppConfig.errors[errorCode]) {
                     userMessage = window.AppConfig.errors[errorCode];
                 } else {
                     switch (errorCode) {
@@ -623,8 +624,7 @@ class AuthService {
                 exists: true,
                 environment: window.AppConfig.app?.environment,
                 domain: window.AppConfig.app?.domain,
-                validation: window.AppConfig.validate(),
-                debug: window.AppConfig.getDebugInfo()
+                validation: window.AppConfig.validate()
             } : { exists: false },
             uriValidation: {
                 expectedRedirectUri: `https://${this.targetDomain}/auth-callback.html`,
@@ -670,7 +670,6 @@ window.diagnoseMSAL = function() {
     
     try {
         const authDiag = window.authService.getDiagnosticInfo();
-        const configDiag = window.AppConfig ? window.AppConfig.getDebugInfo() : null;
         
         console.log('🎯 Target Domain:', authDiag.targetDomain);
         console.log('🌐 Current Domain:', authDiag.currentDomain);
@@ -681,7 +680,6 @@ window.diagnoseMSAL = function() {
         }
         
         console.log('🔐 AuthService:', authDiag);
-        console.log('⚙️ Configuration:', configDiag);
         console.log('📚 MSAL Library:', typeof msal !== 'undefined' ? 'Available' : 'Missing');
         console.log('🔗 Current URL:', window.location.href);
         console.log('💾 LocalStorage keys:', Object.keys(localStorage).filter(k => k.includes('msal') || k.includes('auth')));
@@ -704,7 +702,7 @@ window.diagnoseMSAL = function() {
             console.log('  Authentication WILL FAIL on wrong domain');
         }
         
-        return { authDiag, configDiag };
+        return { authDiag };
         
     } catch (error) {
         console.error('❌ Diagnostic failed:', error);
@@ -742,4 +740,4 @@ setTimeout(() => {
     }
 }, 2000);
 
-console.log(`✅ AuthService loaded with EXCLUSIVE support for coruscating-dodol-f30e8d.netlify.app v4.0`);
+console.log(`✅ AuthService loaded with EXCLUSIVE support for coruscating-dodol-f30e8d.netlify.app v4.1 - Fixed validate() method`);
