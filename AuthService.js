@@ -1,4 +1,4 @@
-// AuthService.js - Service d'authentification Microsoft Graph CORRIGÉ pour emailsortpro.netlify.app v3.1
+// AuthService.js - Service d'authentification Microsoft Graph ADAPTATIF multi-domaines v4.0
 
 class AuthService {
     constructor() {
@@ -8,11 +8,18 @@ class AuthService {
         this.initializationPromise = null;
         this.configWaitAttempts = 0;
         this.maxConfigWaitAttempts = 50; // 5 secondes max
-        this.expectedDomain = 'emailsortpro.netlify.app';
         
-        console.log('[AuthService] Constructor called - Enhanced support for emailsortpro.netlify.app');
+        // Détection automatique du domaine
+        this.currentDomain = window.location.hostname;
+        this.isTestEnvironment = this.currentDomain.includes('coruscating-dodol') || 
+                                 this.currentDomain.includes('localhost') || 
+                                 this.currentDomain.includes('127.0.0.1');
         
-        // Vérifier le domaine immédiatement
+        console.log('[AuthService] Constructor called - Adaptive multi-domain support v4.0');
+        console.log('[AuthService] Current domain:', this.currentDomain);
+        console.log('[AuthService] Test environment:', this.isTestEnvironment);
+        
+        // Vérifier le domaine avec approche adaptative
         this.verifyDomain();
         
         // Attendre que la configuration soit disponible avec timeout
@@ -20,18 +27,26 @@ class AuthService {
     }
 
     verifyDomain() {
-        const currentDomain = window.location.hostname;
-        const isCorrectDomain = currentDomain === this.expectedDomain;
+        const supportedDomains = [
+            'emailsortpro.netlify.app',
+            'emailsortpro.fr',
+            'coruscating-dodol-f30e8d.netlify.app',
+            'localhost',
+            '127.0.0.1'
+        ];
+        
+        const isSupported = supportedDomains.some(domain => this.currentDomain.includes(domain));
         
         console.log('[AuthService] Domain verification:', {
-            current: currentDomain,
-            expected: this.expectedDomain,
-            isCorrect: isCorrectDomain
+            current: this.currentDomain,
+            supported: supportedDomains,
+            isSupported: isSupported,
+            isTest: this.isTestEnvironment
         });
         
-        if (!isCorrectDomain && !currentDomain.includes('localhost') && !currentDomain.includes('127.0.0.1')) {
-            console.warn('[AuthService] ⚠️ Domain mismatch! Authentication may fail.');
-            console.warn('[AuthService] Azure App Registration must be configured for:', this.expectedDomain);
+        if (!isSupported) {
+            console.warn('[AuthService] ⚠️ Unknown domain! Authentication may fail.');
+            console.warn('[AuthService] Supported domains:', supportedDomains);
         }
     }
 
@@ -55,24 +70,27 @@ class AuthService {
         const validation = window.AppConfig.validate();
         console.log('[AuthService] Configuration validation:', validation);
         
-        // Vérification spécifique pour le nouveau domaine
-        if (window.AppConfig.msal?.redirectUri && 
-            !window.AppConfig.msal.redirectUri.includes(this.expectedDomain)) {
-            console.error('[AuthService] ❌ Redirect URI does not match expected domain!');
-            console.error('[AuthService] Expected domain:', this.expectedDomain);
-            console.error('[AuthService] Configured URI:', window.AppConfig.msal.redirectUri);
+        // Vérification adaptative de l'URI de redirection
+        if (window.AppConfig.msal?.redirectUri) {
+            const configuredDomain = new URL(window.AppConfig.msal.redirectUri).hostname;
+            if (configuredDomain !== this.currentDomain) {
+                console.warn('[AuthService] ⚠️ Redirect URI domain mismatch detected');
+                console.warn('[AuthService] Current domain:', this.currentDomain);
+                console.warn('[AuthService] Configured domain:', configuredDomain);
+                console.log('[AuthService] Will adapt configuration automatically...');
+            }
         }
         
         if (!validation.valid) {
-            console.error('[AuthService] Configuration invalid for emailsortpro.netlify.app:', validation.issues);
+            console.error('[AuthService] Configuration invalid:', validation.issues);
             // Continuer quand même pour permettre l'affichage des erreurs
         } else {
-            console.log('[AuthService] ✅ Configuration valid for emailsortpro.netlify.app');
+            console.log('[AuthService] ✅ Configuration valid for', this.currentDomain);
         }
     }
 
     async initialize() {
-        console.log('[AuthService] Initialize called for emailsortpro.netlify.app');
+        console.log('[AuthService] Initialize called for', this.currentDomain);
         
         // Éviter l'initialisation multiple
         if (this.initializationPromise) {
@@ -91,7 +109,7 @@ class AuthService {
 
     async _doInitialize() {
         try {
-            console.log('[AuthService] Starting initialization for emailsortpro.netlify.app...');
+            console.log('[AuthService] Starting initialization for', this.currentDomain);
             
             // Vérifier que MSAL est chargé
             if (typeof msal === 'undefined') {
@@ -99,63 +117,41 @@ class AuthService {
             }
             console.log('[AuthService] ✅ MSAL library available');
 
-            // Vérifier que la configuration est disponible ET valide
+            // Vérifier que la configuration est disponible
             if (!window.AppConfig) {
                 throw new Error('AppConfig not loaded - check if config.js is included before AuthService.js');
             }
 
-            const validation = window.AppConfig.forceValidate();
-            console.log('[AuthService] Configuration validation result for new domain:', validation);
+            // Validation avec adaptation automatique
+            let validation = window.AppConfig.forceValidate();
+            console.log('[AuthService] Initial configuration validation:', validation);
+            
+            // Adapter la configuration au domaine actuel
+            const adaptedConfig = this.adaptConfigForCurrentDomain();
+            console.log('[AuthService] Configuration adapted for', this.currentDomain);
+            
+            // Re-valider après adaptation
+            validation = window.AppConfig.validate();
             
             if (!validation.valid) {
-                // Vérification spéciale pour les erreurs de domaine
-                const domainIssues = validation.issues.filter(issue => 
-                    issue.includes('emailsortpro.netlify.app') || 
-                    issue.includes('redirect') || 
-                    issue.includes('URI')
-                );
-                
-                if (domainIssues.length > 0) {
-                    const errorMsg = `Configuration invalide pour emailsortpro.netlify.app: ${domainIssues.join(', ')}`;
-                    console.error('[AuthService]', errorMsg);
-                    throw new Error(errorMsg);
-                } else {
-                    console.warn('[AuthService] Configuration issues detected, but proceeding...');
-                }
+                console.warn('[AuthService] Configuration issues detected after adaptation:', validation.issues);
+                // Continuer quand même en mode dégradé
             }
 
-            console.log('[AuthService] ✅ Configuration validated for emailsortpro.netlify.app');
+            console.log('[AuthService] ✅ Configuration ready for', this.currentDomain);
             
             // Log de la configuration utilisée (sans exposer de secrets)
-            console.log('[AuthService] Using configuration for emailsortpro.netlify.app:', {
+            console.log('[AuthService] Using configuration for', this.currentDomain, {
                 clientId: window.AppConfig.msal.clientId ? window.AppConfig.msal.clientId.substring(0, 8) + '...' : 'MISSING',
                 authority: window.AppConfig.msal.authority,
                 redirectUri: window.AppConfig.msal.redirectUri,
                 postLogoutRedirectUri: window.AppConfig.msal.postLogoutRedirectUri,
                 cacheLocation: window.AppConfig.msal.cache.cacheLocation,
-                environment: window.AppConfig.app?.environment || 'unknown',
-                domain: window.AppConfig.app?.domain
+                isTestEnvironment: this.isTestEnvironment
             });
 
-            // Vérification critique des URIs pour le nouveau domaine
-            const expectedRedirectUri = `https://${this.expectedDomain}/auth-callback.html`;
-            const expectedLogoutUri = `https://${this.expectedDomain}/`;
-            
-            if (window.AppConfig.msal.redirectUri !== expectedRedirectUri) {
-                console.error('[AuthService] ❌ CRITICAL: Redirect URI mismatch!');
-                console.error('[AuthService] Expected:', expectedRedirectUri);
-                console.error('[AuthService] Configured:', window.AppConfig.msal.redirectUri);
-                throw new Error(`Redirect URI must be configured as: ${expectedRedirectUri}`);
-            }
-            
-            if (window.AppConfig.msal.postLogoutRedirectUri !== expectedLogoutUri) {
-                console.warn('[AuthService] ⚠️ Logout URI mismatch (non-critical)');
-                console.warn('[AuthService] Expected:', expectedLogoutUri);
-                console.warn('[AuthService] Configured:', window.AppConfig.msal.postLogoutRedirectUri);
-            }
-
-            // Créer l'instance MSAL avec validation renforcée
-            console.log('[AuthService] Creating MSAL instance for emailsortpro.netlify.app...');
+            // Créer l'instance MSAL avec configuration adaptée
+            console.log('[AuthService] Creating MSAL instance for', this.currentDomain);
             
             const msalConfig = {
                 auth: {
@@ -178,21 +174,21 @@ class AuthService {
                 throw new Error(`CRITICAL: clientId format is invalid: ${msalConfig.auth.clientId}. Must be a valid GUID.`);
             }
             
-            console.log('[AuthService] MSAL config prepared for emailsortpro.netlify.app:', {
+            console.log('[AuthService] MSAL config prepared for', this.currentDomain, {
                 clientId: msalConfig.auth.clientId ? '✅ Present (valid GUID)' : '❌ Missing',
                 authority: msalConfig.auth.authority ? '✅ Present' : '❌ Missing',
                 redirectUri: msalConfig.auth.redirectUri ? '✅ Present' : '❌ Missing',
                 postLogoutRedirectUri: msalConfig.auth.postLogoutRedirectUri ? '✅ Present' : '❌ Missing',
                 cacheLocation: msalConfig.cache?.cacheLocation || 'default',
-                domainMatch: msalConfig.auth.redirectUri?.includes(this.expectedDomain) ? '✅ Correct' : '❌ Wrong domain'
+                domainMatch: msalConfig.auth.redirectUri?.includes(this.currentDomain) ? '✅ Correct' : '❌ Will be adapted'
             });
             
             this.msalInstance = new msal.PublicClientApplication(msalConfig);
-            console.log('[AuthService] ✅ MSAL instance created successfully for emailsortpro.netlify.app');
+            console.log('[AuthService] ✅ MSAL instance created successfully for', this.currentDomain);
             
             // Initialiser MSAL
             await this.msalInstance.initialize();
-            console.log('[AuthService] ✅ MSAL instance initialized for emailsortpro.netlify.app');
+            console.log('[AuthService] ✅ MSAL instance initialized for', this.currentDomain);
             
             // Gérer la redirection si elle existe
             try {
@@ -200,7 +196,7 @@ class AuthService {
                 const response = await this.msalInstance.handleRedirectPromise();
                 
                 if (response) {
-                    console.log('[AuthService] ✅ Redirect response received for emailsortpro.netlify.app:', {
+                    console.log('[AuthService] ✅ Redirect response received for', this.currentDomain, {
                         username: response.account?.username,
                         name: response.account?.name
                     });
@@ -224,31 +220,31 @@ class AuthService {
             } catch (redirectError) {
                 console.warn('[AuthService] Redirect handling error (non-critical):', redirectError);
                 
-                // Gestion spéciale des erreurs de redirection pour le nouveau domaine
+                // Gestion spéciale des erreurs de redirection
                 if (redirectError.message && redirectError.message.includes('redirect_uri')) {
-                    console.error('[AuthService] ❌ REDIRECT URI ERROR for emailsortpro.netlify.app!');
-                    throw new Error(`Redirect URI error: Configure https://${this.expectedDomain}/auth-callback.html in Azure Portal`);
+                    console.error('[AuthService] ❌ REDIRECT URI ERROR for', this.currentDomain);
+                    throw new Error(`Redirect URI error: Configure https://${this.currentDomain}/auth-callback.html in Azure Portal`);
                 }
                 
                 // Continuer même en cas d'erreur de redirection non critique
             }
 
             this.isInitialized = true;
-            console.log('[AuthService] ✅ Initialization completed successfully for emailsortpro.netlify.app');
+            console.log('[AuthService] ✅ Initialization completed successfully for', this.currentDomain);
             
             return true;
 
         } catch (error) {
-            console.error('[AuthService] ❌ Initialization failed for emailsortpro.netlify.app:', error);
+            console.error('[AuthService] ❌ Initialization failed for', this.currentDomain, error);
             this.isInitialized = false;
             this.initializationPromise = null;
             
-            // Gestion d'erreurs spécifiques avec messages détaillés pour le nouveau domaine
+            // Gestion d'erreurs spécifiques avec adaptation au domaine
             if (error.message.includes('unauthorized_client')) {
-                console.error('[AuthService] AZURE CONFIG ERROR: Client ID incorrect or app not configured for emailsortpro.netlify.app');
+                console.error('[AuthService] AZURE CONFIG ERROR: Client ID incorrect or app not configured for', this.currentDomain);
                 if (window.uiManager) {
                     window.uiManager.showToast(
-                        'Erreur de configuration Azure pour emailsortpro.netlify.app. Client ID incorrect.',
+                        `Erreur de configuration Azure pour ${this.currentDomain}. Client ID incorrect.`,
                         'error',
                         15000
                     );
@@ -257,18 +253,9 @@ class AuthService {
                 console.error('[AuthService] REDIRECT URI ERROR:', error.message);
                 if (window.uiManager) {
                     window.uiManager.showToast(
-                        `URI de redirection invalide. Configurez: https://${this.expectedDomain}/auth-callback.html`,
+                        `URI de redirection invalide. Configurez: https://${this.currentDomain}/auth-callback.html`,
                         'error',
                         20000
-                    );
-                }
-            } else if (error.message.includes('clientId')) {
-                console.error('[AuthService] CLIENT ID ERROR:', error.message);
-                if (window.uiManager) {
-                    window.uiManager.showToast(
-                        'Erreur critique: Client ID manquant ou invalide',
-                        'error',
-                        15000
                     );
                 }
             }
@@ -277,13 +264,53 @@ class AuthService {
         }
     }
 
+    // Nouvelle méthode pour adapter la configuration au domaine actuel
+    adaptConfigForCurrentDomain() {
+        if (!window.AppConfig) return;
+        
+        const currentOrigin = window.location.origin;
+        const expectedRedirectUri = `${currentOrigin}/auth-callback.html`;
+        const expectedLogoutUri = currentOrigin;
+        
+        console.log('[AuthService] Adapting configuration for current domain...');
+        console.log('[AuthService] Current origin:', currentOrigin);
+        console.log('[AuthService] Expected redirect URI:', expectedRedirectUri);
+        
+        // Adapter les URIs au domaine actuel
+        if (window.AppConfig.msal.redirectUri !== expectedRedirectUri) {
+            console.log('[AuthService] Updating redirect URI from', window.AppConfig.msal.redirectUri, 'to', expectedRedirectUri);
+            window.AppConfig.msal.redirectUri = expectedRedirectUri;
+        }
+        
+        if (window.AppConfig.msal.postLogoutRedirectUri !== expectedLogoutUri) {
+            console.log('[AuthService] Updating logout URI from', window.AppConfig.msal.postLogoutRedirectUri, 'to', expectedLogoutUri);
+            window.AppConfig.msal.postLogoutRedirectUri = expectedLogoutUri;
+        }
+        
+        // En mode test, adapter les settings pour plus de debug
+        if (this.isTestEnvironment) {
+            console.log('[AuthService] Test environment detected, enabling enhanced logging...');
+            if (window.AppConfig.msal.system && window.AppConfig.msal.system.loggerOptions) {
+                window.AppConfig.msal.system.loggerOptions.logLevel = 'Verbose';
+                window.AppConfig.app.debug = true;
+            }
+        }
+        
+        return {
+            redirectUri: window.AppConfig.msal.redirectUri,
+            postLogoutRedirectUri: window.AppConfig.msal.postLogoutRedirectUri,
+            domain: this.currentDomain,
+            isTest: this.isTestEnvironment
+        };
+    }
+
     isAuthenticated() {
         const authenticated = this.account !== null && this.isInitialized;
-        console.log('[AuthService] Authentication check for emailsortpro.netlify.app:', {
+        console.log('[AuthService] Authentication check for', this.currentDomain, {
             hasAccount: !!this.account,
             isInitialized: this.isInitialized,
             result: authenticated,
-            domain: window.location.hostname
+            domain: this.currentDomain
         });
         return authenticated;
     }
@@ -293,7 +320,7 @@ class AuthService {
     }
 
     async login() {
-        console.log('[AuthService] Login attempt started for emailsortpro.netlify.app...');
+        console.log('[AuthService] Login attempt started for', this.currentDomain);
         
         if (!this.isInitialized) {
             console.log('[AuthService] Not initialized, initializing first...');
@@ -304,17 +331,7 @@ class AuthService {
             // Vérifier encore une fois la configuration avant le login
             const validation = window.AppConfig.validate();
             if (!validation.valid) {
-                throw new Error(`Configuration invalid before login for emailsortpro.netlify.app: ${validation.issues.join(', ')}`);
-            }
-
-            // Vérification spéciale de l'URI de redirection
-            const currentUrl = window.location.origin;
-            const expectedOrigin = `https://${this.expectedDomain}`;
-            
-            if (currentUrl !== expectedOrigin) {
-                console.warn('[AuthService] ⚠️ Origin mismatch detected');
-                console.warn('[AuthService] Current:', currentUrl);
-                console.warn('[AuthService] Expected:', expectedOrigin);
+                throw new Error(`Configuration invalid before login for ${this.currentDomain}: ${validation.issues.join(', ')}`);
             }
 
             // Préparer la requête de login avec validation
@@ -323,12 +340,12 @@ class AuthService {
                 prompt: 'select_account'
             };
 
-            console.log('[AuthService] Login request prepared for emailsortpro.netlify.app:', {
+            console.log('[AuthService] Login request prepared for', this.currentDomain, {
                 scopes: loginRequest.scopes,
                 prompt: loginRequest.prompt,
                 clientId: this.msalInstance?.getConfiguration()?.auth?.clientId ? '✅ Present in MSAL' : '❌ Missing in MSAL',
                 redirectUri: this.msalInstance?.getConfiguration()?.auth?.redirectUri,
-                domain: window.location.hostname
+                domain: this.currentDomain
             });
             
             // Vérification finale avant login
@@ -341,16 +358,18 @@ class AuthService {
                 throw new Error('CRITICAL: clientId missing in MSAL instance');
             }
             
-            if (!msalConfig?.auth?.redirectUri?.includes(this.expectedDomain)) {
-                throw new Error(`CRITICAL: redirectUri does not match expected domain ${this.expectedDomain}`);
+            if (!msalConfig?.auth?.redirectUri?.includes(this.currentDomain)) {
+                console.warn('[AuthService] ⚠️ redirectUri domain mismatch, but proceeding...');
+                console.warn('[AuthService] Expected domain:', this.currentDomain);
+                console.warn('[AuthService] Configured domain:', new URL(msalConfig.auth.redirectUri).hostname);
             }
 
-            console.log('[AuthService] Initiating login redirect for emailsortpro.netlify.app...');
+            console.log('[AuthService] Initiating login redirect for', this.currentDomain);
             console.log('[AuthService] MSAL instance config verified:', {
                 clientId: msalConfig.auth.clientId.substring(0, 8) + '...',
                 authority: msalConfig.auth.authority,
                 redirectUri: msalConfig.auth.redirectUri,
-                domainMatch: msalConfig.auth.redirectUri.includes(this.expectedDomain) ? '✅' : '❌'
+                currentDomain: this.currentDomain
             });
             
             // Utiliser loginRedirect pour éviter les problèmes de popup
@@ -358,57 +377,29 @@ class AuthService {
             // Note: La redirection va se produire, pas de code après cette ligne
             
         } catch (error) {
-            console.error('[AuthService] ❌ Login error for emailsortpro.netlify.app:', error);
+            console.error('[AuthService] ❌ Login error for', this.currentDomain, error);
             
-            // Gestion d'erreurs spécifiques avec logging détaillé
+            // Gestion d'erreurs adaptative
             let userMessage = 'Erreur de connexion';
             
             if (error.errorCode) {
                 const errorCode = error.errorCode;
                 console.log('[AuthService] MSAL Error code:', errorCode);
-                console.log('[AuthService] MSAL Error details:', {
-                    errorCode: error.errorCode,
-                    errorMessage: error.errorMessage,
-                    subError: error.subError,
-                    correlationId: error.correlationId
-                });
                 
                 if (window.AppConfig.errors[errorCode]) {
                     userMessage = window.AppConfig.errors[errorCode];
                 } else {
                     switch (errorCode) {
-                        case 'popup_window_error':
-                            userMessage = 'Popup bloqué. Autorisez les popups et réessayez.';
-                            break;
-                        case 'user_cancelled':
-                            userMessage = 'Connexion annulée par l\'utilisateur.';
-                            break;
-                        case 'network_error':
-                            userMessage = 'Erreur réseau. Vérifiez votre connexion.';
-                            break;
                         case 'unauthorized_client':
-                            userMessage = `Configuration Azure incorrecte pour ${this.expectedDomain}. Vérifiez votre Client ID.`;
-                            break;
-                        case 'invalid_client':
-                            userMessage = `Client ID invalide pour ${this.expectedDomain}. Vérifiez votre configuration Azure.`;
+                            userMessage = `Configuration Azure incorrecte pour ${this.currentDomain}. Vérifiez votre Client ID.`;
                             break;
                         case 'invalid_request':
-                            userMessage = `URI de redirection invalide. Configurez: https://${this.expectedDomain}/auth-callback.html`;
+                            userMessage = `URI de redirection invalide. Configurez: https://${this.currentDomain}/auth-callback.html`;
                             break;
                         default:
                             userMessage = `Erreur MSAL: ${errorCode}`;
                     }
                 }
-            } else if (error.message.includes('clientId')) {
-                userMessage = 'Erreur de configuration: Client ID manquant ou invalide';
-                console.error('[AuthService] Client ID error details:', {
-                    configClientId: window.AppConfig?.msal?.clientId,
-                    msalClientId: this.msalInstance?.getConfiguration()?.auth?.clientId,
-                    environment: window.AppConfig?.app?.environment,
-                    domain: window.AppConfig?.app?.domain
-                });
-            } else if (error.message.includes('redirectUri') || error.message.includes('redirect_uri')) {
-                userMessage = `URI de redirection incorrecte. Configurez: https://${this.expectedDomain}/auth-callback.html dans Azure Portal`;
             }
             
             if (window.uiManager) {
@@ -420,7 +411,7 @@ class AuthService {
     }
 
     async logout() {
-        console.log('[AuthService] Logout initiated for emailsortpro.netlify.app...');
+        console.log('[AuthService] Logout initiated for', this.currentDomain);
         
         if (!this.isInitialized) {
             console.warn('[AuthService] Not initialized for logout, force cleanup');
@@ -431,15 +422,15 @@ class AuthService {
         try {
             const logoutRequest = {
                 account: this.account,
-                postLogoutRedirectUri: `https://${this.expectedDomain}/`
+                postLogoutRedirectUri: window.location.origin
             };
 
-            console.log('[AuthService] Logout request for emailsortpro.netlify.app:', logoutRequest);
+            console.log('[AuthService] Logout request for', this.currentDomain, logoutRequest);
             await this.msalInstance.logoutRedirect(logoutRequest);
             // La redirection va se produire
             
         } catch (error) {
-            console.error('[AuthService] Logout error for emailsortpro.netlify.app:', error);
+            console.error('[AuthService] Logout error for', this.currentDomain, error);
             // Force cleanup même en cas d'erreur
             this.forceCleanup();
         }
@@ -462,7 +453,7 @@ class AuthService {
             const response = await this.msalInstance.acquireTokenSilent(tokenRequest);
             
             if (response && response.accessToken) {
-                console.log('[AuthService] ✅ Token acquired successfully for emailsortpro.netlify.app');
+                console.log('[AuthService] ✅ Token acquired successfully for', this.currentDomain);
                 return response.accessToken;
             } else {
                 throw new Error('No access token in response');
@@ -489,7 +480,7 @@ class AuthService {
         }
 
         try {
-            console.log('[AuthService] Fetching user info from Graph API for emailsortpro.netlify.app...');
+            console.log('[AuthService] Fetching user info from Graph API for', this.currentDomain);
             const response = await fetch('https://graph.microsoft.com/v1.0/me', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -504,7 +495,7 @@ class AuthService {
             }
 
             const userInfo = await response.json();
-            console.log('[AuthService] ✅ User info retrieved for emailsortpro.netlify.app:', userInfo.displayName);
+            console.log('[AuthService] ✅ User info retrieved for', this.currentDomain, userInfo.displayName);
             return userInfo;
 
         } catch (error) {
@@ -514,7 +505,7 @@ class AuthService {
     }
 
     async reset() {
-        console.log('[AuthService] Resetting authentication for emailsortpro.netlify.app...');
+        console.log('[AuthService] Resetting authentication for', this.currentDomain);
         
         try {
             if (this.msalInstance && this.account) {
@@ -530,7 +521,7 @@ class AuthService {
     }
 
     forceCleanup() {
-        console.log('[AuthService] Force cleanup initiated for emailsortpro.netlify.app...');
+        console.log('[AuthService] Force cleanup initiated for', this.currentDomain);
         
         // Reset internal state
         this.account = null;
@@ -558,10 +549,10 @@ class AuthService {
             });
         }
         
-        console.log('[AuthService] ✅ Cleanup complete for emailsortpro.netlify.app');
+        console.log('[AuthService] ✅ Cleanup complete for', this.currentDomain);
     }
 
-    // Méthode de diagnostic améliorée pour le nouveau domaine
+    // Méthode de diagnostic adaptative
     getDiagnosticInfo() {
         return {
             isInitialized: this.isInitialized,
@@ -569,27 +560,25 @@ class AuthService {
             accountUsername: this.account?.username,
             msalInstanceExists: !!this.msalInstance,
             configWaitAttempts: this.configWaitAttempts,
-            expectedDomain: this.expectedDomain,
-            currentDomain: window.location.hostname,
-            domainMatch: window.location.hostname === this.expectedDomain,
+            currentDomain: this.currentDomain,
+            isTestEnvironment: this.isTestEnvironment,
             msalConfig: this.msalInstance ? {
                 clientId: this.msalInstance.getConfiguration()?.auth?.clientId?.substring(0, 8) + '...',
                 authority: this.msalInstance.getConfiguration()?.auth?.authority,
                 redirectUri: this.msalInstance.getConfiguration()?.auth?.redirectUri,
                 postLogoutRedirectUri: this.msalInstance.getConfiguration()?.auth?.postLogoutRedirectUri,
-                domainInRedirectUri: this.msalInstance.getConfiguration()?.auth?.redirectUri?.includes(this.expectedDomain)
+                domainInRedirectUri: this.msalInstance.getConfiguration()?.auth?.redirectUri?.includes(this.currentDomain)
             } : null,
             appConfig: window.AppConfig ? {
                 exists: true,
                 environment: window.AppConfig.app?.environment,
-                domain: window.AppConfig.app?.domain,
                 validation: window.AppConfig.validate(),
                 debug: window.AppConfig.getDebugInfo()
             } : { exists: false },
             uriValidation: {
-                expectedRedirectUri: `https://${this.expectedDomain}/auth-callback.html`,
+                expectedRedirectUri: `https://${this.currentDomain}/auth-callback.html`,
                 configuredRedirectUri: window.AppConfig?.msal?.redirectUri,
-                match: window.AppConfig?.msal?.redirectUri === `https://${this.expectedDomain}/auth-callback.html`
+                match: window.AppConfig?.msal?.redirectUri === `https://${this.currentDomain}/auth-callback.html`
             }
         };
     }
@@ -598,7 +587,7 @@ class AuthService {
 // Créer l'instance globale avec gestion d'erreur renforcée
 try {
     window.authService = new AuthService();
-    console.log('[AuthService] ✅ Global instance created successfully for emailsortpro.netlify.app');
+    console.log('[AuthService] ✅ Global instance created successfully for', window.location.hostname);
 } catch (error) {
     console.error('[AuthService] ❌ Failed to create global instance:', error);
     
@@ -612,15 +601,14 @@ try {
             error: 'AuthService failed to create: ' + error.message,
             environment: window.AppConfig?.app?.environment || 'unknown',
             configExists: !!window.AppConfig,
-            expectedDomain: 'emailsortpro.netlify.app',
             currentDomain: window.location.hostname
         })
     };
 }
 
-// Fonction de diagnostic globale améliorée pour le nouveau domaine
+// Fonction de diagnostic globale adaptative
 window.diagnoseMSAL = function() {
-    console.group('🔍 DIAGNOSTIC MSAL DÉTAILLÉ - emailsortpro.netlify.app');
+    console.group('🔍 DIAGNOSTIC MSAL ADAPTATIF - ' + window.location.hostname);
     
     try {
         const authDiag = window.authService.getDiagnosticInfo();
@@ -630,8 +618,8 @@ window.diagnoseMSAL = function() {
         console.log('⚙️ Configuration:', configDiag);
         console.log('📚 MSAL Library:', typeof msal !== 'undefined' ? 'Available' : 'Missing');
         console.log('🌐 Current URL:', window.location.href);
-        console.log('🎯 Expected domain:', authDiag.expectedDomain);
-        console.log('✅ Domain match:', authDiag.domainMatch);
+        console.log('🎯 Current domain:', authDiag.currentDomain);
+        console.log('🧪 Test environment:', authDiag.isTestEnvironment);
         console.log('💾 LocalStorage keys:', Object.keys(localStorage).filter(k => k.includes('msal') || k.includes('auth')));
         
         // Validation spécifique des URIs
@@ -655,27 +643,4 @@ window.diagnoseMSAL = function() {
     }
 };
 
-// Test de disponibilité de la configuration au chargement
-setTimeout(() => {
-    if (window.AppConfig) {
-        const validation = window.AppConfig.validate();
-        const expectedDomain = 'emailsortpro.netlify.app';
-        
-        if (!validation.valid) {
-            console.warn('🚨 WARNING: Configuration invalid for emailsortpro.netlify.app');
-            console.log('Issues:', validation.issues);
-        }
-        
-        // Vérification spécifique du domaine
-        if (window.AppConfig.msal?.redirectUri && 
-            !window.AppConfig.msal.redirectUri.includes(expectedDomain)) {
-            console.error('🚨 CRITICAL: Redirect URI does not match expected domain!');
-            console.error('Expected:', `https://${expectedDomain}/auth-callback.html`);
-            console.error('Configured:', window.AppConfig.msal.redirectUri);
-        }
-        
-        console.log('Use diagnoseMSAL() for detailed diagnostic');
-    }
-}, 2000);
-
-console.log('✅ AuthService loaded with enhanced support for emailsortpro.netlify.app v3.1');
+console.log('✅ AuthService loaded with adaptive multi-domain support v4.0');
