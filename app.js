@@ -1,4 +1,4 @@
-// app.js - Application NETTOYÉE avec initialisation garantie des modules
+// app.js - Application NETTOYÉE avec initialisation garantie des modules pour coruscating-dodol-f30e8d.netlify.app
 
 class App {
     constructor() {
@@ -8,12 +8,23 @@ class App {
         this.maxInitAttempts = 3;
         this.isInitializing = false;
         this.initializationPromise = null;
+        this.expectedDomain = 'coruscating-dodol-f30e8d.netlify.app';
         
-        console.log('[App] Constructor - Application starting...');
+        console.log('[App] Constructor - Application starting on:', this.expectedDomain);
+        this.verifyDomain();
+    }
+
+    verifyDomain() {
+        const currentDomain = window.location.hostname;
+        if (currentDomain === this.expectedDomain) {
+            console.log('[App] ✅ Running on correct domain:', currentDomain);
+        } else {
+            console.warn('[App] ⚠️ Domain mismatch - Expected:', this.expectedDomain, 'Current:', currentDomain);
+        }
     }
 
     async init() {
-        console.log('[App] Initializing...');
+        console.log('[App] Initializing on', this.expectedDomain, '...');
         
         if (this.initializationPromise) {
             console.log('[App] Already initializing, waiting...');
@@ -38,7 +49,7 @@ class App {
                 return;
             }
 
-            console.log('[App] Initializing auth service...');
+            console.log('[App] Initializing auth service for', this.expectedDomain, '...');
             
             const initTimeout = new Promise((_, reject) => 
                 setTimeout(() => reject(new Error('Initialization timeout')), 20000)
@@ -47,7 +58,7 @@ class App {
             const initPromise = window.authService.initialize();
             await Promise.race([initPromise, initTimeout]);
             
-            console.log('[App] Auth service initialized');
+            console.log('[App] Auth service initialized for', this.expectedDomain);
             
             // INITIALISER LES MODULES CRITIQUES
             await this.initializeCriticalModules();
@@ -66,7 +77,7 @@ class App {
     // INITIALISATION DES MODULES CRITIQUES
     // =====================================
     async initializeCriticalModules() {
-        console.log('[App] Initializing critical modules...');
+        console.log('[App] Initializing critical modules for', this.expectedDomain, '...');
         
         // 1. Vérifier TaskManager
         await this.ensureTaskManagerReady();
@@ -80,7 +91,7 @@ class App {
         // 4. Bind methods
         this.bindModuleMethods();
         
-        console.log('[App] Critical modules initialized');
+        console.log('[App] Critical modules initialized for', this.expectedDomain);
     }
 
     async ensureTaskManagerReady() {
@@ -248,11 +259,11 @@ class App {
         if (window.authService.isAuthenticated()) {
             const account = window.authService.getAccount();
             if (account) {
-                console.log('[App] Getting user info...');
+                console.log('[App] Getting user info for', this.expectedDomain, '...');
                 try {
                     this.user = await window.authService.getUserInfo();
                     this.isAuthenticated = true;
-                    console.log('[App] User authenticated:', this.user.displayName || this.user.mail);
+                    console.log('[App] User authenticated on', this.expectedDomain, ':', this.user.displayName || this.user.mail);
                     this.showAppWithTransition();
                 } catch (userInfoError) {
                     console.error('[App] Error getting user info:', userInfoError);
@@ -269,17 +280,17 @@ class App {
                 this.showLogin();
             }
         } else {
-            console.log('[App] User not authenticated');
+            console.log('[App] User not authenticated on', this.expectedDomain);
             this.showLogin();
         }
     }
 
     async handleInitializationError(error) {
-        console.error('[App] Initialization error:', error);
+        console.error('[App] Initialization error on', this.expectedDomain, ':', error);
         
         if (error.message.includes('unauthorized_client')) {
             this.showConfigurationError([
-                'Configuration Azure incorrecte',
+                'Configuration Azure incorrecte pour ' + this.expectedDomain,
                 'Vérifiez votre Client ID dans la configuration',
                 'Consultez la documentation Azure App Registration'
             ]);
@@ -287,24 +298,24 @@ class App {
         }
         
         if (error.message.includes('Configuration invalid')) {
-            this.showConfigurationError(['Configuration invalide - vérifiez la configuration']);
+            this.showConfigurationError(['Configuration invalide pour ' + this.expectedDomain + ' - vérifiez la configuration']);
             return;
         }
         
         if (this.initializationAttempts < this.maxInitAttempts && 
             (error.message.includes('timeout') || error.message.includes('network'))) {
-            console.log(`[App] Retrying initialization (${this.initializationAttempts}/${this.maxInitAttempts})...`);
+            console.log(`[App] Retrying initialization on ${this.expectedDomain} (${this.initializationAttempts}/${this.maxInitAttempts})...`);
             this.isInitializing = false;
             this.initializationPromise = null;
             setTimeout(() => this.init(), 3000);
             return;
         }
         
-        this.showError('Failed to initialize the application. Please check the configuration and refresh the page.');
+        this.showError('Failed to initialize the application on ' + this.expectedDomain + '. Please check the configuration and refresh the page.');
     }
 
     showConfigurationError(issues) {
-        console.error('[App] Configuration error:', issues);
+        console.error('[App] Configuration error on', this.expectedDomain, ':', issues);
         
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
@@ -316,7 +327,7 @@ class App {
                         </div>
                         <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Configuration requise</h1>
                         <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); padding: 30px; border-radius: 20px; margin: 30px 0; text-align: left;">
-                            <h3 style="color: #fbbf24; margin-bottom: 15px;">Problèmes détectés :</h3>
+                            <h3 style="color: #fbbf24; margin-bottom: 15px;">Problèmes détectés pour ${this.expectedDomain} :</h3>
                             <ul style="margin-left: 20px;">
                                 ${issues.map(issue => `<li style="margin: 8px 0;">${issue}</li>`).join('')}
                             </ul>
@@ -326,6 +337,7 @@ class App {
                                     <li>Cliquez sur "Configurer l'application"</li>
                                     <li>Suivez l'assistant de configuration</li>
                                     <li>Entrez votre Azure Client ID</li>
+                                    <li>Configurez l'URI: https://${this.expectedDomain}/auth-callback.html</li>
                                 </ol>
                             </div>
                         </div>
@@ -348,7 +360,7 @@ class App {
     }
 
     setupEventListeners() {
-        console.log('[App] Setting up event listeners...');
+        console.log('[App] Setting up event listeners for', this.expectedDomain, '...');
         
         const loginBtn = document.getElementById('loginBtn');
         if (loginBtn) {
@@ -371,7 +383,7 @@ class App {
         });
 
         window.addEventListener('error', (event) => {
-            console.error('[App] Global error:', event.error);
+            console.error('[App] Global error on', this.expectedDomain, ':', event.error);
             
             if (event.error && event.error.message && 
                 event.error.message.includes('ScanStart.js') && 
@@ -385,7 +397,7 @@ class App {
                 if (message.includes('unauthorized_client')) {
                     if (window.uiManager) {
                         window.uiManager.showToast(
-                            'Erreur de configuration Azure. Vérifiez votre Client ID.',
+                            'Erreur de configuration Azure pour ' + this.expectedDomain + '. Vérifiez votre Client ID.',
                             'error',
                             10000
                         );
@@ -395,7 +407,7 @@ class App {
         });
 
         window.addEventListener('unhandledrejection', (event) => {
-            console.error('[App] Unhandled promise rejection:', event.reason);
+            console.error('[App] Unhandled promise rejection on', this.expectedDomain, ':', event.reason);
             
             // Vérifier s'il s'agit d'une erreur de TaskManager
             if (event.reason && event.reason.message && 
@@ -420,7 +432,7 @@ class App {
     }
 
     async login() {
-        console.log('[App] Login attempted...');
+        console.log('[App] Login attempted on', this.expectedDomain, '...');
         
         try {
             const loginBtn = document.getElementById('loginBtn');
@@ -439,11 +451,11 @@ class App {
             await window.authService.login();
             
         } catch (error) {
-            console.error('[App] Login error:', error);
+            console.error('[App] Login error on', this.expectedDomain, ':', error);
             
             this.hideModernLoading();
             
-            let errorMessage = 'Échec de la connexion. Veuillez réessayer.';
+            let errorMessage = 'Échec de la connexion sur ' + this.expectedDomain + '. Veuillez réessayer.';
             
             if (error.errorCode) {
                 const errorCode = error.errorCode;
@@ -461,14 +473,14 @@ class App {
                             errorMessage = 'Erreur réseau. Vérifiez votre connexion.';
                             break;
                         case 'unauthorized_client':
-                            errorMessage = 'Configuration incorrecte. Vérifiez votre Azure Client ID.';
+                            errorMessage = 'Configuration incorrecte pour ' + this.expectedDomain + '. Vérifiez votre Azure Client ID.';
                             break;
                         default:
                             errorMessage = `Erreur: ${errorCode}`;
                     }
                 }
             } else if (error.message.includes('unauthorized_client')) {
-                errorMessage = 'Configuration Azure incorrecte. Vérifiez votre Client ID.';
+                errorMessage = 'Configuration Azure incorrecte pour ' + this.expectedDomain + '. Vérifiez votre Client ID.';
             }
             
             if (window.uiManager) {
@@ -484,7 +496,7 @@ class App {
     }
 
     async logout() {
-        console.log('[App] Logout attempted...');
+        console.log('[App] Logout attempted on', this.expectedDomain, '...');
         
         try {
             const confirmed = confirm('Êtes-vous sûr de vouloir vous déconnecter ?');
@@ -499,7 +511,7 @@ class App {
             }
             
         } catch (error) {
-            console.error('[App] Logout error:', error);
+            console.error('[App] Logout error on', this.expectedDomain, ':', error);
             this.hideModernLoading();
             if (window.uiManager) {
                 window.uiManager.showToast('Erreur de déconnexion. Nettoyage forcé...', 'warning');
@@ -509,7 +521,7 @@ class App {
     }
 
     forceCleanup() {
-        console.log('[App] Force cleanup...');
+        console.log('[App] Force cleanup on', this.expectedDomain, '...');
         
         this.user = null;
         this.isAuthenticated = false;
@@ -539,7 +551,7 @@ class App {
     }
 
     showLogin() {
-        console.log('[App] Showing login page');
+        console.log('[App] Showing login page on', this.expectedDomain);
         
         // S'assurer que la page de login est visible
         const loginPage = document.getElementById('loginPage');
@@ -558,13 +570,13 @@ class App {
     }
 
     showAppWithTransition() {
-        console.log('[App] Showing application with transition');
+        console.log('[App] Showing application with transition on', this.expectedDomain);
         
         this.hideModernLoading();
         
         // Activer le mode app
         document.body.classList.add('app-active');
-        console.log('[App] App mode activated');
+        console.log('[App] App mode activated on', this.expectedDomain);
         
         // Afficher les éléments
         const loginPage = document.getElementById('loginPage');
@@ -616,7 +628,7 @@ class App {
         // Forcer l'affichage avec CSS
         this.forceAppDisplay();
         
-        console.log('[App] ✅ Application fully displayed');
+        console.log('[App] ✅ Application fully displayed on', this.expectedDomain);
     }
 
     forceAppDisplay() {
@@ -659,7 +671,7 @@ class App {
             if (loadingText) {
                 loadingText.innerHTML = `
                     <div>${message}</div>
-                    <div style="font-size: 14px; opacity: 0.8; margin-top: 10px;">Authentification en cours</div>
+                    <div style="font-size: 14px; opacity: 0.8; margin-top: 10px;">Authentification en cours sur ${this.expectedDomain}</div>
                 `;
             }
             loadingOverlay.classList.add('active');
@@ -676,7 +688,7 @@ class App {
     }
 
     showError(message) {
-        console.error('[App] Showing error:', message);
+        console.error('[App] Showing error on', this.expectedDomain, ':', message);
         
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
@@ -689,6 +701,7 @@ class App {
                         <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Erreur d'application</h1>
                         <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); padding: 30px; border-radius: 20px; margin: 30px 0;">
                             <p style="font-size: 1.2rem; line-height: 1.6;">${message}</p>
+                            <p style="font-size: 1rem; opacity: 0.8; margin-top: 15px;">Domaine: ${this.expectedDomain}</p>
                         </div>
                         <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                             <button onclick="location.reload()" class="cta-button">
@@ -742,7 +755,7 @@ class App {
 
 // Fonction globale pour le reset d'urgence
 window.emergencyReset = function() {
-    console.log('[App] Emergency reset triggered');
+    console.log('[App] Emergency reset triggered on coruscating-dodol-f30e8d.netlify.app');
     
     const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
     const allKeys = Object.keys(localStorage);
@@ -762,7 +775,7 @@ window.emergencyReset = function() {
 
 // Fonction pour forcer l'affichage
 window.forceShowApp = function() {
-    console.log('[Global] Force show app triggered');
+    console.log('[Global] Force show app triggered on coruscating-dodol-f30e8d.netlify.app');
     if (window.app && typeof window.app.showAppWithTransition === 'function') {
         window.app.showAppWithTransition();
     } else {
@@ -805,7 +818,7 @@ function checkServicesReady() {
 
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[App] DOM loaded, creating app instance...');
+    console.log('[App] DOM loaded, creating app instance for coruscating-dodol-f30e8d.netlify.app...');
     
     window.app = new App();
     
@@ -813,7 +826,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxAttempts = 50;
         
         if (checkServicesReady()) {
-            console.log('[App] All required services ready, initializing...');
+            console.log('[App] All required services ready, initializing on coruscating-dodol-f30e8d.netlify.app...');
             
             const scanStartStatus = window.app.checkScanStartModule();
             console.log('[App] ScanStart status:', scanStartStatus);
@@ -853,4 +866,4 @@ window.addEventListener('load', () => {
     }, 5000);
 });
 
-console.log('✅ App loaded - CLEAN VERSION without conflicts');
+console.log('✅ App loaded - CLEAN VERSION for coruscating-dodol-f30e8d.netlify.app');
