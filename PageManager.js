@@ -29,6 +29,82 @@ class PageManager {
 
     init() {
         console.log('[PageManager] Initialized v11.0 - Interface moderne épurée');
+        
+        // Diagnostic des modules de scan au démarrage
+        setTimeout(() => {
+            this.diagnoseScanModules();
+        }, 1000);
+    }
+
+    // =====================================
+    // DIAGNOSTIC DES MODULES DE SCAN
+    // =====================================
+    diagnoseScanModules() {
+        console.log('=== DIAGNOSTIC MODULES DE SCAN ===');
+        
+        const modules = {
+            'window.minimalScanModule': window.minimalScanModule,
+            'window.scanStartModule': window.scanStartModule,
+            'window.MinimalScanModule': window.MinimalScanModule,
+            'window.scanModule': window.scanModule
+        };
+        
+        Object.entries(modules).forEach(([name, module]) => {
+            if (module) {
+                console.log(`✅ ${name} trouvé:`, {
+                    hasRender: typeof module.render === 'function',
+                    stylesAdded: module.stylesAdded,
+                    isInitialized: module.isInitialized,
+                    methods: Object.getOwnPropertyNames(Object.getPrototypeOf(module) || {})
+                });
+            } else {
+                console.log(`❌ ${name} non trouvé`);
+            }
+        });
+        
+        // Rechercher tous les objets qui pourraient être des modules de scan
+        const scanRelated = Object.keys(window).filter(key => 
+            key.toLowerCase().includes('scan') || 
+            key.toLowerCase().includes('minimal')
+        );
+        
+        if (scanRelated.length > 0) {
+            console.log('🔍 Propriétés liées au scan trouvées:', scanRelated);
+            scanRelated.forEach(key => {
+                const obj = window[key];
+                if (obj && typeof obj === 'object' && typeof obj.render === 'function') {
+                    console.log(`🎯 Module potentiel trouvé: window.${key}`, obj);
+                }
+            });
+        }
+        
+        console.log('=== FIN DIAGNOSTIC ===');
+    }
+
+    // =====================================
+    // FORCER LA DÉTECTION DU MODULE DE SCAN
+    // =====================================
+    async forceScanModuleDetection() {
+        console.log('[PageManager] 🔧 Forcing scan module detection...');
+        
+        // Essayer de créer une nouvelle instance si la classe existe
+        if (window.MinimalScanModule && typeof window.MinimalScanModule === 'function') {
+            try {
+                console.log('[PageManager] Creating new MinimalScanModule instance...');
+                window.minimalScanModule = new window.MinimalScanModule();
+                window.scanStartModule = window.minimalScanModule; // Alias
+            } catch (error) {
+                console.error('[PageManager] Error creating MinimalScanModule:', error);
+            }
+        }
+        
+        // Attendre un peu puis relancer le rendu
+        setTimeout(async () => {
+            const container = document.getElementById('pageContent');
+            if (container) {
+                await this.renderScanner(container);
+            }
+        }, 500);
     }
 
     // =====================================
@@ -106,38 +182,65 @@ class PageManager {
     }
 
     // =====================================
-    // SCANNER PAGE - INTÉGRATION STARTSCAN.JS
+    // SCANNER PAGE - INTÉGRATION STARTSCAN.JS CORRIGÉE
     // =====================================
     async renderScanner(container) {
         console.log('[PageManager] Rendering scanner page...');
         
-        // Essayer d'utiliser le module StartScan (minimalScanModule) s'il existe
+        // Debug: Vérifier quels modules sont disponibles
+        console.log('[PageManager] Available modules:', {
+            minimalScanModule: !!window.minimalScanModule,
+            scanStartModule: !!window.scanStartModule,
+            minimalScanRender: !!(window.minimalScanModule && window.minimalScanModule.render),
+            scanStartRender: !!(window.scanStartModule && window.scanStartModule.render)
+        });
+        
+        // 1. Essayer d'utiliser minimalScanModule (StartScan.js v8.0)
         if (window.minimalScanModule && typeof window.minimalScanModule.render === 'function') {
             try {
-                console.log('[PageManager] Using minimalScanModule from StartScan.js');
+                console.log('[PageManager] ✅ Using minimalScanModule from StartScan.js');
                 await window.minimalScanModule.render(container);
                 return;
             } catch (error) {
-                console.error('[PageManager] Error with minimalScanModule, falling back:', error);
+                console.error('[PageManager] ❌ Error with minimalScanModule:', error);
             }
         }
         
-        // Essayer l'ancien module scanStartModule pour compatibilité
-        if (window.scanStartModule && 
-            typeof window.scanStartModule.render === 'function' && 
-            window.scanStartModule.stylesAdded) {
-            
+        // 2. Essayer scanStartModule (alias/compatibilité)
+        if (window.scanStartModule && typeof window.scanStartModule.render === 'function') {
             try {
-                console.log('[PageManager] Using legacy scanStartModule');
+                console.log('[PageManager] ✅ Using scanStartModule (compatibility)');
                 await window.scanStartModule.render(container);
                 return;
             } catch (error) {
-                console.error('[PageManager] Error with scanStartModule, falling back:', error);
+                console.error('[PageManager] ❌ Error with scanStartModule:', error);
             }
         }
         
-        // Interface de scan de fallback si aucun module n'est disponible
-        console.log('[PageManager] Using fallback scanner interface');
+        // 3. Vérifier si le module existe sous un autre nom
+        const possibleModules = [
+            'window.MinimalScanModule',
+            'window.scanModule', 
+            'window.emailScanModule'
+        ];
+        
+        for (const modulePath of possibleModules) {
+            try {
+                const module = eval(modulePath);
+                if (module && typeof module.render === 'function') {
+                    console.log(`[PageManager] ✅ Found module at ${modulePath}`);
+                    await module.render(container);
+                    return;
+                }
+            } catch (e) {
+                // Module non trouvé, continuer
+            }
+        }
+        
+        // 4. Interface de scan de fallback si aucun module n'est disponible
+        console.log('[PageManager] ⚠️ No scan module found, using fallback interface');
+        console.log('[PageManager] Available window properties:', Object.keys(window).filter(k => k.toLowerCase().includes('scan')));
+        
         container.innerHTML = `
             <div class="scanner-fallback">
                 <div class="scanner-container">
@@ -265,6 +368,40 @@ class PageManager {
                 gap: 12px;
                 justify-content: center;
                 flex-wrap: wrap;
+            }
+            
+            .scanner-debug {
+                margin: 20px 0;
+                text-align: left;
+            }
+            
+            .scanner-debug details {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 12px;
+            }
+            
+            .scanner-debug summary {
+                cursor: pointer;
+                font-weight: 600;
+                color: #4f46e5;
+                margin-bottom: 8px;
+            }
+            
+            .debug-info {
+                margin-top: 12px;
+                font-size: 13px;
+                color: #374151;
+            }
+            
+            .debug-info ul {
+                margin: 8px 0;
+                padding-left: 20px;
+            }
+            
+            .debug-info li {
+                margin: 4px 0;
             }
             
             .btn {
