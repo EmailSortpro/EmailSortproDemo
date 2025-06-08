@@ -138,16 +138,6 @@
             text-decoration: underline;
         }
         
-        .code-block {
-            background: #2d3748;
-            color: #fff;
-            padding: 15px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            margin: 10px 0;
-            word-break: break-all;
-        }
-        
         .redirect-url {
             background: #e9ecef;
             padding: 15px;
@@ -368,7 +358,7 @@
                 <i class="fas fa-envelope-open-text"></i>
             </div>
             <h1>Configuration d'EmailSortPro</h1>
-            <p class="subtitle">Configuration adaptative pour votre domaine</p>
+            <p class="subtitle">Configuration automatique adaptée à votre domaine</p>
         </div>
 
         <!-- Détection automatique du domaine -->
@@ -379,13 +369,13 @@
                                        CURRENT_HOSTNAME.includes('preview') || 
                                        CURRENT_HOSTNAME.includes('coruscating-dodol');
             
-            console.log('[Setup] Environment detection:', {
+            console.log('[Setup] Environment detection v6.0:', {
                 hostname: CURRENT_HOSTNAME,
                 origin: CURRENT_ORIGIN,
                 isTest: IS_TEST_ENVIRONMENT
             });
 
-            // Générer automatiquement les URIs pour le domaine actuel
+            // Configuration automatique adaptée
             const DOMAIN_CONFIG = {
                 currentDomain: CURRENT_HOSTNAME,
                 currentOrigin: CURRENT_ORIGIN,
@@ -499,9 +489,16 @@
             <div class="step">
                 <h3>
                     <span class="step-number">2</span>
-                    Configurer les URI de redirection
+                    Configurer les URI de redirection (CRITIQUE)
                 </h3>
-                <p>Dans votre App Registration, allez dans <strong>"Authentication"</strong> et configurez :</p>
+                <p>Dans votre App Registration, allez dans <strong>"Authentication"</strong> et configurez <strong>EXACTEMENT</strong> :</p>
+                
+                <div style="margin: 15px 0;">
+                    <strong>Type de plateforme : Single-page application (SPA)</strong>
+                    <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #f59e0b;">
+                        <strong>⚠️ IMPORTANT :</strong> Vous DEVEZ sélectionner "Single-page application (SPA)" et NON "Web"
+                    </div>
+                </div>
                 
                 <div style="margin: 15px 0;">
                     <strong>URI de redirection (Single-page application) :</strong>
@@ -523,7 +520,15 @@
                     </div>
                 </div>
 
-                <p><strong>Important :</strong> Assurez-vous de sélectionner <span class="highlight">"Single-page application (SPA)"</span> et non "Web" pour le type d'URI de redirection.</p>
+                <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #28a745;">
+                    <strong>✅ Vérifications importantes :</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>Type de plateforme : <span class="highlight">Single-page application (SPA)</span></li>
+                        <li>URI EXACTE (pas de "/" en trop, même casse)</li>
+                        <li>HTTPS (sauf pour localhost)</li>
+                        <li>Cliquer sur "Save" après chaque modification</li>
+                    </ul>
+                </div>
             </div>
 
             <div class="step">
@@ -550,7 +555,7 @@
                 </h3>
                 <p>1. Dans <strong>"Overview"</strong> de votre app, copiez l'<strong>"Application (client) ID"</strong></p>
                 <p>2. Il ressemble à :</p>
-                <div class="code-block">
+                <div style="background: #2d3748; color: #fff; padding: 15px; border-radius: 8px; font-family: monospace; margin: 10px 0;">
                     xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
                 </div>
                 <p>3. Collez-le dans le champ ci-dessous :</p>
@@ -575,7 +580,7 @@
         document.getElementById('redirect-url').textContent = DOMAIN_CONFIG.redirectUrl;
         document.getElementById('logout-url').textContent = DOMAIN_CONFIG.logoutUrl;
         
-        console.log('[Setup] Configuration for domain:', {
+        console.log('[Setup] Configuration v6.0 for domain:', {
             current: DOMAIN_CONFIG.currentDomain,
             redirectUri: DOMAIN_CONFIG.redirectUrl,
             logoutUri: DOMAIN_CONFIG.logoutUrl,
@@ -662,7 +667,7 @@
             // Afficher le loading
             document.getElementById('loading').style.display = 'block';
             
-            // Simuler une validation avec les URIs du domaine actuel
+            // Simuler une validation
             setTimeout(() => {
                 saveConfiguration(clientId);
             }, 1500);
@@ -685,126 +690,73 @@
         }
         
         function saveConfiguration(clientId) {
-            // Sauvegarder le Client ID
-            localStorage.setItem('emailsortpro_client_id', clientId);
-            
-            // Créer la configuration adaptative pour le domaine actuel
-            const configContent = `
-// Configuration générée automatiquement pour ${DOMAIN_CONFIG.currentDomain}
-window.AppConfig = {
-    msal: {
-        clientId: '${clientId}',
-        authority: 'https://login.microsoftonline.com/common',
-        redirectUri: '${DOMAIN_CONFIG.redirectUrl}',
-        postLogoutRedirectUri: '${DOMAIN_CONFIG.logoutUrl}',
-        cache: {
-            cacheLocation: 'localStorage',
-            storeAuthStateInCookie: true
-        },
-        system: {
-            loggerOptions: {
-                loggerCallback: (level, message, containsPii) => {
-                    if (window.debugMode || ${DOMAIN_CONFIG.isTest}) {
-                        console.log(\`[MSAL \${level}] \${message}\`);
-                    }
-                },
-                piiLoggingEnabled: false,
-                logLevel: ${DOMAIN_CONFIG.isTest ? "'Verbose'" : "'Warning'"}
-            },
-            allowNativeBroker: false,
-            allowRedirectInIframe: false
-        }
-    },
-    scopes: {
-        login: [
-            'https://graph.microsoft.com/User.Read',
-            'https://graph.microsoft.com/Mail.Read',
-            'https://graph.microsoft.com/Mail.ReadWrite'
-        ],
-        silent: [
-            'https://graph.microsoft.com/User.Read',
-            'https://graph.microsoft.com/Mail.Read',
-            'https://graph.microsoft.com/Mail.ReadWrite'
-        ]
-    },
-    app: {
-        name: 'EmailSortPro',
-        version: '5.0.0',
-        debug: ${DOMAIN_CONFIG.isTest},
-        environment: '${DOMAIN_CONFIG.isTest ? 'test' : 'production'}',
-        domain: '${DOMAIN_CONFIG.currentDomain}'
-    },
-    email: {
-        defaultFolder: 'inbox',
-        defaultDays: 30,
-        pageSize: 100,
-        maxEmails: 10000
-    },
-    validate() {
-        return { valid: true, issues: [] };
-    },
-    forceValidate() {
-        return { valid: true, issues: [] };
-    },
-    getDebugInfo() {
-        return {
-            domain: '${DOMAIN_CONFIG.currentDomain}',
-            environment: this.app.environment,
-            clientId: this.msal.clientId.substring(0, 8) + '...',
-            redirectUri: this.msal.redirectUri,
-            isAdaptive: true,
-            generatedFor: '${DOMAIN_CONFIG.currentDomain}',
-            timestamp: new Date().toISOString()
-        };
-    }
-};`;
-            
-            // Log de confirmation
-            console.log('[Setup] Configuration saved for domain:', DOMAIN_CONFIG.currentDomain);
-            console.log('[Setup] Client ID:', clientId.substring(0, 8) + '...');
-            console.log('[Setup] Redirect URI:', DOMAIN_CONFIG.redirectUrl);
-            console.log('[Setup] Logout URI:', DOMAIN_CONFIG.logoutUrl);
-            
-            // Afficher le succès
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('success-message').style.display = 'block';
-            
-            // Rediriger après 3 secondes
-            setTimeout(() => {
-                window.location.href = DOMAIN_CONFIG.indexUrl;
-            }, 3000);
+            try {
+                // Sauvegarder le Client ID
+                localStorage.setItem('emailsortpro_client_id', clientId);
+                localStorage.setItem('emailsortpro_redirect_uri', DOMAIN_CONFIG.redirectUrl);
+                localStorage.setItem('emailsortpro_domain', DOMAIN_CONFIG.currentDomain);
+                
+                console.log('[Setup] Configuration saved:', {
+                    clientId: clientId.substring(0, 8) + '...',
+                    domain: DOMAIN_CONFIG.currentDomain,
+                    redirectUri: DOMAIN_CONFIG.redirectUrl,
+                    logoutUri: DOMAIN_CONFIG.logoutUrl
+                });
+                
+                // Afficher le succès
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('success-message').style.display = 'block';
+                
+                // Rediriger après 3 secondes
+                setTimeout(() => {
+                    window.location.href = DOMAIN_CONFIG.indexUrl;
+                }, 3000);
+                
+            } catch (error) {
+                console.error('[Setup] Error saving configuration:', error);
+                alert('Erreur lors de la sauvegarde. Vérifiez que votre navigateur autorise localStorage.');
+            }
         }
         
         // Vérifier si un Client ID est déjà sauvegardé
         window.addEventListener('DOMContentLoaded', () => {
-            const savedClientId = localStorage.getItem('emailsortpro_client_id');
-            if (savedClientId) {
-                // Pré-remplir les champs si un ID existe
-                document.getElementById('clientId').value = savedClientId;
-                document.getElementById('manualClientId').value = savedClientId;
+            try {
+                const savedClientId = localStorage.getItem('emailsortpro_client_id');
+                if (savedClientId && validateClientId(savedClientId)) {
+                    // Pré-remplir les champs si un ID existe
+                    document.getElementById('clientId').value = savedClientId;
+                    document.getElementById('manualClientId').value = savedClientId;
+                    console.log('[Setup] Pre-filled with saved Client ID');
+                }
+            } catch (error) {
+                console.warn('[Setup] Cannot access localStorage:', error);
             }
             
-            console.log('[Setup] Page loaded for domain:', DOMAIN_CONFIG.currentDomain);
-            console.log('[Setup] Saved client ID:', savedClientId ? savedClientId.substring(0, 8) + '...' : 'None');
-            console.log('[Setup] Generated URIs:', {
-                redirect: DOMAIN_CONFIG.redirectUrl,
-                logout: DOMAIN_CONFIG.logoutUrl
-            });
+            console.log('[Setup] Page loaded v6.0 for domain:', DOMAIN_CONFIG.currentDomain);
         });
 
         // Fonction de diagnostic
         window.setupDebug = function() {
-            console.log('=== SETUP DEBUG v5.0 ===');
+            console.log('=== SETUP DEBUG v6.0 ===');
             console.log('Current domain:', DOMAIN_CONFIG.currentDomain);
             console.log('Current origin:', DOMAIN_CONFIG.currentOrigin);
             console.log('Is test environment:', DOMAIN_CONFIG.isTest);
-            console.log('Generated configuration:', DOMAIN_CONFIG);
-            console.log('Saved Client ID:', localStorage.getItem('emailsortpro_client_id')?.substring(0, 8) + '...' || 'None');
+            console.log('Generated URIs:', {
+                redirect: DOMAIN_CONFIG.redirectUrl,
+                logout: DOMAIN_CONFIG.logoutUrl
+            });
+            
+            try {
+                const savedClientId = localStorage.getItem('emailsortpro_client_id');
+                console.log('Saved Client ID:', savedClientId ? savedClientId.substring(0, 8) + '...' : 'None');
+            } catch (error) {
+                console.log('LocalStorage error:', error.message);
+            }
             
             return DOMAIN_CONFIG;
         };
         
-        console.log('[Setup] ✅ Setup page ready v5.0 with adaptive domain configuration');
+        console.log('[Setup] ✅ Setup page ready v6.0 with automatic domain configuration');
         console.log('[Setup] Domain:', DOMAIN_CONFIG.currentDomain);
         console.log('[Setup] Use setupDebug() for diagnostic information');
     </script>
