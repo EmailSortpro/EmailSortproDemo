@@ -9,6 +9,7 @@ class MinimalScanModule {
         this.selectedDays = 7;
         this.stylesAdded = false;
         this.scanStartTime = null;
+        this.simulatedEmails = []; // AJOUTÉ: Stockage des emails simulés
         
         console.log('[MinimalScan] Scanner ultra-minimaliste v8.0 initialized');
         this.addMinimalStyles();
@@ -549,6 +550,64 @@ class MinimalScanModule {
         }
     }
 
+    // CORRECTION MAJEURE: Génération d'emails réalistes et stockage approprié
+    generateSimulatedEmails(count) {
+        const domains = ['microsoft.com', 'google.com', 'amazon.com', 'facebook.com', 'apple.com', 'netflix.com', 'linkedin.com', 'github.com', 'stackoverflow.com', 'medium.com'];
+        const firstNames = ['Jean', 'Marie', 'Pierre', 'Sophie', 'Lucas', 'Emma', 'Thomas', 'Julie', 'Antoine', 'Camille', 'Nicolas', 'Sarah', 'Maxime', 'Laura', 'David'];
+        const lastNames = ['Martin', 'Bernard', 'Dubois', 'Thomas', 'Robert', 'Richard', 'Petit', 'Durand', 'Leroy', 'Moreau', 'Simon', 'Laurent', 'Lefebvre', 'Michel', 'Garcia'];
+        const subjects = [
+            'Réunion équipe - Projet Q2',
+            'Confirmation de commande #12345',
+            'Newsletter mensuelle',
+            'Rappel: Formation obligatoire',
+            'Votre facture est disponible',
+            'Mise à jour sécurité',
+            'Invitation événement réseau',
+            'Rapport mensuel activité',
+            'Nouveau produit disponible',
+            'Demande de feedback'
+        ];
+
+        const emails = [];
+        const now = new Date();
+
+        for (let i = 0; i < count; i++) {
+            const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+            const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+            const domain = domains[Math.floor(Math.random() * domains.length)];
+            const subject = subjects[Math.floor(Math.random() * subjects.length)];
+            
+            // Date aléatoire dans les derniers jours sélectionnés
+            const daysAgo = Math.floor(Math.random() * this.selectedDays);
+            const emailDate = new Date(now.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
+            
+            const email = {
+                id: `email-${Date.now()}-${i}`,
+                subject: subject,
+                from: {
+                    emailAddress: {
+                        name: `${firstName} ${lastName}`,
+                        address: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${domain}`
+                    }
+                },
+                receivedDateTime: emailDate.toISOString(),
+                bodyPreview: `Bonjour, ceci est un email de test concernant ${subject.toLowerCase()}. Merci de votre attention.`,
+                body: {
+                    content: `<p>Bonjour,</p><p>Ceci est un email de test concernant ${subject}.</p><p>Cordialement,<br/>${firstName} ${lastName}</p>`
+                },
+                hasAttachments: Math.random() < 0.3,
+                importance: Math.random() < 0.1 ? 'high' : 'normal',
+                isRead: Math.random() < 0.7,
+                category: null // Sera défini par CategoryManager
+            };
+
+            emails.push(email);
+        }
+
+        console.log(`[MinimalScan] ✅ ${count} emails simulés générés`);
+        return emails;
+    }
+
     async executeScan() {
         const steps = [
             { progress: 0, text: 'Initialisation...', status: 'Connexion au serveur' },
@@ -578,20 +637,68 @@ class MinimalScanModule {
                 console.log('[MinimalScan] ✅ Scan réel terminé:', results);
             } else {
                 console.log('[MinimalScan] 🎭 Mode simulation');
-                // Simulation avec progression
-                for (const step of steps) {
+                
+                // Progression visuelle
+                for (let i = 0; i < steps.length - 1; i++) {
+                    const step = steps[i];
                     this.updateProgress(step.progress, step.text, step.status);
                     await new Promise(resolve => setTimeout(resolve, 600));
                 }
+
+                // CORRECTION: Générer et stocker les emails simulés
+                const emailCount = Math.floor(Math.random() * 50) + 58; // Entre 58 et 108 emails
+                this.simulatedEmails = this.generateSimulatedEmails(emailCount);
                 
-                // Générer des résultats réalistes
-                const baseEmails = Math.floor(Math.random() * 200) + 50;
+                // CORRECTION: S'assurer que window.emailScanner existe et stocker les emails
+                if (!window.emailScanner) {
+                    window.emailScanner = {
+                        emails: [],
+                        getAllEmails: function() {
+                            return this.emails || [];
+                        },
+                        setEmails: function(emails) {
+                            this.emails = emails || [];
+                            console.log(`[EmailScanner] ${this.emails.length} emails stockés`);
+                        }
+                    };
+                }
+                
+                // Catégoriser les emails si CategoryManager est disponible
+                if (window.categoryManager && typeof window.categoryManager.analyzeEmail === 'function') {
+                    this.simulatedEmails.forEach(email => {
+                        const result = window.categoryManager.analyzeEmail(email);
+                        email.category = result.category || 'other';
+                    });
+                    console.log('[MinimalScan] ✅ Emails catégorisés');
+                }
+                
+                // CORRECTION: Stocker les emails dans emailScanner
+                window.emailScanner.setEmails(this.simulatedEmails);
+                
+                // CORRECTION: Stocker aussi dans PageManager si disponible
+                if (window.pageManager) {
+                    window.pageManager.temporaryEmailStorage = this.simulatedEmails;
+                    window.pageManager.lastScanData = {
+                        total: emailCount,
+                        categorized: Math.floor(emailCount * 0.85),
+                        timestamp: Date.now()
+                    };
+                    console.log('[MinimalScan] ✅ Emails stockés dans PageManager');
+                }
+                
+                // Finaliser la progression
+                const finalStep = steps[steps.length - 1];
+                this.updateProgress(finalStep.progress, finalStep.text, finalStep.status);
+                
                 this.scanResults = {
                     success: true,
-                    total: baseEmails,
-                    categorized: Math.floor(baseEmails * 0.85),
-                    stats: { processed: baseEmails, errors: Math.floor(Math.random() * 3) }
+                    total: emailCount,
+                    categorized: Math.floor(emailCount * 0.85),
+                    stats: { processed: emailCount, errors: 0 },
+                    emails: this.simulatedEmails
                 };
+                
+                console.log(`[MinimalScan] ✅ Simulation terminée: ${emailCount} emails générés et stockés`);
             }
         } catch (error) {
             console.error('[MinimalScan] ❌ Erreur lors du scan:', error);
@@ -665,6 +772,10 @@ class MinimalScanModule {
         } catch (error) {
             console.warn('[MinimalScan] ⚠️ Erreur de stockage:', error);
         }
+        
+        // CORRECTION: Vérifier que les emails sont bien disponibles avant la redirection
+        const emailsCount = window.emailScanner?.getAllEmails()?.length || 0;
+        console.log(`[MinimalScan] 🔍 Vérification avant redirection: ${emailsCount} emails disponibles`);
         
         // Notification de succès
         if (window.uiManager?.showToast) {
