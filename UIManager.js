@@ -1,86 +1,314 @@
-// UIManager.js - Version 7.0 - CORRECTION INTERACTIONS UI
+// UIManager.js - Gestionnaire d'interface CORRIGÉ sans mode démo v7.1
 
 class UIManager {
     constructor() {
-        console.log('[UIManager] Constructor v7.0 - UI management initialized');
-        
-        this.activeModals = new Set();
+        this.isInitialized = false;
+        this.realModeOnly = true; // CORRECTION: Forcer le mode réel uniquement
         this.loadingStates = new Map();
         this.toastQueue = [];
-        this.isShowingToast = false;
-        this.currentTheme = 'light';
+        this.maxToasts = 3;
         
-        // Configuration des toasts
-        this.toastConfig = {
-            duration: {
-                success: 3000,
-                info: 4000,
-                warning: 5000,
-                error: 6000
-            },
-            maxToasts: 3
-        };
-        
+        console.log('[UIManager] Constructor v7.1 - REAL MODE ONLY');
         this.init();
     }
 
     init() {
-        this.createToastContainer();
-        this.setupGlobalEventListeners();
-        this.setupKeyboardShortcuts();
-        console.log('[UIManager] ✅ Initialized successfully');
+        try {
+            this.createToastContainer();
+            this.createLoadingIndicators();
+            this.isInitialized = true;
+            console.log('[UIManager] ✅ Initialized successfully (Real mode only)');
+        } catch (error) {
+            console.error('[UIManager] Initialization error:', error);
+        }
     }
 
-    // =====================================
-    // TOAST NOTIFICATIONS - AMÉLIORÉES
-    // =====================================
-    showToast(message, type = 'info', duration = null) {
-        if (!message) return;
+    createToastContainer() {
+        if (document.getElementById('toast-container')) return;
         
-        const toast = {
-            id: `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            message: String(message),
-            type: type,
-            duration: duration || this.toastConfig.duration[type] || 4000,
-            timestamp: Date.now()
-        };
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        container.innerHTML = ''; // CORRECTION: Pas de contenu par défaut
         
-        console.log(`[UIManager] Showing toast: ${toast.type} - ${toast.message}`);
-        
-        this.toastQueue.push(toast);
-        this.processToastQueue();
+        document.body.appendChild(container);
     }
 
-    processToastQueue() {
-        if (this.isShowingToast || this.toastQueue.length === 0) {
+    createLoadingIndicators() {
+        const styles = `
+            <style id="ui-manager-styles">
+                .toast-container {
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 10000;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    max-width: 400px;
+                }
+                
+                .toast {
+                    background: white;
+                    border-radius: 8px;
+                    padding: 16px 20px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    border-left: 4px solid #667eea;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    transform: translateX(420px);
+                    opacity: 0;
+                    transition: all 0.3s ease;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    font-size: 14px;
+                    line-height: 1.4;
+                }
+                
+                .toast.show {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                
+                .toast.success {
+                    border-left-color: #10b981;
+                    background: #f0fdf4;
+                }
+                
+                .toast.error {
+                    border-left-color: #ef4444;
+                    background: #fef2f2;
+                }
+                
+                .toast.warning {
+                    border-left-color: #f59e0b;
+                    background: #fffbeb;
+                }
+                
+                .toast.info {
+                    border-left-color: #3b82f6;
+                    background: #eff6ff;
+                }
+                
+                .toast-icon {
+                    font-size: 18px;
+                    flex-shrink: 0;
+                }
+                
+                .toast.success .toast-icon {
+                    color: #10b981;
+                }
+                
+                .toast.error .toast-icon {
+                    color: #ef4444;
+                }
+                
+                .toast.warning .toast-icon {
+                    color: #f59e0b;
+                }
+                
+                .toast.info .toast-icon {
+                    color: #3b82f6;
+                }
+                
+                .toast-content {
+                    flex: 1;
+                }
+                
+                .toast-close {
+                    background: none;
+                    border: none;
+                    font-size: 16px;
+                    cursor: pointer;
+                    opacity: 0.6;
+                    transition: opacity 0.2s;
+                    padding: 0;
+                    color: #6b7280;
+                }
+                
+                .toast-close:hover {
+                    opacity: 1;
+                }
+                
+                .loading-indicator {
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    padding: 20px 30px;
+                    border-radius: 10px;
+                    display: none;
+                    align-items: center;
+                    gap: 15px;
+                    z-index: 9999;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                }
+                
+                .loading-indicator.show {
+                    display: flex;
+                }
+                
+                .loading-spinner {
+                    width: 20px;
+                    height: 20px;
+                    border: 2px solid rgba(255, 255, 255, 0.3);
+                    border-top: 2px solid white;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                }
+                
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+                
+                .loading-text {
+                    font-size: 14px;
+                    font-weight: 500;
+                }
+                
+                .auth-status {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 14px;
+                    color: white;
+                }
+                
+                .auth-status .user-avatar {
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    background: rgba(255, 255, 255, 0.2);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 10px;
+                    font-weight: bold;
+                }
+                
+                .auth-status .user-info {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-end;
+                }
+                
+                .auth-status .user-name {
+                    font-weight: 600;
+                    font-size: 13px;
+                }
+                
+                .auth-status .user-mode {
+                    font-size: 11px;
+                    opacity: 0.8;
+                }
+                
+                .real-mode-badge {
+                    background: #10b981;
+                    color: white;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    font-size: 10px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                }
+                
+                @media (max-width: 768px) {
+                    .toast-container {
+                        top: 10px;
+                        right: 10px;
+                        left: 10px;
+                        max-width: none;
+                    }
+                    
+                    .toast {
+                        transform: translateY(-100px);
+                    }
+                    
+                    .toast.show {
+                        transform: translateY(0);
+                    }
+                    
+                    .auth-status .user-info {
+                        display: none;
+                    }
+                }
+            </style>
+        `;
+        
+        const existingStyles = document.getElementById('ui-manager-styles');
+        if (existingStyles) {
+            existingStyles.remove();
+        }
+        
+        document.head.insertAdjacentHTML('beforeend', styles);
+    }
+
+    showLoading(message = 'Chargement...', key = 'global') {
+        console.log('[UIManager] Showing loading:', message);
+        
+        this.loadingStates.set(key, { message, timestamp: Date.now() });
+        
+        let loadingEl = document.getElementById('loading-indicator');
+        if (!loadingEl) {
+            loadingEl = document.createElement('div');
+            loadingEl.id = 'loading-indicator';
+            loadingEl.className = 'loading-indicator';
+            document.body.appendChild(loadingEl);
+        }
+        
+        loadingEl.innerHTML = `
+            <div class="loading-spinner"></div>
+            <div class="loading-text">${message}</div>
+        `;
+        
+        loadingEl.classList.add('show');
+        
+        // Auto-hide après 30 secondes pour éviter les blocages
+        setTimeout(() => {
+            this.hideLoading(key);
+        }, 30000);
+    }
+
+    hideLoading(key = 'global') {
+        console.log('[UIManager] Hiding loading for:', key);
+        
+        this.loadingStates.delete(key);
+        
+        // Si aucun loading en cours, masquer l'indicateur
+        if (this.loadingStates.size === 0) {
+            const loadingEl = document.getElementById('loading-indicator');
+            if (loadingEl) {
+                loadingEl.classList.remove('show');
+            }
+        }
+    }
+
+    showToast(message, type = 'info', duration = 5000) {
+        console.log('[UIManager] Showing toast:', { message, type, duration });
+        
+        // CORRECTION: Ne pas afficher de toasts de démo
+        if (message.toLowerCase().includes('demo') || message.toLowerCase().includes('démonstration')) {
+            console.warn('[UIManager] Skipping demo toast message');
             return;
         }
         
-        // Limiter le nombre de toasts affichés
-        const container = this.getToastContainer();
-        const activeToasts = container.children.length;
-        
-        if (activeToasts >= this.toastConfig.maxToasts) {
-            // Supprimer le plus ancien toast
-            const oldestToast = container.firstElementChild;
-            if (oldestToast) {
-                this.removeToast(oldestToast);
-            }
+        const container = document.getElementById('toast-container');
+        if (!container) {
+            console.error('[UIManager] Toast container not found');
+            return;
         }
         
-        const toast = this.toastQueue.shift();
-        this.displayToast(toast);
-    }
-
-    displayToast(toast) {
-        this.isShowingToast = true;
+        // Limiter le nombre de toasts
+        const existingToasts = container.children;
+        if (existingToasts.length >= this.maxToasts) {
+            existingToasts[0].remove();
+        }
         
-        const container = this.getToastContainer();
-        
-        const toastElement = document.createElement('div');
-        toastElement.id = toast.id;
-        toastElement.className = `toast toast-${toast.type}`;
-        toastElement.setAttribute('data-timestamp', toast.timestamp);
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
         
         const iconMap = {
             success: 'fas fa-check-circle',
@@ -89,852 +317,415 @@ class UIManager {
             info: 'fas fa-info-circle'
         };
         
-        toastElement.innerHTML = `
-            <div class="toast-content">
-                <div class="toast-icon">
-                    <i class="${iconMap[toast.type] || iconMap.info}"></i>
-                </div>
-                <div class="toast-message">${this.escapeHtml(toast.message)}</div>
-                <button class="toast-close" onclick="window.uiManager.removeToast(this.closest('.toast'))">
-                    <i class="fas fa-times"></i>
-                </button>
+        toast.innerHTML = `
+            <div class="toast-icon">
+                <i class="${iconMap[type] || iconMap.info}"></i>
             </div>
-            <div class="toast-progress">
-                <div class="toast-progress-bar" style="animation-duration: ${toast.duration}ms;"></div>
-            </div>
+            <div class="toast-content">${message}</div>
+            <button class="toast-close" onclick="this.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
         `;
         
-        // Ajouter au container
-        container.appendChild(toastElement);
+        container.appendChild(toast);
         
         // Animation d'entrée
-        requestAnimationFrame(() => {
-            toastElement.classList.add('toast-show');
-        });
-        
-        // Auto-suppression
         setTimeout(() => {
-            this.removeToast(toastElement);
-        }, toast.duration);
+            toast.classList.add('show');
+        }, 10);
         
-        // Permettre le traitement du prochain toast
-        setTimeout(() => {
-            this.isShowingToast = false;
-            this.processToastQueue();
-        }, 100);
-    }
-
-    removeToast(toastElement) {
-        if (!toastElement || !toastElement.parentNode) return;
-        
-        toastElement.classList.add('toast-hide');
-        
-        setTimeout(() => {
-            if (toastElement.parentNode) {
-                toastElement.parentNode.removeChild(toastElement);
-            }
-        }, 300);
-    }
-
-    getToastContainer() {
-        let container = document.getElementById('toast-container');
-        if (!container) {
-            container = this.createToastContainer();
-        }
-        return container;
-    }
-
-    createToastContainer() {
-        const container = document.createElement('div');
-        container.id = 'toast-container';
-        container.className = 'toast-container';
-        document.body.appendChild(container);
-        
-        this.addToastStyles();
-        return container;
-    }
-
-    // =====================================
-    // LOADING STATES - OPTIMISÉS
-    // =====================================
-    showLoading(message = 'Chargement...', target = 'global') {
-        console.log(`[UIManager] Showing loading: ${message}`);
-        
-        this.loadingStates.set(target, {
-            message: message,
-            timestamp: Date.now()
-        });
-        
-        if (target === 'global') {
-            this.showGlobalLoading(message);
-        } else {
-            this.showLocalLoading(target, message);
-        }
-    }
-
-    hideLoading(target = 'global') {
-        console.log(`[UIManager] Hiding loading for: ${target}`);
-        
-        this.loadingStates.delete(target);
-        
-        if (target === 'global') {
-            this.hideGlobalLoading();
-        } else {
-            this.hideLocalLoading(target);
-        }
-    }
-
-    showGlobalLoading(message) {
-        let overlay = document.getElementById('global-loading-overlay');
-        
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'global-loading-overlay';
-            overlay.className = 'loading-overlay global-loading';
-            document.body.appendChild(overlay);
-        }
-        
-        overlay.innerHTML = `
-            <div class="loading-content">
-                <div class="loading-spinner">
-                    <div class="spinner"></div>
-                </div>
-                <div class="loading-message">${this.escapeHtml(message)}</div>
-            </div>
-        `;
-        
-        overlay.classList.add('active');
-        this.addLoadingStyles();
-    }
-
-    hideGlobalLoading() {
-        const overlay = document.getElementById('global-loading-overlay');
-        if (overlay) {
-            overlay.classList.remove('active');
+        // Auto-remove
+        if (duration > 0) {
             setTimeout(() => {
-                if (overlay.parentNode && !overlay.classList.contains('active')) {
-                    overlay.parentNode.removeChild(overlay);
+                if (toast.parentElement) {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        if (toast.parentElement) {
+                            toast.remove();
+                        }
+                    }, 300);
                 }
-            }, 300);
+            }, duration);
         }
     }
 
-    showLocalLoading(target, message) {
-        const element = typeof target === 'string' ? document.getElementById(target) : target;
-        if (!element) return;
+    // CORRECTION: Mise à jour du statut d'authentification avec mode réel
+    updateAuthStatus(user) {
+        console.log('[UIManager] Updating auth status for real mode:', user?.displayName || user?.mail);
         
-        // Créer ou mettre à jour l'overlay local
-        let overlay = element.querySelector('.local-loading-overlay');
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.className = 'loading-overlay local-loading-overlay';
-            element.style.position = 'relative';
-            element.appendChild(overlay);
+        const authStatusEl = document.getElementById('authStatus');
+        if (!authStatusEl) {
+            console.warn('[UIManager] authStatus element not found');
+            return;
         }
         
-        overlay.innerHTML = `
-            <div class="loading-content">
-                <div class="loading-spinner">
-                    <div class="spinner small"></div>
+        if (user && window.APP_REAL_MODE) {
+            const initials = this.getInitials(user.displayName || user.name || user.mail);
+            
+            authStatusEl.innerHTML = `
+                <div class="auth-status">
+                    <div class="user-avatar">${initials}</div>
+                    <div class="user-info">
+                        <div class="user-name">${user.displayName || user.name || user.mail || 'Utilisateur'}</div>
+                        <div class="user-mode">
+                            <span class="real-mode-badge">Mode réel</span>
+                        </div>
+                    </div>
+                    <button onclick="window.app.logout()" class="btn-small" title="Se déconnecter">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
                 </div>
-                <div class="loading-message">${this.escapeHtml(message)}</div>
-            </div>
-        `;
-        
-        overlay.classList.add('active');
-    }
-
-    hideLocalLoading(target) {
-        const element = typeof target === 'string' ? document.getElementById(target) : target;
-        if (!element) return;
-        
-        const overlay = element.querySelector('.local-loading-overlay');
-        if (overlay) {
-            overlay.classList.remove('active');
-            setTimeout(() => {
-                if (overlay.parentNode && !overlay.classList.contains('active')) {
-                    overlay.parentNode.removeChild(overlay);
-                }
-            }, 300);
+            `;
+        } else {
+            authStatusEl.innerHTML = `
+                <div class="auth-status">
+                    <span style="opacity: 0.8;">Non connecté</span>
+                    <button onclick="window.app.login()" class="btn-small" title="Se connecter">
+                        <i class="fas fa-sign-in-alt"></i>
+                    </button>
+                </div>
+            `;
         }
     }
 
-    // =====================================
-    // MODALS - SIMPLIFIÉS
-    // =====================================
-    showModal(options = {}) {
-        const modal = this.createModal(options);
-        this.activeModals.add(modal.id);
-        document.body.appendChild(modal);
+    getInitials(name) {
+        if (!name) return '?';
         
-        // Animation d'ouverture
-        requestAnimationFrame(() => {
-            modal.classList.add('modal-show');
-        });
-        
-        // Gestion de l'ESC
-        const escHandler = (e) => {
-            if (e.key === 'Escape') {
-                this.hideModal(modal.id);
-                document.removeEventListener('keydown', escHandler);
-            }
-        };
-        document.addEventListener('keydown', escHandler);
-        
-        return modal.id;
+        const parts = name.split(' ');
+        if (parts.length >= 2) {
+            return (parts[0][0] + parts[1][0]).toUpperCase();
+        } else {
+            return name.substring(0, 2).toUpperCase();
+        }
     }
 
-    createModal(options) {
-        const {
-            id = `modal-${Date.now()}`,
-            title = 'Modal',
-            content = '',
-            size = 'medium',
-            closable = true,
-            actions = []
-        } = options;
+    // CORRECTION: Affichage de modales sans contenu de démo
+    showModal(title, content, actions = []) {
+        console.log('[UIManager] Showing modal:', title);
+        
+        // CORRECTION: Vérifier qu'il n'y a pas de contenu de démo
+        if (content.toLowerCase().includes('demo') || content.toLowerCase().includes('démonstration')) {
+            console.warn('[UIManager] Blocking demo content in modal');
+            content = 'Contenu de démonstration bloqué. Utilisez vos données réelles.';
+        }
+        
+        // Supprimer les modales existantes
+        const existingModal = document.getElementById('ui-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
         
         const modal = document.createElement('div');
-        modal.id = id;
-        modal.className = `modal modal-${size}`;
+        modal.id = 'ui-modal';
+        modal.className = 'modal-overlay';
+        
+        const actionsHTML = actions.map(action => 
+            `<button class="btn ${action.class || 'btn-primary'}" onclick="${action.onclick || ''}">${action.text}</button>`
+        ).join('');
         
         modal.innerHTML = `
-            <div class="modal-backdrop" onclick="window.uiManager.hideModal('${id}')"></div>
-            <div class="modal-dialog">
+            <div class="modal-container">
                 <div class="modal-header">
-                    <h3 class="modal-title">${this.escapeHtml(title)}</h3>
-                    ${closable ? `
-                        <button class="modal-close" onclick="window.uiManager.hideModal('${id}')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    ` : ''}
+                    <h2>${title}</h2>
+                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-content">
                     ${content}
                 </div>
                 ${actions.length > 0 ? `
-                    <div class="modal-footer">
-                        ${actions.map(action => `
-                            <button class="btn ${action.class || 'btn-secondary'}" 
-                                    onclick="${action.onclick || ''}">
-                                ${action.text || 'Action'}
-                            </button>
-                        `).join('')}
+                    <div class="modal-actions">
+                        ${actionsHTML}
                     </div>
                 ` : ''}
             </div>
         `;
         
-        this.addModalStyles();
-        return modal;
-    }
-
-    hideModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (!modal) return;
-        
-        modal.classList.add('modal-hide');
-        this.activeModals.delete(modalId);
-        
-        setTimeout(() => {
-            if (modal.parentNode) {
-                modal.parentNode.removeChild(modal);
-            }
-        }, 300);
-    }
-
-    hideAllModals() {
-        this.activeModals.forEach(modalId => {
-            this.hideModal(modalId);
-        });
-    }
-
-    // =====================================
-    // AUTH STATUS - SIMPLIFIÉ
-    // =====================================
-    updateAuthStatus(status, userInfo = null) {
-        console.log(`[UIManager] Updating auth status: ${status}`);
-        
-        const authStatusElement = document.getElementById('authStatus');
-        if (!authStatusElement) return;
-        
-        switch (status) {
-            case 'authenticated':
-                const displayName = userInfo?.displayName || userInfo?.name || 'Utilisateur';
-                authStatusElement.innerHTML = `
-                    <div class="auth-user">
-                        <div class="user-avatar">
-                            ${displayName.charAt(0).toUpperCase()}
-                        </div>
-                        <div class="user-info">
-                            <div class="user-name">${this.escapeHtml(displayName)}</div>
-                            <div class="user-status">Connecté</div>
-                        </div>
-                        <button class="btn-logout" onclick="window.app?.logout()" title="Déconnexion">
-                            <i class="fas fa-sign-out-alt"></i>
-                        </button>
-                    </div>
-                `;
-                break;
+        // Styles pour la modale
+        if (!document.getElementById('modal-styles')) {
+            const modalStyles = document.createElement('style');
+            modalStyles.id = 'modal-styles';
+            modalStyles.textContent = `
+                .modal-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.7);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                }
                 
-            case 'authenticating':
-                authStatusElement.innerHTML = `
-                    <div class="auth-loading">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <span>Connexion...</span>
-                    </div>
-                `;
-                break;
+                .modal-overlay.show {
+                    opacity: 1;
+                }
                 
-            case 'error':
-                authStatusElement.innerHTML = `
-                    <div class="auth-error">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <span>Erreur de connexion</span>
-                    </div>
-                `;
-                break;
+                .modal-container {
+                    background: white;
+                    border-radius: 12px;
+                    max-width: 500px;
+                    width: 90%;
+                    max-height: 80vh;
+                    overflow: hidden;
+                    transform: scale(0.9);
+                    transition: transform 0.3s ease;
+                }
                 
-            default:
-                authStatusElement.innerHTML = `
-                    <div class="auth-disconnected">
-                        <span class="text-muted">Non connecté</span>
-                    </div>
-                `;
+                .modal-overlay.show .modal-container {
+                    transform: scale(1);
+                }
+                
+                .modal-header {
+                    padding: 20px 24px;
+                    border-bottom: 1px solid #e5e7eb;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                
+                .modal-header h2 {
+                    margin: 0;
+                    font-size: 1.5rem;
+                    color: #1f2937;
+                }
+                
+                .modal-close {
+                    background: none;
+                    border: none;
+                    font-size: 20px;
+                    cursor: pointer;
+                    color: #6b7280;
+                    padding: 4px;
+                    border-radius: 4px;
+                    transition: color 0.2s;
+                }
+                
+                .modal-close:hover {
+                    color: #374151;
+                }
+                
+                .modal-content {
+                    padding: 24px;
+                    max-height: 60vh;
+                    overflow-y: auto;
+                }
+                
+                .modal-actions {
+                    padding: 16px 24px;
+                    border-top: 1px solid #e5e7eb;
+                    display: flex;
+                    gap: 12px;
+                    justify-content: flex-end;
+                }
+                
+                .btn {
+                    padding: 10px 20px;
+                    border: none;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-weight: 600;
+                    transition: all 0.2s;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                
+                .btn-primary {
+                    background: #667eea;
+                    color: white;
+                }
+                
+                .btn-primary:hover {
+                    background: #5a67d8;
+                }
+                
+                .btn-secondary {
+                    background: #e5e7eb;
+                    color: #374151;
+                }
+                
+                .btn-secondary:hover {
+                    background: #d1d5db;
+                }
+                
+                .btn-small {
+                    padding: 6px 12px;
+                    font-size: 12px;
+                    background: rgba(255, 255, 255, 0.2);
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                
+                .btn-small:hover {
+                    background: rgba(255, 255, 255, 0.3);
+                }
+            `;
+            document.head.appendChild(modalStyles);
         }
         
-        this.addAuthStyles();
-    }
-
-    // =====================================
-    // EVENT LISTENERS
-    // =====================================
-    setupGlobalEventListeners() {
-        // Gestion des erreurs JavaScript globales
-        window.addEventListener('error', (event) => {
-            console.error('[UIManager] Global error:', event.error);
-            this.showToast('Une erreur inattendue s\'est produite', 'error');
-        });
+        document.body.appendChild(modal);
         
-        // Gestion des promesses rejetées
-        window.addEventListener('unhandledrejection', (event) => {
-            console.error('[UIManager] Unhandled promise rejection:', event.reason);
-            this.showToast('Erreur de traitement', 'error');
-        });
+        // Animation d'entrée
+        setTimeout(() => {
+            modal.classList.add('show');
+        }, 10);
         
-        // Gestion de la connectivité
-        window.addEventListener('online', () => {
-            this.showToast('Connexion Internet rétablie', 'success');
-        });
-        
-        window.addEventListener('offline', () => {
-            this.showToast('Connexion Internet perdue', 'warning');
-        });
-    }
-
-    setupKeyboardShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            // ESC pour fermer les modales
-            if (e.key === 'Escape' && this.activeModals.size > 0) {
-                const lastModal = Array.from(this.activeModals).pop();
-                this.hideModal(lastModal);
+        // Fermer avec Escape
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', handleEscape);
             }
-            
-            // Ctrl+/ pour l'aide (si implémentée)
-            if (e.ctrlKey && e.key === '/') {
-                e.preventDefault();
-                this.showHelpModal();
-            }
-        });
-    }
-
-    showHelpModal() {
-        this.showModal({
-            title: 'Raccourcis clavier',
-            content: `
-                <div class="help-content">
-                    <div class="help-section">
-                        <h4>Navigation</h4>
-                        <ul>
-                            <li><kbd>Échap</kbd> - Fermer les modales</li>
-                            <li><kbd>Ctrl</kbd> + <kbd>/</kbd> - Afficher cette aide</li>
-                        </ul>
-                    </div>
-                </div>
-            `,
-            size: 'small',
-            actions: [
-                {
-                    text: 'Fermer',
-                    class: 'btn-primary',
-                    onclick: `window.uiManager.hideModal(this.closest('.modal').id)`
-                }
-            ]
-        });
-    }
-
-    // =====================================
-    // UTILITY METHODS
-    // =====================================
-    escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
         };
+        document.addEventListener('keydown', handleEscape);
+        
+        // Fermer en cliquant à l'extérieur
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
     }
 
-    // =====================================
-    // STYLES - OPTIMISÉS
-    // =====================================
-    addToastStyles() {
-        if (document.getElementById('toast-styles')) return;
-        
-        const styles = document.createElement('style');
-        styles.id = 'toast-styles';
-        styles.textContent = `
-            .toast-container {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 9999;
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                pointer-events: none;
-            }
-            
-            .toast {
-                background: white;
-                border-radius: 12px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-                min-width: 320px;
-                max-width: 400px;
-                opacity: 0;
-                transform: translateX(100%);
-                transition: all 0.3s ease;
-                pointer-events: auto;
-                overflow: hidden;
-                position: relative;
-            }
-            
-            .toast.toast-show {
-                opacity: 1;
-                transform: translateX(0);
-            }
-            
-            .toast.toast-hide {
-                opacity: 0;
-                transform: translateX(100%);
-            }
-            
-            .toast-content {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 16px;
-            }
-            
-            .toast-icon {
-                flex-shrink: 0;
-                width: 24px;
-                height: 24px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 16px;
-            }
-            
-            .toast-message {
-                flex: 1;
-                font-size: 14px;
-                line-height: 1.4;
-                color: #374151;
-            }
-            
-            .toast-close {
-                background: none;
-                border: none;
-                width: 24px;
-                height: 24px;
-                border-radius: 50%;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: #9ca3af;
-                transition: all 0.2s ease;
-                flex-shrink: 0;
-            }
-            
-            .toast-close:hover {
-                background: #f3f4f6;
-                color: #374151;
-            }
-            
-            .toast-progress {
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                height: 3px;
-                background: rgba(0,0,0,0.1);
-            }
-            
-            .toast-progress-bar {
-                height: 100%;
-                background: currentColor;
-                animation: toast-progress linear forwards;
-                transform-origin: left;
-            }
-            
-            @keyframes toast-progress {
-                from { transform: scaleX(1); }
-                to { transform: scaleX(0); }
-            }
-            
-            /* Types de toast */
-            .toast-success { border-left: 4px solid #10b981; }
-            .toast-success .toast-icon { color: #10b981; }
-            .toast-success .toast-progress-bar { background: #10b981; }
-            
-            .toast-error { border-left: 4px solid #ef4444; }
-            .toast-error .toast-icon { color: #ef4444; }
-            .toast-error .toast-progress-bar { background: #ef4444; }
-            
-            .toast-warning { border-left: 4px solid #f59e0b; }
-            .toast-warning .toast-icon { color: #f59e0b; }
-            .toast-warning .toast-progress-bar { background: #f59e0b; }
-            
-            .toast-info { border-left: 4px solid #3b82f6; }
-            .toast-info .toast-icon { color: #3b82f6; }
-            .toast-info .toast-progress-bar { background: #3b82f6; }
-            
-            /* Responsive */
-            @media (max-width: 640px) {
-                .toast-container {
-                    left: 20px;
-                    right: 20px;
-                    top: 80px;
+    hideModal() {
+        const modal = document.getElementById('ui-modal');
+        if (modal) {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                if (modal.parentElement) {
+                    modal.remove();
                 }
-                
-                .toast {
-                    min-width: auto;
-                    max-width: none;
-                }
-            }
-        `;
-        document.head.appendChild(styles);
+            }, 300);
+        }
     }
 
-    addLoadingStyles() {
-        if (document.getElementById('loading-styles')) return;
+    // CORRECTION: Confirmation sans contenu de démo
+    showConfirmation(message, onConfirm, onCancel = null) {
+        // CORRECTION: Bloquer les messages de confirmation de démo
+        if (message.toLowerCase().includes('demo') || message.toLowerCase().includes('démonstration')) {
+            console.warn('[UIManager] Blocking demo confirmation message');
+            message = 'Action sur données réelles. Êtes-vous sûr ?';
+        }
         
-        const styles = document.createElement('style');
-        styles.id = 'loading-styles';
-        styles.textContent = `
-            .loading-overlay {
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(255, 255, 255, 0.9);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 9998;
-                opacity: 0;
-                visibility: hidden;
-                transition: all 0.3s ease;
+        this.showModal('Confirmation', `<p>${message}</p>`, [
+            {
+                text: 'Annuler',
+                class: 'btn-secondary',
+                onclick: `window.uiManager.hideModal(); ${onCancel ? `(${onCancel})()` : ''}`
+            },
+            {
+                text: 'Confirmer',
+                class: 'btn-primary',
+                onclick: `window.uiManager.hideModal(); (${onConfirm})()`
             }
-            
-            .loading-overlay.active {
-                opacity: 1;
-                visibility: visible;
-            }
-            
-            .loading-overlay.global-loading {
-                position: fixed;
-                background: rgba(0, 0, 0, 0.5);
-                backdrop-filter: blur(4px);
-                z-index: 9999;
-            }
-            
-            .loading-content {
-                text-align: center;
-                color: #374151;
-            }
-            
-            .global-loading .loading-content {
-                color: white;
-            }
-            
-            .loading-spinner {
-                margin-bottom: 16px;
-            }
-            
-            .spinner {
-                width: 48px;
-                height: 48px;
-                border: 4px solid rgba(59, 130, 246, 0.2);
-                border-top: 4px solid #3b82f6;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-            }
-            
-            .spinner.small {
-                width: 32px;
-                height: 32px;
-                border-width: 3px;
-            }
-            
-            .global-loading .spinner {
-                border-color: rgba(255, 255, 255, 0.2);
-                border-top-color: white;
-            }
-            
-            .loading-message {
-                font-size: 16px;
-                font-weight: 500;
-            }
-            
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-        `;
-        document.head.appendChild(styles);
+        ]);
     }
 
-    addModalStyles() {
-        if (document.getElementById('modal-styles')) return;
+    updateProgress(percent, message = '') {
+        console.log('[UIManager] Progress update:', percent + '%', message);
         
-        const styles = document.createElement('style');
-        styles.id = 'modal-styles';
-        styles.textContent = `
-            .modal {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                z-index: 9997;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 20px;
-                opacity: 0;
-                visibility: hidden;
-                transition: all 0.3s ease;
-            }
-            
-            .modal.modal-show {
-                opacity: 1;
-                visibility: visible;
-            }
-            
-            .modal.modal-hide {
-                opacity: 0;
-                visibility: hidden;
-            }
-            
-            .modal-backdrop {
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.5);
-                backdrop-filter: blur(4px);
-            }
-            
-            .modal-dialog {
-                background: white;
-                border-radius: 16px;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-                position: relative;
-                width: 100%;
-                max-height: 90vh;
-                overflow: hidden;
-                transform: scale(0.9);
-                transition: transform 0.3s ease;
-            }
-            
-            .modal.modal-show .modal-dialog {
-                transform: scale(1);
-            }
-            
-            .modal-small .modal-dialog { max-width: 400px; }
-            .modal-medium .modal-dialog { max-width: 600px; }
-            .modal-large .modal-dialog { max-width: 800px; }
-            .modal-xl .modal-dialog { max-width: 1200px; }
-            
-            .modal-header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 24px;
-                border-bottom: 1px solid #e5e7eb;
-            }
-            
-            .modal-title {
-                margin: 0;
-                font-size: 20px;
-                font-weight: 700;
-                color: #1f2937;
-            }
-            
-            .modal-close {
-                background: none;
-                border: none;
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: #9ca3af;
-                transition: all 0.2s ease;
-            }
-            
-            .modal-close:hover {
-                background: #f3f4f6;
-                color: #374151;
-            }
-            
-            .modal-body {
-                padding: 24px;
-                overflow-y: auto;
-                max-height: calc(90vh - 200px);
-            }
-            
-            .modal-footer {
-                display: flex;
-                justify-content: flex-end;
-                gap: 12px;
-                padding: 24px;
-                border-top: 1px solid #e5e7eb;
-                background: #f9fafb;
-            }
-        `;
-        document.head.appendChild(styles);
+        const progressEl = document.querySelector('.scan-progress-bar');
+        const textEl = document.querySelector('.scan-progress-text');
+        
+        if (progressEl) {
+            progressEl.style.width = `${percent}%`;
+        }
+        
+        if (textEl && message) {
+            textEl.textContent = message;
+        }
     }
 
-    addAuthStyles() {
-        if (document.getElementById('auth-styles')) return;
+    // CORRECTION: Notifications système sans démo
+    showNotification(title, message, type = 'info') {
+        // CORRECTION: Bloquer les notifications de démo
+        if (message.toLowerCase().includes('demo') || title.toLowerCase().includes('demo')) {
+            console.warn('[UIManager] Blocking demo notification');
+            return;
+        }
         
-        const styles = document.createElement('style');
-        styles.id = 'auth-styles';
-        styles.textContent = `
-            .auth-user {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                color: white;
+        // Vérifier si les notifications sont supportées
+        if ('Notification' in window) {
+            if (Notification.permission === 'granted') {
+                new Notification(title, {
+                    body: message,
+                    icon: '/favicon.ico'
+                });
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        new Notification(title, {
+                            body: message,
+                            icon: '/favicon.ico'
+                        });
+                    }
+                });
             }
-            
-            .user-avatar {
-                width: 36px;
-                height: 36px;
-                background: rgba(255, 255, 255, 0.2);
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 700;
-                font-size: 14px;
+        }
+        
+        // Fallback avec toast
+        this.showToast(`${title}: ${message}`, type);
+    }
+
+    // Gestion des erreurs globales
+    handleError(error, context = 'Application') {
+        console.error(`[UIManager] Error in ${context}:`, error);
+        
+        let userMessage = 'Une erreur est survenue';
+        
+        if (error.message) {
+            if (error.message.includes('demo')) {
+                userMessage = 'Erreur avec données de démonstration. Utilisez vos données réelles.';
+            } else if (error.message.includes('auth')) {
+                userMessage = 'Erreur d\'authentification. Veuillez vous reconnecter.';
+            } else if (error.message.includes('network')) {
+                userMessage = 'Erreur réseau. Vérifiez votre connexion.';
+            } else {
+                userMessage = error.message;
             }
-            
-            .user-info {
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-            }
-            
-            .user-name {
-                font-weight: 600;
-                font-size: 14px;
-            }
-            
-            .user-status {
-                font-size: 12px;
-                opacity: 0.8;
-            }
-            
-            .btn-logout {
-                background: rgba(255, 255, 255, 0.1);
-                border: none;
-                color: white;
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s ease;
-            }
-            
-            .btn-logout:hover {
-                background: rgba(255, 255, 255, 0.2);
-            }
-            
-            .auth-loading {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                color: white;
-                font-size: 14px;
-            }
-            
-            .auth-error {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                color: #fbbf24;
-                font-size: 14px;
-            }
-            
-            .auth-disconnected {
-                color: rgba(255, 255, 255, 0.7);
-                font-size: 14px;
-            }
-            
-            .text-muted {
-                opacity: 0.7;
-            }
-            
-            @media (max-width: 768px) {
-                .user-info {
-                    display: none;
-                }
-            }
-        `;
-        document.head.appendChild(styles);
+        }
+        
+        this.showToast(userMessage, 'error');
+    }
+
+    // Méthodes de diagnostic
+    getStatus() {
+        return {
+            isInitialized: this.isInitialized,
+            realModeOnly: this.realModeOnly,
+            activeLoadings: Array.from(this.loadingStates.keys()),
+            toastCount: document.querySelectorAll('.toast').length,
+            hasModal: !!document.getElementById('ui-modal')
+        };
     }
 }
 
-// Create global instance
-window.uiManager = new UIManager();
+// Créer l'instance globale
+try {
+    window.uiManager = new UIManager();
+    console.log('[UIManager] ✅ Global instance created successfully');
+} catch (error) {
+    console.error('[UIManager] ❌ Failed to create global instance:', error);
+    
+    // Instance de fallback
+    window.uiManager = {
+        showToast: (message, type) => console.log('[UIManager Fallback] Toast:', message, type),
+        showLoading: (message) => console.log('[UIManager Fallback] Loading:', message),
+        hideLoading: () => console.log('[UIManager Fallback] Hide loading'),
+        updateAuthStatus: (user) => console.log('[UIManager Fallback] Auth status:', user),
+        showModal: (title, content) => console.log('[UIManager Fallback] Modal:', title),
+        hideModal: () => console.log('[UIManager Fallback] Hide modal'),
+        getStatus: () => ({ error: 'UIManager failed to initialize: ' + error.message })
+    };
+}
 
-// Bind methods to preserve context
-Object.getOwnPropertyNames(UIManager.prototype).forEach(name => {
-    if (name !== 'constructor' && typeof window.uiManager[name] === 'function') {
-        window.uiManager[name] = window.uiManager[name].bind(window.uiManager);
-    }
-});
-
-console.log('✅ UIManager v7.0 loaded - Correction interactions UI');
+console.log('✅ UIManager v7.1 loaded - NO DEMO CONTENT ALLOWED');
