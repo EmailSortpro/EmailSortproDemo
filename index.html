@@ -777,12 +777,17 @@
         </div>
     </div>
 
-    <!-- SCRIPTS DANS L'ORDRE CORRECT -->
+    <!-- ===== SCRIPTS DANS L'ORDRE CORRECT ===== -->
     <script src="AuthService.js"></script>
     <script src="MailService.js"></script>
     <script src="UIManager.js"></script>
     <script src="CategoryManager.js"></script>
     <script src="TaskManager.js"></script>
+    
+    <!-- ===== MODULE DE SCAN - AJOUTÉ ===== -->
+    <script src="StartScan.js"></script>
+    
+    <!-- ===== PAGE MANAGER ET APP ===== -->
     <script src="PageManager.js"></script>
     <script src="app.js"></script>
     
@@ -799,6 +804,13 @@
                 uiManager: !!window.uiManager,
                 pageManager: !!window.pageManager,
                 app: !!window.app
+            });
+            
+            // Vérification du module de scan
+            console.log('Scan modules:', {
+                MinimalScanModule: !!window.MinimalScanModule,
+                minimalScanModule: !!window.minimalScanModule,
+                scanStartModule: !!window.scanStartModule
             });
             
             if (window.AppConfig) {
@@ -819,6 +831,15 @@
             }
             
             console.log('[INDEX] ✅ Ready to initialize app');
+            
+            // Vérifier que le module de scan est chargé
+            setTimeout(() => {
+                if (window.MinimalScanModule) {
+                    console.log('[INDEX] ✅ StartScan.js loaded successfully');
+                } else {
+                    console.warn('[INDEX] ⚠️ StartScan.js not found - fallback will be used');
+                }
+            }, 100);
             
             // L'app va s'initialiser automatiquement grâce à app.js
         });
