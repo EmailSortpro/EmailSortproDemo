@@ -104,6 +104,16 @@
             font-size: 1.1rem;
             line-height: 1.5;
         }
+
+        .debug-info {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
@@ -127,11 +137,15 @@
             <div class="error-message">
                 <h3>❌ Erreur d'authentification</h3>
                 <p id="error-message">Une erreur s'est produite pendant l'authentification.</p>
+                <div id="debug-info" class="debug-info" style="display: none;"></div>
                 <button class="btn" onclick="redirectToApp()">
                     Retourner à l'application
                 </button>
                 <button class="btn" onclick="location.reload()">
                     Réessayer
+                </button>
+                <button class="btn" onclick="toggleDebug()">
+                    Debug
                 </button>
             </div>
         </div>
@@ -141,66 +155,82 @@
     <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
     
     <script>
-        console.log('[Auth Callback] ✅ Starting enhanced authentication callback processing...');
+        console.log('[Auth Callback] 🚀 Starting callback processing v5.0...');
         
-        // Configuration centralisée et robuste pour tous les environnements
+        // Détection du domaine actuel
+        const CURRENT_HOSTNAME = window.location.hostname;
+        const CURRENT_ORIGIN = window.location.origin;
+        const CURRENT_URL = window.location.href;
+        
+        console.log('[Auth Callback] Environment:', {
+            hostname: CURRENT_HOSTNAME,
+            origin: CURRENT_ORIGIN,
+            url: CURRENT_URL,
+            protocol: window.location.protocol
+        });
+
+        // Configuration adaptative basée sur le domaine réel
         const CONFIG = {
-            // Client ID par défaut - fonctionne pour Netlify, GitHub Pages et localhost
-            DEFAULT_CLIENT_ID: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
+            // Client ID universel pour tous les domaines Netlify
+            CLIENT_ID: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
+            
+            // Génération dynamique des URIs basée sur l'URL actuelle
+            REDIRECT_URI: CURRENT_ORIGIN + '/auth-callback.html',
+            POST_LOGOUT_URI: CURRENT_ORIGIN + '/',
             
             // Détection de l'environnement
             environment: {
-                isNetlify: window.location.hostname.includes('netlify'),
-                isGitHubPages: window.location.hostname.includes('github.io'),
-                isLocalhost: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            },
-            
-            // URL de base selon l'environnement
-            basePath: window.location.hostname.includes('github.io') ? '/emailsortpro' : ''
+                isNetlify: CURRENT_HOSTNAME.includes('netlify'),
+                isLocalhost: CURRENT_HOSTNAME === 'localhost' || CURRENT_HOSTNAME === '127.0.0.1',
+                isTest: CURRENT_HOSTNAME.includes('test') || CURRENT_HOSTNAME.includes('preview')
+            }
         };
         
-        console.log('[Auth Callback] Environment detected:', CONFIG.environment);
-        console.log('[Auth Callback] Base path:', CONFIG.basePath);
+        console.log('[Auth Callback] Configuration generated:', {
+            clientId: CONFIG.CLIENT_ID.substring(0, 8) + '...',
+            redirectUri: CONFIG.REDIRECT_URI,
+            postLogoutUri: CONFIG.POST_LOGOUT_URI,
+            environment: CONFIG.environment
+        });
 
-        // Fonction robuste pour obtenir le Client ID
+        // Fonction pour obtenir le Client ID avec priorité
         function getClientId() {
-            // 1. Essayer le localStorage (configuration personnalisée)
+            // 1. Client ID de localStorage (priorité haute)
             try {
                 const savedClientId = localStorage.getItem('emailsortpro_client_id');
                 if (savedClientId && 
                     savedClientId !== 'VOTRE_CLIENT_ID_ICI' && 
                     savedClientId !== 'CONFIGURATION_REQUIRED' &&
-                    savedClientId.length >= 30 &&
                     /^[a-f0-9-]{36}$/i.test(savedClientId)) {
-                    console.log('[Auth Callback] ✅ Using saved client ID from localStorage');
+                    console.log('[Auth Callback] Using saved client ID from localStorage');
                     return savedClientId;
                 }
             } catch (e) {
                 console.warn('[Auth Callback] Cannot access localStorage:', e);
             }
             
-            // 2. Utiliser le Client ID par défaut
-            console.log('[Auth Callback] ✅ Using default client ID');
-            return CONFIG.DEFAULT_CLIENT_ID;
+            // 2. Client ID par défaut
+            console.log('[Auth Callback] Using default client ID');
+            return CONFIG.CLIENT_ID;
         }
 
         // Fonction pour rediriger vers l'application
         function redirectToApp() {
-            const appUrl = window.location.origin + CONFIG.basePath;
+            const appUrl = CURRENT_ORIGIN + '/';
             console.log('[Auth Callback] Redirecting to app:', appUrl);
             window.location.href = appUrl;
         }
 
-        // Fonction pour afficher le succès avec animation améliorée
+        // Fonction pour afficher le succès
         function showSuccess(account) {
             document.getElementById('loading-state').style.display = 'none';
             document.getElementById('success-state').style.display = 'block';
             
             const welcomeMsg = document.getElementById('welcome-message');
-            const userName = account.name || account.username || 'Utilisateur';
+            const userName = account?.name || account?.username || 'Utilisateur';
             welcomeMsg.textContent = `Bienvenue ${userName} !`;
             
-            // Compteur de redirection amélioré
+            // Compteur de redirection
             let countdown = 3;
             const countdownElement = document.getElementById('countdown-number');
             
@@ -215,9 +245,9 @@
             }, 1000);
         }
 
-        // Fonction pour afficher l'erreur avec gestion améliorée
-        function showError(message) {
-            console.error('[Auth Callback] ❌ Showing error:', message);
+        // Fonction pour afficher l'erreur avec debug
+        function showError(message, error = null) {
+            console.error('[Auth Callback] Showing error:', message, error);
             
             document.getElementById('loading-state').style.display = 'none';
             document.getElementById('error-state').style.display = 'block';
@@ -225,40 +255,66 @@
             const errorElement = document.getElementById('error-message');
             errorElement.textContent = message;
             
-            // Redirection automatique après 15 secondes en cas d'erreur
+            // Préparer les informations de debug
+            if (error) {
+                const debugInfo = document.getElementById('debug-info');
+                const debugData = {
+                    error: error.message || 'Unknown error',
+                    errorCode: error.errorCode || 'none',
+                    subError: error.subError || 'none',
+                    timestamp: new Date().toISOString(),
+                    url: CURRENT_URL,
+                    hostname: CURRENT_HOSTNAME,
+                    clientId: getClientId().substring(0, 8) + '...',
+                    redirectUri: CONFIG.REDIRECT_URI,
+                    userAgent: navigator.userAgent.substring(0, 100) + '...'
+                };
+                
+                debugInfo.innerHTML = `<pre>${JSON.stringify(debugData, null, 2)}</pre>`;
+            }
+            
+            // Redirection automatique après 20 secondes
             setTimeout(() => {
                 console.log('[Auth Callback] Auto-redirecting after error...');
                 redirectToApp();
-            }, 15000);
+            }, 20000);
         }
 
-        // Fonction principale de traitement du callback - AMÉLIORÉE
+        // Fonction pour toggle debug
+        function toggleDebug() {
+            const debugInfo = document.getElementById('debug-info');
+            debugInfo.style.display = debugInfo.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Fonction principale de traitement du callback
         async function processAuthCallback() {
             try {
-                console.log('[Auth Callback] 🚀 Processing authentication callback...');
+                console.log('[Auth Callback] 🔄 Processing authentication callback...');
                 
                 // Vérifier que MSAL est chargé
                 if (typeof msal === 'undefined') {
                     throw new Error('MSAL library not loaded - check internet connection');
                 }
+                console.log('[Auth Callback] ✅ MSAL library loaded');
                 
-                // Obtenir le Client ID avec validation
+                // Obtenir le Client ID
                 const clientId = getClientId();
                 if (!clientId || clientId.length < 30) {
                     throw new Error('Invalid Client ID format');
                 }
                 console.log('[Auth Callback] Using Client ID:', clientId.substring(0, 8) + '...');
                 
-                // Configuration MSAL robuste
+                // Configuration MSAL avec URIs exactes du domaine actuel
                 const msalConfig = {
                     auth: {
                         clientId: clientId,
                         authority: 'https://login.microsoftonline.com/common',
-                        redirectUri: window.location.origin + CONFIG.basePath + '/auth-callback.html'
+                        redirectUri: CONFIG.REDIRECT_URI, // URI exacte du domaine actuel
+                        postLogoutRedirectUri: CONFIG.POST_LOGOUT_URI
                     },
                     cache: {
                         cacheLocation: 'localStorage',
-                        storeAuthStateInCookie: CONFIG.environment.isNetlify || CONFIG.environment.isGitHubPages
+                        storeAuthStateInCookie: true // Important pour Netlify
                     },
                     system: {
                         loggerOptions: {
@@ -273,36 +329,46 @@
                     }
                 };
                 
-                console.log('[Auth Callback] MSAL config created:', {
+                console.log('[Auth Callback] MSAL config created with exact URIs:', {
+                    clientId: msalConfig.auth.clientId.substring(0, 8) + '...',
                     authority: msalConfig.auth.authority,
                     redirectUri: msalConfig.auth.redirectUri,
-                    cacheLocation: msalConfig.cache.cacheLocation,
-                    environment: CONFIG.environment
+                    postLogoutRedirectUri: msalConfig.auth.postLogoutRedirectUri,
+                    currentUrl: CURRENT_URL,
+                    uriMatch: CURRENT_URL.startsWith(msalConfig.auth.redirectUri)
                 });
                 
-                // Créer l'instance MSAL avec gestion d'erreur robuste
+                // Vérification critique des URIs
+                if (!CURRENT_URL.startsWith(CONFIG.REDIRECT_URI)) {
+                    console.warn('[Auth Callback] ⚠️ URL mismatch detected!');
+                    console.warn('[Auth Callback] Current URL:', CURRENT_URL);
+                    console.warn('[Auth Callback] Expected start:', CONFIG.REDIRECT_URI);
+                }
+                
+                // Créer l'instance MSAL
                 const msalInstance = new msal.PublicClientApplication(msalConfig);
                 await msalInstance.initialize();
+                console.log('[Auth Callback] ✅ MSAL instance initialized');
                 
-                console.log('[Auth Callback] ✅ MSAL instance initialized successfully');
-                
-                // Traiter la réponse de redirection avec timeout
+                // Traiter la réponse de redirection avec timeout amélioré
                 const responseTimeout = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Response handling timeout')), 20000)
+                    setTimeout(() => reject(new Error('Response handling timeout (30s)')), 30000)
                 );
                 
                 const responsePromise = msalInstance.handleRedirectPromise();
                 const response = await Promise.race([responsePromise, responseTimeout]);
                 
+                console.log('[Auth Callback] Response received:', {
+                    hasResponse: !!response,
+                    hasAccount: !!response?.account,
+                    username: response?.account?.username,
+                    name: response?.account?.name
+                });
+                
                 if (response && response.account) {
                     console.log('[Auth Callback] ✅ Authentication successful!');
-                    console.log('[Auth Callback] Account info:', {
-                        username: response.account.username,
-                        name: response.account.name,
-                        homeAccountId: response.account.homeAccountId
-                    });
                     
-                    // Sauvegarder le Client ID utilisé avec succès
+                    // Sauvegarder le Client ID qui a fonctionné
                     try {
                         localStorage.setItem('emailsortpro_client_id', clientId);
                         console.log('[Auth Callback] ✅ Client ID saved for future use');
@@ -315,23 +381,21 @@
                         throw new Error('Account information incomplete');
                     }
                     
-                    // Afficher le succès
                     showSuccess(response.account);
                     
                 } else if (response === null) {
                     console.log('[Auth Callback] No response from handleRedirectPromise');
-                    console.log('[Auth Callback] Possibly direct navigation to callback page');
                     
-                    // Vérifier s'il y a des comptes dans le cache
+                    // Vérifier les comptes dans le cache
                     const accounts = msalInstance.getAllAccounts();
+                    console.log('[Auth Callback] Accounts in cache:', accounts.length);
+                    
                     if (accounts.length > 0) {
                         console.log('[Auth Callback] Found existing account in cache');
                         showSuccess(accounts[0]);
                     } else {
-                        // Redirection immédiate si pas de réponse et pas de compte
-                        setTimeout(() => {
-                            redirectToApp();
-                        }, 2000);
+                        console.log('[Auth Callback] No accounts found, redirecting to app');
+                        setTimeout(redirectToApp, 2000);
                     }
                 } else {
                     console.warn('[Auth Callback] Unexpected response format:', response);
@@ -343,7 +407,7 @@
                 
                 let errorMessage = 'Erreur inconnue d\'authentification';
                 
-                // Messages d'erreur spécifiques et détaillés
+                // Messages d'erreur spécifiques
                 if (error.errorCode) {
                     const errorCode = error.errorCode;
                     console.log('[Auth Callback] MSAL Error details:', {
@@ -362,7 +426,10 @@
                             break;
                         case 'invalid_client':
                         case 'unauthorized_client':
-                            errorMessage = 'Configuration Client ID incorrecte - Vérifiez votre configuration Azure';
+                            errorMessage = `Configuration Client ID incorrecte pour ${CURRENT_HOSTNAME}`;
+                            break;
+                        case 'invalid_request':
+                            errorMessage = `URI de redirection invalide. Configurez: ${CONFIG.REDIRECT_URI} dans Azure Portal`;
                             break;
                         case 'interaction_required':
                             errorMessage = 'Interaction utilisateur requise - Veuillez réessayer';
@@ -383,12 +450,14 @@
                         errorMessage = 'Erreur réseau ou timeout - Vérifiez votre connexion internet';
                     } else if (error.message.includes('Client ID')) {
                         errorMessage = 'Configuration Client ID invalide - Contactez l\'administrateur';
+                    } else if (error.message.includes('redirect_uri')) {
+                        errorMessage = `URI de redirection incorrecte. Configurez ${CONFIG.REDIRECT_URI} dans Azure Portal`;
                     } else {
                         errorMessage = `Erreur: ${error.message}`;
                     }
                 }
                 
-                showError(errorMessage);
+                showError(errorMessage, error);
             }
         }
 
@@ -406,45 +475,49 @@
 
         // Démarrer le processus quand la page est chargée
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('[Auth Callback] ✅ DOM loaded, starting enhanced callback process...');
+            console.log('[Auth Callback] ✅ DOM loaded, starting callback process...');
+            console.log('[Auth Callback] Current URL:', CURRENT_URL);
+            console.log('[Auth Callback] Expected redirect URI:', CONFIG.REDIRECT_URI);
             waitForMSALAndProcess();
         });
 
-        // Timeout de sécurité augmenté
+        // Timeout de sécurité
         setTimeout(() => {
             const loadingState = document.getElementById('loading-state');
             if (loadingState && loadingState.style.display !== 'none') {
-                console.warn('[Auth Callback] ⏰ Timeout after 45 seconds - redirecting to app');
+                console.warn('[Auth Callback] ⏰ Timeout after 60 seconds');
                 showError('Timeout d\'authentification - Redirection automatique en cours...');
             }
-        }, 45000); // 45 secondes
+        }, 60000);
 
         // Gestionnaire d'erreur global
         window.addEventListener('error', (event) => {
             console.error('[Auth Callback] Global error:', event.error);
-            if (event.error && event.error.message) {
-                showError(`Erreur système: ${event.error.message}`);
+            if (event.error && event.error.message && !document.getElementById('error-state').style.display) {
+                showError(`Erreur système: ${event.error.message}`, event.error);
             }
         });
 
         // Gestionnaire de promesses rejetées
         window.addEventListener('unhandledrejection', (event) => {
             console.error('[Auth Callback] Unhandled promise rejection:', event.reason);
-            if (event.reason && event.reason.message) {
-                showError(`Erreur de promesse: ${event.reason.message}`);
+            if (event.reason && event.reason.message && !document.getElementById('error-state').style.display) {
+                showError(`Erreur de promesse: ${event.reason.message}`, event.reason);
             }
         });
 
-        // Debug global amélioré
+        // Debug global
         window.authCallbackDebug = function() {
-            console.group('=== AUTH CALLBACK DEBUG DÉTAILLÉ ===');
-            console.log('Environment:', CONFIG.environment);
-            console.log('Current URL:', window.location.href);
+            console.group('=== AUTH CALLBACK DEBUG v5.0 ===');
+            console.log('Current URL:', CURRENT_URL);
+            console.log('Current hostname:', CURRENT_HOSTNAME);
+            console.log('Current origin:', CURRENT_ORIGIN);
+            console.log('Generated redirect URI:', CONFIG.REDIRECT_URI);
+            console.log('Generated logout URI:', CONFIG.POST_LOGOUT_URI);
             console.log('Client ID:', getClientId().substring(0, 8) + '...');
-            console.log('Base path:', CONFIG.basePath);
+            console.log('Environment:', CONFIG.environment);
             console.log('MSAL loaded:', typeof msal !== 'undefined');
             console.log('LocalStorage available:', typeof Storage !== 'undefined');
-            console.log('User agent:', navigator.userAgent);
             
             // Test de localStorage
             try {
@@ -463,10 +536,27 @@
                 error: document.getElementById('error-state').style.display !== 'none'
             });
             
+            // Validation des URIs
+            console.log('URI Validation:', {
+                currentUrlStartsWithRedirectUri: CURRENT_URL.startsWith(CONFIG.REDIRECT_URI),
+                urlMatch: CURRENT_URL === CONFIG.REDIRECT_URI || CURRENT_URL.startsWith(CONFIG.REDIRECT_URI + '?'),
+                hasAuthParams: CURRENT_URL.includes('code=') || CURRENT_URL.includes('error=')
+            });
+            
             console.groupEnd();
+            
+            return {
+                urls: {
+                    current: CURRENT_URL,
+                    redirectUri: CONFIG.REDIRECT_URI,
+                    match: CURRENT_URL.startsWith(CONFIG.REDIRECT_URI)
+                },
+                config: CONFIG,
+                environment: CONFIG.environment
+            };
         };
         
-        console.log('[Auth Callback] ✅ Enhanced callback page ready with improved error handling');
+        console.log('[Auth Callback] ✅ Callback page ready v5.0 with improved URI handling');
         console.log('[Auth Callback] Use authCallbackDebug() for detailed diagnostic information');
     </script>
 </body>
