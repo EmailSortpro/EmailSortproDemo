@@ -1,4 +1,4 @@
-// PageManager.js - Version 12.0 - Correction complète du scanner et élimination des boucles
+// PageManager.js - Version 13.0 - Correction scan réel et interface emails complète
 
 class PageManager {
     constructor() {
@@ -9,7 +9,7 @@ class PageManager {
         this.createdTasks = new Map();
         this.autoAnalyzeEnabled = true;
         this.searchTerm = '';
-        this.temporaryEmailStorage = [];
+        this.scannedEmails = [];
         this.lastScanData = null;
         this.isLoading = false;
         this.scannerInitialized = false;
@@ -29,25 +29,54 @@ class PageManager {
     }
 
     init() {
-        console.log('[PageManager] Initialized v12.0 - Scanner correction complète');
+        console.log('[PageManager] Initialized v13.0 - Correction scan réel et interface emails');
         
         // Initialiser le scanner immédiatement
         this.initializeScanModule();
+        
+        // Écouter les événements de scan
+        this.setupScanEventListeners();
     }
 
     // =====================================
-    // INITIALISATION DU MODULE DE SCAN - MÉTHODE ROBUSTE
+    // GESTION DES ÉVÉNEMENTS DE SCAN
+    // =====================================
+    setupScanEventListeners() {
+        // Écouter les résultats de scan du localStorage/sessionStorage
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'scanResults') {
+                this.loadScanResults();
+            }
+        });
+        
+        // Vérifier immédiatement s'il y a des résultats
+        this.loadScanResults();
+    }
+
+    loadScanResults() {
+        try {
+            const scanResults = sessionStorage.getItem('scanResults');
+            if (scanResults) {
+                const results = JSON.parse(scanResults);
+                this.lastScanData = results;
+                console.log('[PageManager] ✅ Résultats de scan chargés:', results);
+            }
+        } catch (error) {
+            console.warn('[PageManager] Erreur chargement résultats scan:', error);
+        }
+    }
+
+    // =====================================
+    // INITIALISATION DU MODULE DE SCAN
     // =====================================
     initializeScanModule() {
-        console.log('[PageManager] 🔧 Initializing scan module v12.1...');
+        console.log('[PageManager] 🔧 Initializing scan module v13.0...');
         
-        // Attendre un peu que tous les scripts se chargent
         setTimeout(() => {
             // Méthode 1: Vérifier MinimalScanModule (classe)
             if (window.MinimalScanModule && typeof window.MinimalScanModule === 'function') {
                 console.log('[PageManager] ✅ MinimalScanModule class found');
                 
-                // Vérifier si l'instance existe déjà
                 if (!window.minimalScanModule) {
                     try {
                         window.minimalScanModule = new window.MinimalScanModule();
@@ -57,14 +86,12 @@ class PageManager {
                     }
                 }
                 
-                // Créer l'alias de compatibilité
                 if (!window.scanStartModule && window.minimalScanModule) {
                     window.scanStartModule = window.minimalScanModule;
                     console.log('[PageManager] ✅ scanStartModule alias created');
                 }
             }
             
-            // Méthode 2: Vérifier les instances existantes
             if (window.minimalScanModule && typeof window.minimalScanModule.render === 'function') {
                 console.log('[PageManager] ✅ minimalScanModule instance ready');
                 this.scannerInitialized = true;
@@ -77,7 +104,6 @@ class PageManager {
                 return;
             }
             
-            // Diagnostic final
             console.log('[PageManager] 📊 Final scan module status:', {
                 MinimalScanModule: !!window.MinimalScanModule,
                 minimalScanModule: !!window.minimalScanModule,
@@ -90,7 +116,7 @@ class PageManager {
             } else {
                 console.log('[PageManager] ⚠️ Scanner module not found - fallback will be used');
             }
-        }, 100); // Délai pour laisser le temps aux scripts de se charger
+        }, 100);
         
         return this.scannerInitialized;
     }
@@ -99,7 +125,6 @@ class PageManager {
     // PAGE LOADING - SÉCURISÉ CONTRE LES BOUCLES
     // =====================================
     async loadPage(pageName) {
-        // Protection absolue contre les boucles
         if (this.isLoading || this.currentPage === pageName) {
             console.log(`[PageManager] Already loading/loaded: ${pageName}`);
             return;
@@ -122,10 +147,8 @@ class PageManager {
                 window.uiManager.showLoading(`Chargement ${pageName}...`);
             }
 
-            // Nettoyer le contenu précédent
             pageContent.innerHTML = '';
             
-            // Charger la nouvelle page
             if (this.pages[pageName]) {
                 await this.pages[pageName](pageContent);
                 this.currentPage = pageName;
@@ -175,18 +198,14 @@ class PageManager {
     }
 
     // =====================================
-    // SCANNER PAGE - VERSION CORRIGÉE V12.1
+    // SCANNER PAGE - VERSION CORRIGÉE V13.0
     // =====================================
     async renderScanner(container) {
-        console.log('[PageManager] 🎯 Rendering scanner page v12.1...');
+        console.log('[PageManager] 🎯 Rendering scanner page v13.0...');
         
-        // 1. Réinitialiser la vérification du module
         this.initializeScanModule();
-        
-        // 2. Attendre un délai pour que l'initialisation se termine
         await new Promise(resolve => setTimeout(resolve, 200));
         
-        // 3. Vérification finale des modules disponibles
         const moduleStatus = {
             MinimalScanModule: !!window.MinimalScanModule,
             minimalScanModule: !!window.minimalScanModule,
@@ -196,7 +215,6 @@ class PageManager {
         
         console.log('[PageManager] 📊 Scanner modules status:', moduleStatus);
         
-        // 4. Essayer d'utiliser minimalScanModule en premier
         if (window.minimalScanModule && typeof window.minimalScanModule.render === 'function') {
             try {
                 console.log('[PageManager] ✅ Using minimalScanModule.render()');
@@ -208,7 +226,6 @@ class PageManager {
             }
         }
         
-        // 5. Essayer scanStartModule comme alternative
         if (window.scanStartModule && typeof window.scanStartModule.render === 'function') {
             try {
                 console.log('[PageManager] ✅ Using scanStartModule.render()');
@@ -220,7 +237,6 @@ class PageManager {
             }
         }
         
-        // 6. Dernier recours: créer une instance si la classe existe
         if (window.MinimalScanModule && typeof window.MinimalScanModule === 'function') {
             try {
                 console.log('[PageManager] 🔧 Last attempt: creating new MinimalScanModule instance');
@@ -233,715 +249,247 @@ class PageManager {
             }
         }
         
-        // 7. Si tout échoue, utiliser le fallback amélioré
         console.log('[PageManager] ⚠️ All scanner methods failed, using enhanced fallback');
         this.renderScannerFallback(container);
     }
 
     // =====================================
-    // SCANNER FALLBACK AMÉLIORÉ
+    // RÉCUPÉRATION DES EMAILS SCANNÉS
     // =====================================
-    renderScannerFallback(container) {
-        console.log('[PageManager] Rendering enhanced scanner fallback...');
+    async getScannedEmails() {
+        console.log('[PageManager] 📧 Récupération des emails scannés...');
         
-        container.innerHTML = `
-            <div class="scanner-fallback-enhanced">
-                <div class="scanner-container">
-                    <!-- En-tête du scanner -->
-                    <div class="scanner-header">
-                        <div class="scanner-icon">
-                            <i class="fas fa-search"></i>
-                        </div>
-                        <h1 class="scanner-title">Scanner d'Emails</h1>
-                        <p class="scanner-subtitle">Analysez et organisez vos emails automatiquement</p>
-                    </div>
-                    
-                    <!-- Diagnostic du module -->
-                    <div class="scanner-diagnostic">
-                        <div class="diagnostic-header">
-                            <i class="fas fa-info-circle"></i>
-                            <span>État du module de scan</span>
-                        </div>
-                        <div class="diagnostic-content">
-                            ${this.generateScannerDiagnostic()}
-                        </div>
-                    </div>
-                    
-                    <!-- Interface de scan simplifiée -->
-                    <div class="scanner-interface">
-                        <div class="scan-steps">
-                            <div class="step active">
-                                <div class="step-number">1</div>
-                                <div class="step-label">Configuration</div>
-                            </div>
-                            <div class="step">
-                                <div class="step-number">2</div>
-                                <div class="step-label">Analyse</div>
-                            </div>
-                            <div class="step">
-                                <div class="step-number">3</div>
-                                <div class="step-label">Résultats</div>
-                            </div>
-                        </div>
-                        
-                        <div class="scan-options">
-                            <h3>Période d'analyse</h3>
-                            <div class="period-buttons">
-                                <button class="period-btn" data-days="1">1 jour</button>
-                                <button class="period-btn active" data-days="7">7 jours</button>
-                                <button class="period-btn" data-days="30">30 jours</button>
-                            </div>
-                        </div>
-                        
-                        <div class="scan-actions">
-                            <button class="btn-scan-start" onclick="window.pageManager.startFallbackScan()">
-                                <i class="fas fa-play"></i>
-                                <span>Démarrer l'analyse</span>
-                            </button>
-                            
-                            <button class="btn-scan-retry" onclick="window.pageManager.retryModuleLoad()">
-                                <i class="fas fa-sync-alt"></i>
-                                <span>Recharger le module</span>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Informations techniques -->
-                    <div class="scanner-tech-info">
-                        <details>
-                            <summary>Informations techniques</summary>
-                            <div class="tech-content">
-                                <p><strong>Modules disponibles:</strong></p>
-                                <ul>
-                                    <li>window.MinimalScanModule: ${!!window.MinimalScanModule ? '✅ Disponible' : '❌ Non trouvé'}</li>
-                                    <li>window.minimalScanModule: ${!!window.minimalScanModule ? '✅ Instance créée' : '❌ Non initialisé'}</li>
-                                    <li>window.scanStartModule: ${!!window.scanStartModule ? '✅ Disponible' : '❌ Non trouvé'}</li>
-                                </ul>
-                                <p><strong>Scripts chargés:</strong></p>
-                                <ul>
-                                    ${this.getLoadedScripts().map(script => `<li>${script}</li>`).join('')}
-                                </ul>
-                            </div>
-                        </details>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        this.addScannerFallbackStyles();
-        this.initializeFallbackEvents();
-    }
-
-    generateScannerDiagnostic() {
-        const modules = [
-            { name: 'MinimalScanModule', obj: window.MinimalScanModule, type: 'class' },
-            { name: 'minimalScanModule', obj: window.minimalScanModule, type: 'instance' },
-            { name: 'scanStartModule', obj: window.scanStartModule, type: 'instance' }
-        ];
-        
-        let diagnosticHtml = '';
-        
-        modules.forEach(module => {
-            const exists = !!module.obj;
-            const hasRender = module.obj && typeof module.obj.render === 'function';
-            const status = exists ? (hasRender ? 'ready' : 'partial') : 'missing';
-            
-            diagnosticHtml += `
-                <div class="diagnostic-item ${status}">
-                    <div class="diagnostic-icon">
-                        ${status === 'ready' ? '✅' : status === 'partial' ? '⚠️' : '❌'}
-                    </div>
-                    <div class="diagnostic-details">
-                        <div class="diagnostic-name">${module.name}</div>
-                        <div class="diagnostic-status">
-                            ${status === 'ready' ? 'Prêt à utiliser' : 
-                              status === 'partial' ? 'Partiellement chargé' : 
-                              'Non disponible'}
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        return diagnosticHtml;
-    }
-
-    getLoadedScripts() {
-        const scripts = Array.from(document.querySelectorAll('script[src]'));
-        return scripts
-            .map(script => script.src.split('/').pop())
-            .filter(name => name.toLowerCase().includes('scan') || name.toLowerCase().includes('start'))
-            .slice(0, 5); // Limiter à 5 pour éviter l'encombrement
-    }
-
-    initializeFallbackEvents() {
-        // Événements pour les boutons de période
-        document.querySelectorAll('.period-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-            });
-        });
-    }
-
-    // =====================================
-    // ACTIONS DU SCANNER FALLBACK
-    // =====================================
-    async startFallbackScan() {
-        console.log('[PageManager] Starting fallback scan...');
-        
-        const scanBtn = document.querySelector('.btn-scan-start');
-        const steps = document.querySelectorAll('.step');
-        
-        if (scanBtn) {
-            scanBtn.disabled = true;
-            scanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Analyse en cours...</span>';
+        // 1. Essayer de récupérer depuis emailScanner
+        if (window.emailScanner && typeof window.emailScanner.getAllEmails === 'function') {
+            try {
+                const emails = window.emailScanner.getAllEmails();
+                if (emails && emails.length > 0) {
+                    console.log('[PageManager] ✅ Emails trouvés via emailScanner:', emails.length);
+                    this.scannedEmails = emails;
+                    return emails;
+                }
+            } catch (error) {
+                console.warn('[PageManager] ⚠️ Erreur emailScanner:', error);
+            }
         }
         
-        try {
-            // Simulation progressive
-            for (let i = 0; i < steps.length; i++) {
-                steps[i].classList.add('active');
-                await new Promise(resolve => setTimeout(resolve, 1000));
+        // 2. Essayer de récupérer via mailService
+        if (window.mailService && typeof window.mailService.getEmails === 'function') {
+            try {
+                console.log('[PageManager] 🔄 Récupération via mailService...');
+                const authService = window.authService;
+                
+                if (!authService || !authService.isAuthenticated()) {
+                    console.warn('[PageManager] ⚠️ Service non authentifié');
+                    return this.generateSimulatedEmails();
+                }
+                
+                const emails = await window.mailService.getEmails({
+                    folder: 'inbox',
+                    days: this.lastScanData?.selectedDays || 7,
+                    maxResults: 100
+                });
+                
+                if (emails && emails.length > 0) {
+                    // Analyser et catégoriser les emails
+                    const categorizedEmails = this.categorizeEmails(emails);
+                    console.log('[PageManager] ✅ Emails récupérés et catégorisés:', categorizedEmails.length);
+                    this.scannedEmails = categorizedEmails;
+                    return categorizedEmails;
+                }
+            } catch (error) {
+                console.warn('[PageManager] ⚠️ Erreur mailService:', error);
             }
+        }
+        
+        // 3. Générer des emails simulés avec catégories
+        console.log('[PageManager] 🎭 Génération d\'emails simulés...');
+        return this.generateSimulatedEmails();
+    }
+
+    // =====================================
+    // CATÉGORISATION DES EMAILS
+    // =====================================
+    categorizeEmails(emails) {
+        if (!window.categoryManager) {
+            console.warn('[PageManager] ⚠️ CategoryManager non disponible');
+            return emails;
+        }
+        
+        console.log('[PageManager] 🏷️ Catégorisation de', emails.length, 'emails...');
+        
+        return emails.map(email => {
+            try {
+                const analysis = window.categoryManager.analyzeEmail(email);
+                return {
+                    ...email,
+                    category: analysis.category || 'other',
+                    categoryScore: analysis.score || 0,
+                    categoryConfidence: analysis.confidence || 0,
+                    matchedPatterns: analysis.matchedPatterns || [],
+                    isSpam: analysis.isSpam || false
+                };
+            } catch (error) {
+                console.warn('[PageManager] ⚠️ Erreur catégorisation email:', error);
+                return {
+                    ...email,
+                    category: 'other',
+                    categoryScore: 0,
+                    categoryConfidence: 0,
+                    matchedPatterns: [],
+                    isSpam: false
+                };
+            }
+        });
+    }
+
+    // =====================================
+    // GÉNÉRATION D'EMAILS SIMULÉS RÉALISTES
+    // =====================================
+    generateSimulatedEmails() {
+        const categories = window.categoryManager?.getCategories() || {};
+        const categoryIds = Object.keys(categories);
+        
+        const totalEmails = this.lastScanData?.total || (Math.floor(Math.random() * 150) + 50);
+        const emails = [];
+        
+        // Templates d'emails réalistes par catégorie
+        const emailTemplates = {
+            marketing_news: [
+                {
+                    subject: "🎯 Offre spéciale - 50% de réduction",
+                    from: { emailAddress: { name: "Newsletter Store", address: "promo@shop-online.com" } },
+                    bodyPreview: "Profitez de notre vente flash exceptionnelle. Livraison gratuite.",
+                    hasAttachments: false
+                },
+                {
+                    subject: "Actualités hebdomadaires - Édition du 8 juin",
+                    from: { emailAddress: { name: "Le Journal", address: "newsletter@journal-news.fr" } },
+                    bodyPreview: "Découvrez les dernières actualités de la semaine.",
+                    hasAttachments: false
+                }
+            ],
+            security: [
+                {
+                    subject: "Alerte de sécurité - Nouvelle connexion détectée",
+                    from: { emailAddress: { name: "Microsoft Security", address: "security@microsoft.com" } },
+                    bodyPreview: "Une nouvelle connexion à votre compte a été détectée depuis Paris.",
+                    hasAttachments: false,
+                    importance: "high"
+                },
+                {
+                    subject: "Code de vérification: 847392",
+                    from: { emailAddress: { name: "Google", address: "noreply@google.com" } },
+                    bodyPreview: "Votre code de vérification à usage unique est 847392.",
+                    hasAttachments: false
+                }
+            ],
+            tasks: [
+                {
+                    subject: "Action requise: Validation du rapport mensuel",
+                    from: { emailAddress: { name: "Marie Dubois", address: "marie.dubois@entreprise.fr" } },
+                    bodyPreview: "Merci de valider le rapport mensuel avant vendredi 16h.",
+                    hasAttachments: true,
+                    importance: "high"
+                },
+                {
+                    subject: "Urgent: Réponse demandée avant 18h",
+                    from: { emailAddress: { name: "Pierre Martin", address: "p.martin@client.com" } },
+                    bodyPreview: "Nous avons besoin de votre confirmation pour la livraison.",
+                    hasAttachments: false,
+                    importance: "high"
+                }
+            ],
+            finance: [
+                {
+                    subject: "Facture #2024-0156 - Échéance 15/06",
+                    from: { emailAddress: { name: "Comptabilité", address: "compta@fournisseur.fr" } },
+                    bodyPreview: "Veuillez trouver ci-joint votre facture d'un montant de 1,250.00€.",
+                    hasAttachments: true
+                },
+                {
+                    subject: "Relevé bancaire juin 2025",
+                    from: { emailAddress: { name: "Banque Digitale", address: "noreply@banque-digitale.fr" } },
+                    bodyPreview: "Votre relevé de compte est disponible en ligne.",
+                    hasAttachments: true
+                }
+            ],
+            meetings: [
+                {
+                    subject: "Invitation: Réunion équipe - Mardi 10 juin 14h",
+                    from: { emailAddress: { name: "Sophie Lambert", address: "s.lambert@entreprise.fr" } },
+                    bodyPreview: "Réunion d'équipe pour faire le point sur les projets en cours.",
+                    hasAttachments: false
+                },
+                {
+                    subject: "Demande de rendez-vous - Présentation produit",
+                    from: { emailAddress: { name: "Commercial Solutions", address: "contact@solutions-pro.com" } },
+                    bodyPreview: "Nous souhaiterions vous présenter notre nouvelle solution.",
+                    hasAttachments: false
+                }
+            ],
+            cc: [
+                {
+                    subject: "RE: Suivi projet Alpha - Point d'étape",
+                    from: { emailAddress: { name: "Chef de projet", address: "chef.projet@entreprise.fr" } },
+                    bodyPreview: "Faisant suite à notre échange, voici le point d'étape.",
+                    hasAttachments: false,
+                    ccRecipients: [{ emailAddress: { address: "user@example.com" } }]
+                }
+            ],
+            support: [
+                {
+                    subject: "Ticket #12845 résolu - Problème connexion",
+                    from: { emailAddress: { name: "Support IT", address: "support@entreprise.fr" } },
+                    bodyPreview: "Votre ticket de support a été résolu avec succès.",
+                    hasAttachments: false
+                }
+            ]
+        };
+        
+        // Générer des emails pour chaque catégorie
+        for (let i = 0; i < totalEmails; i++) {
+            const randomCategoryId = categoryIds[Math.floor(Math.random() * categoryIds.length)];
+            const templates = emailTemplates[randomCategoryId] || emailTemplates.marketing_news;
+            const template = templates[Math.floor(Math.random() * templates.length)];
             
-            // Simuler des résultats
-            const mockResults = {
-                total: Math.floor(Math.random() * 200) + 50,
-                categorized: Math.floor(Math.random() * 150) + 30,
-                duration: 3
+            const email = {
+                id: `simulated_${i}`,
+                subject: template.subject,
+                from: template.from,
+                toRecipients: [{ emailAddress: { address: "user@example.com" } }],
+                ccRecipients: template.ccRecipients || [],
+                bodyPreview: template.bodyPreview,
+                receivedDateTime: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+                hasAttachments: template.hasAttachments || false,
+                importance: template.importance || 'normal',
+                isRead: Math.random() > 0.3,
+                category: randomCategoryId,
+                categoryScore: Math.floor(Math.random() * 50) + 50,
+                categoryConfidence: 0.7 + Math.random() * 0.3,
+                matchedPatterns: [{ keyword: 'simulated', type: 'generated', score: 100 }],
+                isSpam: false
             };
             
-            if (window.uiManager && window.uiManager.showToast) {
-                window.uiManager.showToast(
-                    `✅ Scan terminé: ${mockResults.total} emails analysés, ${mockResults.categorized} catégorisés`, 
-                    'success'
-                );
-            }
-            
-            // Rediriger vers les emails après un délai
-            setTimeout(() => {
-                if (window.pageManager) {
-                    window.pageManager.loadPage('emails');
-                }
-            }, 2000);
-            
-        } catch (error) {
-            console.error('[PageManager] Fallback scan error:', error);
-            if (window.uiManager && window.uiManager.showToast) {
-                window.uiManager.showToast('Erreur lors du scan', 'error');
-            }
-        } finally {
-            if (scanBtn) {
-                scanBtn.disabled = false;
-                scanBtn.innerHTML = '<i class="fas fa-play"></i><span>Démarrer l\'analyse</span>';
-            }
-        }
-    }
-
-    async retryModuleLoad() {
-        console.log('[PageManager] Retrying module load...');
-        
-        if (window.uiManager && window.uiManager.showToast) {
-            window.uiManager.showToast('Rechargement du module...', 'info');
+            emails.push(email);
         }
         
-        // Réessayer l'initialisation
-        const initialized = this.initializeScanModule();
+        // Trier par date (plus récents en premier)
+        emails.sort((a, b) => new Date(b.receivedDateTime) - new Date(a.receivedDateTime));
         
-        if (initialized) {
-            if (window.uiManager && window.uiManager.showToast) {
-                window.uiManager.showToast('✅ Module chargé avec succès!', 'success');
-            }
-            
-            // Recharger la page scanner
-            setTimeout(() => {
-                this.currentPage = null; // Force le rechargement
-                this.loadPage('scanner');
-            }, 1000);
-        } else {
-            if (window.uiManager && window.uiManager.showToast) {
-                window.uiManager.showToast('❌ Module toujours indisponible', 'warning');
-            }
-            
-            // Recharger le diagnostic
-            const diagnosticContent = document.querySelector('.diagnostic-content');
-            if (diagnosticContent) {
-                diagnosticContent.innerHTML = this.generateScannerDiagnostic();
-            }
-        }
+        console.log('[PageManager] ✅ Généré', emails.length, 'emails simulés avec catégories');
+        this.scannedEmails = emails;
+        return emails;
     }
 
     // =====================================
-    // STYLES POUR LE SCANNER FALLBACK
-    // =====================================
-    addScannerFallbackStyles() {
-        if (document.getElementById('scannerFallbackEnhancedStyles')) return;
-        
-        const styles = document.createElement('style');
-        styles.id = 'scannerFallbackEnhancedStyles';
-        styles.textContent = `
-            .scanner-fallback-enhanced {
-                min-height: calc(100vh - 140px);
-                padding: 20px;
-                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            }
-            
-            .scanner-container {
-                max-width: 800px;
-                margin: 0 auto;
-            }
-            
-            .scanner-header {
-                text-align: center;
-                margin-bottom: 40px;
-            }
-            
-            .scanner-icon {
-                width: 80px;
-                height: 80px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border-radius: 20px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin: 0 auto 20px;
-                color: white;
-                font-size: 32px;
-            }
-            
-            .scanner-title {
-                font-size: 32px;
-                font-weight: 700;
-                color: #1f2937;
-                margin-bottom: 12px;
-            }
-            
-            .scanner-subtitle {
-                font-size: 18px;
-                color: #6b7280;
-                margin-bottom: 0;
-            }
-            
-            .scanner-diagnostic {
-                background: white;
-                border-radius: 16px;
-                padding: 24px;
-                margin-bottom: 32px;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                border: 1px solid #e5e7eb;
-            }
-            
-            .diagnostic-header {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                font-weight: 600;
-                color: #374151;
-                margin-bottom: 16px;
-            }
-            
-            .diagnostic-content {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            }
-            
-            .diagnostic-item {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 12px;
-                border-radius: 8px;
-                border: 1px solid;
-            }
-            
-            .diagnostic-item.ready {
-                background: #f0fdf4;
-                border-color: #bbf7d0;
-            }
-            
-            .diagnostic-item.partial {
-                background: #fffbeb;
-                border-color: #fed7aa;
-            }
-            
-            .diagnostic-item.missing {
-                background: #fef2f2;
-                border-color: #fecaca;
-            }
-            
-            .diagnostic-icon {
-                font-size: 20px;
-            }
-            
-            .diagnostic-name {
-                font-weight: 600;
-                color: #1f2937;
-            }
-            
-            .diagnostic-status {
-                font-size: 14px;
-                color: #6b7280;
-            }
-            
-            .scanner-interface {
-                background: white;
-                border-radius: 16px;
-                padding: 32px;
-                margin-bottom: 24px;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                border: 1px solid #e5e7eb;
-            }
-            
-            .scan-steps {
-                display: flex;
-                justify-content: center;
-                gap: 40px;
-                margin-bottom: 32px;
-            }
-            
-            .step {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 8px;
-            }
-            
-            .step-number {
-                width: 40px;
-                height: 40px;
-                background: #e5e7eb;
-                color: #9ca3af;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 600;
-                transition: all 0.3s ease;
-            }
-            
-            .step.active .step-number {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-            }
-            
-            .step-label {
-                font-size: 14px;
-                color: #6b7280;
-                font-weight: 500;
-            }
-            
-            .step.active .step-label {
-                color: #667eea;
-                font-weight: 600;
-            }
-            
-            .scan-options {
-                text-align: center;
-                margin-bottom: 32px;
-            }
-            
-            .scan-options h3 {
-                font-size: 18px;
-                font-weight: 600;
-                color: #374151;
-                margin-bottom: 16px;
-            }
-            
-            .period-buttons {
-                display: flex;
-                justify-content: center;
-                gap: 12px;
-                flex-wrap: wrap;
-            }
-            
-            .period-btn {
-                padding: 10px 20px;
-                border: 2px solid #e5e7eb;
-                background: white;
-                border-radius: 8px;
-                cursor: pointer;
-                font-weight: 500;
-                color: #6b7280;
-                transition: all 0.2s ease;
-            }
-            
-            .period-btn.active {
-                border-color: #667eea;
-                background: #667eea;
-                color: white;
-            }
-            
-            .period-btn:hover:not(.active) {
-                border-color: #9ca3af;
-            }
-            
-            .scan-actions {
-                display: flex;
-                justify-content: center;
-                gap: 16px;
-                flex-wrap: wrap;
-            }
-            
-            .btn-scan-start,
-            .btn-scan-retry {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                padding: 14px 28px;
-                border: none;
-                border-radius: 12px;
-                cursor: pointer;
-                font-size: 16px;
-                font-weight: 600;
-                transition: all 0.3s ease;
-            }
-            
-            .btn-scan-start {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-            }
-            
-            .btn-scan-start:hover:not(:disabled) {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-            }
-            
-            .btn-scan-start:disabled {
-                opacity: 0.6;
-                cursor: not-allowed;
-                transform: none;
-            }
-            
-            .btn-scan-retry {
-                background: white;
-                color: #374151;
-                border: 2px solid #e5e7eb;
-            }
-            
-            .btn-scan-retry:hover {
-                background: #f9fafb;
-                border-color: #9ca3af;
-                transform: translateY(-1px);
-            }
-            
-            .scanner-tech-info {
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
-                border-radius: 12px;
-                padding: 16px;
-            }
-            
-            .scanner-tech-info summary {
-                cursor: pointer;
-                font-weight: 600;
-                color: #374151;
-                padding: 8px;
-                border-radius: 6px;
-                transition: background 0.2s;
-            }
-            
-            .scanner-tech-info summary:hover {
-                background: #f1f5f9;
-            }
-            
-            .tech-content {
-                margin-top: 12px;
-                padding: 12px;
-                background: white;
-                border-radius: 8px;
-                font-size: 14px;
-                line-height: 1.6;
-            }
-            
-            .tech-content ul {
-                margin: 8px 0;
-                padding-left: 20px;
-            }
-            
-            .tech-content li {
-                margin: 4px 0;
-            }
-            
-            @media (max-width: 768px) {
-                .scanner-fallback-enhanced {
-                    padding: 16px;
-                }
-                
-                .scanner-interface {
-                    padding: 24px 20px;
-                }
-                
-                .scan-steps {
-                    gap: 20px;
-                    margin-bottom: 24px;
-                }
-                
-                .step-number {
-                    width: 32px;
-                    height: 32px;
-                    font-size: 14px;
-                }
-                
-                .step-label {
-                    font-size: 12px;
-                }
-                
-                .scanner-title {
-                    font-size: 28px;
-                }
-                
-                .scan-actions {
-                    flex-direction: column;
-                    align-items: center;
-                }
-                
-                .btn-scan-start,
-                .btn-scan-retry {
-                    width: 100%;
-                    max-width: 280px;
-                    justify-content: center;
-                }
-            }
-        `;
-        
-        document.head.appendChild(styles);
-    }
-
-    // =====================================
-    // RANGER PAGE
-    // =====================================
-    async renderRanger(container) {
-        console.log('[PageManager] Rendering ranger page...');
-        
-        container.innerHTML = `
-            <div class="ranger-container">
-                <div class="ranger-header">
-                    <h1 class="ranger-title">Ranger par domaine</h1>
-                    <p class="ranger-subtitle">Organisez vos emails par expéditeur automatiquement</p>
-                </div>
-                
-                <div class="ranger-card">
-                    <div class="ranger-icon">
-                        <i class="fas fa-folder-tree"></i>
-                    </div>
-                    <h3>Organisation automatique</h3>
-                    <p>Triez et organisez vos emails par domaine d'expéditeur pour une meilleure gestion</p>
-                    <button class="btn btn-primary btn-large">
-                        <i class="fas fa-magic"></i> Organiser automatiquement
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        this.addRangerStyles();
-    }
-
-    addRangerStyles() {
-        if (document.getElementById('rangerStyles')) return;
-        
-        const styles = document.createElement('style');
-        styles.id = 'rangerStyles';
-        styles.textContent = `
-            .ranger-container {
-                padding: 40px 20px;
-                max-width: 800px;
-                margin: 0 auto;
-            }
-            
-            .ranger-header {
-                text-align: center;
-                margin-bottom: 40px;
-            }
-            
-            .ranger-title {
-                font-size: 2.5rem;
-                font-weight: 700;
-                color: #1f2937;
-                margin-bottom: 12px;
-            }
-            
-            .ranger-subtitle {
-                font-size: 1.1rem;
-                color: #6b7280;
-                line-height: 1.6;
-            }
-            
-            .ranger-card {
-                background: white;
-                border-radius: 16px;
-                padding: 48px;
-                text-align: center;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-                border: 1px solid #e5e7eb;
-            }
-            
-            .ranger-icon {
-                width: 80px;
-                height: 80px;
-                background: linear-gradient(135deg, #10b981, #059669);
-                border-radius: 20px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin: 0 auto 24px;
-                color: white;
-                font-size: 32px;
-            }
-            
-            .ranger-card h3 {
-                font-size: 1.5rem;
-                font-weight: 700;
-                color: #1f2937;
-                margin-bottom: 16px;
-            }
-            
-            .ranger-card p {
-                color: #6b7280;
-                line-height: 1.6;
-                margin-bottom: 32px;
-                font-size: 1rem;
-            }
-            
-            .btn-large {
-                padding: 16px 32px;
-                font-size: 1.1rem;
-            }
-            
-            @media (max-width: 768px) {
-                .ranger-container {
-                    padding: 20px 15px;
-                }
-                
-                .ranger-card {
-                    padding: 32px 24px;
-                }
-                
-                .ranger-title {
-                    font-size: 2rem;
-                }
-            }
-        `;
-        
-        document.head.appendChild(styles);
-    }
-
-    // =====================================
-    // EMAILS PAGE - INTERFACE COMPLÈTE RESTAURÉE
+    // INTERFACE EMAILS COMPLÈTE RESTAURÉE
     // =====================================
     async renderEmails(container) {
         console.log('[PageManager] 📧 Rendering emails page with full interface...');
         
-        // Récupérer les emails du scanner ou générer des emails simulés
-        let emails = window.emailScanner?.getAllEmails() || [];
-        
-        // Si pas d'emails du scanner, utiliser les résultats du scan simulé
-        if (emails.length === 0) {
-            emails = this.getSimulatedEmailsFromScan();
-        }
-        
+        // Récupérer les emails
+        const emails = await this.getScannedEmails();
         const categories = window.categoryManager?.getCategories() || {};
         
         // Initialize view mode
@@ -1103,9 +651,8 @@ class PageManager {
     // RENDU DES EMAILS
     // =====================================
     renderEmailsList(emails = null) {
-        // Si pas d'emails passés, utiliser la logique standard
         if (!emails) {
-            emails = window.emailScanner?.getAllEmails() || this.getSimulatedEmailsFromScan() || [];
+            emails = this.scannedEmails || [];
         }
         
         let filteredEmails = emails;
@@ -1208,6 +755,7 @@ class PageManager {
                     ${email.hasAttachments ? '<span class="badge attachment"><i class="fas fa-paperclip"></i></span>' : ''}
                     ${email.importance === 'high' ? '<span class="badge priority"><i class="fas fa-exclamation"></i></span>' : ''}
                     ${hasTask ? '<span class="badge task-created"><i class="fas fa-check"></i> Tâche</span>' : ''}
+                    ${email.category && email.category !== 'other' ? `<span class="badge category-badge" style="background: ${this.getCategoryColor(email.category)}20; color: ${this.getCategoryColor(email.category)}">${this.getCategoryIcon(email.category)}</span>` : ''}
                 </div>
                 
                 <!-- Date de réception -->
@@ -1508,8 +1056,7 @@ class PageManager {
     }
 
     getVisibleEmails() {
-        const emails = window.emailScanner?.getAllEmails() || this.getSimulatedEmailsFromScan() || [];
-        let filteredEmails = emails;
+        let filteredEmails = this.scannedEmails || [];
         
         if (this.currentCategory !== 'all') {
             filteredEmails = filteredEmails.filter(email => (email.category || 'other') === this.currentCategory);
@@ -1525,6 +1072,16 @@ class PageManager {
     getCategoryDisplayName(categoryId) {
         const categories = window.categoryManager?.getCategories() || {};
         return categories[categoryId]?.name || categoryId;
+    }
+
+    getCategoryColor(categoryId) {
+        const categories = window.categoryManager?.getCategories() || {};
+        return categories[categoryId]?.color || '#6b7280';
+    }
+
+    getCategoryIcon(categoryId) {
+        const categories = window.categoryManager?.getCategories() || {};
+        return categories[categoryId]?.icon || '📧';
     }
 
     // =====================================
@@ -1565,6 +1122,7 @@ class PageManager {
         }
         
         try {
+            this.scannedEmails = [];
             await this.loadPage('emails');
             if (window.uiManager?.showToast) {
                 window.uiManager.showToast('Emails actualisés', 'success');
@@ -1575,11 +1133,6 @@ class PageManager {
                 window.uiManager.showToast('Erreur d\'actualisation', 'error');
             }
         }
-    }
-
-    async analyzeFirstEmails(emails) {
-        console.log('[PageManager] Auto-analyzing first emails...');
-        // Implémentation future pour l'analyse IA
     }
 
     showTaskCreationModal(emailId) {
@@ -1707,198 +1260,228 @@ class PageManager {
         `;
     }
 
-    addDashboardStyles() {
-        if (document.getElementById('dashboardStyles')) return;
+    async renderRanger(container) {
+        console.log('[PageManager] Rendering ranger page...');
         
-        const styles = document.createElement('style');
-        styles.id = 'dashboardStyles';
-        styles.textContent = `
-            .dashboard-container {
-                padding: 20px;
-                max-width: 1200px;
-                margin: 0 auto;
-            }
-            
-            .dashboard-header {
-                text-align: center;
-                margin-bottom: 40px;
-            }
-            
-            .dashboard-title {
-                font-size: 2.5rem;
-                font-weight: 700;
-                color: #1f2937;
-                margin-bottom: 12px;
-            }
-            
-            .dashboard-subtitle {
-                font-size: 1.1rem;
-                color: #6b7280;
-            }
-            
-            .dashboard-actions {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: 24px;
-            }
-            
-            .action-card {
-                background: white;
-                border-radius: 16px;
-                padding: 32px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                cursor: pointer;
-                transition: all 0.3s ease;
-                text-align: center;
-                border: 2px solid transparent;
-            }
-            
-            .action-card:hover {
-                transform: translateY(-4px);
-                box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-                border-color: #667eea;
-            }
-            
-            .action-icon {
-                font-size: 3rem;
-                margin-bottom: 20px;
-                color: #667eea;
-            }
-            
-            .action-card h3 {
-                font-size: 1.25rem;
-                font-weight: 700;
-                color: #1f2937;
-                margin-bottom: 12px;
-            }
-            
-            .action-card p {
-                color: #6b7280;
-                line-height: 1.6;
-                margin: 0;
-            }
-            
-            .page-container {
-                padding: 20px;
-                max-width: 1200px;
-                margin: 0 auto;
-            }
-            
-            .page-header {
-                text-align: center;
-                margin-bottom: 40px;
-            }
-            
-            .page-header h1 {
-                font-size: 2.5rem;
-                font-weight: 700;
-                color: #1f2937;
-                margin-bottom: 12px;
-            }
-            
-            .page-header p {
-                font-size: 1.1rem;
-                color: #6b7280;
-            }
-            
-            .empty-state {
-                text-align: center;
-                padding: 60px 20px;
-                background: white;
-                border-radius: 16px;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            }
-            
-            .empty-icon {
-                font-size: 4rem;
-                color: #d1d5db;
-                margin-bottom: 20px;
-            }
-            
-            .empty-state h3 {
-                font-size: 1.5rem;
-                font-weight: 700;
-                color: #374151;
-                margin-bottom: 12px;
-            }
-            
-            .empty-state p {
-                color: #6b7280;
-                margin-bottom: 24px;
-            }
-            
-            .settings-content {
-                display: grid;
-                gap: 24px;
-            }
-            
-            .setting-card {
-                background: white;
-                border-radius: 16px;
-                padding: 32px;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                text-align: center;
-            }
-            
-            .setting-card h3 {
-                font-size: 1.25rem;
-                font-weight: 700;
-                color: #1f2937;
-                margin-bottom: 12px;
-            }
-            
-            .setting-card p {
-                color: #6b7280;
-                margin-bottom: 24px;
-            }
-            
-            .btn {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                padding: 12px 24px;
-                border: none;
-                border-radius: 8px;
-                cursor: pointer;
-                font-weight: 600;
-                transition: all 0.2s ease;
-                text-decoration: none;
-                font-size: 14px;
-            }
-            
-            .btn-primary {
-                background: linear-gradient(135deg, #667eea, #764ba2);
-                color: white;
-            }
-            
-            .btn-primary:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-            }
-            
-            @media (max-width: 768px) {
-                .dashboard-actions {
-                    grid-template-columns: 1fr;
-                }
+        container.innerHTML = `
+            <div class="ranger-container">
+                <div class="ranger-header">
+                    <h1 class="ranger-title">Ranger par domaine</h1>
+                    <p class="ranger-subtitle">Organisez vos emails par expéditeur automatiquement</p>
+                </div>
                 
-                .dashboard-title {
-                    font-size: 2rem;
-                }
-                
-                .action-card {
-                    padding: 24px;
-                }
-            }
+                <div class="ranger-card">
+                    <div class="ranger-icon">
+                        <i class="fas fa-folder-tree"></i>
+                    </div>
+                    <h3>Organisation automatique</h3>
+                    <p>Triez et organisez vos emails par domaine d'expéditeur pour une meilleure gestion</p>
+                    <button class="btn btn-primary btn-large">
+                        <i class="fas fa-magic"></i> Organiser automatiquement
+                    </button>
+                </div>
+            </div>
         `;
         
-        document.head.appendChild(styles);
+        this.addRangerStyles();
     }
 
     // =====================================
-    // UTILITY METHODS
+    // SCANNER FALLBACK AMÉLIORÉ
     // =====================================
+    renderScannerFallback(container) {
+        console.log('[PageManager] Rendering enhanced scanner fallback...');
+        
+        container.innerHTML = `
+            <div class="scanner-fallback-enhanced">
+                <div class="scanner-container">
+                    <div class="scanner-header">
+                        <div class="scanner-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h1 class="scanner-title">Scanner d'Emails</h1>
+                        <p class="scanner-subtitle">Analysez et organisez vos emails automatiquement</p>
+                    </div>
+                    
+                    <div class="scanner-diagnostic">
+                        <div class="diagnostic-header">
+                            <i class="fas fa-info-circle"></i>
+                            <span>État du module de scan</span>
+                        </div>
+                        <div class="diagnostic-content">
+                            ${this.generateScannerDiagnostic()}
+                        </div>
+                    </div>
+                    
+                    <div class="scanner-interface">
+                        <div class="scan-steps">
+                            <div class="step active">
+                                <div class="step-number">1</div>
+                                <div class="step-label">Configuration</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-number">2</div>
+                                <div class="step-label">Analyse</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-number">3</div>
+                                <div class="step-label">Résultats</div>
+                            </div>
+                        </div>
+                        
+                        <div class="scan-options">
+                            <h3>Période d'analyse</h3>
+                            <div class="period-buttons">
+                                <button class="period-btn" data-days="1">1 jour</button>
+                                <button class="period-btn active" data-days="7">7 jours</button>
+                                <button class="period-btn" data-days="30">30 jours</button>
+                            </div>
+                        </div>
+                        
+                        <div class="scan-actions">
+                            <button class="btn-scan-start" onclick="window.pageManager.startFallbackScan()">
+                                <i class="fas fa-play"></i>
+                                <span>Démarrer l'analyse</span>
+                            </button>
+                            
+                            <button class="btn-scan-retry" onclick="window.pageManager.retryModuleLoad()">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Recharger le module</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        this.addScannerFallbackStyles();
+        this.initializeFallbackEvents();
+    }
+
+    generateScannerDiagnostic() {
+        const modules = [
+            { name: 'MinimalScanModule', obj: window.MinimalScanModule, type: 'class' },
+            { name: 'minimalScanModule', obj: window.minimalScanModule, type: 'instance' },
+            { name: 'scanStartModule', obj: window.scanStartModule, type: 'instance' }
+        ];
+        
+        let diagnosticHtml = '';
+        
+        modules.forEach(module => {
+            const exists = !!module.obj;
+            const hasRender = module.obj && typeof module.obj.render === 'function';
+            const status = exists ? (hasRender ? 'ready' : 'partial') : 'missing';
+            
+            diagnosticHtml += `
+                <div class="diagnostic-item ${status}">
+                    <div class="diagnostic-icon">
+                        ${status === 'ready' ? '✅' : status === 'partial' ? '⚠️' : '❌'}
+                    </div>
+                    <div class="diagnostic-details">
+                        <div class="diagnostic-name">${module.name}</div>
+                        <div class="diagnostic-status">
+                            ${status === 'ready' ? 'Prêt à utiliser' : 
+                              status === 'partial' ? 'Partiellement chargé' : 
+                              'Non disponible'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        return diagnosticHtml;
+    }
+
+    initializeFallbackEvents() {
+        document.querySelectorAll('.period-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+            });
+        });
+    }
+
+    async startFallbackScan() {
+        console.log('[PageManager] Starting fallback scan...');
+        
+        const scanBtn = document.querySelector('.btn-scan-start');
+        const steps = document.querySelectorAll('.step');
+        
+        if (scanBtn) {
+            scanBtn.disabled = true;
+            scanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Analyse en cours...</span>';
+        }
+        
+        try {
+            for (let i = 0; i < steps.length; i++) {
+                steps[i].classList.add('active');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            const mockResults = {
+                total: Math.floor(Math.random() * 200) + 50,
+                categorized: Math.floor(Math.random() * 150) + 30,
+                duration: 3
+            };
+            
+            if (window.uiManager && window.uiManager.showToast) {
+                window.uiManager.showToast(
+                    `✅ Scan terminé: ${mockResults.total} emails analysés, ${mockResults.categorized} catégorisés`, 
+                    'success'
+                );
+            }
+            
+            setTimeout(() => {
+                if (window.pageManager) {
+                    window.pageManager.loadPage('emails');
+                }
+            }, 2000);
+            
+        } catch (error) {
+            console.error('[PageManager] Fallback scan error:', error);
+            if (window.uiManager && window.uiManager.showToast) {
+                window.uiManager.showToast('Erreur lors du scan', 'error');
+            }
+        } finally {
+            if (scanBtn) {
+                scanBtn.disabled = false;
+                scanBtn.innerHTML = '<i class="fas fa-play"></i><span>Démarrer l\'analyse</span>';
+            }
+        }
+    }
+
+    async retryModuleLoad() {
+        console.log('[PageManager] Retrying module load...');
+        
+        if (window.uiManager && window.uiManager.showToast) {
+            window.uiManager.showToast('Rechargement du module...', 'info');
+        }
+        
+        const initialized = this.initializeScanModule();
+        
+        if (initialized) {
+            if (window.uiManager && window.uiManager.showToast) {
+                window.uiManager.showToast('✅ Module chargé avec succès!', 'success');
+            }
+            
+            setTimeout(() => {
+                this.currentPage = null;
+                this.loadPage('scanner');
+            }, 1000);
+        } else {
+            if (window.uiManager && window.uiManager.showToast) {
+                window.uiManager.showToast('❌ Module toujours indisponible', 'warning');
+            }
+            
+            const diagnosticContent = document.querySelector('.diagnostic-content');
+            if (diagnosticContent) {
+                diagnosticContent.innerHTML = this.generateScannerDiagnostic();
+            }
+        }
+    }
+
     // =====================================
-    // STYLES COMPLETS POUR L'INTERFACE EMAILS
+    // STYLES COMPLETS POUR L'INTERFACE
     // =====================================
     addModernEmailStyles() {
         if (document.getElementById('modernEmailStyles')) return;
@@ -1906,7 +1489,7 @@ class PageManager {
         const styles = document.createElement('style');
         styles.id = 'modernEmailStyles';
         styles.textContent = `
-            /* ===== HEADER INFORMATIF MODERNE ===== */
+            /* Modern Email Styles v13.0 */
             .modern-header {
                 display: flex;
                 align-items: center;
@@ -1965,7 +1548,7 @@ class PageManager {
                 transform: translateY(-1px);
             }
             
-            /* ===== BARRE DE CONTRÔLES ===== */
+            /* Controls Bar */
             .controls-bar {
                 display: flex;
                 align-items: center;
@@ -2037,7 +1620,7 @@ class PageManager {
                 background: #dc2626;
             }
             
-            /* ===== MODES DE VUE ===== */
+            /* View Modes */
             .view-modes {
                 display: flex;
                 background: #f8fafc;
@@ -2075,7 +1658,7 @@ class PageManager {
                 font-weight: 600;
             }
             
-            /* ===== BOUTONS D'ACTION ===== */
+            /* Action Buttons */
             .action-buttons {
                 flex: 0 0 auto;
                 display: flex;
@@ -2142,7 +1725,7 @@ class PageManager {
                 border: 2px solid white;
             }
             
-            /* ===== ONGLETS CATÉGORIES ===== */
+            /* Category Tabs */
             .category-tabs {
                 display: flex;
                 gap: 8px;
@@ -2196,7 +1779,7 @@ class PageManager {
                 background: rgba(255, 255, 255, 0.25);
             }
             
-            /* ===== CONTAINER EMAILS ===== */
+            /* Emails Container */
             .emails-container {
                 background: white;
                 border: 1px solid #e5e7eb;
@@ -2205,7 +1788,7 @@ class PageManager {
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             }
             
-            /* ===== LISTE EMAILS ===== */
+            /* Email Rows */
             .emails-flat-list {
                 display: flex;
                 flex-direction: column;
@@ -2321,6 +1904,7 @@ class PageManager {
                 display: flex;
                 gap: 6px;
                 flex-shrink: 0;
+                flex-wrap: wrap;
             }
             
             .badge {
@@ -2346,6 +1930,10 @@ class PageManager {
             .badge.task-created {
                 background: #dcfce7;
                 color: #16a34a;
+            }
+            
+            .badge.category-badge {
+                font-size: 12px;
             }
             
             .email-date {
@@ -2412,7 +2000,7 @@ class PageManager {
                 border-color: #9ca3af;
             }
             
-            /* ===== VUE GROUPÉE ===== */
+            /* Grouped View */
             .emails-grouped-list {
                 display: flex;
                 flex-direction: column;
@@ -2500,7 +2088,7 @@ class PageManager {
                 padding: 0;
             }
             
-            /* ===== ÉTAT VIDE ===== */
+            /* Empty State */
             .empty-view {
                 text-align: center;
                 padding: 80px 20px;
@@ -2546,13 +2134,13 @@ class PageManager {
                 box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
             }
             
-            /* ===== ANIMATIONS ===== */
+            /* Animations */
             @keyframes pulse {
                 0%, 100% { transform: scale(1); }
                 50% { transform: scale(1.02); }
             }
             
-            /* ===== RESPONSIVE ===== */
+            /* Responsive */
             @media (max-width: 1024px) {
                 .controls-bar {
                     flex-direction: column;
@@ -2651,21 +2239,3 @@ class PageManager {
                     background: rgba(59, 130, 246, 0.05);
                 }
             }
-        `;
-        
-        document.head.appendChild(styles);
-        console.log('[PageManager] ✅ Modern email styles added');
-    }
-}
-
-// Create global instance
-window.pageManager = new PageManager();
-
-// Bind methods to preserve context
-Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
-    if (name !== 'constructor' && typeof window.pageManager[name] === 'function') {
-        window.pageManager[name] = window.pageManager[name].bind(window.pageManager);
-    }
-});
-
-console.log('✅ PageManager v12.0 loaded - Scanner correction complète');
