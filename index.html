@@ -19,22 +19,30 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- CONFIGURATION GLOBALE GARANTIE -->
+    <!-- CONFIGURATION GLOBALE CRITIQUE - CHARGEMENT EN PREMIER -->
     <script>
-        console.log('[INDEX] 🚀 Starting EmailSortPro v6.0...');
+        console.log('[INDEX] 🚀 Starting EmailSortPro v6.1 - CORRECTION FINALE...');
         
-        // Détection du domaine avec configuration garantie
-        const CURRENT_HOSTNAME = window.location.hostname;
-        const CURRENT_ORIGIN = window.location.origin;
-        const CURRENT_PROTOCOL = window.location.protocol;
+        // VARIABLES GLOBALES DÉFINIES EN PREMIER (CRITIQUE)
+        window.CURRENT_HOSTNAME = window.location.hostname;
+        window.CURRENT_ORIGIN = window.location.origin;
+        window.CURRENT_PROTOCOL = window.location.protocol;
+        window.CURRENT_URL = window.location.href;
         
-        console.log('[INDEX] Environment detection:', {
+        // Variables pour compatibilité avec l'ancien code
+        const CURRENT_HOSTNAME = window.CURRENT_HOSTNAME;
+        const CURRENT_ORIGIN = window.CURRENT_ORIGIN;
+        const CURRENT_PROTOCOL = window.CURRENT_PROTOCOL;
+        const CURRENT_URL = window.CURRENT_URL;
+        
+        console.log('[INDEX] Environment detection v6.1:', {
             hostname: CURRENT_HOSTNAME,
             origin: CURRENT_ORIGIN,
-            protocol: CURRENT_PROTOCOL
+            protocol: CURRENT_PROTOCOL,
+            url: CURRENT_URL
         });
 
-        // Configuration stricte par domaine avec fallbacks
+        // Configuration stricte par domaine
         const DOMAIN_CONFIGS = {
             'emailsortpro.netlify.app': {
                 clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
@@ -83,7 +91,7 @@
                 };
             }
             
-            // Priorité 3: Configuration adaptative basée sur le protocole
+            // Priorité 3: Configuration adaptative
             const protocol = CURRENT_PROTOCOL === 'https:' ? 'https' : 'http';
             const port = window.location.port ? `:${window.location.port}` : '';
             const baseUrl = `${protocol}://${CURRENT_HOSTNAME}${port}`;
@@ -97,22 +105,29 @@
             };
         }
 
-        // Génération de la configuration avec validation
+        // Génération de la configuration
         const DOMAIN_CONFIG = generateDomainConfig();
         
-        console.log('[INDEX] Final domain config:', {
+        // Variables globales pour compatibilité
+        window.DOMAIN_CONFIG = DOMAIN_CONFIG;
+        window.IS_TEST_ENV = DOMAIN_CONFIG.environment === 'test' || 
+                            DOMAIN_CONFIG.environment === 'preview' ||
+                            CURRENT_HOSTNAME.includes('coruscating-dodol');
+        
+        console.log('[INDEX] Final domain config v6.1:', {
             hostname: CURRENT_HOSTNAME,
             clientId: DOMAIN_CONFIG.clientId.substring(0, 8) + '...',
             redirectUri: DOMAIN_CONFIG.redirectUri,
             postLogoutUri: DOMAIN_CONFIG.postLogoutUri,
-            environment: DOMAIN_CONFIG.environment
+            environment: DOMAIN_CONFIG.environment,
+            isTest: window.IS_TEST_ENV
         });
 
         // CRÉATION IMMÉDIATE DE LA CONFIGURATION GLOBALE
         function createAppConfig() {
-            console.log('[INDEX] Creating AppConfig with guaranteed availability...');
+            console.log('[INDEX] Creating AppConfig with guaranteed availability v6.1...');
             
-            // Vérifier et récupérer le Client ID avec fallbacks multiples
+            // Vérifier et récupérer le Client ID
             function getClientId() {
                 // 1. Configuration du domaine
                 if (DOMAIN_CONFIG.clientId && DOMAIN_CONFIG.clientId !== 'CONFIGURATION_REQUIRED') {
@@ -152,12 +167,6 @@
                         clientId: clientId || 'MISSING'
                     })
                 };
-                
-                // Redirection vers setup après un délai
-                setTimeout(() => {
-                    console.log('[INDEX] Redirecting to setup page...');
-                    window.location.href = '/setup.html';
-                }, 3000);
                 
                 return false;
             }
@@ -201,7 +210,7 @@
                 },
                 app: {
                     name: 'EmailSortPro',
-                    version: '6.0.0',
+                    version: '6.1.0',
                     debug: DOMAIN_CONFIG.environment !== 'production',
                     environment: DOMAIN_CONFIG.environment,
                     domain: CURRENT_HOSTNAME,
@@ -265,7 +274,7 @@
                 }
             };
             
-            console.log('[INDEX] ✅ AppConfig created successfully:', {
+            console.log('[INDEX] ✅ AppConfig created successfully v6.1:', {
                 environment: window.AppConfig.app.environment,
                 domain: window.AppConfig.app.domain,
                 validation: window.AppConfig.validate()
@@ -282,11 +291,6 @@
         } else {
             console.log('[INDEX] ✅ Configuration loaded successfully for', CURRENT_HOSTNAME);
         }
-        
-        // Environnement de test
-        const IS_TEST_ENV = DOMAIN_CONFIG.environment === 'test' || 
-                           DOMAIN_CONFIG.environment === 'preview' ||
-                           CURRENT_HOSTNAME.includes('coruscating-dodol');
     </script>
 
     <!-- STYLES COMPLETS -->
@@ -724,7 +728,7 @@
 <body>
     <!-- Badge d'environnement de test -->
     <script>
-        if (IS_TEST_ENV) {
+        if (window.IS_TEST_ENV) {
             const badge = document.createElement('div');
             badge.className = 'env-badge';
             badge.innerHTML = `🧪 ${DOMAIN_CONFIG.environment.toUpperCase()}: ${CURRENT_HOSTNAME}`;
@@ -764,7 +768,7 @@
                     <span>EmailSortPro</span>
                     <span class="ai-badge">AI</span>
                     <script>
-                        if (IS_TEST_ENV) {
+                        if (window.IS_TEST_ENV) {
                             document.write('<span style="background: #f59e0b; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-left: 5px;">TEST</span>');
                         }
                     </script>
@@ -816,7 +820,7 @@
                     
                     <h1 class="login-title">EmailSortPro</h1>
                     <script>
-                        if (IS_TEST_ENV) {
+                        if (window.IS_TEST_ENV) {
                             document.write('<p style="font-size: 1rem; background: rgba(245, 158, 11, 0.2); padding: 8px 16px; border-radius: 20px; margin: 10px auto; display: inline-block;">🧪 Environnement de test</p>');
                         }
                     </script>
@@ -844,7 +848,7 @@
                         <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
                         <p class="dashboard-subtitle">Organisez vos emails intelligemment avec l'IA</p>
                         <script>
-                            if (IS_TEST_ENV) {
+                            if (window.IS_TEST_ENV) {
                                 document.write('<p style="color: #f59e0b; font-weight: 600; margin-top: 10px;">🧪 Environnement: ' + DOMAIN_CONFIG.environment + ' - ' + CURRENT_HOSTNAME + '</p>');
                             }
                         </script>
@@ -918,7 +922,7 @@
     <script>
         // Fonction de diagnostic globale
         window.checkConfig = function() {
-            console.log('=== DIAGNOSTIC CONFIGURATION v6.0 ===');
+            console.log('=== DIAGNOSTIC CONFIGURATION v6.1 ===');
             console.log('Hostname:', CURRENT_HOSTNAME);
             console.log('Environment:', DOMAIN_CONFIG.environment);
             console.log('AppConfig exists:', !!window.AppConfig);
@@ -943,7 +947,29 @@
             console.log('- uiManager:', !!window.uiManager);
             console.log('- taskManager:', !!window.taskManager);
             console.log('- pageManager:', !!window.pageManager);
+            
+            return {
+                hostname: CURRENT_HOSTNAME,
+                config: window.AppConfig ? window.AppConfig.getDebugInfo() : null,
+                redirectUri: DOMAIN_CONFIG.redirectUri,
+                environment: DOMAIN_CONFIG.environment
+            };
         };
+
+        // Créer CategoryManagerUI si manquant
+        if (!window.CategoryManagerUI) {
+            window.CategoryManagerUI = class {
+                static renderCategorySelector(categories = {}) {
+                    return Object.entries(categories).map(([id, cat]) => 
+                        `<div class="category-item" data-category="${id}">
+                            <span>${cat.icon || '📂'}</span>
+                            <span>${cat.name}</span>
+                        </div>`
+                    ).join('');
+                }
+            };
+            console.log('✅ CategoryManagerUI créé automatiquement');
+        }
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
@@ -983,7 +1009,7 @@
             }
         });
 
-        console.log('[INDEX] ✅ EmailSortPro v6.0 loaded successfully for', CURRENT_HOSTNAME);
+        console.log('[INDEX] ✅ EmailSortPro v6.1 loaded successfully for', CURRENT_HOSTNAME);
         console.log('[INDEX] Environment:', DOMAIN_CONFIG.environment);
         console.log('[INDEX] Use checkConfig() for diagnostic information');
     </script>
