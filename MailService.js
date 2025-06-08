@@ -1,4 +1,4 @@
-// MailService.js - Service de récupération des emails Microsoft Graph CORRIGÉ v3.1
+// MailService.js - Service de récupération des emails Microsoft Graph CORRIGÉ v6.0
 
 class MailService {
     constructor() {
@@ -13,7 +13,7 @@ class MailService {
             'archive': 'archive'
         };
         
-        console.log('[MailService] Constructor - Service de récupération des emails réels');
+        console.log('[MailService] Constructor v6.0 - Service de récupération des emails');
     }
 
     async initialize() {
@@ -48,9 +48,6 @@ class MailService {
         }
     }
 
-    // ================================================
-    // CHARGEMENT DES DOSSIERS
-    // ================================================
     async loadMailFolders() {
         try {
             const accessToken = await window.authService.getAccessToken();
@@ -101,9 +98,6 @@ class MailService {
         }
     }
 
-    // ================================================
-    // MÉTHODE PRINCIPALE : RÉCUPÉRATION DES EMAILS
-    // ================================================
     async getEmailsFromFolder(folderName, options = {}) {
         console.log(`[MailService] Getting emails from folder: ${folderName}`);
         
@@ -163,9 +157,6 @@ class MailService {
         }
     }
 
-    // ================================================
-    // RÉSOLUTION DE L'ID DU DOSSIER
-    // ================================================
     async resolveFolderId(folderName) {
         // Si c'est déjà un ID complet, l'utiliser directement
         if (folderName.includes('AAM') || folderName.length > 20) {
@@ -181,7 +172,7 @@ class MailService {
 
         // Pour la boîte de réception, utiliser l'endpoint spécial
         if (folderName === 'inbox') {
-            return 'inbox'; // Utiliser l'endpoint /me/mailFolders/inbox
+            return 'inbox';
         }
 
         // Fallback: rechercher par nom de dossier
@@ -189,9 +180,6 @@ class MailService {
         return folderName;
     }
 
-    // ================================================
-    // CONSTRUCTION DE L'URL MICROSOFT GRAPH AMÉLIORÉE
-    // ================================================
     buildGraphUrl(folderId, options) {
         const {
             startDate,
@@ -203,13 +191,10 @@ class MailService {
         // Base URL adaptée selon le type d'ID
         let baseUrl;
         if (folderId === 'inbox') {
-            // Utiliser l'endpoint spécial pour la boîte de réception
             baseUrl = 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages';
         } else if (folderId.includes('AAM') || folderId.length > 20) {
-            // ID complet de dossier
             baseUrl = `https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}/messages`;
         } else {
-            // Nom de dossier
             baseUrl = `https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}/messages`;
         }
 
@@ -252,7 +237,6 @@ class MailService {
             }
             
             if (endDate) {
-                // S'assurer que endDate inclut toute la journée
                 const endDateObj = new Date(endDate);
                 endDateObj.setHours(23, 59, 59, 999);
                 const endISO = endDateObj.toISOString();
@@ -267,15 +251,11 @@ class MailService {
         return `${baseUrl}?${params.toString()}`;
     }
 
-    // ================================================
-    // TRAITEMENT ET ENRICHISSEMENT DES EMAILS
-    // ================================================
     processEmails(emails, folderName) {
         console.log(`[MailService] 🔄 Processing ${emails.length} emails from ${folderName}`);
         
         return emails.map(email => {
             try {
-                // Email de base avec métadonnées ajoutées
                 const processedEmail = {
                     // Champs originaux de Microsoft Graph
                     id: email.id,
@@ -309,18 +289,15 @@ class MailService {
 
             } catch (error) {
                 console.warn('[MailService] ⚠️ Error processing email:', email.id, error);
-                return email; // Retourner l'email original en cas d'erreur
+                return email;
             }
         });
     }
 
-    // ================================================
-    // EXTRACTION DU TEXTE DE L'EMAIL AMÉLIORÉE
-    // ================================================
     extractEmailText(email) {
         let text = '';
         
-        // Ajouter le sujet (avec poids important)
+        // Ajouter le sujet
         if (email.subject) {
             text += email.subject + ' ';
         }
@@ -342,15 +319,14 @@ class MailService {
         
         // Ajouter le corps si disponible
         if (email.body && email.body.content) {
-            // Nettoyer le HTML si c'est du HTML
             if (email.body.contentType === 'html') {
                 const cleanText = email.body.content
-                    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Supprimer scripts
-                    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // Supprimer styles
-                    .replace(/<[^>]*>/g, ' ') // Supprimer les balises HTML
-                    .replace(/&nbsp;/g, ' ') // Remplacer &nbsp;
-                    .replace(/&[^;]+;/g, ' ') // Remplacer autres entités HTML
-                    .replace(/\s+/g, ' ') // Normaliser les espaces
+                    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+                    .replace(/<[^>]*>/g, ' ')
+                    .replace(/&nbsp;/g, ' ')
+                    .replace(/&[^;]+;/g, ' ')
+                    .replace(/\s+/g, ' ')
                     .trim();
                 text += cleanText;
             } else {
@@ -361,9 +337,6 @@ class MailService {
         return text.trim();
     }
 
-    // ================================================
-    // EXTRACTION DU DOMAINE DE L'EXPÉDITEUR
-    // ================================================
     extractSenderDomain(fromField) {
         try {
             if (!fromField || !fromField.emailAddress || !fromField.emailAddress.address) {
@@ -380,9 +353,6 @@ class MailService {
         }
     }
 
-    // ================================================
-    // RÉCUPÉRATION D'UN EMAIL SPÉCIFIQUE
-    // ================================================
     async getEmailById(emailId) {
         console.log(`[MailService] Getting email by ID: ${emailId}`);
         
@@ -414,9 +384,6 @@ class MailService {
         }
     }
 
-    // ================================================
-    // RÉCUPÉRATION DES DOSSIERS PUBLIQUE
-    // ================================================
     async getFolders() {
         console.log('[MailService] Getting mail folders');
         
@@ -449,9 +416,6 @@ class MailService {
         }
     }
 
-    // ================================================
-    // STATISTIQUES D'EMAIL
-    // ================================================
     async getEmailStats(folderName = 'inbox') {
         console.log(`[MailService] Getting email stats for ${folderName}`);
         
@@ -461,10 +425,8 @@ class MailService {
                 throw new Error('Unable to get access token');
             }
 
-            // Résoudre l'ID du dossier
             const folderId = await this.resolveFolderId(folderName);
 
-            // Requête pour obtenir le nombre total d'emails
             const endpoint = folderId === 'inbox' ? 
                 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox' :
                 `https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}`;
@@ -503,9 +465,6 @@ class MailService {
         }
     }
 
-    // ================================================
-    // RECHERCHE D'EMAILS
-    // ================================================
     async searchEmails(query, options = {}) {
         console.log(`[MailService] Searching emails with query: ${query}`);
         
@@ -558,14 +517,10 @@ class MailService {
         }
     }
 
-    // ================================================
-    // MÉTHODES DE DIAGNOSTIC AMÉLIORÉES
-    // ================================================
     async testConnection() {
         console.log('[MailService] Testing Graph API connection...');
         
         try {
-            // Test simple avec l'endpoint utilisateur
             const accessToken = await window.authService.getAccessToken();
             if (!accessToken) {
                 throw new Error('No access token available');
@@ -600,9 +555,6 @@ class MailService {
         }
     }
 
-    // ================================================
-    // NETTOYAGE ET RESET
-    // ================================================
     reset() {
         console.log('[MailService] Resetting service...');
         this.isInitialized = false;
@@ -610,32 +562,31 @@ class MailService {
         this.folders.clear();
     }
 
-    // ================================================
-    // INFORMATIONS DE DIAGNOSTIC AMÉLIORÉES
-    // ================================================
     getDebugInfo() {
         return {
             isInitialized: this.isInitialized,
             hasToken: window.authService ? !!window.authService.getAccessToken : false,
-            foldersCount: this.folders.size * 2, // Cache + mappings
+            foldersCount: this.folders.size,
             cacheSize: this.cache.size,
             folders: Array.from(this.folders.entries()).map(([name, folder]) => ({
                 name,
                 id: folder.id,
                 displayName: folder.displayName
-            }))
+            })),
+            authServiceAvailable: !!window.authService,
+            authServiceInitialized: window.authService ? window.authService.isInitialized : false
         };
     }
 }
 
-// Créer l'instance globale avec gestion d'erreur améliorée
+// Créer l'instance globale avec gestion d'erreur
 try {
     window.mailService = new MailService();
     console.log('[MailService] ✅ Global instance created successfully');
 } catch (error) {
     console.error('[MailService] ❌ Failed to create global instance:', error);
     
-    // Instance de fallback plus robuste
+    // Instance de fallback
     window.mailService = {
         isInitialized: false,
         getEmailsFromFolder: async () => {
@@ -644,7 +595,7 @@ try {
         initialize: async () => {
             throw new Error('MailService failed to initialize - Check AuthService');
         },
-        getDiagnosticInfo: () => ({ 
+        getDebugInfo: () => ({ 
             error: 'MailService failed to create',
             authServiceAvailable: !!window.authService,
             userAuthenticated: window.authService ? window.authService.isAuthenticated() : false
@@ -652,4 +603,4 @@ try {
     };
 }
 
-console.log('✅ MailService v3.1 loaded - Enhanced with better folder resolution and error handling');
+console.log('✅ MailService v6.0 loaded with enhanced error handling');
