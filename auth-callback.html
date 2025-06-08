@@ -113,10 +113,40 @@
             font-family: monospace;
             font-size: 12px;
             text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .env-badge {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #f59e0b;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1000;
         }
     </style>
 </head>
 <body>
+    <!-- Badge d'environnement -->
+    <script>
+        const CURRENT_HOSTNAME = window.location.hostname;
+        const IS_TEST_ENV = CURRENT_HOSTNAME.includes('coruscating-dodol') || 
+                           CURRENT_HOSTNAME.includes('test') || 
+                           CURRENT_HOSTNAME.includes('preview');
+        
+        if (IS_TEST_ENV) {
+            const badge = document.createElement('div');
+            badge.className = 'env-badge';
+            badge.textContent = `🧪 TEST: ${CURRENT_HOSTNAME}`;
+            document.body.appendChild(badge);
+        }
+    </script>
+
     <div class="callback-container">
         <div id="loading-state">
             <div class="spinner"></div>
@@ -155,104 +185,128 @@
     <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
     
     <script>
-        console.log('[Auth Callback] 🚀 Starting callback processing v5.0...');
+        console.log('[Auth Callback] 🚀 Starting callback processing v6.0...');
         
-        // Détection du domaine actuel
-        const CURRENT_HOSTNAME = window.location.hostname;
+        // Détection de l'environnement avec validation stricte
         const CURRENT_ORIGIN = window.location.origin;
         const CURRENT_URL = window.location.href;
         
-        console.log('[Auth Callback] Environment:', {
+        console.log('[Auth Callback] Environment v6.0:', {
             hostname: CURRENT_HOSTNAME,
             origin: CURRENT_ORIGIN,
             url: CURRENT_URL,
-            protocol: window.location.protocol
+            protocol: window.location.protocol,
+            isTest: IS_TEST_ENV
         });
 
-        // Configuration stricte basée sur le domaine exact
-        const DOMAIN_WHITELIST = {
+        // Configuration stricte par domaine
+        const DOMAIN_CONFIGS = {
             'emailsortpro.netlify.app': {
                 clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
                 redirectUri: 'https://emailsortpro.netlify.app/auth-callback.html',
-                postLogoutUri: 'https://emailsortpro.netlify.app/'
+                postLogoutUri: 'https://emailsortpro.netlify.app/',
+                environment: 'production'
             },
             'coruscating-dodol-f30e8d.netlify.app': {
                 clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
                 redirectUri: 'https://coruscating-dodol-f30e8d.netlify.app/auth-callback.html',
-                postLogoutUri: 'https://coruscating-dodol-f30e8d.netlify.app/'
+                postLogoutUri: 'https://coruscating-dodol-f30e8d.netlify.app/',
+                environment: 'test'
             },
             'localhost': {
                 clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
                 redirectUri: 'http://localhost:3000/auth-callback.html',
-                postLogoutUri: 'http://localhost:3000/'
+                postLogoutUri: 'http://localhost:3000/',
+                environment: 'development'
             },
             '127.0.0.1': {
                 clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
                 redirectUri: 'http://127.0.0.1:3000/auth-callback.html',
-                postLogoutUri: 'http://127.0.0.1:3000/'
+                postLogoutUri: 'http://127.0.0.1:3000/',
+                environment: 'development'
             }
         };
 
-        // Fonction pour obtenir la configuration exacte du domaine
-        function getDomainConfig() {
-            // Vérifier si le domaine est dans la whitelist
-            if (DOMAIN_WHITELIST[CURRENT_HOSTNAME]) {
-                console.log('[Auth Callback] Using whitelisted config for:', CURRENT_HOSTNAME);
-                return DOMAIN_WHITELIST[CURRENT_HOSTNAME];
+        // Fonction pour obtenir la configuration stricte
+        function getDomainConfiguration() {
+            console.log('[Auth Callback] Getting configuration for:', CURRENT_HOSTNAME);
+            
+            // Configuration prédéfinie
+            if (DOMAIN_CONFIGS[CURRENT_HOSTNAME]) {
+                console.log('[Auth Callback] ✅ Using predefined config for:', CURRENT_HOSTNAME);
+                return DOMAIN_CONFIGS[CURRENT_HOSTNAME];
             }
             
-            // Pour les domaines Netlify non listés, générer la config
+            // Domaine Netlify non listé
             if (CURRENT_HOSTNAME.includes('netlify.app')) {
-                console.log('[Auth Callback] Generating config for Netlify domain:', CURRENT_HOSTNAME);
+                console.log('[Auth Callback] ⚠️ Netlify domain not predefined, generating config:', CURRENT_HOSTNAME);
                 return {
                     clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
                     redirectUri: `https://${CURRENT_HOSTNAME}/auth-callback.html`,
-                    postLogoutUri: `https://${CURRENT_HOSTNAME}/`
+                    postLogoutUri: `https://${CURRENT_HOSTNAME}/`,
+                    environment: 'preview'
                 };
             }
             
-            // Configuration par défaut (peut ne pas fonctionner)
-            console.warn('[Auth Callback] Using fallback config for unknown domain:', CURRENT_HOSTNAME);
+            // Configuration d'urgence
+            console.error('[Auth Callback] ❌ Unknown domain, using emergency config:', CURRENT_HOSTNAME);
             return {
-                clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
+                clientId: 'CONFIGURATION_REQUIRED',
                 redirectUri: CURRENT_ORIGIN + '/auth-callback.html',
-                postLogoutUri: CURRENT_ORIGIN + '/'
+                postLogoutUri: CURRENT_ORIGIN + '/',
+                environment: 'unknown'
             };
         }
 
-        const CONFIG = getDomainConfig();
+        const CONFIG = getDomainConfiguration();
         
-        // Validation stricte de l'URL actuelle
-        const CURRENT_PAGE_URL = window.location.href;
-        const IS_VALID_CALLBACK_URL = CURRENT_PAGE_URL.startsWith(CONFIG.redirectUri);
+        // Validation stricte de l'URL
+        const IS_VALID_CALLBACK_URL = CURRENT_URL.startsWith(CONFIG.redirectUri);
         
         if (!IS_VALID_CALLBACK_URL) {
-            console.error('[Auth Callback] ❌ CRITICAL: Current URL does not match configured redirect URI!');
-            console.error('[Auth Callback] Current URL:', CURRENT_PAGE_URL);
+            console.error('[Auth Callback] ❌ CRITICAL: URL validation failed!');
+            console.error('[Auth Callback] Current URL:', CURRENT_URL);
             console.error('[Auth Callback] Expected start:', CONFIG.redirectUri);
-            console.error('[Auth Callback] This will cause redirect_uri validation to fail in Azure');
         }
         
-        console.log('[Auth Callback] Configuration generated:', {
-            clientId: CONFIG.CLIENT_ID.substring(0, 8) + '...',
-            redirectUri: CONFIG.REDIRECT_URI,
-            postLogoutUri: CONFIG.POST_LOGOUT_URI,
-            environment: CONFIG.environment
+        console.log('[Auth Callback] Configuration selected:', {
+            clientId: CONFIG.clientId.substring(0, 8) + '...',
+            redirectUri: CONFIG.redirectUri,
+            postLogoutUri: CONFIG.postLogoutUri,
+            environment: CONFIG.environment,
+            urlValid: IS_VALID_CALLBACK_URL
         });
 
-        // Fonction pour obtenir le Client ID avec validation stricte
+        // Fonction pour récupérer le Client ID avec fallbacks
         function getClientId() {
-            // 1. Utiliser toujours le Client ID du domaine configuré
-            console.log('[Auth Callback] Using domain-specific client ID');
+            // 1. Configuration du domaine
+            if (CONFIG.clientId && CONFIG.clientId !== 'CONFIGURATION_REQUIRED') {
+                console.log('[Auth Callback] Using domain config client ID');
+                return CONFIG.clientId;
+            }
+            
+            // 2. LocalStorage comme fallback
+            try {
+                const saved = localStorage.getItem('emailsortpro_client_id');
+                if (saved && /^[a-f0-9-]{36}$/i.test(saved)) {
+                    console.log('[Auth Callback] Using saved client ID');
+                    return saved;
+                }
+            } catch (e) {
+                console.warn('[Auth Callback] Cannot access localStorage:', e);
+            }
+            
+            // 3. Valeur par défaut
+            console.warn('[Auth Callback] Using fallback client ID');
             return CONFIG.clientId;
         }
 
-        // Fonction de validation de l'URL de callback
+        // Validation URL stricte
         function validateCallbackUrl() {
             const issues = [];
             
-            if (!CURRENT_PAGE_URL.startsWith(CONFIG.redirectUri)) {
-                issues.push(`URL mismatch: Expected ${CONFIG.redirectUri}, got ${CURRENT_PAGE_URL}`);
+            if (!CURRENT_URL.startsWith(CONFIG.redirectUri)) {
+                issues.push(`URL mismatch: Expected ${CONFIG.redirectUri}, got ${CURRENT_URL}`);
             }
             
             if (window.location.protocol !== new URL(CONFIG.redirectUri).protocol) {
@@ -271,7 +325,7 @@
 
         // Fonction pour rediriger vers l'application
         function redirectToApp() {
-            const appUrl = CURRENT_ORIGIN + '/';
+            const appUrl = CONFIG.postLogoutUri;
             console.log('[Auth Callback] Redirecting to app:', appUrl);
             window.location.href = appUrl;
         }
@@ -300,7 +354,7 @@
             }, 1000);
         }
 
-        // Fonction pour afficher l'erreur avec debug
+        // Fonction pour afficher l'erreur avec debug détaillé
         function showError(message, error = null) {
             console.error('[Auth Callback] Showing error:', message, error);
             
@@ -318,11 +372,14 @@
                     errorCode: error.errorCode || 'none',
                     subError: error.subError || 'none',
                     timestamp: new Date().toISOString(),
+                    environment: CONFIG.environment,
                     url: CURRENT_URL,
                     hostname: CURRENT_HOSTNAME,
                     clientId: getClientId().substring(0, 8) + '...',
-                    redirectUri: CONFIG.REDIRECT_URI,
-                    userAgent: navigator.userAgent.substring(0, 100) + '...'
+                    redirectUri: CONFIG.redirectUri,
+                    urlValid: IS_VALID_CALLBACK_URL,
+                    userAgent: navigator.userAgent.substring(0, 100) + '...',
+                    validation: validateCallbackUrl()
                 };
                 
                 debugInfo.innerHTML = `<pre>${JSON.stringify(debugData, null, 2)}</pre>`;
@@ -341,7 +398,7 @@
             debugInfo.style.display = debugInfo.style.display === 'none' ? 'block' : 'none';
         }
 
-        // Fonction principale de traitement du callback avec validation stricte
+        // Fonction principale de traitement du callback
         async function processAuthCallback() {
             try {
                 console.log('[Auth Callback] 🔄 Processing authentication callback with strict validation...');
@@ -362,7 +419,7 @@
                 
                 // Obtenir le Client ID avec validation
                 const clientId = getClientId();
-                if (!clientId || !/^[a-f0-9-]{36}$/i.test(clientId)) {
+                if (!clientId || clientId === 'CONFIGURATION_REQUIRED' || !/^[a-f0-9-]{36}$/i.test(clientId)) {
                     throw new Error(`Invalid Client ID format: ${clientId}`);
                 }
                 console.log('[Auth Callback] ✅ Valid Client ID:', clientId.substring(0, 8) + '...');
@@ -382,10 +439,12 @@
                     system: {
                         loggerOptions: {
                             loggerCallback: (level, message) => {
-                                console.log(`[MSAL ${level}] ${message}`);
+                                if (CONFIG.environment !== 'production') {
+                                    console.log(`[MSAL ${level}] ${message}`);
+                                }
                             },
                             piiLoggingEnabled: false,
-                            logLevel: msal.LogLevel.Warning
+                            logLevel: CONFIG.environment === 'production' ? 'Warning' : 'Verbose'
                         },
                         allowNativeBroker: false,
                         allowRedirectInIframe: false
@@ -397,15 +456,15 @@
                     clientId: msalConfig.auth.clientId.substring(0, 8) + '...',
                     authority: msalConfig.auth.authority,
                     redirectUri: msalConfig.auth.redirectUri,
-                    currentUrl: CURRENT_PAGE_URL,
-                    exactMatch: CURRENT_PAGE_URL.startsWith(msalConfig.auth.redirectUri),
+                    currentUrl: CURRENT_URL,
+                    exactMatch: CURRENT_URL.startsWith(msalConfig.auth.redirectUri),
                     protocolMatch: window.location.protocol === new URL(msalConfig.auth.redirectUri).protocol,
                     hostnameMatch: CURRENT_HOSTNAME === new URL(msalConfig.auth.redirectUri).hostname
                 });
                 
                 // Vérification critique finale
-                if (!CURRENT_PAGE_URL.startsWith(msalConfig.auth.redirectUri)) {
-                    throw new Error(`CRITICAL: Current URL ${CURRENT_PAGE_URL} does not start with configured redirect URI ${msalConfig.auth.redirectUri}`);
+                if (!CURRENT_URL.startsWith(msalConfig.auth.redirectUri)) {
+                    throw new Error(`CRITICAL: Current URL ${CURRENT_URL} does not start with configured redirect URI ${msalConfig.auth.redirectUri}`);
                 }
                 
                 // Créer l'instance MSAL
@@ -413,7 +472,7 @@
                 await msalInstance.initialize();
                 console.log('[Auth Callback] ✅ MSAL instance initialized with validated config');
                 
-                // Traiter la réponse de redirection
+                // Traiter la réponse de redirection avec timeout
                 const responseTimeout = new Promise((_, reject) => 
                     setTimeout(() => reject(new Error('Response handling timeout (30s)')), 30000)
                 );
@@ -436,6 +495,7 @@
                         localStorage.setItem('emailsortpro_client_id', clientId);
                         localStorage.setItem('emailsortpro_redirect_uri', CONFIG.redirectUri);
                         localStorage.setItem('emailsortpro_domain', CURRENT_HOSTNAME);
+                        localStorage.setItem('emailsortpro_last_auth', new Date().toISOString());
                         console.log('[Auth Callback] ✅ Working configuration saved');
                     } catch (e) {
                         console.warn('[Auth Callback] Could not save configuration:', e);
@@ -464,7 +524,7 @@
                     }
                 } else {
                     console.warn('[Auth Callback] Unexpected response format:', response);
-                    throw new Error('Unexpected authentication response');
+                    throw new Error('Unexpected authentication response format');
                 }
                 
             } catch (error) {
@@ -484,13 +544,13 @@
                     
                     switch (errorCode) {
                         case 'invalid_request':
-                            errorMessage = `URI de redirection invalide. Azure attend: ${CONFIG.redirectUri}. Actuel: ${CURRENT_PAGE_URL}`;
+                            errorMessage = `URI de redirection invalide. Azure attend: ${CONFIG.redirectUri}. Actuel: ${CURRENT_URL}`;
                             break;
                         case 'unauthorized_client':
-                            errorMessage = `Client ID ${clientId.substring(0, 8)}... non autorisé pour ${CURRENT_HOSTNAME}`;
+                            errorMessage = `Client ID ${getClientId().substring(0, 8)}... non autorisé pour ${CURRENT_HOSTNAME}`;
                             break;
                         case 'invalid_client':
-                            errorMessage = `Client ID invalide: ${clientId.substring(0, 8)}...`;
+                            errorMessage = `Client ID invalide: ${getClientId().substring(0, 8)}...`;
                             break;
                         case 'user_cancelled':
                             errorMessage = 'Authentification annulée par l\'utilisateur';
@@ -546,15 +606,16 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log('[Auth Callback] ✅ DOM loaded, starting callback process...');
             console.log('[Auth Callback] Current URL:', CURRENT_URL);
-            console.log('[Auth Callback] Expected redirect URI:', CONFIG.REDIRECT_URI);
+            console.log('[Auth Callback] Expected redirect URI:', CONFIG.redirectUri);
+            console.log('[Auth Callback] Environment:', CONFIG.environment);
             waitForMSALAndProcess();
         });
 
-        // Timeout de sécurité
+        // Timeout de sécurité global
         setTimeout(() => {
             const loadingState = document.getElementById('loading-state');
             if (loadingState && loadingState.style.display !== 'none') {
-                console.warn('[Auth Callback] ⏰ Timeout after 60 seconds');
+                console.warn('[Auth Callback] ⏰ Global timeout after 60 seconds');
                 showError('Timeout d\'authentification - Redirection automatique en cours...');
             }
         }, 60000);
@@ -562,7 +623,7 @@
         // Gestionnaire d'erreur global
         window.addEventListener('error', (event) => {
             console.error('[Auth Callback] Global error:', event.error);
-            if (event.error && event.error.message && !document.getElementById('error-state').style.display) {
+            if (event.error && event.error.message && !document.getElementById('error-state').style.display !== 'none') {
                 showError(`Erreur système: ${event.error.message}`, event.error);
             }
         });
@@ -570,17 +631,18 @@
         // Gestionnaire de promesses rejetées
         window.addEventListener('unhandledrejection', (event) => {
             console.error('[Auth Callback] Unhandled promise rejection:', event.reason);
-            if (event.reason && event.reason.message && !document.getElementById('error-state').style.display) {
+            if (event.reason && event.reason.message && !document.getElementById('error-state').style.display !== 'none') {
                 showError(`Erreur de promesse: ${event.reason.message}`, event.reason);
             }
         });
 
-        // Debug global amélioré avec validation stricte
+        // Debug global complet avec validation stricte
         window.authCallbackDebug = function() {
-            console.group('=== AUTH CALLBACK DEBUG v5.1 - STRICT VALIDATION ===');
-            console.log('Current URL:', CURRENT_PAGE_URL);
+            console.group('=== AUTH CALLBACK DEBUG v6.0 - STRICT VALIDATION ===');
+            console.log('Current URL:', CURRENT_URL);
             console.log('Current hostname:', CURRENT_HOSTNAME);
             console.log('Current origin:', CURRENT_ORIGIN);
+            console.log('Environment:', CONFIG.environment);
             
             console.log('Domain Configuration:');
             console.log('  Configured redirect URI:', CONFIG.redirectUri);
@@ -594,10 +656,11 @@
                 console.log('  Issues:', urlValidation.issues);
             }
             
-            console.log('Environment:');
+            console.log('Environment Check:');
             console.log('  MSAL loaded:', typeof msal !== 'undefined' ? '✅' : '❌');
             console.log('  LocalStorage available:', typeof Storage !== 'undefined' ? '✅' : '❌');
             console.log('  Is callback URL:', IS_VALID_CALLBACK_URL ? '✅' : '❌');
+            console.log('  Test environment:', IS_TEST_ENV ? '🧪' : '🏭');
             
             // Test de localStorage
             try {
@@ -622,9 +685,10 @@
                 console.log(`  1. Aller sur: https://portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/RegisteredApps`);
                 console.log(`  2. Sélectionner votre app avec Client ID: ${CONFIG.clientId}`);
                 console.log(`  3. Aller dans "Authentication"`);
-                console.log(`  4. Ajouter l'URI de redirection EXACTE: ${CONFIG.redirectUri}`);
-                console.log(`  5. Sélectionner le type "Single-page application (SPA)"`);
-                console.log(`  6. IMPORTANT: L'URI doit correspondre EXACTEMENT`);
+                console.log(`  4. Sélectionner "Single-page application (SPA)" (PAS "Web")`);
+                console.log(`  5. Ajouter l'URI de redirection EXACTE: ${CONFIG.redirectUri}`);
+                console.log(`  6. Cliquer "Save" et attendre 3-5 minutes`);
+                console.log(`  7. IMPORTANT: L'URI doit correspondre EXACTEMENT`);
             }
             
             console.groupEnd();
@@ -632,13 +696,15 @@
             return {
                 config: CONFIG,
                 validation: urlValidation,
-                currentUrl: CURRENT_PAGE_URL,
+                currentUrl: CURRENT_URL,
                 isValidCallbackUrl: IS_VALID_CALLBACK_URL,
-                domainWhitelisted: !!DOMAIN_WHITELIST[CURRENT_HOSTNAME]
+                environment: CONFIG.environment,
+                clientId: getClientId().substring(0, 8) + '...',
+                timestamp: new Date().toISOString()
             };
         };
         
-        console.log('[Auth Callback] ✅ Callback page ready v5.1 with strict URI validation');
+        console.log('[Auth Callback] ✅ Callback page ready v6.0 with strict URI validation');
         console.log('[Auth Callback] Domain config:', CONFIG);
         console.log('[Auth Callback] URL validation:', IS_VALID_CALLBACK_URL ? '✅' : '❌');
         console.log('[Auth Callback] Use authCallbackDebug() for detailed diagnostic information');
