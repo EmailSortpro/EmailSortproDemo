@@ -27,7 +27,7 @@
             padding: 40px;
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 800px;
+            max-width: 900px;
             width: 100%;
         }
         
@@ -53,6 +53,31 @@
             font-size: 16px;
         }
         
+        .current-domain-notice {
+            background: #e7f3ff;
+            border: 2px solid #3b82f6;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .current-domain-notice h3 {
+            color: #1e40af;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .domain-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
         .warning {
             background: #fff3cd;
             border: 1px solid #ffeaa7;
@@ -68,22 +93,6 @@
             color: #f39c12;
             font-size: 24px;
             flex-shrink: 0;
-        }
-        
-        .domain-notice {
-            background: #e7f3ff;
-            border: 2px solid #3b82f6;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-        }
-        
-        .domain-notice h3 {
-            color: #1e40af;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
         
         .step {
@@ -321,6 +330,16 @@
             border-radius: 3px;
             font-weight: bold;
         }
+
+        .test-banner {
+            background: #f59e0b;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
         
         @media (max-width: 768px) {
             .container {
@@ -349,25 +368,67 @@
                 <i class="fas fa-envelope-open-text"></i>
             </div>
             <h1>Configuration d'EmailSortPro</h1>
-            <p class="subtitle">Configurez votre accès Microsoft pour emailsortpro.netlify.app</p>
+            <p class="subtitle">Configuration adaptative pour votre domaine</p>
         </div>
 
-        <div class="domain-notice">
-            <h3>
-                <i class="fas fa-globe"></i>
-                Nouveau domaine: emailsortpro.netlify.app
-            </h3>
-            <p>
-                <strong>Important:</strong> Le domaine a été mis à jour vers <strong>emailsortpro.netlify.app</strong>. 
-                Vous devez mettre à jour votre configuration Azure avec les nouvelles URI de redirection.
-            </p>
-        </div>
+        <!-- Détection automatique du domaine -->
+        <script>
+            const CURRENT_HOSTNAME = window.location.hostname;
+            const CURRENT_ORIGIN = window.location.origin;
+            const IS_TEST_ENVIRONMENT = CURRENT_HOSTNAME.includes('test') || 
+                                       CURRENT_HOSTNAME.includes('preview') || 
+                                       CURRENT_HOSTNAME.includes('coruscating-dodol');
+            
+            console.log('[Setup] Environment detection:', {
+                hostname: CURRENT_HOSTNAME,
+                origin: CURRENT_ORIGIN,
+                isTest: IS_TEST_ENVIRONMENT
+            });
+
+            // Générer automatiquement les URIs pour le domaine actuel
+            const DOMAIN_CONFIG = {
+                currentDomain: CURRENT_HOSTNAME,
+                currentOrigin: CURRENT_ORIGIN,
+                redirectUrl: CURRENT_ORIGIN + '/auth-callback.html',
+                logoutUrl: CURRENT_ORIGIN + '/',
+                indexUrl: CURRENT_ORIGIN + '/',
+                isTest: IS_TEST_ENVIRONMENT
+            };
+
+            // Afficher le banner de test si nécessaire
+            if (IS_TEST_ENVIRONMENT) {
+                document.write(`
+                    <div class="test-banner">
+                        🧪 Environnement de test détecté: ${CURRENT_HOSTNAME}
+                    </div>
+                `);
+            }
+
+            // Afficher les informations du domaine actuel
+            document.write(`
+                <div class="current-domain-notice">
+                    <h3>
+                        <i class="fas fa-globe"></i>
+                        Configuration pour: ${CURRENT_HOSTNAME}
+                    </h3>
+                    <p>
+                        <strong>Domaine détecté automatiquement:</strong> ${CURRENT_HOSTNAME}<br>
+                        Les URIs de redirection seront configurées automatiquement pour ce domaine.
+                    </p>
+                    <div class="domain-info">
+                        <strong>Origine:</strong> ${CURRENT_ORIGIN}<br>
+                        <strong>URI de redirection:</strong> ${DOMAIN_CONFIG.redirectUrl}<br>
+                        <strong>URI de déconnexion:</strong> ${DOMAIN_CONFIG.logoutUrl}
+                    </div>
+                </div>
+            `);
+        </script>
 
         <div class="warning">
             <i class="fas fa-info-circle"></i>
             <div>
                 <strong>Configuration Azure requise</strong><br>
-                Vous devez mettre à jour votre Azure App Registration avec les nouvelles URI pour le domaine emailsortpro.netlify.app.
+                Vous devez configurer votre Azure App Registration avec les URIs de redirection correspondant à votre domaine actuel.
             </div>
         </div>
 
@@ -387,12 +448,12 @@
                     <span class="step-number">1</span>
                     Entrez votre Client ID Azure
                 </h3>
-                <p>Si vous avez déjà un Client ID configuré pour emailsortpro.netlify.app, entrez-le ci-dessous :</p>
+                <p>Entrez le Client ID de votre Azure App Registration. Si vous n'en avez pas encore, suivez le guide de configuration manuelle ci-dessous.</p>
                 <input type="text" id="clientId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
                 <div class="error" id="error-message"></div>
-                <a href="AZURE-SETUP-GUIDE.md" class="guide-link" target="_blank">
+                <a href="#" onclick="switchTab('manual')" class="guide-link">
                     <i class="fas fa-book"></i>
-                    Guide pour créer/mettre à jour votre Client ID
+                    Je dois créer/configurer mon App Registration Azure
                 </a>
             </div>
 
@@ -403,7 +464,7 @@
                 </button>
                 <button class="secondary-button" onclick="switchTab('manual')">
                     <i class="fas fa-question-circle"></i>
-                    Je dois mettre à jour ma config Azure
+                    Guide de configuration
                 </button>
             </div>
 
@@ -423,19 +484,29 @@
             <div class="step">
                 <h3>
                     <span class="step-number">1</span>
-                    Mettre à jour votre App Registration Azure
+                    Créer ou mettre à jour votre App Registration Azure
                 </h3>
                 <p>1. Allez sur <a href="https://portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/RegisteredApps" target="_blank">Azure App Registrations</a></p>
-                <p>2. Trouvez votre application EmailSortPro existante OU créez-en une nouvelle</p>
-                <p>3. Allez dans <strong>"Authentication"</strong></p>
-                <p>4. <span class="highlight">IMPORTANT:</span> Mettez à jour les URI de redirection avec les nouvelles valeurs :</p>
+                <p>2. Cliquez sur <strong>"New registration"</strong> ou sélectionnez une application existante</p>
+                <p>3. Si vous créez une nouvelle app :</p>
+                <ul>
+                    <li>Nom : <strong>EmailSortPro</strong></li>
+                    <li>Supported account types : <strong>Accounts in any organizational directory (Any Azure AD directory - Multitenant) and personal Microsoft accounts</strong></li>
+                    <li>Redirect URI : Sélectionnez <strong>"Single-page application (SPA)"</strong></li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h3>
+                    <span class="step-number">2</span>
+                    Configurer les URI de redirection
+                </h3>
+                <p>Dans votre App Registration, allez dans <strong>"Authentication"</strong> et configurez :</p>
                 
                 <div style="margin: 15px 0;">
-                    <strong>URI de redirection (Single-page application):</strong>
+                    <strong>URI de redirection (Single-page application) :</strong>
                     <div class="redirect-url">
-                        <span class="redirect-url-text" id="redirect-url">
-                            https://emailsortpro.netlify.app/auth-callback.html
-                        </span>
+                        <span class="redirect-url-text" id="redirect-url"></span>
                         <button class="copy-button" onclick="copyRedirectUrl()">
                             <i class="fas fa-copy"></i> Copier
                         </button>
@@ -443,41 +514,41 @@
                 </div>
 
                 <div style="margin: 15px 0;">
-                    <strong>URI de déconnexion:</strong>
+                    <strong>URI de déconnexion :</strong>
                     <div class="redirect-url">
-                        <span class="redirect-url-text" id="logout-url">
-                            https://emailsortpro.netlify.app/
-                        </span>
+                        <span class="redirect-url-text" id="logout-url"></span>
                         <button class="copy-button" onclick="copyLogoutUrl()">
                             <i class="fas fa-copy"></i> Copier
                         </button>
                     </div>
                 </div>
 
-                <p><strong>Note:</strong> Supprimez les anciennes URI si elles pointent vers un autre domaine.</p>
-            </div>
-
-            <div class="step">
-                <h3>
-                    <span class="step-number">2</span>
-                    Vérifier les permissions API
-                </h3>
-                <p>1. Dans votre app Azure, allez dans <strong>"API permissions"</strong></p>
-                <p>2. Vérifiez que ces permissions sont accordées :</p>
-                <ul>
-                    <li>✓ User.Read (Microsoft Graph)</li>
-                    <li>✓ Mail.Read (Microsoft Graph)</li>
-                    <li>✓ Mail.ReadWrite (Microsoft Graph)</li>
-                </ul>
-                <p>3. Si manquantes, cliquez sur <strong>"Add a permission"</strong> → <strong>"Microsoft Graph"</strong> → <strong>"Delegated permissions"</strong></p>
+                <p><strong>Important :</strong> Assurez-vous de sélectionner <span class="highlight">"Single-page application (SPA)"</span> et non "Web" pour le type d'URI de redirection.</p>
             </div>
 
             <div class="step">
                 <h3>
                     <span class="step-number">3</span>
+                    Configurer les permissions API
+                </h3>
+                <p>1. Dans votre app Azure, allez dans <strong>"API permissions"</strong></p>
+                <p>2. Cliquez sur <strong>"Add a permission"</strong> → <strong>"Microsoft Graph"</strong> → <strong>"Delegated permissions"</strong></p>
+                <p>3. Ajoutez ces permissions :</p>
+                <ul>
+                    <li>✓ <strong>User.Read</strong> - Lire le profil utilisateur</li>
+                    <li>✓ <strong>Mail.Read</strong> - Lire les emails</li>
+                    <li>✓ <strong>Mail.ReadWrite</strong> - Lire et modifier les emails</li>
+                </ul>
+                <p>4. Cliquez sur <strong>"Add permissions"</strong></p>
+                <p>5. <span class="highlight">Optionnel :</span> Cliquez sur <strong>"Grant admin consent"</strong> pour éviter le consentement individuel</p>
+            </div>
+
+            <div class="step">
+                <h3>
+                    <span class="step-number">4</span>
                     Récupérer votre Client ID
                 </h3>
-                <p>1. Dans <strong>"Overview"</strong>, copiez l'<strong>"Application (client) ID"</strong></p>
+                <p>1. Dans <strong>"Overview"</strong> de votre app, copiez l'<strong>"Application (client) ID"</strong></p>
                 <p>2. Il ressemble à :</p>
                 <div class="code-block">
                     xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
@@ -491,50 +562,25 @@
                     <i class="fas fa-save"></i>
                     Sauvegarder et démarrer
                 </button>
+                <button class="secondary-button" onclick="switchTab('automatic')">
+                    <i class="fas fa-arrow-left"></i>
+                    Retour à la config rapide
+                </button>
             </div>
         </div>
     </div>
 
     <script>
-        // Configuration pour le nouveau domaine
-        const DOMAIN_CONFIG = {
-            newDomain: 'emailsortpro.netlify.app',
-            redirectUrl: 'https://emailsortpro.netlify.app/auth-callback.html',
-            logoutUrl: 'https://emailsortpro.netlify.app/',
-            indexUrl: 'https://emailsortpro.netlify.app/'
-        };
-        
-        // Vérification du domaine actuel
-        const currentDomain = window.location.hostname;
-        const isCorrectDomain = currentDomain === DOMAIN_CONFIG.newDomain;
-        
-        console.log('[Setup] Configuration for domain:', {
-            current: currentDomain,
-            expected: DOMAIN_CONFIG.newDomain,
-            isCorrect: isCorrectDomain
-        });
-        
-        // Afficher les URI dans les champs
+        // Mettre à jour les URIs dans les champs avec les valeurs du domaine actuel
         document.getElementById('redirect-url').textContent = DOMAIN_CONFIG.redirectUrl;
         document.getElementById('logout-url').textContent = DOMAIN_CONFIG.logoutUrl;
         
-        // Avertissement si pas sur le bon domaine
-        if (!isCorrectDomain && !currentDomain.includes('localhost')) {
-            const banner = document.createElement('div');
-            banner.style.cssText = `
-                position: fixed; top: 0; left: 0; right: 0; 
-                background: #dc2626; color: white; padding: 10px; 
-                text-align: center; z-index: 10000; font-size: 14px;
-            `;
-            banner.innerHTML = `
-                ⚠️ Vous n'êtes pas sur le bon domaine! 
-                Actuel: ${currentDomain} | Attendu: ${DOMAIN_CONFIG.newDomain} | 
-                <a href="${DOMAIN_CONFIG.indexUrl}" style="color: white; text-decoration: underline;">
-                    Aller sur le bon domaine
-                </a>
-            `;
-            document.body.appendChild(banner);
-        }
+        console.log('[Setup] Configuration for domain:', {
+            current: DOMAIN_CONFIG.currentDomain,
+            redirectUri: DOMAIN_CONFIG.redirectUrl,
+            logoutUri: DOMAIN_CONFIG.logoutUrl,
+            isTest: DOMAIN_CONFIG.isTest
+        });
         
         function switchTab(tabName) {
             // Mettre à jour les onglets
@@ -562,7 +608,6 @@
         
         function copyToClipboard(text, button) {
             navigator.clipboard.writeText(text).then(() => {
-                // Changer le texte du bouton temporairement
                 const originalHTML = button.innerHTML;
                 button.innerHTML = '<i class="fas fa-check"></i> Copié !';
                 button.style.background = '#28a745';
@@ -572,7 +617,7 @@
                     button.style.background = '#667eea';
                 }, 2000);
             }).catch(() => {
-                // Fallback pour les navigateurs qui ne supportent pas clipboard API
+                // Fallback pour les navigateurs anciens
                 const textArea = document.createElement('textarea');
                 textArea.value = text;
                 document.body.appendChild(textArea);
@@ -617,7 +662,7 @@
             // Afficher le loading
             document.getElementById('loading').style.display = 'block';
             
-            // Simuler une validation
+            // Simuler une validation avec les URIs du domaine actuel
             setTimeout(() => {
                 saveConfiguration(clientId);
             }, 1500);
@@ -643,8 +688,9 @@
             // Sauvegarder le Client ID
             localStorage.setItem('emailsortpro_client_id', clientId);
             
-            // Créer la configuration pour le nouveau domaine
+            // Créer la configuration adaptative pour le domaine actuel
             const configContent = `
+// Configuration générée automatiquement pour ${DOMAIN_CONFIG.currentDomain}
 window.AppConfig = {
     msal: {
         clientId: '${clientId}',
@@ -658,14 +704,15 @@ window.AppConfig = {
         system: {
             loggerOptions: {
                 loggerCallback: (level, message, containsPii) => {
-                    if (window.debugMode) {
+                    if (window.debugMode || ${DOMAIN_CONFIG.isTest}) {
                         console.log(\`[MSAL \${level}] \${message}\`);
                     }
                 },
                 piiLoggingEnabled: false,
-                logLevel: 'Warning'
+                logLevel: ${DOMAIN_CONFIG.isTest ? "'Verbose'" : "'Warning'"}
             },
-            allowNativeBroker: false
+            allowNativeBroker: false,
+            allowRedirectInIframe: false
         }
     },
     scopes: {
@@ -682,10 +729,10 @@ window.AppConfig = {
     },
     app: {
         name: 'EmailSortPro',
-        version: '3.0.1',
-        debug: false,
-        environment: 'netlify',
-        domain: '${DOMAIN_CONFIG.newDomain}'
+        version: '5.0.0',
+        debug: ${DOMAIN_CONFIG.isTest},
+        environment: '${DOMAIN_CONFIG.isTest ? 'test' : 'production'}',
+        domain: '${DOMAIN_CONFIG.currentDomain}'
     },
     email: {
         defaultFolder: 'inbox',
@@ -698,22 +745,29 @@ window.AppConfig = {
     },
     forceValidate() {
         return { valid: true, issues: [] };
+    },
+    getDebugInfo() {
+        return {
+            domain: '${DOMAIN_CONFIG.currentDomain}',
+            environment: this.app.environment,
+            clientId: this.msal.clientId.substring(0, 8) + '...',
+            redirectUri: this.msal.redirectUri,
+            isAdaptive: true,
+            generatedFor: '${DOMAIN_CONFIG.currentDomain}',
+            timestamp: new Date().toISOString()
+        };
     }
 };`;
             
-            // Créer un script dynamique
-            const script = document.createElement('script');
-            script.textContent = configContent;
-            document.head.appendChild(script);
+            // Log de confirmation
+            console.log('[Setup] Configuration saved for domain:', DOMAIN_CONFIG.currentDomain);
+            console.log('[Setup] Client ID:', clientId.substring(0, 8) + '...');
+            console.log('[Setup] Redirect URI:', DOMAIN_CONFIG.redirectUrl);
+            console.log('[Setup] Logout URI:', DOMAIN_CONFIG.logoutUrl);
             
             // Afficher le succès
             document.getElementById('loading').style.display = 'none';
             document.getElementById('success-message').style.display = 'block';
-            
-            // Log de confirmation
-            console.log('[Setup] Configuration saved for domain:', DOMAIN_CONFIG.newDomain);
-            console.log('[Setup] Client ID:', clientId.substring(0, 8) + '...');
-            console.log('[Setup] Redirect URI:', DOMAIN_CONFIG.redirectUrl);
             
             // Rediriger après 3 secondes
             setTimeout(() => {
@@ -725,28 +779,33 @@ window.AppConfig = {
         window.addEventListener('DOMContentLoaded', () => {
             const savedClientId = localStorage.getItem('emailsortpro_client_id');
             if (savedClientId) {
-                // Pré-remplir le champ si un ID existe
+                // Pré-remplir les champs si un ID existe
                 document.getElementById('clientId').value = savedClientId;
                 document.getElementById('manualClientId').value = savedClientId;
             }
             
-            console.log('[Setup] Page loaded for emailsortpro.netlify.app');
+            console.log('[Setup] Page loaded for domain:', DOMAIN_CONFIG.currentDomain);
             console.log('[Setup] Saved client ID:', savedClientId ? savedClientId.substring(0, 8) + '...' : 'None');
+            console.log('[Setup] Generated URIs:', {
+                redirect: DOMAIN_CONFIG.redirectUrl,
+                logout: DOMAIN_CONFIG.logoutUrl
+            });
         });
 
-        // Fonction de diagnostic pour la configuration
+        // Fonction de diagnostic
         window.setupDebug = function() {
-            console.log('=== SETUP DEBUG for emailsortpro.netlify.app ===');
-            console.log('Current domain:', currentDomain);
-            console.log('Expected domain:', DOMAIN_CONFIG.newDomain);
-            console.log('Domain match:', isCorrectDomain);
-            console.log('Redirect URL:', DOMAIN_CONFIG.redirectUrl);
-            console.log('Logout URL:', DOMAIN_CONFIG.logoutUrl);
-            console.log('Index URL:', DOMAIN_CONFIG.indexUrl);
+            console.log('=== SETUP DEBUG v5.0 ===');
+            console.log('Current domain:', DOMAIN_CONFIG.currentDomain);
+            console.log('Current origin:', DOMAIN_CONFIG.currentOrigin);
+            console.log('Is test environment:', DOMAIN_CONFIG.isTest);
+            console.log('Generated configuration:', DOMAIN_CONFIG);
             console.log('Saved Client ID:', localStorage.getItem('emailsortpro_client_id')?.substring(0, 8) + '...' || 'None');
+            
+            return DOMAIN_CONFIG;
         };
         
-        console.log('[Setup] ✅ Setup page ready for emailsortpro.netlify.app');
+        console.log('[Setup] ✅ Setup page ready v5.0 with adaptive domain configuration');
+        console.log('[Setup] Domain:', DOMAIN_CONFIG.currentDomain);
         console.log('[Setup] Use setupDebug() for diagnostic information');
     </script>
 </body>
