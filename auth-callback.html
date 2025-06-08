@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication - EmailSortPro</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+        
+        .callback-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 3rem;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            max-width: 550px;
+            width: 90%;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .success-icon {
+            font-size: 4rem;
+            color: #10b981;
+            margin-bottom: 1.5rem;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .error-message {
+            background: rgba(239, 68, 68, 0.25);
+            border: 1px solid rgba(239, 68, 68, 0.6);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .countdown {
+            font-size: 1rem;
+            opacity: 0.85;
+            margin-top: 1.5rem;
+        }
+        
+        .btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            margin: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        h3 {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+        }
+        
+        p {
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="callback-container">
+        <div id="loading-state">
+            <div class="spinner"></div>
+            <h2>Authentification en cours...</h2>
+            <p>Traitement de votre connexion, veuillez patienter...</p>
+        </div>
+        
+        <div id="success-state" style="display: none;">
+            <div class="success-icon">
+                <i>✅</i>
+            </div>
+            <h2>Authentification réussie !</h2>
+            <p id="welcome-message">Bienvenue</p>
+            <div class="countdown" id="countdown">Redirection dans <span id="countdown-number">3</span> secondes...</div>
+        </div>
+        
+        <div id="error-state" style="display: none;">
+            <div class="error-message">
+                <h3>❌ Erreur d'authentification</h3>
+                <p id="error-message">Une erreur s'est produite pendant l'authentification.</p>
+                <button class="btn" onclick="redirectToApp()">
+                    Retourner à l'application
+                </button>
+                <button class="btn" onclick="location.reload()">
+                    Réessayer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MSAL Library -->
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    
+    <script>
+        console.log('[Auth Callback] ✅ Starting enhanced authentication callback processing...');
+        
+        // Configuration centralisée et robuste pour tous les environnements
+        const CONFIG = {
+            // Client ID par défaut - fonctionne pour Netlify, GitHub Pages et localhost
+            DEFAULT_CLIENT_ID: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
+            
+            // Détection de l'environnement
+            environment: {
+                isNetlify: window.location.hostname.includes('netlify'),
+                isGitHubPages: window.location.hostname.includes('github.io'),
+                isLocalhost: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            },
+            
+            // URL de base selon l'environnement
+            basePath: window.location.hostname.includes('github.io') ? '/emailsortpro' : ''
+        };
+        
+        console.log('[Auth Callback] Environment detected:', CONFIG.environment);
+        console.log('[Auth Callback] Base path:', CONFIG.basePath);
+
+        // Fonction robuste pour obtenir le Client ID
+        function getClientId() {
+            // 1. Essayer le localStorage (configuration personnalisée)
+            try {
+                const savedClientId = localStorage.getItem('emailsortpro_client_id');
+                if (savedClientId && 
+                    savedClientId !== 'VOTRE_CLIENT_ID_ICI' && 
+                    savedClientId !== 'CONFIGURATION_REQUIRED' &&
+                    savedClientId.length >= 30 &&
+                    /^[a-f0-9-]{36}$/i.test(savedClientId)) {
+                    console.log('[Auth Callback] ✅ Using saved client ID from localStorage');
+                    return savedClientId;
+                }
+            } catch (e) {
+                console.warn('[Auth Callback] Cannot access localStorage:', e);
+            }
+            
+            // 2. Utiliser le Client ID par défaut
+            console.log('[Auth Callback] ✅ Using default client ID');
+            return CONFIG.DEFAULT_CLIENT_ID;
+        }
+
+        // Fonction pour rediriger vers l'application
+        function redirectToApp() {
+            const appUrl = window.location.origin + CONFIG.basePath;
+            console.log('[Auth Callback] Redirecting to app:', appUrl);
+            window.location.href = appUrl;
+        }
+
+        // Fonction pour afficher le succès avec animation améliorée
+        function showSuccess(account) {
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('success-state').style.display = 'block';
+            
+            const welcomeMsg = document.getElementById('welcome-message');
+            const userName = account.name || account.username || 'Utilisateur';
+            welcomeMsg.textContent = `Bienvenue ${userName} !`;
+            
+            // Compteur de redirection amélioré
+            let countdown = 3;
+            const countdownElement = document.getElementById('countdown-number');
+            
+            const timer = setInterval(() => {
+                countdown--;
+                countdownElement.textContent = countdown;
+                
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    redirectToApp();
+                }
+            }, 1000);
+        }
+
+        // Fonction pour afficher l'erreur avec gestion améliorée
+        function showError(message) {
+            console.error('[Auth Callback] ❌ Showing error:', message);
+            
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('error-state').style.display = 'block';
+            
+            const errorElement = document.getElementById('error-message');
+            errorElement.textContent = message;
+            
+            // Redirection automatique après 15 secondes en cas d'erreur
+            setTimeout(() => {
+                console.log('[Auth Callback] Auto-redirecting after error...');
+                redirectToApp();
+            }, 15000);
+        }
+
+        // Fonction principale de traitement du callback - AMÉLIORÉE
+        async function processAuthCallback() {
+            try {
+                console.log('[Auth Callback] 🚀 Processing authentication callback...');
+                
+                // Vérifier que MSAL est chargé
+                if (typeof msal === 'undefined') {
+                    throw new Error('MSAL library not loaded - check internet connection');
+                }
+                
+                // Obtenir le Client ID avec validation
+                const clientId = getClientId();
+                if (!clientId || clientId.length < 30) {
+                    throw new Error('Invalid Client ID format');
+                }
+                console.log('[Auth Callback] Using Client ID:', clientId.substring(0, 8) + '...');
+                
+                // Configuration MSAL robuste
+                const msalConfig = {
+                    auth: {
+                        clientId: clientId,
+                        authority: 'https://login.microsoftonline.com/common',
+                        redirectUri: window.location.origin + CONFIG.basePath + '/auth-callback.html'
+                    },
+                    cache: {
+                        cacheLocation: 'localStorage',
+                        storeAuthStateInCookie: CONFIG.environment.isNetlify || CONFIG.environment.isGitHubPages
+                    },
+                    system: {
+                        loggerOptions: {
+                            loggerCallback: (level, message) => {
+                                console.log(`[MSAL ${level}] ${message}`);
+                            },
+                            piiLoggingEnabled: false,
+                            logLevel: msal.LogLevel.Warning
+                        },
+                        allowNativeBroker: false,
+                        allowRedirectInIframe: false
+                    }
+                };
+                
+                console.log('[Auth Callback] MSAL config created:', {
+                    authority: msalConfig.auth.authority,
+                    redirectUri: msalConfig.auth.redirectUri,
+                    cacheLocation: msalConfig.cache.cacheLocation,
+                    environment: CONFIG.environment
+                });
+                
+                // Créer l'instance MSAL avec gestion d'erreur robuste
+                const msalInstance = new msal.PublicClientApplication(msalConfig);
+                await msalInstance.initialize();
+                
+                console.log('[Auth Callback] ✅ MSAL instance initialized successfully');
+                
+                // Traiter la réponse de redirection avec timeout
+                const responseTimeout = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Response handling timeout')), 20000)
+                );
+                
+                const responsePromise = msalInstance.handleRedirectPromise();
+                const response = await Promise.race([responsePromise, responseTimeout]);
+                
+                if (response && response.account) {
+                    console.log('[Auth Callback] ✅ Authentication successful!');
+                    console.log('[Auth Callback] Account info:', {
+                        username: response.account.username,
+                        name: response.account.name,
+                        homeAccountId: response.account.homeAccountId
+                    });
+                    
+                    // Sauvegarder le Client ID utilisé avec succès
+                    try {
+                        localStorage.setItem('emailsortpro_client_id', clientId);
+                        console.log('[Auth Callback] ✅ Client ID saved for future use');
+                    } catch (e) {
+                        console.warn('[Auth Callback] Could not save client ID:', e);
+                    }
+                    
+                    // Vérifier que le compte est valide
+                    if (!response.account.username || !response.account.homeAccountId) {
+                        throw new Error('Account information incomplete');
+                    }
+                    
+                    // Afficher le succès
+                    showSuccess(response.account);
+                    
+                } else if (response === null) {
+                    console.log('[Auth Callback] No response from handleRedirectPromise');
+                    console.log('[Auth Callback] Possibly direct navigation to callback page');
+                    
+                    // Vérifier s'il y a des comptes dans le cache
+                    const accounts = msalInstance.getAllAccounts();
+                    if (accounts.length > 0) {
+                        console.log('[Auth Callback] Found existing account in cache');
+                        showSuccess(accounts[0]);
+                    } else {
+                        // Redirection immédiate si pas de réponse et pas de compte
+                        setTimeout(() => {
+                            redirectToApp();
+                        }, 2000);
+                    }
+                } else {
+                    console.warn('[Auth Callback] Unexpected response format:', response);
+                    throw new Error('Unexpected authentication response');
+                }
+                
+            } catch (error) {
+                console.error('[Auth Callback] ❌ Error processing callback:', error);
+                
+                let errorMessage = 'Erreur inconnue d\'authentification';
+                
+                // Messages d'erreur spécifiques et détaillés
+                if (error.errorCode) {
+                    const errorCode = error.errorCode;
+                    console.log('[Auth Callback] MSAL Error details:', {
+                        errorCode: error.errorCode,
+                        errorMessage: error.errorMessage,
+                        subError: error.subError,
+                        correlationId: error.correlationId
+                    });
+                    
+                    switch (errorCode) {
+                        case 'user_cancelled':
+                            errorMessage = 'Authentification annulée par l\'utilisateur';
+                            break;
+                        case 'access_denied':
+                            errorMessage = 'Accès refusé - Vérifiez vos permissions';
+                            break;
+                        case 'invalid_client':
+                        case 'unauthorized_client':
+                            errorMessage = 'Configuration Client ID incorrecte - Vérifiez votre configuration Azure';
+                            break;
+                        case 'interaction_required':
+                            errorMessage = 'Interaction utilisateur requise - Veuillez réessayer';
+                            break;
+                        case 'consent_required':
+                            errorMessage = 'Consentement requis - Acceptez les permissions demandées';
+                            break;
+                        case 'login_required':
+                            errorMessage = 'Connexion requise - Session expirée';
+                            break;
+                        default:
+                            errorMessage = `Erreur d'authentification: ${errorCode}`;
+                    }
+                } else if (error.message) {
+                    if (error.message.includes('MSAL')) {
+                        errorMessage = 'Erreur de la bibliothèque d\'authentification Microsoft';
+                    } else if (error.message.includes('network') || error.message.includes('timeout')) {
+                        errorMessage = 'Erreur réseau ou timeout - Vérifiez votre connexion internet';
+                    } else if (error.message.includes('Client ID')) {
+                        errorMessage = 'Configuration Client ID invalide - Contactez l\'administrateur';
+                    } else {
+                        errorMessage = `Erreur: ${error.message}`;
+                    }
+                }
+                
+                showError(errorMessage);
+            }
+        }
+
+        // Attendre que MSAL soit chargé puis traiter le callback
+        function waitForMSALAndProcess() {
+            if (typeof msal === 'undefined') {
+                console.log('[Auth Callback] Waiting for MSAL to load...');
+                setTimeout(waitForMSALAndProcess, 100);
+                return;
+            }
+            
+            console.log('[Auth Callback] ✅ MSAL loaded, processing callback...');
+            processAuthCallback();
+        }
+
+        // Démarrer le processus quand la page est chargée
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('[Auth Callback] ✅ DOM loaded, starting enhanced callback process...');
+            waitForMSALAndProcess();
+        });
+
+        // Timeout de sécurité augmenté
+        setTimeout(() => {
+            const loadingState = document.getElementById('loading-state');
+            if (loadingState && loadingState.style.display !== 'none') {
+                console.warn('[Auth Callback] ⏰ Timeout after 45 seconds - redirecting to app');
+                showError('Timeout d\'authentification - Redirection automatique en cours...');
+            }
+        }, 45000); // 45 secondes
+
+        // Gestionnaire d'erreur global
+        window.addEventListener('error', (event) => {
+            console.error('[Auth Callback] Global error:', event.error);
+            if (event.error && event.error.message) {
+                showError(`Erreur système: ${event.error.message}`);
+            }
+        });
+
+        // Gestionnaire de promesses rejetées
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('[Auth Callback] Unhandled promise rejection:', event.reason);
+            if (event.reason && event.reason.message) {
+                showError(`Erreur de promesse: ${event.reason.message}`);
+            }
+        });
+
+        // Debug global amélioré
+        window.authCallbackDebug = function() {
+            console.group('=== AUTH CALLBACK DEBUG DÉTAILLÉ ===');
+            console.log('Environment:', CONFIG.environment);
+            console.log('Current URL:', window.location.href);
+            console.log('Client ID:', getClientId().substring(0, 8) + '...');
+            console.log('Base path:', CONFIG.basePath);
+            console.log('MSAL loaded:', typeof msal !== 'undefined');
+            console.log('LocalStorage available:', typeof Storage !== 'undefined');
+            console.log('User agent:', navigator.userAgent);
+            
+            // Test de localStorage
+            try {
+                const testKey = 'test_' + Date.now();
+                localStorage.setItem(testKey, 'test');
+                localStorage.removeItem(testKey);
+                console.log('LocalStorage: ✅ Functional');
+            } catch (e) {
+                console.log('LocalStorage: ❌ Error -', e.message);
+            }
+            
+            // État du DOM
+            console.log('DOM states:', {
+                loading: document.getElementById('loading-state').style.display !== 'none',
+                success: document.getElementById('success-state').style.display !== 'none',
+                error: document.getElementById('error-state').style.display !== 'none'
+            });
+            
+            console.groupEnd();
+        };
+        
+        console.log('[Auth Callback] ✅ Enhanced callback page ready with improved error handling');
+        console.log('[Auth Callback] Use authCallbackDebug() for detailed diagnostic information');
+    </script>
+</body>
+</html>

@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmailSortPro - Scanner d'Emails Intelligent avec IA</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Organisez vos emails Outlook intelligemment avec l'IA. Catégorisation automatique et organisation par domaine.">
+    <meta name="keywords" content="email, outlook, microsoft, gestion, ia, productivité, organisation">
+    <meta name="author" content="EmailSortPro">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://emailsortpro.netlify.app/">
+    <meta property="og:title" content="EmailSortPro - Scanner d'Emails Intelligent">
+    <meta property="og:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://emailsortpro.netlify.app/">
+    <meta property="twitter:title" content="EmailSortPro - Scanner d'Emails Intelligent">
+    <meta property="twitter:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📧</text></svg>">
+    
+    <!-- MSAL Library -->
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Styles principaux -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- CONFIGURATION NETLIFY CORRIGÉE -->
+    <script>
+        // =====================================================
+        // CONFIGURATION NETLIFY POUR emailsortpro.netlify.app
+        // =====================================================
+        console.log('[INDEX] 🚀 Loading Netlify configuration for emailsortpro.netlify.app...');
+        
+        // Client ID par défaut fonctionnel pour le nouveau domaine
+        window.NETLIFY_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
+        
+        console.log('[INDEX] ✅ Netlify Client ID configured for new domain');
+        
+        // =====================================================
+        // DÉTECTION DE L'ENVIRONNEMENT CORRIGÉE
+        // =====================================================
+        (function() {
+            // Détection de l'environnement mis à jour
+            const hostname = window.location.hostname;
+            const isNetlify = hostname.includes('netlify.app') || hostname.includes('netlifyapp.com');
+            const isGitHubPages = hostname.includes('github.io');
+            const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+            
+            console.log('[INDEX] Environment detection for new domain:', {
+                hostname,
+                isNetlify,
+                isGitHubPages,
+                isLocalhost,
+                origin: window.location.origin
+            });
+            
+            // Fonction pour obtenir le Client ID
+            function getClientIdForEnvironment() {
+                // Priorité 1: Client ID configuré directement pour Netlify
+                if (isNetlify && window.NETLIFY_CLIENT_ID) {
+                    console.log('[INDEX] ✅ Using configured Netlify client ID for new domain');
+                    return window.NETLIFY_CLIENT_ID;
+                }
+                
+                // Priorité 2: localStorage (configuration sauvegardée)
+                try {
+                    const savedClientId = localStorage.getItem('emailsortpro_client_id');
+                    if (savedClientId && savedClientId !== 'VOTRE_CLIENT_ID_ICI' && savedClientId !== 'CONFIGURATION_REQUIRED') {
+                        console.log('[INDEX] ✅ Using saved client ID from localStorage');
+                        return savedClientId;
+                    }
+                } catch (e) {
+                    console.warn('[INDEX] Cannot access localStorage:', e);
+                }
+                
+                // Priorité 3: Client ID par défaut pour le développement
+                if (isLocalhost) {
+                    console.log('[INDEX] Using localhost development client ID');
+                    return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
+                }
+                
+                // Priorité 4: Redirection vers setup pour GitHub Pages
+                if (isGitHubPages) {
+                    console.log('[INDEX] GitHub Pages - configuration requise');
+                    return 'CONFIGURATION_REQUIRED';
+                }
+                
+                console.log('[INDEX] ✅ Netlify with default client ID for new domain');
+                return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
+            }
+            
+            // Fonction pour créer la configuration corrigée
+            function createConfig(clientId) {
+                // Base path toujours vide pour Netlify
+                const basePath = '';
+                
+                // URIs corrigées pour le nouveau domaine
+                const redirectUri = 'https://emailsortpro.netlify.app/auth-callback.html';
+                const postLogoutRedirectUri = 'https://emailsortpro.netlify.app/';
+                
+                console.log('[INDEX] Creating config with corrected URIs:', {
+                    redirectUri,
+                    postLogoutRedirectUri,
+                    clientId: clientId.substring(0, 8) + '...'
+                });
+                
+                window.AppConfig = {
+                    msal: {
+                        clientId: clientId,
+                        authority: 'https://login.microsoftonline.com/common',
+                        redirectUri: redirectUri,
+                        postLogoutRedirectUri: postLogoutRedirectUri,
+                        cache: {
+                            cacheLocation: 'localStorage',
+                            storeAuthStateInCookie: true // Important pour Netlify
+                        },
+                        system: {
+                            loggerOptions: {
+                                loggerCallback: (level, message, containsPii) => {
+                                    if (window.debugMode || isLocalhost) {
+                                        console.log(`[MSAL ${level}] ${message}`);
+                                    }
+                                },
+                                piiLoggingEnabled: false,
+                                logLevel: isLocalhost ? 'Verbose' : 'Warning'
+                            },
+                            allowNativeBroker: false
+                        }
+                    },
+                    scopes: {
+                        login: [
+                            'https://graph.microsoft.com/User.Read',
+                            'https://graph.microsoft.com/Mail.Read',
+                            'https://graph.microsoft.com/Mail.ReadWrite'
+                        ],
+                        silent: [
+                            'https://graph.microsoft.com/User.Read',
+                            'https://graph.microsoft.com/Mail.Read',
+                            'https://graph.microsoft.com/Mail.ReadWrite'
+                        ]
+                    },
+                    app: {
+                        name: 'EmailSortPro',
+                        version: '3.0.1',
+                        debug: isLocalhost,
+                        environment: isNetlify ? 'netlify' : isGitHubPages ? 'github' : isLocalhost ? 'localhost' : 'other',
+                        domain: 'emailsortpro.netlify.app'
+                    },
+                    email: {
+                        defaultFolder: 'inbox',
+                        defaultDays: 30,
+                        pageSize: 100,
+                        maxEmails: 10000
+                    },
+                    errors: {
+                        'unauthorized_client': 'Configuration Azure incorrecte. Vérifiez votre Client ID.',
+                        'invalid_client': 'Application non autorisée. Contactez l\'administrateur.',
+                        'consent_required': 'Autorisation requise. Veuillez accepter les permissions.',
+                        'interaction_required': 'Reconnexion requise.',
+                        'login_required': 'Connexion requise.',
+                        'network_error': 'Erreur réseau. Vérifiez votre connexion.',
+                        'token_expired': 'Session expirée. Reconnexion nécessaire.',
+                        'invalid_request': 'URI de redirection invalide. Configuration Azure requise.'
+                    },
+                    validate() {
+                        const issues = [];
+                        if (!this.msal.clientId || this.msal.clientId === 'VOTRE_CLIENT_ID_ICI' || this.msal.clientId === 'CONFIGURATION_REQUIRED') {
+                            issues.push('Client ID non configuré pour emailsortpro.netlify.app');
+                        }
+                        
+                        // Vérifier que les URIs correspondent au nouveau domaine
+                        if (!this.msal.redirectUri.includes('emailsortpro.netlify.app')) {
+                            issues.push('URI de redirection ne correspond pas au nouveau domaine');
+                        }
+                        
+                        return { 
+                            valid: issues.length === 0, 
+                            issues: issues 
+                        };
+                    },
+                    forceValidate() {
+                        return this.validate();
+                    },
+                    getDebugInfo() {
+                        return {
+                            hostname: window.location.hostname,
+                            origin: window.location.origin,
+                            environment: this.app.environment,
+                            domain: this.app.domain,
+                            configValid: this.validate().valid,
+                            clientId: this.msal.clientId.substring(0, 8) + '...',
+                            redirectUri: this.msal.redirectUri,
+                            postLogoutRedirectUri: this.msal.postLogoutRedirectUri,
+                            isCorrectDomain: window.location.hostname === 'emailsortpro.netlify.app',
+                            timestamp: new Date().toISOString()
+                        };
+                    }
+                };
+                
+                console.log('[INDEX] ✅ Configuration créée pour le nouveau domaine:', {
+                    environment: window.AppConfig.app.environment,
+                    domain: window.AppConfig.app.domain,
+                    clientId: clientId.substring(0, 8) + '...',
+                    redirectUri: window.AppConfig.msal.redirectUri,
+                    isCorrectDomain: window.location.hostname === 'emailsortpro.netlify.app'
+                });
+            }
+            
+            // Créer la configuration
+            const clientId = getClientIdForEnvironment();
+            createConfig(clientId);
+            
+            // Vérification spéciale pour le nouveau domaine
+            if (window.location.hostname !== 'emailsortpro.netlify.app' && !isLocalhost) {
+                console.warn('[INDEX] ⚠️ Not on correct domain! Current:', window.location.hostname);
+                console.warn('[INDEX] Expected: emailsortpro.netlify.app');
+                
+                // Rediriger vers le bon domaine si nécessaire
+                if (window.location.hostname.includes('netlify') && !window.location.hostname.includes('emailsortpro.netlify.app')) {
+                    console.log('[INDEX] Redirecting to correct Netlify domain...');
+                    window.location.href = 'https://emailsortpro.netlify.app/';
+                    return;
+                }
+            }
+            
+            // Vérification et redirection si nécessaire
+            if (clientId === 'CONFIGURATION_REQUIRED') {
+                console.log('[INDEX] ⚠️ Configuration requise pour le nouveau domaine');
+                
+                if (isGitHubPages && window.location.pathname !== '/emailsortpro/setup.html') {
+                    console.log('[INDEX] Redirection vers setup pour GitHub Pages');
+                    setTimeout(() => {
+                        window.location.href = '/emailsortpro/setup.html';
+                    }, 1000);
+                } else if (isNetlify && window.location.pathname !== '/setup.html') {
+                    console.log('[INDEX] Redirection vers setup pour Netlify');
+                    setTimeout(() => {
+                        window.location.href = '/setup.html';
+                    }, 1000);
+                }
+            } else {
+                console.log('[INDEX] ✅ Configuration valide pour emailsortpro.netlify.app');
+            }
+        })();
+    </script>
+    
+    <!-- Chargement du fichier config.js principal (optionnel, pour surcharge) -->
+    <script src="config.js" onerror="console.log('[INDEX] config.js non trouvé, utilisation de la configuration inline')"></script>
+
+    <!-- Styles CORRIGÉS pour l'application (identiques au fichier original) -->
+    <style>
+        /* Reset et styles de base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f8fafc;
+            overflow-x: hidden;
+            transition: all 0.3s ease;
+        }
+
+        /* === STYLES POUR LA PAGE DE LOGIN === */
+        .login-page-styles {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10000;
+        }
+
+        .login-container {
+            text-align: center;
+            max-width: 600px;
+            padding: 40px;
+            color: white;
+        }
+
+        .login-logo {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .login-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 50px;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .login-button {
+            background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+            color: #667eea;
+            padding: 20px 50px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            text-decoration: none;
+        }
+
+        .login-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(255, 255, 255, 0.4);
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+
+        .login-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .login-security-note {
+            margin-top: 25px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* === STYLES POUR L'APPLICATION === */
+        /* Header Application */
+        .app-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: none; /* Caché par défaut */
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            height: 100%;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .ai-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        /* Navigation */
+        .app-nav {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            z-index: 999;
+            overflow-x: auto;
+            display: none; /* Caché par défaut */
+        }
+
+        #mainNav {
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            height: 100%;
+            gap: 10px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #6b7280;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .nav-item:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .nav-item.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Contenu principal */
+        .app-main {
+            margin-top: 0; /* Pas de marge par défaut */
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        #pageContent {
+            display: none; /* Caché par défaut */
+            opacity: 0;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Classes pour l'état actif de l'app */
+        body.app-active {
+            background: #f8fafc;
+        }
+
+        body.app-active #loginPage {
+            display: none !important;
+        }
+
+        body.app-active .app-header {
+            display: block !important;
+        }
+
+        body.app-active .app-nav {
+            display: block !important;
+        }
+
+        body.app-active .app-main {
+            margin-top: 120px; /* Header + Nav */
+        }
+
+        body.app-active #pageContent {
+            display: block !important;
+            opacity: 1 !important;
+        }
+
+        /* Dashboard par défaut */
+        .dashboard-container {
+            padding: 20px;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .dashboard-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+
+        .dashboard-subtitle {
+            font-size: 16px;
+            color: #6b7280;
+            margin-bottom: 20px;
+        }
+
+        .dashboard-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .action-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            border: 2px solid transparent;
+        }
+
+        .action-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+
+        .action-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: #667eea;
+        }
+
+        .action-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .action-description {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+        /* Loading overlay */
+        .login-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .login-loading-overlay.active {
+            display: flex;
+        }
+
+        .login-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .login-loading-text {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        /* Configuration error styles */
+        .config-error-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #dc2626;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            z-index: 99999;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .config-error-actions {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .config-error-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            text-decoration: none;
+        }
+
+        .config-error-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Domain warning banner */
+        .domain-warning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #f59e0b;
+            color: white;
+            padding: 12px;
+            text-align: center;
+            z-index: 99998;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 20px;
+            }
+
+            .login-title {
+                font-size: 2.5rem;
+            }
+
+            .login-subtitle {
+                font-size: 1.1rem;
+            }
+
+            .login-button {
+                padding: 18px 40px;
+                font-size: 1.1rem;
+            }
+
+            .app-nav {
+                height: auto;
+                padding: 10px;
+            }
+            
+            #mainNav {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            body.app-active .app-main {
+                margin-top: 140px;
+            }
+            
+            .dashboard-actions {
+                grid-template-columns: 1fr;
+            }
+
+            #pageContent {
+                padding: 10px;
+            }
+        }
+
+        /* Animation pour les transitions */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- Vérification du domaine -->
+    <script>
+        if (window.location.hostname !== 'emailsortpro.netlify.app' && 
+            window.location.hostname !== 'localhost' && 
+            window.location.hostname !== '127.0.0.1') {
+            const banner = document.createElement('div');
+            banner.className = 'domain-warning';
+            banner.innerHTML = `
+                ⚠️ Domaine incorrect détecté: ${window.location.hostname} | 
+                Domaine attendu: emailsortpro.netlify.app | 
+                <a href="https://emailsortpro.netlify.app/" style="color: white; text-decoration: underline;">
+                    Cliquez ici pour aller sur le bon domaine
+                </a>
+            `;
+            document.body.appendChild(banner);
+        }
+    </script>
+
+    <div id="app">
+        <!-- Header Application -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-envelope-open-text"></i>
+                    <span>EmailSortPro</span>
+                    <span class="ai-badge">AI</span>
+                </div>
+                <div id="authStatus" class="auth-status">
+                    <span class="text-muted">Initialisation...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="app-nav">
+            <div id="mainNav">
+                <button class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-item" data-page="scanner">
+                    <i class="fas fa-search"></i>
+                    <span>Scanner</span>
+                </button>
+                <button class="nav-item" data-page="emails">
+                    <i class="fas fa-inbox"></i>
+                    <span>Emails</span>
+                </button>
+                <button class="nav-item" data-page="tasks">
+                    <i class="fas fa-tasks"></i>
+                    <span>Tâches</span>
+                </button>
+                <button class="nav-item" data-page="ranger">
+                    <i class="fas fa-folder-tree"></i>
+                    <span>Ranger</span>
+                </button>
+                <button class="nav-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Paramètres</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Contenu Principal -->
+        <main class="app-main">
+            <!-- Page de Connexion épurée (visible par défaut) -->
+            <div id="loginPage" class="login-page-styles">
+                <div class="login-container">
+                    <div class="login-logo">
+                        <i class="fas fa-envelope-open-text"></i>
+                    </div>
+                    
+                    <h1 class="login-title">EmailSortPro</h1>
+                    
+                    <p class="login-subtitle">
+                        Organisez vos emails Outlook avec l'IA
+                    </p>
+
+                    <button id="loginBtn" class="login-button">
+                        <i class="fab fa-microsoft"></i>
+                        Se connecter à Outlook
+                    </button>
+
+                    <div class="login-security-note">
+                        <i class="fas fa-shield-alt"></i>
+                        Connexion sécurisée Microsoft
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenu Dynamique des Pages -->
+            <div id="pageContent">
+                <!-- Dashboard par défaut -->
+                <div class="dashboard-container">
+                    <div class="dashboard-header">
+                        <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
+                        <p class="dashboard-subtitle">Organisez vos emails intelligemment avec l'IA</p>
+                    </div>
+                    
+                    <div class="dashboard-actions">
+                        <div class="action-card" onclick="window.pageManager?.loadPage('scanner')">
+                            <div class="action-icon">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <h3 class="action-title">Scanner des emails</h3>
+                            <p class="action-description">Analysez et catégorisez vos emails automatiquement</p>
+                        </div>
+                        
+                        <div class="action-card" onclick="window.pageManager?.loadPage('emails')">
+                            <div class="action-icon">
+                                <i class="fas fa-inbox"></i>
+                            </div>
+                            <h3 class="action-title">Voir les emails</h3>
+                            <p class="action-description">Consultez vos emails catégorisés</p>
+                        </div>
+                        
+                        <div class="action-card" onclick="window.pageManager?.loadPage('tasks')">
+                            <div class="action-icon">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <h3 class="action-title">Gérer les tâches</h3>
+                            <p class="action-description">Suivez vos tâches créées depuis vos emails</p>
+                        </div>
+                        
+                        <div class="action-card" onclick="window.pageManager?.loadPage('ranger')">
+                            <div class="action-icon">
+                                <i class="fas fa-folder-tree"></i>
+                            </div>
+                            <h3 class="action-title">Ranger par domaine</h3>
+                            <p class="action-description">Organisez vos emails par expéditeur</p>
+                        </div>
+                        
+                        <div class="action-card" onclick="window.pageManager?.loadPage('settings')">
+                            <div class="action-icon">
+                                <i class="fas fa-cog"></i>
+                            </div>
+                            <h3 class="action-title">Paramètres</h3>
+                            <p class="action-description">Configurez vos catégories et préférences</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Overlay de Chargement épuré -->
+        <div id="loadingOverlay" class="login-loading-overlay">
+            <div class="login-spinner"></div>
+            <div class="login-loading-text">
+                <div>Connexion à Outlook...</div>
+                <div style="font-size: 14px; opacity: 0.8; margin-top: 10px;">Authentification en cours</div>
+            </div>
+        </div>
+
+        <!-- Notifications Toast -->
+        <div id="toastContainer" class="toast-container"></div>
+    </div>
+
+    <!-- ========================================= -->
+    <!-- SCRIPTS - ORDRE CRITIQUE POUR UNIFICATION -->
+    <!-- ========================================= -->
+    
+    <!-- 1. Services Core -->
+    <script src="AuthService.js"></script>
+    <script src="MailService.js"></script>
+    <script src="UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
+    <script src="CategoryManagerUI.js" onerror="console.warn('CategoryManagerUI.js sera créé automatiquement')"></script>
+
+    <!-- 2. CategoryManager -->
+    <script src="CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
+    
+    <!-- 3. TaskManager AVANT PageManager pour éviter les conflits -->
+    <script src="TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
+    
+    <!-- 4. Autres Managers -->
+    <script src="EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
+    <script src="AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
+    
+    <!-- 5. Page Manager APRÈS TaskManager -->
+    <script src="PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
+    
+    <!-- 6. Modules de pages -->
+    <script src="startscan.js" onerror="console.error('startscan.js manquant')"></script>
+    <script src="DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
+    <script src="CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
+    
+    <!-- 7. Modules Optionnels -->
+    <script src="Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
+    
+    <!-- 8. Application Principal EN DERNIER -->
+    <script src="app.js"></script>
+    
+    <!-- Scripts de gestion des événements -->
+    <script>
+        // Fonction pour forcer l'affichage de l'app
+        window.forceShowApp = function() {
+            console.log('[FORCE] Forcing app display...');
+            
+            // Ajouter la classe pour activer l'app
+            document.body.classList.add('app-active');
+            
+            // Masquer explicitement la page de login
+            const loginPage = document.getElementById('loginPage');
+            if (loginPage) {
+                loginPage.style.display = 'none';
+            }
+            
+            console.log('[FORCE] App display activated');
+        };
+
+        // Gestion du bouton de connexion
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[INDEX] DOM loaded for emailsortpro.netlify.app...');
+            
+            const loginBtn = document.getElementById('loginBtn');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', function() {
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
+                    this.disabled = true;
+                    
+                    const loadingOverlay = document.getElementById('loadingOverlay');
+                    if (loadingOverlay) {
+                        loadingOverlay.classList.add('active');
+                    }
+                    
+                    if (window.app && window.app.login) {
+                        window.app.login();
+                    }
+                });
+            }
+            
+            // Vérifier la configuration après le chargement du DOM
+            setTimeout(function() {
+                if (window.AppConfig) {
+                    const validation = window.AppConfig.validate();
+                    console.log('[INDEX] Configuration validation for new domain:', validation);
+                    
+                    const debugInfo = window.AppConfig.getDebugInfo();
+                    console.log('[INDEX] Debug info for emailsortpro.netlify.app:', debugInfo);
+                    
+                    if (!validation.valid) {
+                        console.log('[INDEX] Configuration invalid for new domain:', validation.issues);
+                        
+                        const errorBanner = document.createElement('div');
+                        errorBanner.className = 'config-error-banner';
+                        errorBanner.innerHTML = `
+                            <div>
+                                ⚠️ <strong>CONFIGURATION:</strong> URI de redirection invalide pour emailsortpro.netlify.app
+                            </div>
+                            <div>
+                                Vérifiez votre configuration Azure App Registration
+                            </div>
+                            <div class="config-error-actions">
+                                <button class="config-error-btn" onclick="this.parentElement.parentElement.remove()">Masquer</button>
+                                <a href="/setup.html" class="config-error-btn">Configuration</a>
+                                <button class="config-error-btn" onclick="console.log('Debug:', window.AppConfig.getDebugInfo())">Debug</button>
+                            </div>
+                        `;
+                        document.body.appendChild(errorBanner);
+                    } else {
+                        console.log('[INDEX] ✅ Configuration valid for emailsortpro.netlify.app');
+                    }
+                } else {
+                    console.warn('[INDEX] AppConfig not available');
+                }
+            }, 1000);
+        });
+        
+        // Fonction de diagnostic accessible globalement
+        window.checkServices = function() {
+            console.log('=== Diagnostic des services pour emailsortpro.netlify.app ===');
+            console.log('AppConfig:', window.AppConfig ? 'OK' : 'MANQUANT');
+            if (window.AppConfig) {
+                console.log('Environment:', window.AppConfig.app.environment);
+                console.log('Domain:', window.AppConfig.app.domain);
+                console.log('Client ID:', window.AppConfig.msal.clientId?.substring(0, 8) + '...');
+                console.log('Redirect URI:', window.AppConfig.msal.redirectUri);
+                console.log('Debug info:', window.AppConfig.getDebugInfo());
+            }
+            console.log('authService:', window.authService ? 'OK' : 'MANQUANT');
+            console.log('mailService:', window.mailService ? 'OK' : 'MANQUANT');
+            console.log('uiManager:', window.uiManager ? 'OK' : 'MANQUANT');
+            console.log('taskManager:', window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT');
+            console.log('tasksView:', window.tasksView ? 'OK' : 'MANQUANT');
+            console.log('pageManager:', window.pageManager ? 'OK' : 'MANQUANT');
+            console.log('categoryManager:', window.categoryManager ? 'OK' : 'MANQUANT');
+            console.log('Current hostname:', window.location.hostname);
+            console.log('Expected hostname: emailsortpro.netlify.app');
+            console.log('=== Ordre de chargement ===');
+            console.log('1. TaskManager chargé AVANT PageManager');
+            console.log('2. TasksView créé dans TaskManager');
+            console.log('3. PageManager délègue les tâches à TasksView');
+            console.log('4. Interface unifiée entre emails et tâches');
+        };
+
+        // Fonction pour créer CategoryManagerUI si manquant
+        if (!window.CategoryManagerUI) {
+            window.CategoryManagerUI = class {
+                static renderCategorySelector(categories = {}) {
+                    return Object.entries(categories).map(([id, cat]) => 
+                        `<div class="category-item" data-category="${id}">
+                            <span>${cat.icon || '📂'}</span>
+                            <span>${cat.name}</span>
+                        </div>`
+                    ).join('');
+                }
+            };
+            console.log('✅ CategoryManagerUI créé automatiquement');
+        }
+
+        // Log de confirmation du domaine
+        console.log('[INDEX] ✅ Configuration loaded for emailsortpro.netlify.app');
+        console.log('[INDEX] Current hostname:', window.location.hostname);
+        console.log('[INDEX] Expected hostname: emailsortpro.netlify.app');
+        console.log('[INDEX] Domain match:', window.location.hostname === 'emailsortpro.netlify.app');
+        console.log('[INDEX] 🎯 ORDRE DE CHARGEMENT CORRIGÉ:');
+        console.log('[INDEX] 1. TaskManager.js AVANT PageManager.js');
+        console.log('[INDEX] 2. Interface unifiée pour emails et tâches');
+        console.log('[INDEX] 3. PageManager délègue les tâches à TasksView');
+    </script>
+</body>
+</html>
