@@ -1,512 +1,646 @@
-// config.js - Configuration centralisée NETLIFY COMPATIBLE v3.0 - CORRIGÉE
+// AuthService.js - Service d'authentification Microsoft Graph ADAPTATIF multi-domaines v4.0
 
-// FONCTION DE DÉTECTION DE L'ENVIRONNEMENT AMÉLIORÉE
-function detectEnvironment() {
-    const hostname = window.location.hostname;
-    const isNetlify = hostname.includes('netlify.app') || 
-                     hostname.includes('netlifyapp.com') || 
-                     hostname.includes('.netlify.com');
-    const isGitHubPages = hostname.includes('github.io');
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-    
-    console.log('[CONFIG] Environment detection:', {
-        hostname,
-        isNetlify,
-        isGitHubPages,
-        isLocalhost,
-        origin: window.location.origin
-    });
-    
-    return {
-        type: isNetlify ? 'netlify' : isGitHubPages ? 'github' : isLocalhost ? 'localhost' : 'other',
-        isNetlify,
-        isGitHubPages,
-        isLocalhost,
-        hostname
-    };
-}
+class AuthService {
+    constructor() {
+        this.msalInstance = null;
+        this.account = null;
+        this.isInitialized = false;
+        this.initializationPromise = null;
+        this.configWaitAttempts = 0;
+        this.maxConfigWaitAttempts = 50; // 5 secondes max
+        
+        // Détection automatique du domaine
+        this.currentDomain = window.location.hostname;
+        this.isTestEnvironment = this.currentDomain.includes('coruscating-dodol') || 
+                                 this.currentDomain.includes('localhost') || 
+                                 this.currentDomain.includes('127.0.0.1');
+        
+        console.log('[AuthService] Constructor called - Adaptive multi-domain support v4.0');
+        console.log('[AuthService] Current domain:', this.currentDomain);
+        console.log('[AuthService] Test environment:', this.isTestEnvironment);
+        
+        // Vérifier le domaine avec approche adaptative
+        this.verifyDomain();
+        
+        // Attendre que la configuration soit disponible avec timeout
+        this.waitForConfig();
+    }
 
-// FONCTION DE RÉCUPÉRATION DU CLIENT ID CORRIGÉE POUR NETLIFY
-function getClientId(environment) {
-    console.log('[CONFIG] Getting Client ID for environment:', environment.type);
-    
-    // 1. SOLUTION NETLIFY: Client ID configuré directement
-    if (environment.isNetlify) {
-        // Vérifier si le Client ID est configuré directement dans l'application
-        if (window.NETLIFY_CLIENT_ID && window.NETLIFY_CLIENT_ID !== 'CONFIGURATION_REQUIRED') {
-            console.log('[CONFIG] ✅ Using configured Netlify client ID');
-            return window.NETLIFY_CLIENT_ID;
+    verifyDomain() {
+        const supportedDomains = [
+            'emailsortpro.netlify.app',
+            'emailsortpro.fr',
+            'coruscating-dodol-f30e8d.netlify.app',
+            'localhost',
+            '127.0.0.1'
+        ];
+        
+        const isSupported = supportedDomains.some(domain => this.currentDomain.includes(domain));
+        
+        console.log('[AuthService] Domain verification:', {
+            current: this.currentDomain,
+            supported: supportedDomains,
+            isSupported: isSupported,
+            isTest: this.isTestEnvironment
+        });
+        
+        if (!isSupported) {
+            console.warn('[AuthService] ⚠️ Unknown domain! Authentication may fail.');
+            console.warn('[AuthService] Supported domains:', supportedDomains);
+        }
+    }
+
+    waitForConfig() {
+        console.log('[AuthService] Waiting for configuration...');
+        
+        if (!window.AppConfig) {
+            this.configWaitAttempts++;
+            
+            if (this.configWaitAttempts >= this.maxConfigWaitAttempts) {
+                console.error('[AuthService] ❌ Configuration timeout - AppConfig not available after 5 seconds');
+                return;
+            }
+            
+            console.log(`[AuthService] AppConfig not yet available, waiting... (${this.configWaitAttempts}/${this.maxConfigWaitAttempts})`);
+            setTimeout(() => this.waitForConfig(), 100);
+            return;
         }
         
-        console.log('[CONFIG] 🚀 Netlify: Using default client ID for JavaScript vanilla app');
-        return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7'; // Votre Client ID vérifié
-    }
-    
-    // 2. Vérifier le localStorage (configuration sauvegardée)
-    try {
-        const savedClientId = localStorage.getItem('emailsortpro_client_id');
-        if (savedClientId && savedClientId !== 'VOTRE_CLIENT_ID_ICI' && savedClientId !== 'CONFIGURATION_REQUIRED') {
-            console.log('[CONFIG] ✅ Using saved client ID from localStorage');
-            return savedClientId;
+        // Vérifier immédiatement la configuration
+        const validation = window.AppConfig.validate();
+        console.log('[AuthService] Configuration validation:', validation);
+        
+        // Vérification adaptative de l'URI de redirection
+        if (window.AppConfig.msal?.redirectUri) {
+            const configuredDomain = new URL(window.AppConfig.msal.redirectUri).hostname;
+            if (configuredDomain !== this.currentDomain) {
+                console.warn('[AuthService] ⚠️ Redirect URI domain mismatch detected');
+                console.warn('[AuthService] Current domain:', this.currentDomain);
+                console.warn('[AuthService] Configured domain:', configuredDomain);
+                console.log('[AuthService] Will adapt configuration automatically...');
+            }
         }
-    } catch (e) {
-        console.warn('[CONFIG] Cannot access localStorage:', e);
+        
+        if (!validation.valid) {
+            console.error('[AuthService] Configuration invalid:', validation.issues);
+            // Continuer quand même pour permettre l'affichage des erreurs
+        } else {
+            console.log('[AuthService] ✅ Configuration valid for', this.currentDomain);
+        }
     }
-    
-    // 3. Fallback par défaut selon l'environnement
-    if (environment.isLocalhost) {
-        console.log('[CONFIG] Using localhost development client ID');
-        return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7'; // Votre client ID de développement
-    }
-    
-    // 4. Pour GitHub Pages ou autres
-    if (environment.isGitHubPages) {
-        console.log('[CONFIG] GitHub Pages - checking for saved configuration');
-        return 'CONFIGURATION_REQUIRED';
-    }
-    
-    console.warn('[CONFIG] ❌ No client ID found for environment:', environment.type);
-    return 'CONFIGURATION_REQUIRED';
-}
 
-// CRÉATION IMMÉDIATE de la configuration
-(function createConfiguration() {
-    console.log('[CONFIG] 🚀 Creating configuration...');
-    
-    const environment = detectEnvironment();
-    const clientId = getClientId(environment);
-    
-    console.log('[CONFIG] Configuration summary:', {
-        environment: environment.type,
-        hostname: environment.hostname,
-        clientId: clientId === 'CONFIGURATION_REQUIRED' ? 'NEEDS_SETUP' : 'CONFIGURED',
-        clientIdLength: clientId.length
-    });
-    
-    // Construire l'URL de redirection selon l'environnement
-    let redirectUri;
-    if (environment.isNetlify) {
-        redirectUri = `${window.location.origin}/auth-callback.html`;
-    } else if (environment.isGitHubPages) {
-        redirectUri = `${window.location.origin}/emailsortpro/auth-callback.html`;
-    } else {
-        redirectUri = `${window.location.origin}/auth-callback.html`;
+    async initialize() {
+        console.log('[AuthService] Initialize called for', this.currentDomain);
+        
+        // Éviter l'initialisation multiple
+        if (this.initializationPromise) {
+            console.log('[AuthService] Already initializing, waiting for existing promise...');
+            return this.initializationPromise;
+        }
+        
+        if (this.isInitialized) {
+            console.log('[AuthService] Already initialized');
+            return Promise.resolve();
+        }
+
+        this.initializationPromise = this._doInitialize();
+        return this.initializationPromise;
     }
-    
-    console.log('[CONFIG] Redirect URI configured:', redirectUri);
-    
-    window.AppConfig = {
-        // Configuration MSAL adaptée à l'environnement
-        msal: {
-            clientId: clientId,
-            authority: 'https://login.microsoftonline.com/common',
-            redirectUri: redirectUri,
-            postLogoutRedirectUri: window.location.origin,
+
+    async _doInitialize() {
+        try {
+            console.log('[AuthService] Starting initialization for', this.currentDomain);
             
-            // Configuration cache renforcée pour Netlify
-            cache: {
-                cacheLocation: 'localStorage',
-                storeAuthStateInCookie: environment.isNetlify || environment.isGitHubPages // Cookies pour hébergement statique
-            },
-            
-            // Configuration système avec debug adapté
-            system: {
-                loggerOptions: {
-                    loggerCallback: (level, message, containsPii) => {
-                        if (environment.isLocalhost || window.debugMode) {
-                            console.log(`[MSAL ${level}] ${message}`);
-                        }
-                    },
-                    piiLoggingEnabled: false,
-                    logLevel: environment.isLocalhost ? 'Verbose' : 'Warning'
-                },
-                allowNativeBroker: false
+            // Vérifier que MSAL est chargé
+            if (typeof msal === 'undefined') {
+                throw new Error('MSAL library not loaded - check if script is included');
             }
-        },
-        
-        // Scopes Microsoft Graph
-        scopes: {
-            login: [
-                'https://graph.microsoft.com/User.Read',
-                'https://graph.microsoft.com/Mail.Read',
-                'https://graph.microsoft.com/Mail.ReadWrite'
-            ],
-            silent: [
-                'https://graph.microsoft.com/User.Read',
-                'https://graph.microsoft.com/Mail.Read',
-                'https://graph.microsoft.com/Mail.ReadWrite'
-            ]
-        },
-        
-        // Configuration de l'application
-        app: {
-            name: 'EmailSortPro',
-            version: '3.0.0',
-            debug: environment.isLocalhost,
-            environment: environment.type,
-            maxRetries: 3,
-            retryDelay: 2000
-        },
-        
-        // Configuration des emails
-        email: {
-            defaultFolder: 'inbox',
-            defaultDays: 30,
-            pageSize: 100,
-            maxEmails: 10000
-        },
-        
-        // Messages d'erreur personnalisés
-        errors: {
-            'unauthorized_client': 'Configuration Azure incorrecte. Vérifiez votre Client ID.',
-            'invalid_client': 'Application non autorisée. Contactez l\'administrateur.',
-            'consent_required': 'Autorisation requise. Veuillez accepter les permissions.',
-            'interaction_required': 'Reconnexion requise.',
-            'login_required': 'Connexion requise.',
-            'network_error': 'Erreur réseau. Vérifiez votre connexion.',
-            'token_expired': 'Session expirée. Reconnexion nécessaire.',
-            'AADSTS900144': 'Erreur de configuration client_id. Actualisation requise.',
-            'AADSTS50011': 'URL de redirection non configurée dans Azure.'
-        },
-        
-        // Informations d'environnement
-        environment: environment,
-        
-        // Méthode pour vérifier la configuration RENFORCÉE
-        validate() {
-            const issues = [];
-            
-            // Vérification du client ID avec tolérance pour Netlify
-            if (!this.msal.clientId) {
-                issues.push('Client ID manquant');
-            } else if (this.msal.clientId === 'VOTRE_CLIENT_ID_ICI' || this.msal.clientId === 'CONFIGURATION_REQUIRED') {
-                if (environment.isGitHubPages) {
-                    issues.push('Client ID non configuré - utilisez setup.html');
-                } else {
-                    // Pour Netlify et autres, ne pas traiter comme une erreur bloquante
-                    console.log('[CONFIG] Client ID par défaut utilisé pour', environment.type);
-                }
-            } else if (this.msal.clientId.length < 30) {
-                issues.push('Client ID invalide (trop court)');
-            } else if (!/^[a-f0-9-]{36}$/i.test(this.msal.clientId)) {
-                issues.push('Format Client ID invalide (doit être un GUID)');
+            console.log('[AuthService] ✅ MSAL library available');
+
+            // Vérifier que la configuration est disponible
+            if (!window.AppConfig) {
+                throw new Error('AppConfig not loaded - check if config.js is included before AuthService.js');
             }
+
+            // Validation avec adaptation automatique
+            let validation = window.AppConfig.forceValidate();
+            console.log('[AuthService] Initial configuration validation:', validation);
             
-            // Vérification de l'autorité
-            if (!this.msal.authority || !this.msal.authority.includes('microsoftonline.com')) {
-                issues.push('Authority URL invalide');
-            }
+            // Adapter la configuration au domaine actuel
+            const adaptedConfig = this.adaptConfigForCurrentDomain();
+            console.log('[AuthService] Configuration adapted for', this.currentDomain);
             
-            // Vérification du redirect URI
-            if (!this.msal.redirectUri || !this.msal.redirectUri.includes(window.location.hostname)) {
-                issues.push('Redirect URI ne correspond pas au domaine actuel');
-            }
-            
-            return {
-                valid: issues.length === 0,
-                issues: issues,
-                clientId: this.msal.clientId,
-                authority: this.msal.authority,
-                redirectUri: this.msal.redirectUri,
-                environment: environment.type
-            };
-        },
-        
-        // Méthode pour obtenir les informations de debug RENFORCÉE
-        getDebugInfo() {
-            const validation = this.validate();
-            return {
-                hostname: window.location.hostname,
-                origin: window.location.origin,
-                environment: environment,
-                userAgent: navigator.userAgent,
-                msalVersion: window.msal ? window.msal.version || 'Loaded' : 'Not loaded',
-                configValid: validation.valid,
-                configIssues: validation.issues,
-                clientIdLength: this.msal.clientId ? this.msal.clientId.length : 0,
-                clientIdFormat: this.msal.clientId ? (this.msal.clientId.includes('-') ? 'GUID' : 'Invalid') : 'Missing',
-                redirectUri: this.msal.redirectUri,
-                timestamp: new Date().toISOString(),
-                localStorage: {
-                    available: typeof Storage !== 'undefined',
-                    keys: typeof Storage !== 'undefined' ? Object.keys(localStorage).length : 0
-                },
-                netlifyConfig: environment.isNetlify ? {
-                    processEnvExists: typeof process !== 'undefined' && !!process.env,
-                    processEnvViteVar: typeof process !== 'undefined' && process.env ? process.env.VITE_AZURE_CLIENT_ID : null,
-                    globalViteVar: typeof VITE_AZURE_CLIENT_ID !== 'undefined' ? VITE_AZURE_CLIENT_ID : null,
-                    windowEnv: window.env || null
-                } : 'N/A'
-            };
-        },
-        
-        // Méthode pour forcer la validation et correction NETLIFY-AWARE
-        forceValidate() {
-            console.log('[CONFIG] Force validation started for environment:', environment.type);
-            
-            const validation = this.validate();
-            console.log('[CONFIG] Validation result:', validation);
+            // Re-valider après adaptation
+            validation = window.AppConfig.validate();
             
             if (!validation.valid) {
-                console.error('[CONFIG] CRITICAL: Configuration is invalid!', validation.issues);
+                console.warn('[AuthService] Configuration issues detected after adaptation:', validation.issues);
+                // Continuer quand même en mode dégradé
+            }
+
+            console.log('[AuthService] ✅ Configuration ready for', this.currentDomain);
+            
+            // Log de la configuration utilisée (sans exposer de secrets)
+            console.log('[AuthService] Using configuration for', this.currentDomain, {
+                clientId: window.AppConfig.msal.clientId ? window.AppConfig.msal.clientId.substring(0, 8) + '...' : 'MISSING',
+                authority: window.AppConfig.msal.authority,
+                redirectUri: window.AppConfig.msal.redirectUri,
+                postLogoutRedirectUri: window.AppConfig.msal.postLogoutRedirectUri,
+                cacheLocation: window.AppConfig.msal.cache.cacheLocation,
+                isTestEnvironment: this.isTestEnvironment
+            });
+
+            // Créer l'instance MSAL avec configuration adaptée
+            console.log('[AuthService] Creating MSAL instance for', this.currentDomain);
+            
+            const msalConfig = {
+                auth: {
+                    clientId: window.AppConfig.msal.clientId,
+                    authority: window.AppConfig.msal.authority,
+                    redirectUri: window.AppConfig.msal.redirectUri,
+                    postLogoutRedirectUri: window.AppConfig.msal.postLogoutRedirectUri
+                },
+                cache: window.AppConfig.msal.cache,
+                system: window.AppConfig.msal.system
+            };
+            
+            // Validation finale avant création MSAL
+            if (!msalConfig.auth.clientId || msalConfig.auth.clientId === 'CONFIGURATION_REQUIRED') {
+                throw new Error('CRITICAL: clientId is missing or invalid in MSAL config');
+            }
+            
+            // Validation du format du Client ID
+            if (!/^[a-f0-9-]{36}$/i.test(msalConfig.auth.clientId)) {
+                throw new Error(`CRITICAL: clientId format is invalid: ${msalConfig.auth.clientId}. Must be a valid GUID.`);
+            }
+            
+            console.log('[AuthService] MSAL config prepared for', this.currentDomain, {
+                clientId: msalConfig.auth.clientId ? '✅ Present (valid GUID)' : '❌ Missing',
+                authority: msalConfig.auth.authority ? '✅ Present' : '❌ Missing',
+                redirectUri: msalConfig.auth.redirectUri ? '✅ Present' : '❌ Missing',
+                postLogoutRedirectUri: msalConfig.auth.postLogoutRedirectUri ? '✅ Present' : '❌ Missing',
+                cacheLocation: msalConfig.cache?.cacheLocation || 'default',
+                domainMatch: msalConfig.auth.redirectUri?.includes(this.currentDomain) ? '✅ Correct' : '❌ Will be adapted'
+            });
+            
+            this.msalInstance = new msal.PublicClientApplication(msalConfig);
+            console.log('[AuthService] ✅ MSAL instance created successfully for', this.currentDomain);
+            
+            // Initialiser MSAL
+            await this.msalInstance.initialize();
+            console.log('[AuthService] ✅ MSAL instance initialized for', this.currentDomain);
+            
+            // Gérer la redirection si elle existe
+            try {
+                console.log('[AuthService] Checking for redirect response...');
+                const response = await this.msalInstance.handleRedirectPromise();
                 
-                // Messages spécifiques selon l'environnement
-                let errorMsg = `CONFIGURATION CRITIQUE (${environment.type}):\n${validation.issues.join('\n')}`;
+                if (response) {
+                    console.log('[AuthService] ✅ Redirect response received for', this.currentDomain, {
+                        username: response.account?.username,
+                        name: response.account?.name
+                    });
+                    this.account = response.account;
+                    this.msalInstance.setActiveAccount(this.account);
+                } else {
+                    console.log('[AuthService] No redirect response');
+                    
+                    // Pas de redirection, vérifier s'il y a un compte dans le cache
+                    const accounts = this.msalInstance.getAllAccounts();
+                    console.log('[AuthService] Accounts in cache:', accounts.length);
+                    
+                    if (accounts.length > 0) {
+                        this.account = accounts[0];
+                        this.msalInstance.setActiveAccount(this.account);
+                        console.log('[AuthService] ✅ Account restored from cache:', this.account.username);
+                    } else {
+                        console.log('[AuthService] No account in cache');
+                    }
+                }
+            } catch (redirectError) {
+                console.warn('[AuthService] Redirect handling error (non-critical):', redirectError);
                 
-                if (environment.isNetlify) {
-                    errorMsg += `\n\nPour Netlify (JavaScript vanilla):\n`;
-                    errorMsg += `1. L'application utilise un Client ID par défaut fonctionnel\n`;
-                    errorMsg += `2. Pour personnaliser: utilisez setup.html\n`;
-                    errorMsg += `3. Ou configurez localStorage: emailsortpro_client_id\n`;
-                    errorMsg += `4. Client ID détecté: ${this.msal.clientId}`;
+                // Gestion spéciale des erreurs de redirection
+                if (redirectError.message && redirectError.message.includes('redirect_uri')) {
+                    console.error('[AuthService] ❌ REDIRECT URI ERROR for', this.currentDomain);
+                    throw new Error(`Redirect URI error: Configure https://${this.currentDomain}/auth-callback.html in Azure Portal`);
                 }
                 
-                console.error(errorMsg);
-                
-                return {
-                    valid: false,
-                    issues: validation.issues,
-                    environment: environment.type,
-                    debug: this.getDebugInfo()
-                };
+                // Continuer même en cas d'erreur de redirection non critique
             }
-            
-            console.log('[CONFIG] ✅ Configuration is valid for', environment.type);
-            return { 
-                valid: true, 
-                environment: environment.type,
-                debug: this.getDebugInfo() 
-            };
-        },
-        
-        // Méthode pour sauvegarder le client ID (pour les environnements qui le permettent)
-        saveClientId(clientId) {
-            if (!clientId || clientId === 'VOTRE_CLIENT_ID_ICI') {
-                console.warn('[CONFIG] Invalid client ID provided for saving');
-                return false;
-            }
-            
-            try {
-                localStorage.setItem('emailsortpro_client_id', clientId);
-                
-                // Mettre à jour la configuration actuelle
-                this.msal.clientId = clientId;
-                
-                console.log('[CONFIG] ✅ Client ID saved and updated');
-                return true;
-            } catch (e) {
-                console.error('[CONFIG] Cannot save client ID:', e);
-                return false;
-            }
-        }
-    };
-    
-    console.log('[CONFIG] ✅ Configuration created for:', environment.type);
-    console.log('[CONFIG] Client ID source:', clientId === 'CONFIGURATION_REQUIRED' ? 'NEEDS_SETUP' : 'CONFIGURED');
-    console.log('[CONFIG] Redirect URI:', redirectUri);
-})();
 
-// VALIDATION IMMÉDIATE au chargement du script
-(function() {
-    console.log('[CONFIG] Immediate validation on script load...');
-    
-    if (!window.AppConfig) {
-        console.error('[CONFIG] CRITICAL: AppConfig not created!');
-        return;
+            this.isInitialized = true;
+            console.log('[AuthService] ✅ Initialization completed successfully for', this.currentDomain);
+            
+            return true;
+
+        } catch (error) {
+            console.error('[AuthService] ❌ Initialization failed for', this.currentDomain, error);
+            this.isInitialized = false;
+            this.initializationPromise = null;
+            
+            // Gestion d'erreurs spécifiques avec adaptation au domaine
+            if (error.message.includes('unauthorized_client')) {
+                console.error('[AuthService] AZURE CONFIG ERROR: Client ID incorrect or app not configured for', this.currentDomain);
+                if (window.uiManager) {
+                    window.uiManager.showToast(
+                        `Erreur de configuration Azure pour ${this.currentDomain}. Client ID incorrect.`,
+                        'error',
+                        15000
+                    );
+                }
+            } else if (error.message.includes('redirect_uri') || error.message.includes('Redirect URI')) {
+                console.error('[AuthService] REDIRECT URI ERROR:', error.message);
+                if (window.uiManager) {
+                    window.uiManager.showToast(
+                        `URI de redirection invalide. Configurez: https://${this.currentDomain}/auth-callback.html`,
+                        'error',
+                        20000
+                    );
+                }
+            }
+            
+            throw error;
+        }
     }
-    
-    const validation = window.AppConfig.forceValidate();
-    
-    if (!validation.valid) {
-        console.error('[CONFIG] IMMEDIATE VALIDATION FAILED:', validation);
+
+    // Nouvelle méthode pour adapter la configuration au domaine actuel
+    adaptConfigForCurrentDomain() {
+        if (!window.AppConfig) return;
         
-        // Notification d'erreur adaptée à l'environnement
-        const environment = window.AppConfig.environment;
-        let errorMessage = 'Configuration invalide';
-        let solutions = [];
+        const currentOrigin = window.location.origin;
+        const expectedRedirectUri = `${currentOrigin}/auth-callback.html`;
+        const expectedLogoutUri = currentOrigin;
         
-        if (environment.isNetlify) {
-            errorMessage = '⚠️ NETLIFY: Variable d\'environnement manquante';
-            solutions = [
-                '1. Aller dans Site settings > Environment variables sur Netlify',
-                '2. Ajouter VITE_AZURE_CLIENT_ID avec votre Client ID Azure',
-                '3. IMPORTANT: Redéployer le site après ajout de la variable',
-                '4. La variable doit être préfixée par VITE_ pour être accessible'
-            ];
-        } else if (environment.isGitHubPages) {
-            errorMessage = '⚠️ GITHUB PAGES: Configuration requise';
-            solutions = [
-                '1. Accéder à la page setup.html',
-                '2. Configurer votre Client ID Azure',
-                '3. La configuration sera sauvegardée localement'
-            ];
-        } else if (environment.isLocalhost) {
-            errorMessage = '⚠️ LOCALHOST: Configuration de développement';
-            solutions = [
-                '1. Vérifier le Client ID dans config.js',
-                '2. S\'assurer que l\'app Azure est configurée',
-                '3. Tester la connexion'
-            ];
+        console.log('[AuthService] Adapting configuration for current domain...');
+        console.log('[AuthService] Current origin:', currentOrigin);
+        console.log('[AuthService] Expected redirect URI:', expectedRedirectUri);
+        
+        // Adapter les URIs au domaine actuel
+        if (window.AppConfig.msal.redirectUri !== expectedRedirectUri) {
+            console.log('[AuthService] Updating redirect URI from', window.AppConfig.msal.redirectUri, 'to', expectedRedirectUri);
+            window.AppConfig.msal.redirectUri = expectedRedirectUri;
         }
         
-        // Créer une notification d'erreur immédiate avec solutions détaillées
-        const errorDiv = document.createElement('div');
-        errorDiv.id = 'config-error-immediate';
-        errorDiv.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: #dc2626;
-            color: white;
-            padding: 20px;
-            z-index: 99999;
-            text-align: center;
-            font-family: monospace;
-            font-size: 14px;
-            border-bottom: 3px solid #b91c1c;
-        `;
-        errorDiv.innerHTML = `
-            <div style="max-width: 1000px; margin: 0 auto;">
-                <strong>${errorMessage}</strong><br><br>
-                <div style="text-align: left; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px; margin: 10px 0;">
-                    <strong>Environnement détecté:</strong> ${environment.type.toUpperCase()}<br>
-                    <strong>Hostname:</strong> ${environment.hostname}<br>
-                    <strong>Client ID actuel:</strong> <code>${window.AppConfig.msal.clientId || 'MANQUANT'}</code><br>
-                    ${environment.isNetlify ? `<strong>Variable d'environnement VITE_AZURE_CLIENT_ID:</strong> ${typeof VITE_AZURE_CLIENT_ID !== 'undefined' ? VITE_AZURE_CLIENT_ID : 'NON DÉFINIE'}<br>` : ''}
-                </div>
-                ${solutions.length > 0 ? `
-                <div style="text-align: left; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px; margin: 10px 0;">
-                    <strong>Solutions pour ${environment.type}:</strong><br>
-                    ${solutions.map(s => `${s}`).join('<br>')}
-                </div>
-                ` : ''}
-                <div style="text-align: left; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px; margin: 10px 0;">
-                    <strong>Problèmes détectés:</strong><br>
-                    ${validation.issues.map(issue => `❌ ${issue}`).join('<br>')}
-                </div>
-                <button onclick="this.parentElement.parentElement.remove()" 
-                        style="background: white; color: #dc2626; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px;">
-                    Masquer
-                </button>
-                <button onclick="window.location.reload()" 
-                        style="background: #f59e0b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px;">
-                    Actualiser
-                </button>
-                <button onclick="console.log('DEBUG:', window.AppConfig.getDebugInfo())" 
-                        style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px;">
-                    Debug Console
-                </button>
-                ${environment.isGitHubPages ? `
-                <button onclick="window.location.href='setup.html'" 
-                        style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px;">
-                    Configurer
-                </button>
-                ` : ''}
-            </div>
-        `;
+        if (window.AppConfig.msal.postLogoutRedirectUri !== expectedLogoutUri) {
+            console.log('[AuthService] Updating logout URI from', window.AppConfig.msal.postLogoutRedirectUri, 'to', expectedLogoutUri);
+            window.AppConfig.msal.postLogoutRedirectUri = expectedLogoutUri;
+        }
         
-        // Ajouter dès que possible
-        if (document.body) {
-            document.body.appendChild(errorDiv);
-        } else {
-            document.addEventListener('DOMContentLoaded', () => {
-                document.body.appendChild(errorDiv);
+        // En mode test, adapter les settings pour plus de debug
+        if (this.isTestEnvironment) {
+            console.log('[AuthService] Test environment detected, enabling enhanced logging...');
+            if (window.AppConfig.msal.system && window.AppConfig.msal.system.loggerOptions) {
+                window.AppConfig.msal.system.loggerOptions.logLevel = 'Verbose';
+                window.AppConfig.app.debug = true;
+            }
+        }
+        
+        return {
+            redirectUri: window.AppConfig.msal.redirectUri,
+            postLogoutRedirectUri: window.AppConfig.msal.postLogoutRedirectUri,
+            domain: this.currentDomain,
+            isTest: this.isTestEnvironment
+        };
+    }
+
+    isAuthenticated() {
+        const authenticated = this.account !== null && this.isInitialized;
+        console.log('[AuthService] Authentication check for', this.currentDomain, {
+            hasAccount: !!this.account,
+            isInitialized: this.isInitialized,
+            result: authenticated,
+            domain: this.currentDomain
+        });
+        return authenticated;
+    }
+
+    getAccount() {
+        return this.account;
+    }
+
+    async login() {
+        console.log('[AuthService] Login attempt started for', this.currentDomain);
+        
+        if (!this.isInitialized) {
+            console.log('[AuthService] Not initialized, initializing first...');
+            await this.initialize();
+        }
+
+        try {
+            // Vérifier encore une fois la configuration avant le login
+            const validation = window.AppConfig.validate();
+            if (!validation.valid) {
+                throw new Error(`Configuration invalid before login for ${this.currentDomain}: ${validation.issues.join(', ')}`);
+            }
+
+            // Préparer la requête de login avec validation
+            const loginRequest = {
+                scopes: window.AppConfig.scopes.login,
+                prompt: 'select_account'
+            };
+
+            console.log('[AuthService] Login request prepared for', this.currentDomain, {
+                scopes: loginRequest.scopes,
+                prompt: loginRequest.prompt,
+                clientId: this.msalInstance?.getConfiguration()?.auth?.clientId ? '✅ Present in MSAL' : '❌ Missing in MSAL',
+                redirectUri: this.msalInstance?.getConfiguration()?.auth?.redirectUri,
+                domain: this.currentDomain
+            });
+            
+            // Vérification finale avant login
+            if (!this.msalInstance) {
+                throw new Error('MSAL instance not available');
+            }
+            
+            const msalConfig = this.msalInstance.getConfiguration();
+            if (!msalConfig?.auth?.clientId) {
+                throw new Error('CRITICAL: clientId missing in MSAL instance');
+            }
+            
+            if (!msalConfig?.auth?.redirectUri?.includes(this.currentDomain)) {
+                console.warn('[AuthService] ⚠️ redirectUri domain mismatch, but proceeding...');
+                console.warn('[AuthService] Expected domain:', this.currentDomain);
+                console.warn('[AuthService] Configured domain:', new URL(msalConfig.auth.redirectUri).hostname);
+            }
+
+            console.log('[AuthService] Initiating login redirect for', this.currentDomain);
+            console.log('[AuthService] MSAL instance config verified:', {
+                clientId: msalConfig.auth.clientId.substring(0, 8) + '...',
+                authority: msalConfig.auth.authority,
+                redirectUri: msalConfig.auth.redirectUri,
+                currentDomain: this.currentDomain
+            });
+            
+            // Utiliser loginRedirect pour éviter les problèmes de popup
+            await this.msalInstance.loginRedirect(loginRequest);
+            // Note: La redirection va se produire, pas de code après cette ligne
+            
+        } catch (error) {
+            console.error('[AuthService] ❌ Login error for', this.currentDomain, error);
+            
+            // Gestion d'erreurs adaptative
+            let userMessage = 'Erreur de connexion';
+            
+            if (error.errorCode) {
+                const errorCode = error.errorCode;
+                console.log('[AuthService] MSAL Error code:', errorCode);
+                
+                if (window.AppConfig.errors[errorCode]) {
+                    userMessage = window.AppConfig.errors[errorCode];
+                } else {
+                    switch (errorCode) {
+                        case 'unauthorized_client':
+                            userMessage = `Configuration Azure incorrecte pour ${this.currentDomain}. Vérifiez votre Client ID.`;
+                            break;
+                        case 'invalid_request':
+                            userMessage = `URI de redirection invalide. Configurez: https://${this.currentDomain}/auth-callback.html`;
+                            break;
+                        default:
+                            userMessage = `Erreur MSAL: ${errorCode}`;
+                    }
+                }
+            }
+            
+            if (window.uiManager) {
+                window.uiManager.showToast(userMessage, 'error', 12000);
+            }
+            
+            throw error;
+        }
+    }
+
+    async logout() {
+        console.log('[AuthService] Logout initiated for', this.currentDomain);
+        
+        if (!this.isInitialized) {
+            console.warn('[AuthService] Not initialized for logout, force cleanup');
+            this.forceCleanup();
+            return;
+        }
+
+        try {
+            const logoutRequest = {
+                account: this.account,
+                postLogoutRedirectUri: window.location.origin
+            };
+
+            console.log('[AuthService] Logout request for', this.currentDomain, logoutRequest);
+            await this.msalInstance.logoutRedirect(logoutRequest);
+            // La redirection va se produire
+            
+        } catch (error) {
+            console.error('[AuthService] Logout error for', this.currentDomain, error);
+            // Force cleanup même en cas d'erreur
+            this.forceCleanup();
+        }
+    }
+
+    async getAccessToken() {
+        if (!this.isAuthenticated()) {
+            console.warn('[AuthService] Not authenticated for token request');
+            return null;
+        }
+
+        try {
+            const tokenRequest = {
+                scopes: window.AppConfig.scopes.silent,
+                account: this.account,
+                forceRefresh: false
+            };
+
+            console.log('[AuthService] Requesting access token for scopes:', tokenRequest.scopes);
+            const response = await this.msalInstance.acquireTokenSilent(tokenRequest);
+            
+            if (response && response.accessToken) {
+                console.log('[AuthService] ✅ Token acquired successfully for', this.currentDomain);
+                return response.accessToken;
+            } else {
+                throw new Error('No access token in response');
+            }
+            
+        } catch (error) {
+            console.warn('[AuthService] Silent token acquisition failed:', error);
+            
+            if (error instanceof msal.InteractionRequiredAuthError) {
+                console.log('[AuthService] Interaction required, redirecting to login...');
+                await this.login();
+                return null;
+            } else {
+                console.error('[AuthService] Token acquisition error:', error);
+                return null;
+            }
+        }
+    }
+
+    async getUserInfo() {
+        const token = await this.getAccessToken();
+        if (!token) {
+            throw new Error('No access token available');
+        }
+
+        try {
+            console.log('[AuthService] Fetching user info from Graph API for', this.currentDomain);
+            const response = await fetch('https://graph.microsoft.com/v1.0/me', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('[AuthService] Graph API error:', response.status, errorText);
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const userInfo = await response.json();
+            console.log('[AuthService] ✅ User info retrieved for', this.currentDomain, userInfo.displayName);
+            return userInfo;
+
+        } catch (error) {
+            console.error('[AuthService] Error getting user info:', error);
+            throw error;
+        }
+    }
+
+    async reset() {
+        console.log('[AuthService] Resetting authentication for', this.currentDomain);
+        
+        try {
+            if (this.msalInstance && this.account) {
+                await this.msalInstance.logoutSilent({
+                    account: this.account
+                });
+            }
+        } catch (error) {
+            console.warn('[AuthService] Silent logout failed during reset:', error);
+        }
+
+        this.forceCleanup();
+    }
+
+    forceCleanup() {
+        console.log('[AuthService] Force cleanup initiated for', this.currentDomain);
+        
+        // Reset internal state
+        this.account = null;
+        this.isInitialized = false;
+        this.msalInstance = null;
+        this.initializationPromise = null;
+        this.configWaitAttempts = 0;
+        
+        // Clear MSAL cache plus agressivement
+        if (window.localStorage) {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.includes('msal') || key.includes('auth') || key.includes('login'))) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => {
+                try {
+                    localStorage.removeItem(key);
+                    console.log('[AuthService] Removed cache key:', key);
+                } catch (e) {
+                    console.warn('[AuthService] Error removing key:', key, e);
+                }
             });
         }
-    } else {
-        console.log('[CONFIG] ✅ Immediate validation passed for', validation.environment);
         
-        // Supprimer d'éventuelles erreurs précédentes
-        const existingError = document.getElementById('config-error-immediate');
-        if (existingError) {
-            existingError.remove();
-        }
+        console.log('[AuthService] ✅ Cleanup complete for', this.currentDomain);
     }
-})();
 
-// Validation supplémentaire au DOMContentLoaded
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('[CONFIG] DOMContentLoaded validation...');
-    
-    const validation = window.AppConfig.forceValidate();
-    
-    if (validation.valid) {
-        console.log('[CONFIG] ✅ Final validation successful - Configuration ready for MSAL');
-        console.log('[CONFIG] Environment:', validation.environment);
-        
-        // Supprimer d'éventuelles erreurs précédentes
-        const existingError = document.getElementById('config-error-immediate');
-        if (existingError) {
-            existingError.remove();
-        }
-    } else {
-        console.error('[CONFIG] ❌ Final validation failed for', validation.environment);
-        
-        // Si on est sur Netlify et que la config échoue, afficher un guide de debug
-        if (validation.environment === 'netlify') {
-            setTimeout(() => {
-                console.group('🔧 GUIDE DE DEBUG NETLIFY');
-                console.log('1. Vérifiez vos variables d\'environnement sur Netlify');
-                console.log('2. La variable doit s\'appeler exactement: VITE_AZURE_CLIENT_ID');
-                console.log('3. Après avoir ajouté/modifié la variable, redéployez le site');
-                console.log('4. Debug info:', window.AppConfig.getDebugInfo());
-                console.groupEnd();
-            }, 3000);
-        }
-    }
-});
-
-// Fonction de diagnostic globale améliorée pour tous les environnements
-window.diagnoseMSALConfig = function() {
-    console.group('🔍 DIAGNOSTIC CONFIGURATION MSAL - TOUS ENVIRONNEMENTS');
-    
-    const debug = window.AppConfig.getDebugInfo();
-    const validation = window.AppConfig.validate();
-    
-    console.log('🌐 Environnement:', debug.environment);
-    console.log('📋 Configuration actuelle:', {
-        clientId: window.AppConfig.msal.clientId,
-        authority: window.AppConfig.msal.authority,
-        redirectUri: window.AppConfig.msal.redirectUri
-    });
-    
-    console.log('✅ Validation:', validation);
-    console.log('🐛 Debug info complet:', debug);
-    
-    if (window.authService) {
-        console.log('🔐 AuthService:', window.authService.getDiagnosticInfo?.() || 'Pas de diagnostic disponible');
-    }
-    
-    // Suggestions spécifiques selon l'environnement
-    if (debug.environment.isNetlify) {
-        console.log('💡 Suggestions Netlify:');
-        console.log('  - Variable VITE_AZURE_CLIENT_ID status:', debug.netlifyConfig);
-        console.log('  - Redéployer après modification des variables d\'environnement');
-        console.log('  - Vérifier que la variable est bien préfixée par VITE_');
-    } else if (debug.environment.isGitHubPages) {
-        console.log('💡 Suggestions GitHub Pages:');
-        console.log('  - Utiliser setup.html pour configurer');
-        console.log('  - Configuration sauvegardée dans localStorage');
-    }
-    
-    console.groupEnd();
-    
-    return { debug, validation, environment: debug.environment };
-};
-
-// Messages de confirmation
-console.log('✅ Configuration Netlify/Multi-environnement chargée avec succès v3.0');
-console.log(`📱 Client ID configuré: ${window.AppConfig.msal.clientId}`);
-console.log(`🌐 Environnement: ${window.AppConfig.environment.type}`);
-console.log('🔍 Utilisez diagnoseMSALConfig() pour diagnostiquer');
-
-// Test immédiat de disponibilité
-if (window.AppConfig && window.AppConfig.msal && window.AppConfig.msal.clientId && window.AppConfig.msal.clientId !== 'CONFIGURATION_REQUIRED') {
-    console.log('🎯 Configuration prête pour AuthService');
-} else {
-    console.warn('💥 ATTENTION: Configuration nécessite une intervention');
-    if (window.AppConfig.environment.isNetlify) {
-        console.warn('📝 NETLIFY: Configurez VITE_AZURE_CLIENT_ID dans les variables d\'environnement et redéployez');
+    // Méthode de diagnostic adaptative
+    getDiagnosticInfo() {
+        return {
+            isInitialized: this.isInitialized,
+            hasAccount: !!this.account,
+            accountUsername: this.account?.username,
+            msalInstanceExists: !!this.msalInstance,
+            configWaitAttempts: this.configWaitAttempts,
+            currentDomain: this.currentDomain,
+            isTestEnvironment: this.isTestEnvironment,
+            msalConfig: this.msalInstance ? {
+                clientId: this.msalInstance.getConfiguration()?.auth?.clientId?.substring(0, 8) + '...',
+                authority: this.msalInstance.getConfiguration()?.auth?.authority,
+                redirectUri: this.msalInstance.getConfiguration()?.auth?.redirectUri,
+                postLogoutRedirectUri: this.msalInstance.getConfiguration()?.auth?.postLogoutRedirectUri,
+                domainInRedirectUri: this.msalInstance.getConfiguration()?.auth?.redirectUri?.includes(this.currentDomain)
+            } : null,
+            appConfig: window.AppConfig ? {
+                exists: true,
+                environment: window.AppConfig.app?.environment,
+                validation: window.AppConfig.validate(),
+                debug: window.AppConfig.getDebugInfo()
+            } : { exists: false },
+            uriValidation: {
+                expectedRedirectUri: `https://${this.currentDomain}/auth-callback.html`,
+                configuredRedirectUri: window.AppConfig?.msal?.redirectUri,
+                match: window.AppConfig?.msal?.redirectUri === `https://${this.currentDomain}/auth-callback.html`
+            }
+        };
     }
 }
+
+// Créer l'instance globale avec gestion d'erreur renforcée
+try {
+    window.authService = new AuthService();
+    console.log('[AuthService] ✅ Global instance created successfully for', window.location.hostname);
+} catch (error) {
+    console.error('[AuthService] ❌ Failed to create global instance:', error);
+    
+    // Créer une instance de fallback plus informative
+    window.authService = {
+        isInitialized: false,
+        initialize: () => Promise.reject(new Error('AuthService failed to initialize: ' + error.message)),
+        login: () => Promise.reject(new Error('AuthService not available: ' + error.message)),
+        isAuthenticated: () => false,
+        getDiagnosticInfo: () => ({ 
+            error: 'AuthService failed to create: ' + error.message,
+            environment: window.AppConfig?.app?.environment || 'unknown',
+            configExists: !!window.AppConfig,
+            currentDomain: window.location.hostname
+        })
+    };
+}
+
+// Fonction de diagnostic globale adaptative
+window.diagnoseMSAL = function() {
+    console.group('🔍 DIAGNOSTIC MSAL ADAPTATIF - ' + window.location.hostname);
+    
+    try {
+        const authDiag = window.authService.getDiagnosticInfo();
+        const configDiag = window.AppConfig ? window.AppConfig.getDebugInfo() : null;
+        
+        console.log('🔐 AuthService:', authDiag);
+        console.log('⚙️ Configuration:', configDiag);
+        console.log('📚 MSAL Library:', typeof msal !== 'undefined' ? 'Available' : 'Missing');
+        console.log('🌐 Current URL:', window.location.href);
+        console.log('🎯 Current domain:', authDiag.currentDomain);
+        console.log('🧪 Test environment:', authDiag.isTestEnvironment);
+        console.log('💾 LocalStorage keys:', Object.keys(localStorage).filter(k => k.includes('msal') || k.includes('auth')));
+        
+        // Validation spécifique des URIs
+        console.log('🔗 URI Validation:');
+        console.log('  Expected Redirect URI:', authDiag.uriValidation.expectedRedirectUri);
+        console.log('  Configured Redirect URI:', authDiag.uriValidation.configuredRedirectUri);
+        console.log('  URI Match:', authDiag.uriValidation.match ? '✅' : '❌');
+        
+        if (!authDiag.uriValidation.match) {
+            console.log('🚨 ACTION REQUIRED:');
+            console.log(`  Configure redirect URI in Azure Portal: ${authDiag.uriValidation.expectedRedirectUri}`);
+        }
+        
+        return { authDiag, configDiag };
+        
+    } catch (error) {
+        console.error('❌ Diagnostic failed:', error);
+        return { error: error.message };
+    } finally {
+        console.groupEnd();
+    }
+};
+
+console.log('✅ AuthService loaded with adaptive multi-domain support v4.0');
