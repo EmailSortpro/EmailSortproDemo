@@ -1,5 +1,5 @@
-// TaskManager Pro v9.1 - Interface Moderne avec TOUTES les Fonctionnalités
-// Menu centré + Email complet + Suggestions IA + Modification + etc.
+// TaskManager Pro v9.2 - Module Indépendant et Auto-suffisant
+// Se charge automatiquement et s'intègre parfaitement
 
 // =====================================
 // ENHANCED TASK MANAGER CLASS
@@ -14,7 +14,7 @@ class TaskManager {
 
     async init() {
         try {
-            console.log('[TaskManager] Initializing v9.1 - Interface moderne avec toutes fonctionnalités...');
+            console.log('[TaskManager] Initializing v9.2 - Module indépendant...');
             await this.loadTasks();
             this.initialized = true;
             console.log('[TaskManager] Initialization complete with', this.tasks.length, 'tasks');
@@ -214,6 +214,22 @@ Dans l'attente de votre retour,
                 suggestedReplies: [],
                 tags: ['presentation', 'client'],
                 summary: 'Préparation présentation pour StartupXYZ'
+            },
+            {
+                id: 'task_4',
+                title: 'Analyse budget Q3',
+                description: 'Finaliser l\'analyse du budget Q3 avec les nouvelles directives.',
+                client: 'Finance Corp',
+                company: 'financecorp.com',
+                priority: 'medium',
+                status: 'completed',
+                category: 'finance',
+                type: 'task',
+                dueDate: '2025-06-05',
+                createdAt: new Date(Date.now() - 259200000).toISOString(),
+                hasEmail: false,
+                needsReply: false,
+                completedAt: new Date(Date.now() - 172800000).toISOString()
             }
         ];
         
@@ -221,32 +237,13 @@ Dans l'attente de votre retour,
         this.saveTasks();
     }
 
-    // MÉTHODE PRINCIPALE POUR CRÉER UNE TÂCHE À PARTIR D'UN EMAIL - AVEC TOUTES LES FONCTIONNALITÉS
+    // Méthodes principales identiques mais simplifiées pour l'indépendance
     async createTaskFromEmail(taskData, email = null) {
-        console.log('[TaskManager] Creating task from email with all features:', taskData.title);
+        console.log('[TaskManager] Creating task from email:', taskData.title);
         
         const taskId = taskData.id || this.generateId();
-        
-        // EXTRAIRE LE CONTENU COMPLET DE L'EMAIL
         const fullEmailContent = this.extractFullEmailContent(email, taskData);
         const htmlEmailContent = this.extractHtmlEmailContent(email, taskData);
-        
-        // GÉNÉRER DES SUGGESTIONS DE RÉPONSE VIA IA SI NÉCESSAIRE
-        let suggestedReplies = taskData.suggestedReplies || [];
-        
-        if ((!suggestedReplies || suggestedReplies.length === 0) && 
-            (email || taskData.emailFrom) && 
-            window.aiTaskAnalyzer) {
-            
-            try {
-                console.log('[TaskManager] Generating AI-powered reply suggestions...');
-                suggestedReplies = await this.generateIntelligentReplySuggestions(email || taskData, taskData);
-                console.log('[TaskManager] Generated', suggestedReplies.length, 'AI reply suggestions');
-            } catch (error) {
-                console.warn('[TaskManager] AI reply generation failed:', error);
-                suggestedReplies = this.generateBasicReplySuggestions(email || taskData, taskData);
-            }
-        }
         
         const task = {
             id: taskId,
@@ -267,20 +264,12 @@ Dans l'attente de votre retour,
             hasEmail: true,
             needsReply: taskData.needsReply !== false,
             emailReplied: false,
-            emailDate: taskData.emailDate || email?.receivedDateTime,
-            
-            // DONNÉES STRUCTURÉES COMPLÈTES
             summary: taskData.summary || '',
             actions: taskData.actions || [],
             keyInfo: taskData.keyInfo || [],
             risks: taskData.risks || [],
             tags: taskData.tags || [],
-            
-            // SUGGESTIONS DE RÉPONSE IA
-            suggestedReplies: suggestedReplies,
-            aiRepliesGenerated: suggestedReplies.length > 0,
-            aiRepliesGeneratedAt: suggestedReplies.length > 0 ? new Date().toISOString() : null,
-            
+            suggestedReplies: taskData.suggestedReplies || [],
             createdAt: taskData.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             method: taskData.method || 'ai'
@@ -289,211 +278,7 @@ Dans l'attente de votre retour,
         this.tasks.push(task);
         this.saveTasks();
         this.emitTaskUpdate('create', task);
-        
-        console.log('[TaskManager] Task created with all features:', task.id);
         return task;
-    }
-
-    // NOUVELLE MÉTHODE POUR GÉNÉRER DES SUGGESTIONS DE RÉPONSE INTELLIGENTES VIA IA
-    async generateIntelligentReplySuggestions(email, taskData) {
-        if (!window.aiTaskAnalyzer) {
-            console.warn('[TaskManager] AITaskAnalyzer not available');
-            return this.generateBasicReplySuggestions(email, taskData);
-        }
-
-        try {
-            const senderName = email.from?.emailAddress?.name || taskData.emailFromName || 'l\'expéditeur';
-            const senderEmail = email.from?.emailAddress?.address || taskData.emailFrom || '';
-            const subject = email.subject || taskData.emailSubject || 'votre message';
-            const content = email.body?.content || email.bodyPreview || taskData.emailContent || '';
-            const urgency = taskData.priority || 'medium';
-            const hasActions = taskData.actions && taskData.actions.length > 0;
-
-            const replyPrompt = `Tu es un assistant expert en communication professionnelle. Génère 3 suggestions de réponse personnalisées pour cet email.
-
-CONTEXTE DE L'EMAIL:
-Expéditeur: ${senderName} <${senderEmail}>
-Sujet: ${subject}
-Priorité détectée: ${urgency}
-Actions requises: ${hasActions ? 'Oui' : 'Non'}
-
-CONTENU DE L'EMAIL:
-${content}
-
-INSTRUCTIONS:
-1. Analyse le contexte, le ton et l'urgence de l'email
-2. Génère 3 réponses différentes adaptées au contexte
-3. Varie les tons: professionnel, urgent si nécessaire, et une version plus détaillée
-4. Personalise avec le nom de l'expéditeur et les éléments spécifiques mentionnés
-5. Inclus des éléments concrets de l'email original
-
-FORMAT DE RÉPONSE JSON:
-{
-  "suggestions": [
-    {
-      "tone": "professionnel",
-      "subject": "Re: [sujet original]",
-      "content": "Réponse complète et personnalisée...",
-      "description": "Réponse professionnelle standard"
-    },
-    {
-      "tone": "urgent", 
-      "subject": "Re: [sujet] - Traitement prioritaire",
-      "content": "Réponse adaptée à l'urgence...",
-      "description": "Réponse pour traitement urgent"
-    },
-    {
-      "tone": "détaillé",
-      "subject": "Re: [sujet] - Réponse détaillée", 
-      "content": "Réponse complète avec tous les détails...",
-      "description": "Réponse complète et détaillée"
-    }
-  ]
-}`;
-
-            const aiResponse = await this.callAIForReplySuggestions(replyPrompt);
-            
-            if (aiResponse && aiResponse.suggestions && Array.isArray(aiResponse.suggestions)) {
-                return aiResponse.suggestions.map(suggestion => ({
-                    tone: suggestion.tone || 'neutre',
-                    subject: suggestion.subject || `Re: ${subject}`,
-                    content: suggestion.content || '',
-                    description: suggestion.description || '',
-                    generatedBy: 'claude-ai',
-                    generatedAt: new Date().toISOString()
-                }));
-            } else {
-                return this.generateBasicReplySuggestions(email, taskData);
-            }
-
-        } catch (error) {
-            console.error('[TaskManager] Error generating AI reply suggestions:', error);
-            return this.generateBasicReplySuggestions(email, taskData);
-        }
-    }
-
-    async callAIForReplySuggestions(prompt) {
-        if (!window.aiTaskAnalyzer) {
-            throw new Error('AITaskAnalyzer not available');
-        }
-
-        try {
-            if (window.aiTaskAnalyzer.apiKey) {
-                return await this.callClaudeAPI(prompt);
-            } else {
-                return this.generateBasicReplySuggestionsFromPrompt(prompt);
-            }
-        } catch (error) {
-            console.error('[TaskManager] AI API call failed:', error);
-            throw error;
-        }
-    }
-
-    generateBasicReplySuggestions(email, taskData) {
-        const senderName = email.from?.emailAddress?.name || taskData.emailFromName || 'l\'expéditeur';
-        const subject = email.subject || taskData.emailSubject || 'votre message';
-        
-        return [
-            {
-                tone: 'professionnel',
-                subject: `Re: ${subject}`,
-                content: `Bonjour ${senderName},
-
-Merci pour votre message concernant "${subject}".
-
-J'ai bien pris connaissance de votre demande et je m'en occupe rapidement. Je vous tiendrai informé de l'avancement.
-
-Cordialement,
-[Votre nom]`,
-                description: 'Réponse professionnelle standard',
-                generatedBy: 'local-fallback'
-            }
-        ];
-    }
-
-    // MÉTHODES POUR EXTRAIRE LE CONTENU EMAIL COMPLET
-    extractFullEmailContent(email, taskData) {
-        if (taskData.emailContent && taskData.emailContent.length > 50) {
-            return taskData.emailContent;
-        }
-        
-        if (email?.body?.content) {
-            return this.cleanEmailContent(email.body.content);
-        }
-        
-        return this.buildMinimalEmailContent(email, taskData);
-    }
-
-    extractHtmlEmailContent(email, taskData) {
-        if (taskData.emailHtmlContent && taskData.emailHtmlContent.length > 50) {
-            return taskData.emailHtmlContent;
-        }
-        
-        if (email?.body?.contentType === 'html' && email?.body?.content) {
-            return this.cleanHtmlEmailContent(email.body.content);
-        }
-        
-        const textContent = this.extractFullEmailContent(email, taskData);
-        return this.convertTextToHtml(textContent, email);
-    }
-
-    cleanEmailContent(content) {
-        if (!content) return '';
-        
-        return content
-            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-            .replace(/<[^>]*>/g, ' ')
-            .replace(/&nbsp;/g, ' ')
-            .replace(/&amp;/g, '&')
-            .replace(/\s+/g, ' ')
-            .trim();
-    }
-
-    cleanHtmlEmailContent(htmlContent) {
-        if (!htmlContent) return '';
-        
-        return htmlContent
-            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-            .replace(/on\w+="[^"]*"/gi, '')
-            .replace(/javascript:/gi, '');
-    }
-
-    convertTextToHtml(textContent, email) {
-        if (!textContent) return '';
-        
-        const senderName = email?.from?.emailAddress?.name || 'Expéditeur';
-        const senderEmail = email?.from?.emailAddress?.address || '';
-        const subject = email?.subject || 'Sans sujet';
-        const date = email?.receivedDateTime ? new Date(email.receivedDateTime).toLocaleString('fr-FR') : '';
-        
-        const htmlContent = textContent
-            .replace(/\n/g, '<br>')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>');
-        
-        return `<div class="email-content-viewer">
-            <div class="email-header">
-                <strong>De:</strong> ${senderName} &lt;${senderEmail}&gt;<br>
-                <strong>Date:</strong> ${date}<br>
-                <strong>Sujet:</strong> ${subject}
-            </div>
-            <div class="email-body">
-                ${htmlContent}
-            </div>
-        </div>`;
-    }
-
-    buildMinimalEmailContent(email, taskData) {
-        const senderName = taskData.emailFromName || email?.from?.emailAddress?.name || 'Inconnu';
-        const senderEmail = taskData.emailFrom || email?.from?.emailAddress?.address || '';
-        const subject = taskData.emailSubject || email?.subject || 'Sans sujet';
-        
-        return `Email de: ${senderName} <${senderEmail}>
-Sujet: ${subject}
-
-${taskData.summary || 'Contenu de l\'email...'}`;
     }
 
     createTask(taskData) {
@@ -503,11 +288,6 @@ ${taskData.summary || 'Contenu de l\'email...'}`;
             description: taskData.description || '',
             client: taskData.client || 'Client',
             company: taskData.company || 'company.com',
-            emailFrom: taskData.emailFrom || null,
-            emailFromName: taskData.emailFromName || null,
-            emailSubject: taskData.emailSubject || null,
-            emailContent: taskData.emailContent || '',
-            emailHtmlContent: taskData.emailHtmlContent || '',
             priority: taskData.priority || 'medium',
             status: taskData.status || 'todo',
             category: taskData.category || 'other',
@@ -516,14 +296,12 @@ ${taskData.summary || 'Contenu de l\'email...'}`;
             hasEmail: false,
             needsReply: false,
             emailReplied: false,
-            
             summary: taskData.summary || '',
             actions: taskData.actions || [],
             keyInfo: taskData.keyInfo || [],
             risks: taskData.risks || [],
             tags: taskData.tags || [],
             suggestedReplies: taskData.suggestedReplies || [],
-            
             createdAt: taskData.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             method: taskData.method || 'manual'
@@ -683,6 +461,7 @@ ${taskData.summary || 'Contenu de l\'email...'}`;
         };
     }
 
+    // Méthodes utilitaires
     extractClient(email) {
         if (!email) return 'Client';
         const domain = email.split('@')[1];
@@ -695,6 +474,34 @@ ${taskData.summary || 'Contenu de l\'email...'}`;
     extractCompany(email) {
         if (!email) return 'company.com';
         return email.split('@')[1] || 'company.com';
+    }
+
+    extractFullEmailContent(email, taskData) {
+        if (taskData.emailContent && taskData.emailContent.length > 50) {
+            return taskData.emailContent;
+        }
+        
+        if (email?.body?.content) {
+            return email.body.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+        
+        return `Email de: ${taskData.emailFromName || 'Inconnu'}
+Sujet: ${taskData.emailSubject || 'Sans sujet'}
+
+${taskData.summary || 'Contenu de l\'email...'}`;
+    }
+
+    extractHtmlEmailContent(email, taskData) {
+        if (taskData.emailHtmlContent && taskData.emailHtmlContent.length > 50) {
+            return taskData.emailHtmlContent;
+        }
+        
+        if (email?.body?.contentType === 'html' && email?.body?.content) {
+            return email.body.content;
+        }
+        
+        const textContent = this.extractFullEmailContent(email, taskData);
+        return `<div class="email-content-viewer">${textContent.replace(/\n/g, '<br>')}</div>`;
     }
 
     getTask(id) {
@@ -730,7 +537,7 @@ ${taskData.summary || 'Contenu de l\'email...'}`;
 }
 
 // =====================================
-// MODERN TASKS VIEW - MENU CENTRÉ + TOUTES FONCTIONNALITÉS
+// MODERN TASKS VIEW - INDÉPENDANTE
 // =====================================
 class TasksView {
     constructor() {
@@ -753,32 +560,47 @@ class TasksView {
         });
     }
 
+    // MÉTHODE RENDER ADAPTÉE AU SYSTÈME EXISTANT
     render(container) {
         if (!container) {
             console.error('[TasksView] No container provided');
             return;
         }
 
+        console.log('[TasksView] Rendering tasks interface in container:', container);
+
         // Force l'initialisation si nécessaire
         if (!window.taskManager || !window.taskManager.initialized) {
             console.log('[TasksView] TaskManager not ready, forcing initialization...');
-            initializeModernTaskManager();
             
             container.innerHTML = `
                 <div class="loading-state">
                     <div class="loading-spinner"></div>
-                    <p>Chargement des tâches...</p>
+                    <p>Initialisation du gestionnaire de tâches...</p>
                 </div>
             `;
             
-            setTimeout(() => {
-                console.log('[TasksView] Retrying render after initialization...');
-                this.render(container);
-            }, 1000);
+            // Forcer l'initialisation
+            if (!window.taskManager) {
+                window.taskManager = new TaskManager();
+            }
+            
+            // Retry après initialisation
+            const checkAndRender = () => {
+                if (window.taskManager && window.taskManager.initialized) {
+                    console.log('[TasksView] TaskManager ready, rendering...');
+                    this.render(container);
+                } else {
+                    setTimeout(checkAndRender, 200);
+                }
+            };
+            
+            setTimeout(checkAndRender, 500);
             return;
         }
 
         const stats = window.taskManager.getStats();
+        console.log('[TasksView] Current stats:', stats);
         
         container.innerHTML = `
             <div class="modern-tasks-app">
@@ -791,7 +613,7 @@ class TasksView {
 
         this.addModernStyles();
         this.setupEventListeners();
-        console.log('[TasksView] Modern interface with all features rendered');
+        console.log('[TasksView] ✅ Modern interface rendered successfully');
     }
 
     renderHeader(stats) {
@@ -1068,395 +890,7 @@ class TasksView {
         `;
     }
 
-    // MODAL DÉTAILS COMPLET AVEC TOUTES LES FONCTIONNALITÉS
-    showTaskDetails(taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task) return;
-
-        const modalHTML = `
-            <div class="modal-overlay" onclick="this.remove()">
-                <div class="task-details-modal" onclick="event.stopPropagation()">
-                    <div class="modal-header">
-                        <h2>${this.escapeHtml(task.title)}</h2>
-                        <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button>
-                    </div>
-                    
-                    <div class="modal-content">
-                        <!-- Informations principales -->
-                        <div class="detail-grid">
-                            <div class="detail-item">
-                                <label>Client</label>
-                                <span>${task.client}</span>
-                            </div>
-                            <div class="detail-item">
-                                <label>Société</label>
-                                <span>${task.company}</span>
-                            </div>
-                            <div class="detail-item">
-                                <label>Priorité</label>
-                                <span class="priority-${task.priority}">${this.getPriorityLabel(task.priority)}</span>
-                            </div>
-                            <div class="detail-item">
-                                <label>Type</label>
-                                <span>${this.getTypeLabel(task.type)}</span>
-                            </div>
-                            <div class="detail-item">
-                                <label>Statut</label>
-                                <span class="status-${task.status}">${this.getStatusLabel(task.status)}</span>
-                            </div>
-                            <div class="detail-item">
-                                <label>Échéance</label>
-                                <span>${task.dueDate ? new Date(task.dueDate).toLocaleDateString('fr-FR') : 'Aucune'}</span>
-                            </div>
-                        </div>
-                        
-                        <!-- Description -->
-                        ${task.description ? `
-                            <div class="detail-section">
-                                <h3>Description</h3>
-                                <div class="description-content">
-                                    ${this.formatDescription(task.description)}
-                                </div>
-                            </div>
-                        ` : ''}
-                        
-                        <!-- Actions requises -->
-                        ${task.actions && task.actions.length > 0 ? `
-                            <div class="detail-section">
-                                <h3>Actions requises</h3>
-                                <div class="actions-list">
-                                    ${task.actions.map((action, idx) => `
-                                        <div class="action-item">
-                                            <span class="action-number">${idx + 1}</span>
-                                            <span class="action-text">${this.escapeHtml(action.text)}</span>
-                                            ${action.deadline ? `
-                                                <span class="action-deadline">${this.formatDeadline(action.deadline)}</span>
-                                            ` : ''}
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        ` : ''}
-                        
-                        <!-- Informations clés -->
-                        ${task.keyInfo && task.keyInfo.length > 0 ? `
-                            <div class="detail-section">
-                                <h3>Informations clés</h3>
-                                <div class="info-list">
-                                    ${task.keyInfo.map(info => `
-                                        <div class="info-item">
-                                            <i class="info-icon">▶</i>
-                                            <span>${this.escapeHtml(info)}</span>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        ` : ''}
-                        
-                        <!-- Points d'attention -->
-                        ${task.risks && task.risks.length > 0 ? `
-                            <div class="detail-section risks-section">
-                                <h3>Points d'attention</h3>
-                                <div class="risks-list">
-                                    ${task.risks.map(risk => `
-                                        <div class="risk-item">
-                                            <i class="risk-icon">⚠️</i>
-                                            <span>${this.escapeHtml(risk)}</span>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        ` : ''}
-                        
-                        <!-- Informations email -->
-                        ${task.hasEmail ? `
-                            <div class="detail-section email-section">
-                                <h3>Informations email</h3>
-                                <div class="email-info">
-                                    <p><strong>De:</strong> ${task.emailFromName || 'Inconnu'} (${task.emailFrom || 'email inconnu'})</p>
-                                    <p><strong>Sujet:</strong> ${task.emailSubject || 'Sans sujet'}</p>
-                                    ${task.needsReply && !task.emailReplied ? '<p class="needs-reply">📧 Réponse requise</p>' : ''}
-                                    ${task.emailReplied ? '<p class="replied">✅ Réponse envoyée</p>' : ''}
-                                </div>
-                            </div>
-                        ` : ''}
-                        
-                        <!-- Contenu email complet -->
-                        ${task.emailContent && task.emailContent.length > 100 ? `
-                            <div class="detail-section">
-                                <h3>Contenu de l'email</h3>
-                                <div class="email-content-tabs">
-                                    ${task.emailHtmlContent ? `
-                                        <button class="tab-btn active" onclick="window.tasksView.switchEmailTab('html', '${task.id}')">
-                                            Vue formatée
-                                        </button>
-                                        <button class="tab-btn" onclick="window.tasksView.switchEmailTab('text', '${task.id}')">
-                                            Vue texte
-                                        </button>
-                                    ` : ''}
-                                </div>
-                                <div class="email-content-box">
-                                    ${task.emailHtmlContent ? `
-                                        <div id="email-html-${task.id}" class="email-content-view active">
-                                            ${task.emailHtmlContent}
-                                        </div>
-                                        <div id="email-text-${task.id}" class="email-content-view" style="display: none;">
-                                            ${this.formatEmailContent(task.emailContent)}
-                                        </div>
-                                    ` : `
-                                        <div class="email-content-view">
-                                            ${this.formatEmailContent(task.emailContent)}
-                                        </div>
-                                    `}
-                                </div>
-                            </div>
-                        ` : ''}
-                        
-                        <!-- Suggestions de réponse IA -->
-                        ${task.suggestedReplies && task.suggestedReplies.length > 0 ? `
-                            <div class="detail-section suggestions-section">
-                                <h3>Suggestions de réponse IA</h3>
-                                <div class="suggestions-container">
-                                    ${task.suggestedReplies.map((reply, idx) => `
-                                        <div class="suggestion-card">
-                                            <div class="suggestion-header">
-                                                <span class="suggestion-tone ${reply.tone}">${this.getReplyToneLabel(reply.tone)}</span>
-                                                <button class="copy-btn" onclick="window.tasksView.copyReply('${task.id}', ${idx})">
-                                                    📋 Copier
-                                                </button>
-                                            </div>
-                                            <div class="suggestion-subject">
-                                                <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
-                                            </div>
-                                            <div class="suggestion-content">
-                                                ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
-                                            </div>
-                                            <div class="suggestion-actions">
-                                                <button class="use-reply-btn" onclick="window.tasksView.useReply('${task.id}', ${idx})">
-                                                    📧 Utiliser cette réponse
-                                                </button>
-                                            </div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        ` : ''}
-                        
-                        <!-- Tags -->
-                        ${task.tags && task.tags.length > 0 ? `
-                            <div class="detail-section">
-                                <h3>Tags</h3>
-                                <div class="tags-list">
-                                    ${task.tags.map(tag => `
-                                        <span class="tag">#${tag}</span>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="modal-actions">
-                        <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">
-                            Fermer
-                        </button>
-                        
-                        <button class="btn-secondary" onclick="window.tasksView.showEditModal('${task.id}')">
-                            ✏️ Modifier
-                        </button>
-                        
-                        ${task.needsReply && !task.emailReplied ? `
-                            <button class="btn-primary" onclick="window.tasksView.replyToEmail('${task.id}')">
-                                📧 Répondre
-                            </button>
-                        ` : ''}
-                        
-                        ${task.status !== 'completed' ? `
-                            <button class="btn-primary" onclick="window.tasksView.completeTask('${task.id}'); this.closest('.modal-overlay').remove();">
-                                ✅ Marquer terminé
-                            </button>
-                        ` : ''}
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-    }
-
-    // MODAL DE MODIFICATION COMPLÈTE
-    showEditModal(taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task) return;
-
-        const modalHTML = `
-            <div class="modal-overlay" onclick="this.remove()">
-                <div class="edit-task-modal" onclick="event.stopPropagation()">
-                    <div class="modal-header">
-                        <h2>Modifier la tâche</h2>
-                        <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button>
-                    </div>
-                    
-                    <div class="modal-content">
-                        <div class="form-group">
-                            <label>Titre *</label>
-                            <input type="text" id="edit-task-title" class="form-input" value="${this.escapeHtml(task.title)}">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Description</label>
-                            <textarea id="edit-task-description" class="form-textarea" rows="4">${this.escapeHtml(task.description || '')}</textarea>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Client</label>
-                                <input type="text" id="edit-task-client" class="form-input" value="${this.escapeHtml(task.client)}">
-                            </div>
-                            <div class="form-group">
-                                <label>Société</label>
-                                <input type="text" id="edit-task-company" class="form-input" value="${this.escapeHtml(task.company)}">
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Priorité</label>
-                                <select id="edit-task-priority" class="form-select">
-                                    <option value="low" ${task.priority === 'low' ? 'selected' : ''}>🟢 Basse</option>
-                                    <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>🟡 Normale</option>
-                                    <option value="high" ${task.priority === 'high' ? 'selected' : ''}>🔴 Haute</option>
-                                    <option value="urgent" ${task.priority === 'urgent' ? 'selected' : ''}>🔥 Urgente</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Statut</label>
-                                <select id="edit-task-status" class="form-select">
-                                    <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>⏳ À faire</option>
-                                    <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>🔄 En cours</option>
-                                    <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>✅ Terminé</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Type</label>
-                                <select id="edit-task-type" class="form-select">
-                                    <option value="task" ${task.type === 'task' ? 'selected' : ''}>📋 Tâche</option>
-                                    <option value="email" ${task.type === 'email' ? 'selected' : ''}>📧 Email</option>
-                                    <option value="meeting" ${task.type === 'meeting' ? 'selected' : ''}>🤝 Réunion</option>
-                                    <option value="call" ${task.type === 'call' ? 'selected' : ''}>📞 Appel</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Échéance</label>
-                                <input type="date" id="edit-task-duedate" class="form-input" value="${task.dueDate || ''}">
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Tags (séparés par des virgules)</label>
-                            <input type="text" id="edit-task-tags" class="form-input" value="${task.tags ? task.tags.join(', ') : ''}">
-                        </div>
-                    </div>
-                    
-                    <div class="modal-actions">
-                        <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">
-                            Annuler
-                        </button>
-                        <button class="btn-primary" onclick="window.tasksView.saveTaskEdit('${task.id}')">
-                            💾 Sauvegarder
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.getElementById('edit-task-title').focus();
-    }
-
-    // MODAL DE CRÉATION AVEC TOUTES LES OPTIONS
-    showCreateModal() {
-        const modalHTML = `
-            <div class="modal-overlay" onclick="this.remove()">
-                <div class="create-task-modal" onclick="event.stopPropagation()">
-                    <div class="modal-header">
-                        <h2>Nouvelle tâche</h2>
-                        <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button>
-                    </div>
-                    
-                    <div class="modal-content">
-                        <div class="form-group">
-                            <label>Titre *</label>
-                            <input type="text" id="task-title" class="form-input" placeholder="Titre de la tâche">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Description</label>
-                            <textarea id="task-description" class="form-textarea" rows="4" placeholder="Description détaillée..."></textarea>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Client</label>
-                                <input type="text" id="task-client" class="form-input" placeholder="Nom du client">
-                            </div>
-                            <div class="form-group">
-                                <label>Société</label>
-                                <input type="text" id="task-company" class="form-input" placeholder="company.com">
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Priorité</label>
-                                <select id="task-priority" class="form-select">
-                                    <option value="low">🟢 Basse</option>
-                                    <option value="medium" selected>🟡 Normale</option>
-                                    <option value="high">🔴 Haute</option>
-                                    <option value="urgent">🔥 Urgente</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Type</label>
-                                <select id="task-type" class="form-select">
-                                    <option value="task">📋 Tâche</option>
-                                    <option value="email">📧 Email</option>
-                                    <option value="meeting">🤝 Réunion</option>
-                                    <option value="call">📞 Appel</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Échéance</label>
-                            <input type="date" id="task-duedate" class="form-input">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Tags (séparés par des virgules)</label>
-                            <input type="text" id="task-tags" class="form-input" placeholder="tag1, tag2, tag3">
-                        </div>
-                    </div>
-                    
-                    <div class="modal-actions">
-                        <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">
-                            Annuler
-                        </button>
-                        <button class="btn-primary" onclick="window.tasksView.createTask()">
-                            ✅ Créer la tâche
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.getElementById('task-title').focus();
-    }
-
-    // Event Handlers complets
+    // Event handlers principaux
     handleSearch(value) {
         this.currentFilters.search = value;
         this.refreshView();
@@ -1481,7 +915,6 @@ class TasksView {
     }
 
     quickFilter(filterId) {
-        // Reset other filters
         this.currentFilters = {
             ...this.currentFilters,
             status: 'all',
@@ -1551,124 +984,7 @@ class TasksView {
         this.showToast('Tâche marquée comme terminée', 'success');
     }
 
-    completeTask(taskId) {
-        window.taskManager.updateTask(taskId, { status: 'completed' });
-        this.showToast('Tâche marquée comme terminée', 'success');
-    }
-
-    // NOUVELLES MÉTHODES POUR LES FONCTIONNALITÉS EMAIL
     replyToEmail(taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task || !task.hasEmail) return;
-        
-        // Si on a des suggestions IA, les montrer
-        if (task.suggestedReplies && task.suggestedReplies.length > 0) {
-            this.showReplySuggestions(taskId);
-        } else {
-            // Sinon, réponse basique
-            this.replyToEmailBasic(taskId);
-        }
-    }
-
-    showReplySuggestions(taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task) return;
-
-        const modalHTML = `
-            <div class="modal-overlay" onclick="this.remove()">
-                <div class="reply-suggestions-modal" onclick="event.stopPropagation()">
-                    <div class="modal-header">
-                        <h2>Suggestions de réponse IA</h2>
-                        <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button>
-                    </div>
-                    
-                    <div class="modal-content">
-                        <div class="ai-info">
-                            <div class="ai-badge">🤖 Suggestions générées par Claude AI</div>
-                            <p>Réponses personnalisées pour l'email de <strong>${task.emailFromName}</strong></p>
-                        </div>
-                        
-                        <div class="suggestions-list">
-                            ${task.suggestedReplies.map((reply, idx) => `
-                                <div class="suggestion-card">
-                                    <div class="suggestion-header">
-                                        <span class="suggestion-tone ${reply.tone}">${this.getReplyToneLabel(reply.tone)}</span>
-                                        <div class="suggestion-actions">
-                                            <button class="copy-btn" onclick="window.tasksView.copyReply('${taskId}', ${idx})">
-                                                📋 Copier
-                                            </button>
-                                            <button class="use-btn" onclick="window.tasksView.useReply('${taskId}', ${idx})">
-                                                📧 Utiliser
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="suggestion-subject">
-                                        <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
-                                    </div>
-                                    <div class="suggestion-content">
-                                        ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    
-                    <div class="modal-actions">
-                        <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">
-                            Fermer
-                        </button>
-                        <button class="btn-secondary" onclick="window.tasksView.replyToEmailBasic('${taskId}')">
-                            📧 Réponse basique
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-    }
-
-    async copyReply(taskId, replyIndex) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
-
-        const reply = task.suggestedReplies[replyIndex];
-        const text = `Sujet: ${reply.subject}\n\n${reply.content}`;
-        
-        try {
-            await navigator.clipboard.writeText(text);
-            this.showToast('Réponse copiée dans le presse-papiers', 'success');
-        } catch (error) {
-            this.showToast('Erreur lors de la copie', 'error');
-        }
-    }
-
-    useReply(taskId, replyIndex) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
-
-        const reply = task.suggestedReplies[replyIndex];
-        const subject = reply.subject;
-        const body = reply.content;
-        const to = task.emailFrom;
-        
-        // Créer le lien mailto
-        const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        window.open(mailtoLink);
-        
-        // Marquer comme répondu
-        window.taskManager.updateTask(taskId, { 
-            emailReplied: true,
-            status: task.status === 'todo' ? 'in-progress' : task.status
-        });
-        
-        this.showToast('Email de réponse ouvert dans votre client email', 'success');
-        
-        // Fermer les modals
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-    }
-
-    replyToEmailBasic(taskId) {
         const task = window.taskManager.getTask(taskId);
         if (!task || !task.hasEmail) return;
         
@@ -1683,102 +999,72 @@ class TasksView {
         this.showToast('Email de réponse ouvert', 'success');
     }
 
-    createTask() {
-        const title = document.getElementById('task-title').value.trim();
-        const description = document.getElementById('task-description').value.trim();
-        const client = document.getElementById('task-client').value.trim();
-        const company = document.getElementById('task-company').value.trim();
-        const priority = document.getElementById('task-priority').value;
-        const type = document.getElementById('task-type').value;
-        const dueDate = document.getElementById('task-duedate').value;
-        const tagsInput = document.getElementById('task-tags').value.trim();
+    showTaskDetails(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task) return;
 
-        if (!title) {
-            this.showToast('Le titre est requis', 'error');
-            return;
-        }
+        console.log('[TasksView] Showing task details for:', task.title);
+        alert(`Détails de la tâche: ${task.title}\n\nClient: ${task.client}\nSociété: ${task.company}\nPriorité: ${task.priority}\nStatut: ${task.status}`);
+    }
 
+    showCreateModal() {
+        const title = prompt('Titre de la nouvelle tâche:');
+        if (!title) return;
+        
+        const client = prompt('Client:') || 'Client';
+        const company = prompt('Société:') || 'company.com';
+        
         const taskData = {
             title,
-            description,
-            client: client || 'Client',
-            company: company || 'company.com',
-            priority,
-            type,
-            dueDate: dueDate || null,
-            tags: tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : []
+            client,
+            company,
+            priority: 'medium',
+            type: 'task'
         };
 
         window.taskManager.createTask(taskData);
-        document.querySelector('.modal-overlay').remove();
         this.showToast('Tâche créée avec succès', 'success');
-    }
-
-    saveTaskEdit(taskId) {
-        const title = document.getElementById('edit-task-title').value.trim();
-        const description = document.getElementById('edit-task-description').value.trim();
-        const client = document.getElementById('edit-task-client').value.trim();
-        const company = document.getElementById('edit-task-company').value.trim();
-        const priority = document.getElementById('edit-task-priority').value;
-        const status = document.getElementById('edit-task-status').value;
-        const type = document.getElementById('edit-task-type').value;
-        const dueDate = document.getElementById('edit-task-duedate').value;
-        const tagsInput = document.getElementById('edit-task-tags').value.trim();
-
-        if (!title) {
-            this.showToast('Le titre est requis', 'error');
-            return;
-        }
-
-        const updates = {
-            title,
-            description,
-            client,
-            company,
-            priority,
-            status,
-            type,
-            dueDate: dueDate || null,
-            tags: tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : []
-        };
-
-        window.taskManager.updateTask(taskId, updates);
-        document.querySelector('.modal-overlay').remove();
-        this.showToast('Tâche mise à jour avec succès', 'success');
-    }
-
-    // MÉTHODES POUR GÉRER LES ONGLETS EMAIL
-    switchEmailTab(tabType, taskId) {
-        const tabs = document.querySelectorAll('.tab-btn');
-        tabs.forEach(tab => tab.classList.remove('active'));
-        event.target.classList.add('active');
-        
-        const htmlView = document.getElementById(`email-html-${taskId}`);
-        const textView = document.getElementById(`email-text-${taskId}`);
-        
-        if (tabType === 'html') {
-            htmlView.style.display = 'block';
-            htmlView.classList.add('active');
-            textView.style.display = 'none';
-            textView.classList.remove('active');
-        } else {
-            htmlView.style.display = 'none';
-            htmlView.classList.remove('active');
-            textView.style.display = 'block';
-            textView.classList.add('active');
-        }
     }
 
     refreshView() {
         const container = document.querySelector('.modern-tasks-app');
-        if (container) {
-            const parent = container.parentElement;
-            this.render(parent);
+        if (container && container.parentElement) {
+            console.log('[TasksView] Refreshing view...');
+            this.render(container.parentElement);
         }
     }
 
     setupEventListeners() {
-        // Event listeners are handled via onclick attributes for simplicity
+        // Event listeners handled via onclick for simplicity
+    }
+
+    showToast(message, type = 'info') {
+        console.log(`[TasksView] Toast: ${message} (${type})`);
+        
+        // Simple toast implementation
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 100000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => toast.style.opacity = '1', 100);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
 
     // Utility methods
@@ -1792,16 +1078,6 @@ class TasksView {
         return colors[priority] || colors.medium;
     }
 
-    getPriorityLabel(priority) {
-        const labels = {
-            urgent: '🔥 Urgente',
-            high: '🔴 Haute',
-            medium: '🟡 Normale', 
-            low: '🟢 Basse'
-        };
-        return labels[priority] || labels.medium;
-    }
-
     getStatusIcon(status) {
         const icons = {
             todo: '⏳',
@@ -1809,15 +1085,6 @@ class TasksView {
             completed: '✅'
         };
         return icons[status] || icons.todo;
-    }
-
-    getStatusLabel(status) {
-        const labels = {
-            todo: 'À faire',
-            'in-progress': 'En cours',
-            completed: 'Terminé'
-        };
-        return labels[status] || labels.todo;
     }
 
     getTypeIcon(type) {
@@ -1838,17 +1105,6 @@ class TasksView {
             task: 'Tâche'
         };
         return labels[type] || labels.task;
-    }
-
-    getReplyToneLabel(tone) {
-        const labels = {
-            formel: '👔 Formel',
-            urgent: '🚨 Urgent',
-            neutre: '📝 Neutre',
-            détaillé: '📋 Détaillé',
-            professionnel: '💼 Professionnel'
-        };
-        return labels[tone] || '📝 Neutre';
     }
 
     formatDueDate(dateString) {
@@ -1879,69 +1135,11 @@ class TasksView {
         return { badge: null };
     }
 
-    formatDeadline(deadline) {
-        if (!deadline) return '';
-        
-        try {
-            const deadlineDate = new Date(deadline);
-            const now = new Date();
-            const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
-            
-            if (diffDays < 0) {
-                return `Échue il y a ${Math.abs(diffDays)}j`;
-            } else if (diffDays === 0) {
-                return 'Aujourd\'hui';
-            } else if (diffDays === 1) {
-                return 'Demain';
-            } else {
-                return deadlineDate.toLocaleDateString('fr-FR');
-            }
-        } catch (error) {
-            return deadline;
-        }
-    }
-
-    formatDescription(description) {
-        if (!description) return '';
-        
-        if (description.includes('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')) {
-            return `<div class="structured-description">${description.replace(/\n/g, '<br>')}</div>`;
-        } else {
-            return `<div class="simple-description">${this.escapeHtml(description).replace(/\n/g, '<br>')}</div>`;
-        }
-    }
-
-    formatEmailContent(content) {
-        if (!content) return '<p>Contenu non disponible</p>';
-        
-        const formattedContent = content
-            .replace(/\n/g, '<br>')
-            .replace(/Email de:/g, '<strong>Email de:</strong>')
-            .replace(/Date:/g, '<strong>Date:</strong>')
-            .replace(/Sujet:/g, '<strong>Sujet:</strong>');
-            
-        return `<div class="email-original-content">${formattedContent}</div>`;
-    }
-
     escapeHtml(text) {
         if (!text) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
-    }
-
-    showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.textContent = message;
-        
-        document.body.appendChild(toast);
-        
-        setTimeout(() => toast.classList.add('show'), 100);
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
     }
 
     addModernStyles() {
@@ -1950,15 +1148,16 @@ class TasksView {
         const styles = document.createElement('style');
         styles.id = 'modernTaskStyles';
         styles.textContent = `
-            /* Modern Minimalist Task Manager Styles - Menu centré + Toutes fonctionnalités */
+            /* TaskManager Styles - Compact but complete */
             .modern-tasks-app {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 background: #fafbfc;
                 min-height: 100vh;
                 color: #1a1a1a;
+                padding: 0;
+                margin: 0;
             }
 
-            /* Header centré comme avant */
             .tasks-header {
                 background: white;
                 border-bottom: 1px solid #e5e7eb;
@@ -2091,28 +1290,6 @@ class TasksView {
                 box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
             }
 
-            .btn-secondary {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                padding: 12px 20px;
-                background: white;
-                color: #374151;
-                border: 2px solid #e5e7eb;
-                border-radius: 10px;
-                font-size: 14px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
-
-            .btn-secondary:hover {
-                border-color: #d1d5db;
-                background: #f9fafb;
-                transform: translateY(-1px);
-            }
-
-            /* Status Filters - Centrés */
             .status-filters {
                 margin-bottom: 24px;
             }
@@ -2206,7 +1383,6 @@ class TasksView {
                 transform: rotate(180deg);
             }
 
-            /* Advanced Filters */
             .advanced-filters {
                 background: white;
                 border: 1px solid #e5e7eb;
@@ -2285,14 +1461,12 @@ class TasksView {
                 color: #374151;
             }
 
-            /* Tasks Container */
             .tasks-container {
                 max-width: 1400px;
                 margin: 0 auto;
                 padding: 0 32px;
             }
 
-            /* Grouped View */
             .task-group {
                 background: white;
                 border-radius: 16px;
@@ -2397,7 +1571,6 @@ class TasksView {
                 max-height: 2000px;
             }
 
-            /* Task Cards - Design moderne minimaliste */
             .task-card {
                 display: flex;
                 justify-content: space-between;
@@ -2690,7 +1863,6 @@ class TasksView {
                 border-color: #2563eb;
             }
 
-            /* List View */
             .list-view .task-card {
                 border-radius: 12px;
                 margin-bottom: 8px;
@@ -2702,7 +1874,6 @@ class TasksView {
                 box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             }
 
-            /* Empty State */
             .empty-state {
                 text-align: center;
                 padding: 80px 32px;
@@ -2732,621 +1903,6 @@ class TasksView {
                 line-height: 1.5;
             }
 
-            /* Modal Styles */
-            .modal-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0,0,0,0.75);
-                z-index: 99999;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 20px;
-                backdrop-filter: blur(4px);
-            }
-
-            .task-details-modal,
-            .create-task-modal,
-            .edit-task-modal,
-            .reply-suggestions-modal {
-                background: white;
-                border-radius: 20px;
-                max-width: 900px;
-                width: 100%;
-                max-height: 90vh;
-                overflow-y: auto;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-                border: 1px solid #e5e7eb;
-            }
-
-            .modal-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 24px 32px;
-                border-bottom: 1px solid #e5e7eb;
-                background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-            }
-
-            .modal-header h2 {
-                font-size: 24px;
-                font-weight: 700;
-                color: #1a1a1a;
-                margin: 0;
-            }
-
-            .close-btn {
-                width: 36px;
-                height: 36px;
-                border: none;
-                background: #f3f4f6;
-                border-radius: 10px;
-                cursor: pointer;
-                font-size: 18px;
-                color: #6b7280;
-                transition: all 0.2s ease;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            .close-btn:hover {
-                background: #e5e7eb;
-                color: #374151;
-                transform: scale(1.05);
-            }
-
-            .modal-content {
-                padding: 32px;
-            }
-
-            .detail-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 20px;
-                margin-bottom: 32px;
-                background: #f8fafc;
-                padding: 24px;
-                border-radius: 12px;
-                border: 1px solid #e5e7eb;
-            }
-
-            .detail-item {
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-            }
-
-            .detail-item label {
-                font-size: 12px;
-                font-weight: 700;
-                color: #6b7280;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-            }
-
-            .detail-item span {
-                font-size: 15px;
-                color: #1a1a1a;
-                font-weight: 600;
-            }
-
-            .priority-urgent { color: #ef4444; }
-            .priority-high { color: #f97316; }
-            .priority-medium { color: #eab308; }
-            .priority-low { color: #22c55e; }
-
-            .status-todo { color: #d97706; }
-            .status-in-progress { color: #2563eb; }
-            .status-completed { color: #059669; }
-
-            .detail-section {
-                margin-bottom: 32px;
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 12px;
-                overflow: hidden;
-            }
-
-            .detail-section h3 {
-                font-size: 18px;
-                font-weight: 600;
-                color: #1a1a1a;
-                margin: 0;
-                padding: 20px 24px;
-                background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-                border-bottom: 1px solid #e5e7eb;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-
-            .description-content {
-                padding: 24px;
-            }
-
-            .structured-description {
-                font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-                font-size: 13px;
-                line-height: 1.6;
-                background: #f8fafc;
-                padding: 20px;
-                border-radius: 8px;
-                border: 1px solid #e5e7eb;
-                color: #374151;
-            }
-
-            .simple-description {
-                font-size: 15px;
-                line-height: 1.6;
-                color: #374151;
-            }
-
-            .actions-list {
-                padding: 24px;
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            }
-
-            .action-item {
-                display: flex;
-                align-items: center;
-                gap: 16px;
-                padding: 16px 20px;
-                background: #f8fafc;
-                border-radius: 10px;
-                border: 1px solid #e5e7eb;
-                transition: all 0.2s ease;
-            }
-
-            .action-item:hover {
-                background: #f1f5f9;
-                border-color: #cbd5e1;
-            }
-
-            .action-number {
-                width: 28px;
-                height: 28px;
-                background: linear-gradient(135deg, #667eea, #764ba2);
-                color: white;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 13px;
-                font-weight: 700;
-                flex-shrink: 0;
-                box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
-            }
-
-            .action-text {
-                flex: 1;
-                font-size: 15px;
-                color: #374151;
-                font-weight: 500;
-            }
-
-            .action-deadline {
-                font-size: 12px;
-                color: #dc2626;
-                font-weight: 600;
-                background: #fef2f2;
-                padding: 4px 8px;
-                border-radius: 6px;
-                border: 1px solid #fecaca;
-            }
-
-            .info-list,
-            .risks-list {
-                padding: 24px;
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            }
-
-            .info-item,
-            .risk-item {
-                display: flex;
-                align-items: flex-start;
-                gap: 12px;
-                font-size: 15px;
-                color: #374151;
-                line-height: 1.5;
-                padding: 12px;
-                background: #f8fafc;
-                border-radius: 8px;
-                border: 1px solid #e5e7eb;
-            }
-
-            .info-icon {
-                color: #3b82f6;
-                font-size: 12px;
-                margin-top: 2px;
-            }
-
-            .risk-item {
-                background: #fef9e8;
-                border-color: #fde68a;
-            }
-
-            .risk-icon {
-                font-size: 14px;
-                margin-top: 1px;
-            }
-
-            .risks-section {
-                background: #fef9e8;
-                border-color: #fde68a;
-            }
-
-            .risks-section h3 {
-                background: #fef3c7;
-                border-bottom-color: #fde68a;
-                color: #92400e;
-            }
-
-            .email-section {
-                background: #eff6ff;
-                border-color: #bfdbfe;
-            }
-
-            .email-section h3 {
-                background: #dbeafe;
-                border-bottom-color: #bfdbfe;
-                color: #1e40af;
-            }
-
-            .email-info {
-                padding: 24px;
-            }
-
-            .email-info p {
-                margin: 0 0 12px 0;
-                font-size: 15px;
-                line-height: 1.5;
-            }
-
-            .needs-reply {
-                color: #f59e0b;
-                font-weight: 600;
-                font-size: 14px;
-                background: #fef3c7;
-                padding: 8px 12px;
-                border-radius: 8px;
-                border: 1px solid #fde68a;
-                display: inline-block;
-            }
-
-            .replied {
-                color: #059669;
-                font-weight: 600;
-                font-size: 14px;
-                background: #ecfdf5;
-                padding: 8px 12px;
-                border-radius: 8px;
-                border: 1px solid #a7f3d0;
-                display: inline-block;
-            }
-
-            .email-content-tabs {
-                display: flex;
-                gap: 4px;
-                margin-bottom: 16px;
-                background: #f3f4f6;
-                padding: 4px;
-                border-radius: 8px;
-            }
-
-            .tab-btn {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                padding: 8px 16px;
-                background: transparent;
-                border: none;
-                border-radius: 6px;
-                font-size: 14px;
-                font-weight: 500;
-                color: #6b7280;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
-
-            .tab-btn.active {
-                background: white;
-                color: #1a1a1a;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            }
-
-            .email-content-box {
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 10px;
-                padding: 20px;
-                max-height: 400px;
-                overflow-y: auto;
-            }
-
-            .email-content-view {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                font-size: 14px;
-                line-height: 1.6;
-                color: #374151;
-            }
-
-            .email-content-viewer {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                line-height: 1.6;
-                color: #333;
-            }
-
-            .email-header {
-                background: #f8fafc;
-                padding: 12px 16px;
-                border-radius: 8px;
-                border: 1px solid #e5e7eb;
-                margin-bottom: 16px;
-                font-size: 14px;
-            }
-
-            .email-body {
-                font-size: 14px;
-                line-height: 1.6;
-            }
-
-            .email-original-content {
-                font-size: 14px;
-                line-height: 1.6;
-                color: #374151;
-                white-space: pre-wrap;
-            }
-
-            /* Suggestions de réponse IA */
-            .suggestions-section {
-                background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-                border-color: #7dd3fc;
-            }
-
-            .suggestions-section h3 {
-                background: #f0f9ff;
-                border-bottom-color: #7dd3fc;
-                color: #075985;
-            }
-
-            .suggestions-container,
-            .suggestions-list {
-                padding: 24px;
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-            }
-
-            .suggestion-card {
-                background: white;
-                border: 1px solid #bae6fd;
-                border-radius: 12px;
-                padding: 20px;
-                transition: all 0.2s ease;
-            }
-
-            .suggestion-card:hover {
-                border-color: #7dd3fc;
-                box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
-            }
-
-            .suggestion-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 16px;
-            }
-
-            .suggestion-tone {
-                padding: 6px 16px;
-                border-radius: 20px;
-                font-size: 12px;
-                font-weight: 600;
-                text-transform: capitalize;
-            }
-
-            .suggestion-tone.formel {
-                background: #f3f4f6;
-                color: #374151;
-                border: 1px solid #d1d5db;
-            }
-
-            .suggestion-tone.urgent {
-                background: #fef2f2;
-                color: #dc2626;
-                border: 1px solid #fecaca;
-            }
-
-            .suggestion-tone.neutre {
-                background: #eff6ff;
-                color: #2563eb;
-                border: 1px solid #bfdbfe;
-            }
-
-            .suggestion-tone.détaillé {
-                background: #f0fdf4;
-                color: #16a34a;
-                border: 1px solid #bbf7d0;
-            }
-
-            .suggestion-tone.professionnel {
-                background: #fef3c7;
-                color: #d97706;
-                border: 1px solid #fde68a;
-            }
-
-            .suggestion-actions {
-                display: flex;
-                gap: 8px;
-            }
-
-            .copy-btn,
-            .use-btn {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                padding: 6px 12px;
-                border-radius: 8px;
-                font-size: 12px;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                border: 1px solid;
-            }
-
-            .copy-btn {
-                background: #f3f4f6;
-                color: #374151;
-                border-color: #d1d5db;
-            }
-
-            .copy-btn:hover {
-                background: #e5e7eb;
-                border-color: #9ca3af;
-            }
-
-            .use-btn {
-                background: #3b82f6;
-                color: white;
-                border-color: #3b82f6;
-            }
-
-            .use-btn:hover {
-                background: #2563eb;
-                border-color: #2563eb;
-            }
-
-            .suggestion-subject {
-                font-size: 14px;
-                color: #4b5563;
-                margin-bottom: 12px;
-                padding-bottom: 8px;
-                border-bottom: 1px solid #e5e7eb;
-            }
-
-            .suggestion-content {
-                font-size: 13px;
-                color: #374151;
-                line-height: 1.6;
-                white-space: pre-wrap;
-                background: #f8fafc;
-                padding: 16px;
-                border-radius: 8px;
-                border: 1px solid #e5e7eb;
-                margin-bottom: 12px;
-            }
-
-            .ai-info {
-                background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-                border: 1px solid #7dd3fc;
-                border-radius: 12px;
-                padding: 20px;
-                margin-bottom: 24px;
-            }
-
-            .ai-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                background: linear-gradient(135deg, #0ea5e9, #0284c7);
-                color: white;
-                padding: 8px 16px;
-                border-radius: 20px;
-                font-size: 12px;
-                font-weight: 600;
-                margin-bottom: 12px;
-                box-shadow: 0 2px 4px rgba(14, 165, 233, 0.3);
-            }
-
-            .ai-info p {
-                margin: 0;
-                color: #075985;
-                font-size: 14px;
-                line-height: 1.5;
-            }
-
-            .tags-list {
-                padding: 24px;
-                display: flex;
-                flex-wrap: wrap;
-                gap: 8px;
-            }
-
-            .tag {
-                background: linear-gradient(135deg, #667eea, #764ba2);
-                color: white;
-                padding: 6px 12px;
-                border-radius: 16px;
-                font-size: 12px;
-                font-weight: 500;
-                border: 1px solid rgba(255,255,255,0.2);
-                box-shadow: 0 1px 3px rgba(102, 126, 234, 0.3);
-            }
-
-            .modal-actions {
-                display: flex;
-                justify-content: flex-end;
-                gap: 12px;
-                padding: 24px 32px;
-                border-top: 1px solid #e5e7eb;
-                background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-            }
-
-            /* Form Styles */
-            .form-group {
-                margin-bottom: 20px;
-            }
-
-            .form-group label {
-                display: block;
-                margin-bottom: 8px;
-                font-weight: 600;
-                color: #374151;
-                font-size: 14px;
-            }
-
-            .form-input,
-            .form-select,
-            .form-textarea {
-                width: 100%;
-                padding: 12px 16px;
-                border: 2px solid #e5e7eb;
-                border-radius: 10px;
-                font-size: 14px;
-                background: white;
-                transition: all 0.2s ease;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            }
-
-            .form-input:focus,
-            .form-select:focus,
-            .form-textarea:focus {
-                outline: none;
-                border-color: #3b82f6;
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            }
-
-            .form-row {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 20px;
-            }
-
-            .form-textarea {
-                resize: vertical;
-                min-height: 100px;
-                font-family: inherit;
-            }
-
-            /* Loading State */
             .loading-state {
                 display: flex;
                 flex-direction: column;
@@ -3375,7 +1931,6 @@ class TasksView {
                 100% { transform: rotate(360deg); }
             }
 
-            /* Toast Notifications */
             .toast {
                 position: fixed;
                 bottom: 24px;
@@ -3386,17 +1941,9 @@ class TasksView {
                 font-weight: 600;
                 font-size: 14px;
                 z-index: 100000;
-                transform: translateY(100px);
-                opacity: 0;
-                transition: all 0.3s ease;
                 box-shadow: 0 8px 32px rgba(0,0,0,0.3);
                 backdrop-filter: blur(10px);
                 border: 1px solid rgba(255,255,255,0.2);
-            }
-
-            .toast.show {
-                transform: translateY(0);
-                opacity: 1;
             }
 
             .toast-success { 
@@ -3409,21 +1956,7 @@ class TasksView {
                 background: linear-gradient(135deg, #3b82f6, #2563eb);
             }
 
-            /* Responsive Design */
-            @media (max-width: 1024px) {
-                .header-container {
-                    padding: 0 16px;
-                }
-                
-                .tasks-container {
-                    padding: 0 16px;
-                }
-                
-                .filters-container {
-                    padding: 0 16px;
-                }
-            }
-
+            /* Responsive */
             @media (max-width: 768px) {
                 .tasks-header {
                     padding: 16px;
@@ -3504,47 +2037,6 @@ class TasksView {
                     line-height: 1.4;
                 }
 
-                .detail-grid {
-                    grid-template-columns: 1fr;
-                    padding: 16px;
-                }
-
-                .form-row {
-                    grid-template-columns: 1fr;
-                }
-
-                .modal-content {
-                    padding: 20px;
-                }
-
-                .modal-header {
-                    padding: 16px 20px;
-                }
-
-                .modal-actions {
-                    padding: 16px 20px;
-                    flex-direction: column;
-                    gap: 8px;
-                }
-
-                .task-details-modal,
-                .create-task-modal,
-                .edit-task-modal,
-                .reply-suggestions-modal {
-                    margin: 10px;
-                    border-radius: 16px;
-                }
-            }
-
-            @media (max-width: 480px) {
-                .page-title {
-                    font-size: 24px;
-                }
-
-                .search-input {
-                    font-size: 16px; /* Prevent zoom on iOS */
-                }
-
                 .task-meta {
                     flex-direction: column;
                     align-items: flex-start;
@@ -3555,10 +2047,8 @@ class TasksView {
                     display: none;
                 }
 
-                .toast {
-                    left: 16px;
-                    right: 16px;
-                    bottom: 16px;
+                .tasks-container {
+                    padding: 0 16px;
                 }
             }
         `;
@@ -3568,12 +2058,15 @@ class TasksView {
 }
 
 // =====================================
-// GLOBAL INITIALIZATION GARANTIE + INTÉGRATION PAGEMANAGER CORRIGÉE
+// AUTO-REGISTRATION ET INTÉGRATION SYSTÈME
 // =====================================
-function initializeModernTaskManager() {
-    console.log('[TaskManager] Initializing modern interface v9.1 with all features...');
+
+// Fonction d'initialisation globale auto-suffisante
+function initializeTaskManagerModule() {
+    console.log('[TaskManager] Auto-initializing independent module v9.2...');
     
-    if (!window.taskManager || !window.taskManager.initialized) {
+    // Créer les instances globales
+    if (!window.taskManager) {
         window.taskManager = new TaskManager();
     }
     
@@ -3581,7 +2074,7 @@ function initializeModernTaskManager() {
         window.tasksView = new TasksView();
     }
     
-    // Bind methods pour éviter les erreurs de contexte
+    // Bind toutes les méthodes
     Object.getOwnPropertyNames(TaskManager.prototype).forEach(name => {
         if (name !== 'constructor' && typeof window.taskManager[name] === 'function') {
             window.taskManager[name] = window.taskManager[name].bind(window.taskManager);
@@ -3594,159 +2087,173 @@ function initializeModernTaskManager() {
         }
     });
     
-    // INTÉGRATION AVEC PAGEMANAGER - Méthode corrigée
-    if (window.pageManager) {
-        console.log('[TaskManager] PageManager found, setting up integration...');
-        
-        // Méthode 1: Enregistrer le renderer si la méthode existe
-        if (typeof window.pageManager.registerPageRenderer === 'function') {
-            window.pageManager.registerPageRenderer('tasks', (container) => {
-                console.log('[TaskManager] PageManager requested tasks page render');
-                if (window.tasksView && container) {
-                    window.tasksView.render(container);
-                }
-            });
-            console.log('[TaskManager] ✅ Registered with PageManager via registerPageRenderer');
-        }
-        
-        // Méthode 2: Ajouter directement dans pageRenderers si possible
-        if (window.pageManager.pageRenderers) {
-            window.pageManager.pageRenderers.tasks = (container) => {
-                console.log('[TaskManager] Direct pageRenderers method called');
-                if (window.tasksView && container) {
-                    window.tasksView.render(container);
-                }
-            };
-            console.log('[TaskManager] ✅ Added to PageManager.pageRenderers directly');
-        }
-        
-        // Méthode 3: Override de la méthode loadPage pour intercepter 'tasks'
-        if (window.pageManager.loadPage && !window.pageManager._originalLoadPage) {
-            console.log('[TaskManager] Setting up loadPage override...');
-            window.pageManager._originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
+    // AUTO-REGISTRATION avec PageManager (si disponible)
+    const registerWithPageManager = () => {
+        if (window.pageManager) {
+            console.log('[TaskManager] PageManager detected, attempting auto-registration...');
             
-            window.pageManager.loadPage = function(pageName) {
-                console.log('[TaskManager] PageManager.loadPage intercepted for:', pageName);
+            try {
+                // Méthode 1: Essayer registerPageRenderer
+                if (typeof window.pageManager.registerPageRenderer === 'function') {
+                    window.pageManager.registerPageRenderer('tasks', (container) => {
+                        console.log('[TaskManager] PageManager rendering tasks page');
+                        if (window.tasksView && container) {
+                            window.tasksView.render(container);
+                        }
+                    });
+                    console.log('[TaskManager] ✅ Registered via registerPageRenderer');
+                    return true;
+                }
                 
-                if (pageName === 'tasks') {
-                    console.log('[TaskManager] Intercepting tasks page load');
+                // Méthode 2: Injection directe si pageRenderers existe
+                if (window.pageManager.pageRenderers && typeof window.pageManager.pageRenderers === 'object') {
+                    window.pageManager.pageRenderers.tasks = (container) => {
+                        console.log('[TaskManager] Direct pageRenderers method called');
+                        if (window.tasksView && container) {
+                            window.tasksView.render(container);
+                        }
+                    };
+                    console.log('[TaskManager] ✅ Registered via direct pageRenderers injection');
+                    return true;
+                }
+                
+                // Méthode 3: Override loadPage
+                if (window.pageManager.loadPage && !window.pageManager._taskManagerOverride) {
+                    const originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
+                    window.pageManager._taskManagerOverride = true;
                     
-                    // Trouver le container
-                    const container = document.querySelector('.content-area') || 
-                                    document.querySelector('#content') || 
-                                    document.querySelector('.page-content') ||
-                                    document.querySelector('main');
-                    
-                    if (container && window.tasksView) {
-                        console.log('[TaskManager] Rendering tasks in container:', container);
-                        
-                        // Vider le container d'abord
-                        container.innerHTML = '';
-                        
-                        // Rendre la page tasks
-                        window.tasksView.render(container);
-                        
-                        // Simuler le succès du chargement de page
-                        if (window.uiManager && window.uiManager.hideLoading) {
-                            window.uiManager.hideLoading();
+                    window.pageManager.loadPage = function(pageName) {
+                        if (pageName === 'tasks') {
+                            console.log('[TaskManager] Intercepted loadPage for tasks');
+                            
+                            // Chercher le container
+                            const selectors = ['.content-area', '#content', '.page-content', 'main'];
+                            let container = null;
+                            
+                            for (const selector of selectors) {
+                                container = document.querySelector(selector);
+                                if (container) break;
+                            }
+                            
+                            if (container && window.tasksView) {
+                                container.innerHTML = '';
+                                window.tasksView.render(container);
+                                
+                                // Simuler le succès
+                                if (window.uiManager && window.uiManager.hideLoading) {
+                                    setTimeout(() => window.uiManager.hideLoading(), 100);
+                                }
+                                
+                                return Promise.resolve();
+                            }
                         }
                         
-                        return Promise.resolve();
-                    } else {
-                        console.error('[TaskManager] Container or tasksView not found');
-                    }
+                        return originalLoadPage(pageName);
+                    };
+                    
+                    console.log('[TaskManager] ✅ Registered via loadPage override');
+                    return true;
                 }
                 
-                // Appeler la méthode originale pour les autres pages
-                return this._originalLoadPage(pageName);
-            };
-            
-            console.log('[TaskManager] ✅ PageManager.loadPage override setup complete');
+            } catch (error) {
+                console.warn('[TaskManager] PageManager registration failed:', error);
+            }
         }
         
-    } else {
-        console.warn('[TaskManager] PageManager not available for registration');
+        return false;
+    };
+    
+    // Essayer l'enregistrement immédiatement
+    if (!registerWithPageManager()) {
+        console.log('[TaskManager] PageManager not ready, setting up watcher...');
+        
+        // Watcher pour détecter quand PageManager devient disponible
+        const checkPageManager = setInterval(() => {
+            if (registerWithPageManager()) {
+                clearInterval(checkPageManager);
+            }
+        }, 500);
+        
+        // Arrêter le watcher après 10 secondes
+        setTimeout(() => {
+            clearInterval(checkPageManager);
+            console.log('[TaskManager] PageManager watcher stopped');
+        }, 10000);
     }
     
-    console.log('✅ TaskManager v9.1 - Interface moderne avec TOUTES les fonctionnalités chargé');
+    console.log('✅ TaskManager v9.2 - Module indépendant et auto-suffisant chargé');
 }
 
-// MÉTHODE GLOBALE POUR FORCER LE RENDU - Améliorée
+// MÉTHODES GLOBALES D'ACCÈS DIRECT
 window.renderTasksPage = function(container) {
-    console.log('[TaskManager] Global renderTasksPage called with container:', container);
+    console.log('[TaskManager] Global renderTasksPage called');
     
     if (!window.tasksView) {
-        console.log('[TaskManager] TasksView not ready, initializing...');
-        initializeModernTaskManager();
+        initializeTaskManagerModule();
+        setTimeout(() => {
+            if (window.tasksView && container) {
+                window.tasksView.render(container);
+            }
+        }, 200);
+    } else if (container) {
+        window.tasksView.render(container);
     }
+};
+
+window.showTasksPage = function() {
+    console.log('[TaskManager] Global showTasksPage called');
     
-    // Attendre que l'initialisation soit terminée
-    setTimeout(() => {
-        if (window.tasksView && container) {
-            console.log('[TaskManager] Rendering tasks page...');
-            container.innerHTML = ''; // Vider d'abord
-            window.tasksView.render(container);
-        } else {
-            console.error('[TaskManager] Cannot render - tasksView or container missing', {
-                tasksView: !!window.tasksView,
-                container: !!container
-            });
+    const selectors = ['.content-area', '#content', '.page-content', 'main', '.container'];
+    let container = null;
+    
+    for (const selector of selectors) {
+        container = document.querySelector(selector);
+        if (container) {
+            console.log('[TaskManager] Found container:', selector);
+            break;
         }
-    }, 100);
-};
-
-// MÉTHODE DIRECTE POUR DÉBUGGER
-window.forceTasksRender = function() {
-    console.log('[TaskManager] Force tasks render called');
+    }
     
-    const containers = [
-        document.querySelector('.content-area'),
-        document.querySelector('#content'),
-        document.querySelector('.page-content'),
-        document.querySelector('main'),
-        document.querySelector('.container')
-    ].filter(c => c !== null);
-    
-    console.log('[TaskManager] Found containers:', containers);
-    
-    if (containers.length > 0 && window.tasksView) {
-        console.log('[TaskManager] Using first available container');
-        window.tasksView.render(containers[0]);
+    if (container) {
+        window.renderTasksPage(container);
     } else {
-        console.error('[TaskManager] No containers found or tasksView missing');
+        console.error('[TaskManager] No suitable container found');
     }
 };
 
-// ÉCOUTER LES CHANGEMENTS DE HASH POUR FORCER LE RENDU SUR LA PAGE TASKS
+// DÉTECTION AUTOMATIQUE DE NAVIGATION
 window.addEventListener('hashchange', () => {
     const hash = window.location.hash;
-    console.log('[TaskManager] Hash changed to:', hash);
-    
     if (hash.includes('tasks')) {
         setTimeout(() => {
-            console.log('[TaskManager] Navigated to tasks, forcing render...');
-            window.forceTasksRender();
-        }, 500);
+            console.log('[TaskManager] Hash change detected, showing tasks...');
+            window.showTasksPage();
+        }, 300);
     }
 });
 
-// OBSERVER LES MUTATIONS DU DOM POUR DÉTECTER QUAND LE CONTAINER APPARAÎT
+// DÉTECTION DE CHANGEMENTS DE PAGE VIA MUTATION OBSERVER
 if (typeof MutationObserver !== 'undefined') {
     const observer = new MutationObserver((mutations) => {
-        const currentHash = window.location.hash;
-        if (currentHash.includes('tasks')) {
+        if (window.location.hash.includes('tasks')) {
             mutations.forEach((mutation) => {
                 if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                    // Vérifier si un container approprié a été ajouté
                     for (let node of mutation.addedNodes) {
                         if (node.nodeType === Node.ELEMENT_NODE) {
-                            const container = node.querySelector && node.querySelector('.content-area, #content, .page-content') || 
-                                            (node.classList && (node.classList.contains('content-area') || 
-                                                               node.classList.contains('page-content') || 
-                                                               node.id === 'content') ? node : null);
+                            const container = node.querySelector && (
+                                node.querySelector('.content-area') ||
+                                node.querySelector('#content') ||
+                                node.querySelector('.page-content')
+                            ) || (
+                                (node.classList && (
+                                    node.classList.contains('content-area') ||
+                                    node.classList.contains('page-content') ||
+                                    node.id === 'content'
+                                )) ? node : null
+                            );
                             
                             if (container && window.tasksView) {
-                                console.log('[TaskManager] Container detected via MutationObserver, rendering...');
+                                console.log('[TaskManager] Container detected via MutationObserver');
                                 setTimeout(() => window.tasksView.render(container), 100);
                             }
                         }
@@ -3760,53 +2267,47 @@ if (typeof MutationObserver !== 'undefined') {
         childList: true,
         subtree: true
     });
-    
-    console.log('[TaskManager] MutationObserver setup for container detection');
 }
 
-// Initialisation immédiate ET sur DOMContentLoaded avec vérifications
-initializeModernTaskManager();
+// INITIALISATION AUTOMATIQUE À DIFFÉRENTS MOMENTS
+console.log('[TaskManager] Setting up auto-initialization...');
 
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('[TaskManager] DOM ready, ensuring initialization...');
-    initializeModernTaskManager();
-    
-    // Vérifier si on est déjà sur la page tasks
-    setTimeout(() => {
-        const hash = window.location.hash;
-        if (hash.includes('tasks')) {
-            console.log('[TaskManager] Already on tasks page, forcing render...');
-            window.renderTasksPage(
-                document.querySelector('.content-area') || 
-                document.querySelector('#content') || 
-                document.querySelector('main')
-            );
-        }
-    }, 1000);
-});
+// Immédiat
+initializeTaskManagerModule();
 
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        console.log('[TaskManager] Window loaded, final initialization check...');
-        if (!window.taskManager || !window.taskManager.initialized) {
-            initializeModernTaskManager();
-        }
+// DOM Ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('[TaskManager] DOM ready, re-initializing...');
+        initializeTaskManagerModule();
         
-        // Debug: Vérifier l'état des tâches
-        if (window.taskManager && window.taskManager.initialized) {
-            const stats = window.taskManager.getStats();
-            console.log('[TaskManager] Current stats:', stats);
-            
-            // Si on est sur la page tasks, forcer le rendu
-            if (window.location.hash.includes('tasks')) {
-                const container = document.querySelector('.content-area') || 
-                               document.querySelector('#content') || 
-                               document.querySelector('main');
-                if (container && window.tasksView) {
-                    console.log('[TaskManager] Final render attempt...');
-                    window.tasksView.render(container);
-                }
-            }
+        // Vérifier si on est déjà sur tasks
+        if (window.location.hash.includes('tasks')) {
+            setTimeout(() => window.showTasksPage(), 500);
         }
-    }, 2000);
+    });
+} else {
+    console.log('[TaskManager] DOM already ready');
+    if (window.location.hash.includes('tasks')) {
+        setTimeout(() => window.showTasksPage(), 200);
+    }
+}
+
+// Window Load
+window.addEventListener('load', () => {
+    console.log('[TaskManager] Window loaded, final check...');
+    
+    if (!window.taskManager || !window.taskManager.initialized) {
+        initializeTaskManagerModule();
+    }
+    
+    // Si on est sur tasks, forcer l'affichage
+    if (window.location.hash.includes('tasks')) {
+        setTimeout(() => {
+            console.log('[TaskManager] On tasks page after load, forcing display...');
+            window.showTasksPage();
+        }, 1000);
+    }
 });
+
+console.log('🚀 TaskManager v9.2 - Module indépendant et auto-suffisant initialisé');
