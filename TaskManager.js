@@ -3568,7 +3568,7 @@ class TasksView {
 }
 
 // =====================================
-// GLOBAL INITIALIZATION GARANTIE + INTÉGRATION PAGEMANAGER
+// GLOBAL INITIALIZATION GARANTIE + INTÉGRATION PAGEMANAGER CORRIGÉE
 // =====================================
 function initializeModernTaskManager() {
     console.log('[TaskManager] Initializing modern interface v9.1 with all features...');
@@ -3594,51 +3594,126 @@ function initializeModernTaskManager() {
         }
     });
     
-    // INTÉGRATION FORCÉE AVEC PAGEMANAGER
-    if (window.pageManager && typeof window.pageManager.registerPageRenderer === 'function') {
-        console.log('[TaskManager] Registering with PageManager...');
+    // INTÉGRATION AVEC PAGEMANAGER - Méthode corrigée
+    if (window.pageManager) {
+        console.log('[TaskManager] PageManager found, setting up integration...');
         
-        window.pageManager.registerPageRenderer('tasks', (container) => {
-            console.log('[TaskManager] PageManager requested tasks page render');
-            if (window.tasksView && container) {
-                window.tasksView.render(container);
-            } else {
-                console.error('[TaskManager] TasksView or container not available');
-            }
-        });
+        // Méthode 1: Enregistrer le renderer si la méthode existe
+        if (typeof window.pageManager.registerPageRenderer === 'function') {
+            window.pageManager.registerPageRenderer('tasks', (container) => {
+                console.log('[TaskManager] PageManager requested tasks page render');
+                if (window.tasksView && container) {
+                    window.tasksView.render(container);
+                }
+            });
+            console.log('[TaskManager] ✅ Registered with PageManager via registerPageRenderer');
+        }
         
-        console.log('[TaskManager] ✅ Registered with PageManager');
+        // Méthode 2: Ajouter directement dans pageRenderers si possible
+        if (window.pageManager.pageRenderers) {
+            window.pageManager.pageRenderers.tasks = (container) => {
+                console.log('[TaskManager] Direct pageRenderers method called');
+                if (window.tasksView && container) {
+                    window.tasksView.render(container);
+                }
+            };
+            console.log('[TaskManager] ✅ Added to PageManager.pageRenderers directly');
+        }
+        
+        // Méthode 3: Override de la méthode loadPage pour intercepter 'tasks'
+        if (window.pageManager.loadPage && !window.pageManager._originalLoadPage) {
+            console.log('[TaskManager] Setting up loadPage override...');
+            window.pageManager._originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
+            
+            window.pageManager.loadPage = function(pageName) {
+                console.log('[TaskManager] PageManager.loadPage intercepted for:', pageName);
+                
+                if (pageName === 'tasks') {
+                    console.log('[TaskManager] Intercepting tasks page load');
+                    
+                    // Trouver le container
+                    const container = document.querySelector('.content-area') || 
+                                    document.querySelector('#content') || 
+                                    document.querySelector('.page-content') ||
+                                    document.querySelector('main');
+                    
+                    if (container && window.tasksView) {
+                        console.log('[TaskManager] Rendering tasks in container:', container);
+                        
+                        // Vider le container d'abord
+                        container.innerHTML = '';
+                        
+                        // Rendre la page tasks
+                        window.tasksView.render(container);
+                        
+                        // Simuler le succès du chargement de page
+                        if (window.uiManager && window.uiManager.hideLoading) {
+                            window.uiManager.hideLoading();
+                        }
+                        
+                        return Promise.resolve();
+                    } else {
+                        console.error('[TaskManager] Container or tasksView not found');
+                    }
+                }
+                
+                // Appeler la méthode originale pour les autres pages
+                return this._originalLoadPage(pageName);
+            };
+            
+            console.log('[TaskManager] ✅ PageManager.loadPage override setup complete');
+        }
+        
     } else {
         console.warn('[TaskManager] PageManager not available for registration');
     }
     
-    // FALLBACK: Vérifier si on est sur la page tasks et forcer le rendu
-    setTimeout(() => {
-        const currentPage = window.location.hash || '#dashboard';
-        if (currentPage.includes('tasks')) {
-            console.log('[TaskManager] On tasks page, forcing render...');
-            const container = document.querySelector('.content-area') || 
-                            document.querySelector('#content') || 
-                            document.querySelector('main');
-            if (container && window.tasksView) {
-                window.tasksView.render(container);
-            }
-        }
-    }, 2000);
-    
     console.log('✅ TaskManager v9.1 - Interface moderne avec TOUTES les fonctionnalités chargé');
 }
 
-// MÉTHODE GLOBALE POUR FORCER LE RENDU
+// MÉTHODE GLOBALE POUR FORCER LE RENDU - Améliorée
 window.renderTasksPage = function(container) {
-    console.log('[TaskManager] Global renderTasksPage called');
+    console.log('[TaskManager] Global renderTasksPage called with container:', container);
+    
     if (!window.tasksView) {
+        console.log('[TaskManager] TasksView not ready, initializing...');
         initializeModernTaskManager();
     }
-    if (window.tasksView && container) {
-        window.tasksView.render(container);
+    
+    // Attendre que l'initialisation soit terminée
+    setTimeout(() => {
+        if (window.tasksView && container) {
+            console.log('[TaskManager] Rendering tasks page...');
+            container.innerHTML = ''; // Vider d'abord
+            window.tasksView.render(container);
+        } else {
+            console.error('[TaskManager] Cannot render - tasksView or container missing', {
+                tasksView: !!window.tasksView,
+                container: !!container
+            });
+        }
+    }, 100);
+};
+
+// MÉTHODE DIRECTE POUR DÉBUGGER
+window.forceTasksRender = function() {
+    console.log('[TaskManager] Force tasks render called');
+    
+    const containers = [
+        document.querySelector('.content-area'),
+        document.querySelector('#content'),
+        document.querySelector('.page-content'),
+        document.querySelector('main'),
+        document.querySelector('.container')
+    ].filter(c => c !== null);
+    
+    console.log('[TaskManager] Found containers:', containers);
+    
+    if (containers.length > 0 && window.tasksView) {
+        console.log('[TaskManager] Using first available container');
+        window.tasksView.render(containers[0]);
     } else {
-        console.error('[TaskManager] Cannot render - tasksView or container missing');
+        console.error('[TaskManager] No containers found or tasksView missing');
     }
 };
 
@@ -3650,25 +3725,44 @@ window.addEventListener('hashchange', () => {
     if (hash.includes('tasks')) {
         setTimeout(() => {
             console.log('[TaskManager] Navigated to tasks, forcing render...');
-            const container = document.querySelector('.content-area') || 
-                            document.querySelector('#content') || 
-                            document.querySelector('main') ||
-                            document.querySelector('.page-content');
-            
-            if (container) {
-                console.log('[TaskManager] Found container, rendering tasks...');
-                if (!window.tasksView) {
-                    initializeModernTaskManager();
-                }
-                if (window.tasksView) {
-                    window.tasksView.render(container);
-                }
-            } else {
-                console.error('[TaskManager] No container found for tasks page');
-            }
+            window.forceTasksRender();
         }, 500);
     }
 });
+
+// OBSERVER LES MUTATIONS DU DOM POUR DÉTECTER QUAND LE CONTAINER APPARAÎT
+if (typeof MutationObserver !== 'undefined') {
+    const observer = new MutationObserver((mutations) => {
+        const currentHash = window.location.hash;
+        if (currentHash.includes('tasks')) {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    // Vérifier si un container approprié a été ajouté
+                    for (let node of mutation.addedNodes) {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            const container = node.querySelector && node.querySelector('.content-area, #content, .page-content') || 
+                                            (node.classList && (node.classList.contains('content-area') || 
+                                                               node.classList.contains('page-content') || 
+                                                               node.id === 'content') ? node : null);
+                            
+                            if (container && window.tasksView) {
+                                console.log('[TaskManager] Container detected via MutationObserver, rendering...');
+                                setTimeout(() => window.tasksView.render(container), 100);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+    
+    console.log('[TaskManager] MutationObserver setup for container detection');
+}
 
 // Initialisation immédiate ET sur DOMContentLoaded avec vérifications
 initializeModernTaskManager();
