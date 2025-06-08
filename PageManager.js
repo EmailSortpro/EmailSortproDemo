@@ -36,44 +36,63 @@ class PageManager {
     }
 
     // =====================================
-    // INITIALISATION DU MODULE DE SCAN - SIMPLIFIÉ
+    // INITIALISATION DU MODULE DE SCAN - MÉTHODE ROBUSTE
     // =====================================
     initializeScanModule() {
-        console.log('[PageManager] 🔧 Initializing scan module...');
+        console.log('[PageManager] 🔧 Initializing scan module v12.1...');
         
-        // Méthode 1: Vérifier si MinimalScanModule existe et créer l'instance
-        if (window.MinimalScanModule && typeof window.MinimalScanModule === 'function') {
-            try {
+        // Attendre un peu que tous les scripts se chargent
+        setTimeout(() => {
+            // Méthode 1: Vérifier MinimalScanModule (classe)
+            if (window.MinimalScanModule && typeof window.MinimalScanModule === 'function') {
+                console.log('[PageManager] ✅ MinimalScanModule class found');
+                
+                // Vérifier si l'instance existe déjà
                 if (!window.minimalScanModule) {
-                    window.minimalScanModule = new window.MinimalScanModule();
-                    console.log('[PageManager] ✅ MinimalScanModule instance created');
+                    try {
+                        window.minimalScanModule = new window.MinimalScanModule();
+                        console.log('[PageManager] ✅ minimalScanModule instance created');
+                    } catch (error) {
+                        console.error('[PageManager] ❌ Error creating minimalScanModule:', error);
+                    }
                 }
-                if (!window.scanStartModule) {
+                
+                // Créer l'alias de compatibilité
+                if (!window.scanStartModule && window.minimalScanModule) {
                     window.scanStartModule = window.minimalScanModule;
                     console.log('[PageManager] ✅ scanStartModule alias created');
                 }
-                this.scannerInitialized = true;
-                return true;
-            } catch (error) {
-                console.error('[PageManager] ❌ Error creating MinimalScanModule:', error);
             }
-        }
+            
+            // Méthode 2: Vérifier les instances existantes
+            if (window.minimalScanModule && typeof window.minimalScanModule.render === 'function') {
+                console.log('[PageManager] ✅ minimalScanModule instance ready');
+                this.scannerInitialized = true;
+                return;
+            }
+            
+            if (window.scanStartModule && typeof window.scanStartModule.render === 'function') {
+                console.log('[PageManager] ✅ scanStartModule instance ready');
+                this.scannerInitialized = true;
+                return;
+            }
+            
+            // Diagnostic final
+            console.log('[PageManager] 📊 Final scan module status:', {
+                MinimalScanModule: !!window.MinimalScanModule,
+                minimalScanModule: !!window.minimalScanModule,
+                scanStartModule: !!window.scanStartModule,
+                hasRender: !!(window.minimalScanModule && window.minimalScanModule.render)
+            });
+            
+            if (this.scannerInitialized) {
+                console.log('[PageManager] ✅ Scanner initialization completed');
+            } else {
+                console.log('[PageManager] ⚠️ Scanner module not found - fallback will be used');
+            }
+        }, 100); // Délai pour laisser le temps aux scripts de se charger
         
-        // Méthode 2: Vérifier si les instances existent déjà
-        if (window.minimalScanModule && typeof window.minimalScanModule.render === 'function') {
-            console.log('[PageManager] ✅ minimalScanModule already exists');
-            this.scannerInitialized = true;
-            return true;
-        }
-        
-        if (window.scanStartModule && typeof window.scanStartModule.render === 'function') {
-            console.log('[PageManager] ✅ scanStartModule already exists');
-            this.scannerInitialized = true;
-            return true;
-        }
-        
-        console.log('[PageManager] ⚠️ Scanner module not found - will use fallback');
-        return false;
+        return this.scannerInitialized;
     }
 
     // =====================================
@@ -156,22 +175,28 @@ class PageManager {
     }
 
     // =====================================
-    // SCANNER PAGE - VERSION CORRIGÉE
+    // SCANNER PAGE - VERSION CORRIGÉE V12.1
     // =====================================
     async renderScanner(container) {
-        console.log('[PageManager] 🎯 Rendering scanner page v12.0...');
+        console.log('[PageManager] 🎯 Rendering scanner page v12.1...');
         
-        // 1. D'abord, s'assurer que le module est initialisé
-        if (!this.scannerInitialized) {
-            const initialized = this.initializeScanModule();
-            if (!initialized) {
-                console.log('[PageManager] Scanner module not available, using enhanced fallback');
-                this.renderScannerFallback(container);
-                return;
-            }
-        }
+        // 1. Réinitialiser la vérification du module
+        this.initializeScanModule();
         
-        // 2. Essayer d'utiliser minimalScanModule en premier
+        // 2. Attendre un délai pour que l'initialisation se termine
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // 3. Vérification finale des modules disponibles
+        const moduleStatus = {
+            MinimalScanModule: !!window.MinimalScanModule,
+            minimalScanModule: !!window.minimalScanModule,
+            scanStartModule: !!window.scanStartModule,
+            hasRender: !!(window.minimalScanModule && typeof window.minimalScanModule.render === 'function')
+        };
+        
+        console.log('[PageManager] 📊 Scanner modules status:', moduleStatus);
+        
+        // 4. Essayer d'utiliser minimalScanModule en premier
         if (window.minimalScanModule && typeof window.minimalScanModule.render === 'function') {
             try {
                 console.log('[PageManager] ✅ Using minimalScanModule.render()');
@@ -183,7 +208,7 @@ class PageManager {
             }
         }
         
-        // 3. Essayer scanStartModule comme alternative
+        // 5. Essayer scanStartModule comme alternative
         if (window.scanStartModule && typeof window.scanStartModule.render === 'function') {
             try {
                 console.log('[PageManager] ✅ Using scanStartModule.render()');
@@ -195,8 +220,21 @@ class PageManager {
             }
         }
         
-        // 4. Si aucun module ne fonctionne, utiliser le fallback amélioré
-        console.log('[PageManager] ⚠️ No working scanner module found, using enhanced fallback');
+        // 6. Dernier recours: créer une instance si la classe existe
+        if (window.MinimalScanModule && typeof window.MinimalScanModule === 'function') {
+            try {
+                console.log('[PageManager] 🔧 Last attempt: creating new MinimalScanModule instance');
+                const tempModule = new window.MinimalScanModule();
+                await tempModule.render(container);
+                console.log('[PageManager] ✅ Scanner rendered with temporary instance');
+                return;
+            } catch (error) {
+                console.error('[PageManager] ❌ Error with temporary instance:', error);
+            }
+        }
+        
+        // 7. Si tout échoue, utiliser le fallback amélioré
+        console.log('[PageManager] ⚠️ All scanner methods failed, using enhanced fallback');
         this.renderScannerFallback(container);
     }
 
