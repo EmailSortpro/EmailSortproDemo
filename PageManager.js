@@ -78,6 +78,18 @@ class PageManager {
             });
         }
         
+        // SOLUTION: Si aucun module trouvé, essayer de créer l'instance
+        if (!window.minimalScanModule && window.MinimalScanModule) {
+            console.log('🔧 [DIAGNOSTIC] Tentative de création automatique du module...');
+            try {
+                window.minimalScanModule = new window.MinimalScanModule();
+                window.scanStartModule = window.minimalScanModule;
+                console.log('✅ [DIAGNOSTIC] Module créé automatiquement !');
+            } catch (error) {
+                console.error('❌ [DIAGNOSTIC] Erreur création automatique:', error);
+            }
+        }
+        
         console.log('=== FIN DIAGNOSTIC ===');
     }
 
@@ -87,24 +99,103 @@ class PageManager {
     async forceScanModuleDetection() {
         console.log('[PageManager] 🔧 Forcing scan module detection...');
         
-        // Essayer de créer une nouvelle instance si la classe existe
+        // 1. Essayer de créer une nouvelle instance si la classe existe
         if (window.MinimalScanModule && typeof window.MinimalScanModule === 'function') {
             try {
                 console.log('[PageManager] Creating new MinimalScanModule instance...');
                 window.minimalScanModule = new window.MinimalScanModule();
                 window.scanStartModule = window.minimalScanModule; // Alias
+                console.log('[PageManager] ✅ Module créé avec succès !');
             } catch (error) {
                 console.error('[PageManager] Error creating MinimalScanModule:', error);
             }
         }
         
-        // Attendre un peu puis relancer le rendu
+        // 2. Réessayer le chargement de StartScan.js si pas trouvé
+        if (!window.minimalScanModule) {
+            console.log('[PageManager] 🔄 Tentative de rechargement StartScan.js...');
+            
+            // Vérifier si le script est déjà chargé
+            const existingScript = document.querySelector('script[src*="StartScan"], script[src*="startscan"]');
+            if (!existingScript) {
+                console.log('[PageManager] ⚠️ Script StartScan.js non trouvé dans le DOM');
+                if (window.uiManager?.showToast) {
+                    window.uiManager.showToast('StartScan.js non trouvé - Vérifiez que le fichier est bien inclus', 'warning');
+                }
+            } else {
+                console.log('[PageManager] ✅ Script StartScan.js trouvé:', existingScript.src);
+            }
+            
+            // Essayer de détecter tous les objets qui ressemblent à un scanner
+            const allProps = Object.getOwnPropertyNames(window);
+            const scanLike = allProps.filter(prop => {
+                const obj = window[prop];
+                return obj && 
+                       typeof obj === 'object' && 
+                       typeof obj.render === 'function' &&
+                       (prop.toLowerCase().includes('scan') || prop.toLowerCase().includes('minimal'));
+            });
+            
+            if (scanLike.length > 0) {
+                console.log('[PageManager] 🎯 Objets ressemblant à des scanners trouvés:', scanLike);
+                // Essayer d'utiliser le premier trouvé
+                const candidateModule = window[scanLike[0]];
+                if (candidateModule && typeof candidateModule.render === 'function') {
+                    window.minimalScanModule = candidateModule;
+                    window.scanStartModule = candidateModule;
+                    console.log('[PageManager] ✅ Module assigné automatiquement !');
+                }
+            }
+        }
+        
+        // 3. Attendre un peu puis relancer le rendu
         setTimeout(async () => {
             const container = document.getElementById('pageContent');
             if (container) {
+                if (window.uiManager?.showToast) {
+                    window.uiManager.showToast('Nouvelle tentative de détection...', 'info');
+                }
                 await this.renderScanner(container);
             }
         }, 500);
+    }
+
+    // =====================================
+    // ATTENDRE LE CHARGEMENT DU MODULE DE SCAN
+    // =====================================
+    async waitForScanModule(maxWait = 5000) {
+        console.log('[PageManager] 🕐 Waiting for scan module to load...');
+        
+        const checkInterval = 100;
+        let waited = 0;
+        
+        while (waited < maxWait) {
+            // Vérifier si le module est disponible
+            if (window.minimalScanModule && typeof window.minimalScanModule.render === 'function') {
+                console.log('[PageManager] ✅ Scan module found after', waited, 'ms');
+                return true;
+            }
+            
+            // Si la classe existe mais pas l'instance, la créer
+            if (window.MinimalScanModule && typeof window.MinimalScanModule === 'function') {
+                try {
+                    console.log('[PageManager] 🔧 Creating scan module instance...');
+                    window.minimalScanModule = new window.MinimalScanModule();
+                    window.scanStartModule = window.minimalScanModule;
+                    console.log('[PageManager] ✅ Scan module instance created!');
+                    return true;
+                } catch (error) {
+                    console.error('[PageManager] ❌ Error creating scan module:', error);
+                }
+            }
+            
+            // Attendre un peu plus
+            await new Promise(resolve => setTimeout(resolve, checkInterval));
+            waited += checkInterval;
+        }
+        
+        console.log('[PageManager] ⚠️ Scan module not found after', maxWait, 'ms');
+        return false;
     }
 
     // =====================================
@@ -187,10 +278,14 @@ class PageManager {
     async renderScanner(container) {
         console.log('[PageManager] Rendering scanner page...');
         
+        // SOLUTION IMMÉDIATE: Attendre que StartScan.js se charge
+        await this.waitForScanModule();
+        
         // Debug: Vérifier quels modules sont disponibles
         console.log('[PageManager] Available modules:', {
             minimalScanModule: !!window.minimalScanModule,
             scanStartModule: !!window.scanStartModule,
+            MinimalScanModule: !!window.MinimalScanModule,
             minimalScanRender: !!(window.minimalScanModule && window.minimalScanModule.render),
             scanStartRender: !!(window.scanStartModule && window.scanStartModule.render)
         });
