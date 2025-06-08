@@ -10,6 +10,18 @@
     <meta name="keywords" content="email, outlook, microsoft, gestion, ia, productivité, organisation">
     <meta name="author" content="EmailSortPro">
     
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://emailsortpro.netlify.app/">
+    <meta property="og:title" content="EmailSortPro - Scanner d'Emails Intelligent">
+    <meta property="og:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://emailsortpro.netlify.app/">
+    <meta property="twitter:title" content="EmailSortPro - Scanner d'Emails Intelligent">
+    <meta property="twitter:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
+    
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📧</text></svg>">
     
@@ -19,194 +31,235 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- CONFIGURATION GLOBALE - Version 7.2 STRUCTURE FIXÉE -->
+    <!-- Styles principaux -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- CONFIGURATION NETLIFY CORRIGÉE -->
     <script>
-        console.log('[INDEX] 🚀 Starting EmailSortPro v7.2 - FIXED STRUCTURE...');
+        // =====================================================
+        // CONFIGURATION NETLIFY POUR emailsortpro.netlify.app
+        // =====================================================
+        console.log('[INDEX] 🚀 Loading Netlify configuration for emailsortpro.netlify.app...');
         
-        // === VARIABLES GLOBALES CRITIQUES ===
-        window.CURRENT_HOSTNAME = window.location.hostname;
-        window.CURRENT_ORIGIN = window.location.origin;
-        window.CURRENT_PROTOCOL = window.location.protocol;
-        window.CURRENT_URL = window.location.href;
+        // Client ID par défaut fonctionnel pour le nouveau domaine
+        window.NETLIFY_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
         
-        // CORRECTION: Forcer le mode réel dès le début
-        window.APP_REAL_MODE = true;
-        window.APP_DEMO_MODE = false;
-        window.FORCE_REAL_EMAILS = true;
+        console.log('[INDEX] ✅ Netlify Client ID configured for new domain');
         
-        console.log('[INDEX] Environment v7.2:', {
-            hostname: window.CURRENT_HOSTNAME,
-            origin: window.CURRENT_ORIGIN,
-            realMode: window.APP_REAL_MODE
-        });
-
-        // === CONFIGURATION PAR DOMAINE ===
-        const DOMAIN_CONFIGS = {
-            'emailsortpro.netlify.app': {
-                clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
-                redirectUri: 'https://emailsortpro.netlify.app/auth-callback.html',
-                postLogoutUri: 'https://emailsortpro.netlify.app/',
-                environment: 'production'
-            },
-            'coruscating-dodol-f30e8d.netlify.app': {
-                clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
-                redirectUri: 'https://coruscating-dodol-f30e8d.netlify.app/auth-callback.html',
-                postLogoutUri: 'https://coruscating-dodol-f30e8d.netlify.app/',
-                environment: 'test'
-            },
-            'localhost': {
-                clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
-                redirectUri: 'http://localhost:3000/auth-callback.html',
-                postLogoutUri: 'http://localhost:3000/',
-                environment: 'development'
-            }
-        };
-
-        // === GÉNÉRATION DE CONFIGURATION ===
-        function generateDomainConfig() {
-            console.log('[INDEX] Generating config for:', window.CURRENT_HOSTNAME);
+        // =====================================================
+        // DÉTECTION DE L'ENVIRONNEMENT CORRIGÉE
+        // =====================================================
+        (function() {
+            // Détection de l'environnement mis à jour
+            const hostname = window.location.hostname;
+            const isNetlify = hostname.includes('netlify.app') || hostname.includes('netlifyapp.com');
+            const isGitHubPages = hostname.includes('github.io');
+            const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
             
-            if (DOMAIN_CONFIGS[window.CURRENT_HOSTNAME]) {
-                return DOMAIN_CONFIGS[window.CURRENT_HOSTNAME];
-            }
-            
-            if (window.CURRENT_HOSTNAME.includes('netlify.app')) {
-                return {
-                    clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
-                    redirectUri: `https://${window.CURRENT_HOSTNAME}/auth-callback.html`,
-                    postLogoutUri: `https://${window.CURRENT_HOSTNAME}/`,
-                    environment: 'preview'
-                };
-            }
-            
-            return {
-                clientId: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
-                redirectUri: `${window.CURRENT_ORIGIN}/auth-callback.html`,
-                postLogoutUri: `${window.CURRENT_ORIGIN}/`,
-                environment: 'adaptive'
-            };
-        }
-
-        // === CONFIGURATION GLOBALE ===
-        const DOMAIN_CONFIG = generateDomainConfig();
-        window.DOMAIN_CONFIG = DOMAIN_CONFIG;
-        window.IS_TEST_ENV = DOMAIN_CONFIG.environment !== 'production';
-        
-        // === CRÉATION APPCONFIG ===
-        function createAppConfig() {
-            console.log('[INDEX] Creating AppConfig v7.2...');
-            
-            const clientId = DOMAIN_CONFIG.clientId;
-            
-            if (!clientId || !/^[a-f0-9-]{36}$/i.test(clientId)) {
-                console.error('[INDEX] ❌ Invalid Client ID');
-                return false;
-            }
-            
-            window.AppConfig = {
-                msal: {
-                    clientId: clientId,
-                    authority: 'https://login.microsoftonline.com/common',
-                    redirectUri: DOMAIN_CONFIG.redirectUri,
-                    postLogoutRedirectUri: DOMAIN_CONFIG.postLogoutUri,
-                    cache: {
-                        cacheLocation: 'localStorage',
-                        storeAuthStateInCookie: true
-                    },
-                    system: {
-                        loggerOptions: {
-                            loggerCallback: (level, message, containsPii) => {
-                                if (window.IS_TEST_ENV) {
-                                    console.log(`[MSAL ${level}] ${message}`);
-                                }
-                            },
-                            piiLoggingEnabled: false,
-                            logLevel: window.IS_TEST_ENV ? 'Verbose' : 'Warning'
-                        }
-                    }
-                },
-                scopes: {
-                    login: [
-                        'https://graph.microsoft.com/User.Read',
-                        'https://graph.microsoft.com/Mail.Read',
-                        'https://graph.microsoft.com/Mail.ReadWrite'
-                    ]
-                },
-                app: {
-                    name: 'EmailSortPro',
-                    version: '7.2.0',
-                    environment: DOMAIN_CONFIG.environment,
-                    domain: window.CURRENT_HOSTNAME,
-                    realModeOnly: true,
-                    demoModeDisabled: true
-                },
-                validate() {
-                    const issues = [];
-                    if (!this.msal.clientId) issues.push('Client ID manquant');
-                    if (!this.msal.redirectUri.includes(window.CURRENT_HOSTNAME)) {
-                        issues.push('Domaine redirect URI incorrect');
-                    }
-                    return { valid: issues.length === 0, issues };
-                },
-                getDebugInfo() {
-                    return {
-                        hostname: window.CURRENT_HOSTNAME,
-                        environment: this.app.environment,
-                        clientId: this.msal.clientId.substring(0, 8) + '...',
-                        redirectUri: this.msal.redirectUri,
-                        validation: this.validate(),
-                        realModeOnly: this.app.realModeOnly,
-                        demoModeDisabled: this.app.demoModeDisabled
-                    };
-                }
-            };
-            
-            console.log('[INDEX] ✅ AppConfig created v7.2');
-            return true;
-        }
-        
-        // Créer immédiatement
-        const configSuccess = createAppConfig();
-        
-        if (!configSuccess) {
-            console.error('[INDEX] ❌ Configuration failed');
-        } else {
-            console.log('[INDEX] ✅ Configuration ready for', window.CURRENT_HOSTNAME);
-        }
-
-        // Forcer le mode réel globalement
-        window.forceRealModeGlobally = function() {
-            console.log('[INDEX] 🔧 Forcing REAL mode globally...');
-            
-            window.APP_REAL_MODE = true;
-            window.APP_DEMO_MODE = false;
-            window.FORCE_REAL_EMAILS = true;
-            
-            const demoKeys = [
-                'emailsort_demo_emails',
-                'emailsort_demo_mode',
-                'emailsort_demo_data'
-            ];
-            
-            demoKeys.forEach(key => {
-                try {
-                    localStorage.removeItem(key);
-                    console.log('[INDEX] ✅ Removed demo cache:', key);
-                } catch (error) {
-                    console.warn('[INDEX] Could not remove:', key);
-                }
+            console.log('[INDEX] Environment detection for new domain:', {
+                hostname,
+                isNetlify,
+                isGitHubPages,
+                isLocalhost,
+                origin: window.location.origin
             });
             
-            console.log('[INDEX] ✅ Global real mode enforced');
-        };
-
-        // Appliquer immédiatement
-        window.forceRealModeGlobally();
+            // Fonction pour obtenir le Client ID
+            function getClientIdForEnvironment() {
+                // Priorité 1: Client ID configuré directement pour Netlify
+                if (isNetlify && window.NETLIFY_CLIENT_ID) {
+                    console.log('[INDEX] ✅ Using configured Netlify client ID for new domain');
+                    return window.NETLIFY_CLIENT_ID;
+                }
+                
+                // Priorité 2: localStorage (configuration sauvegardée)
+                try {
+                    const savedClientId = localStorage.getItem('emailsortpro_client_id');
+                    if (savedClientId && savedClientId !== 'VOTRE_CLIENT_ID_ICI' && savedClientId !== 'CONFIGURATION_REQUIRED') {
+                        console.log('[INDEX] ✅ Using saved client ID from localStorage');
+                        return savedClientId;
+                    }
+                } catch (e) {
+                    console.warn('[INDEX] Cannot access localStorage:', e);
+                }
+                
+                // Priorité 3: Client ID par défaut pour le développement
+                if (isLocalhost) {
+                    console.log('[INDEX] Using localhost development client ID');
+                    return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
+                }
+                
+                // Priorité 4: Redirection vers setup pour GitHub Pages
+                if (isGitHubPages) {
+                    console.log('[INDEX] GitHub Pages - configuration requise');
+                    return 'CONFIGURATION_REQUIRED';
+                }
+                
+                console.log('[INDEX] ✅ Netlify with default client ID for new domain');
+                return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
+            }
+            
+            // Fonction pour créer la configuration corrigée
+            function createConfig(clientId) {
+                // Base path toujours vide pour Netlify
+                const basePath = '';
+                
+                // URIs corrigées pour le nouveau domaine
+                const redirectUri = 'https://emailsortpro.netlify.app/auth-callback.html';
+                const postLogoutRedirectUri = 'https://emailsortpro.netlify.app/';
+                
+                console.log('[INDEX] Creating config with corrected URIs:', {
+                    redirectUri,
+                    postLogoutRedirectUri,
+                    clientId: clientId.substring(0, 8) + '...'
+                });
+                
+                window.AppConfig = {
+                    msal: {
+                        clientId: clientId,
+                        authority: 'https://login.microsoftonline.com/common',
+                        redirectUri: redirectUri,
+                        postLogoutRedirectUri: postLogoutRedirectUri,
+                        cache: {
+                            cacheLocation: 'localStorage',
+                            storeAuthStateInCookie: true // Important pour Netlify
+                        },
+                        system: {
+                            loggerOptions: {
+                                loggerCallback: (level, message, containsPii) => {
+                                    if (window.debugMode || isLocalhost) {
+                                        console.log(`[MSAL ${level}] ${message}`);
+                                    }
+                                },
+                                piiLoggingEnabled: false,
+                                logLevel: isLocalhost ? 'Verbose' : 'Warning'
+                            },
+                            allowNativeBroker: false
+                        }
+                    },
+                    scopes: {
+                        login: [
+                            'https://graph.microsoft.com/User.Read',
+                            'https://graph.microsoft.com/Mail.Read',
+                            'https://graph.microsoft.com/Mail.ReadWrite'
+                        ],
+                        silent: [
+                            'https://graph.microsoft.com/User.Read',
+                            'https://graph.microsoft.com/Mail.Read',
+                            'https://graph.microsoft.com/Mail.ReadWrite'
+                        ]
+                    },
+                    app: {
+                        name: 'EmailSortPro',
+                        version: '3.0.1',
+                        debug: isLocalhost,
+                        environment: isNetlify ? 'netlify' : isGitHubPages ? 'github' : isLocalhost ? 'localhost' : 'other',
+                        domain: 'emailsortpro.netlify.app'
+                    },
+                    email: {
+                        defaultFolder: 'inbox',
+                        defaultDays: 30,
+                        pageSize: 100,
+                        maxEmails: 10000
+                    },
+                    errors: {
+                        'unauthorized_client': 'Configuration Azure incorrecte. Vérifiez votre Client ID.',
+                        'invalid_client': 'Application non autorisée. Contactez l\'administrateur.',
+                        'consent_required': 'Autorisation requise. Veuillez accepter les permissions.',
+                        'interaction_required': 'Reconnexion requise.',
+                        'login_required': 'Connexion requise.',
+                        'network_error': 'Erreur réseau. Vérifiez votre connexion.',
+                        'token_expired': 'Session expirée. Reconnexion nécessaire.',
+                        'invalid_request': 'URI de redirection invalide. Configuration Azure requise.'
+                    },
+                    validate() {
+                        const issues = [];
+                        if (!this.msal.clientId || this.msal.clientId === 'VOTRE_CLIENT_ID_ICI' || this.msal.clientId === 'CONFIGURATION_REQUIRED') {
+                            issues.push('Client ID non configuré pour emailsortpro.netlify.app');
+                        }
+                        
+                        // Vérifier que les URIs correspondent au nouveau domaine
+                        if (!this.msal.redirectUri.includes('emailsortpro.netlify.app')) {
+                            issues.push('URI de redirection ne correspond pas au nouveau domaine');
+                        }
+                        
+                        return { 
+                            valid: issues.length === 0, 
+                            issues: issues 
+                        };
+                    },
+                    forceValidate() {
+                        return this.validate();
+                    },
+                    getDebugInfo() {
+                        return {
+                            hostname: window.location.hostname,
+                            origin: window.location.origin,
+                            environment: this.app.environment,
+                            domain: this.app.domain,
+                            configValid: this.validate().valid,
+                            clientId: this.msal.clientId.substring(0, 8) + '...',
+                            redirectUri: this.msal.redirectUri,
+                            postLogoutRedirectUri: this.msal.postLogoutRedirectUri,
+                            isCorrectDomain: window.location.hostname === 'emailsortpro.netlify.app',
+                            timestamp: new Date().toISOString()
+                        };
+                    }
+                };
+                
+                console.log('[INDEX] ✅ Configuration créée pour le nouveau domaine:', {
+                    environment: window.AppConfig.app.environment,
+                    domain: window.AppConfig.app.domain,
+                    clientId: clientId.substring(0, 8) + '...',
+                    redirectUri: window.AppConfig.msal.redirectUri,
+                    isCorrectDomain: window.location.hostname === 'emailsortpro.netlify.app'
+                });
+            }
+            
+            // Créer la configuration
+            const clientId = getClientIdForEnvironment();
+            createConfig(clientId);
+            
+            // Vérification spéciale pour le nouveau domaine
+            if (window.location.hostname !== 'emailsortpro.netlify.app' && !isLocalhost) {
+                console.warn('[INDEX] ⚠️ Not on correct domain! Current:', window.location.hostname);
+                console.warn('[INDEX] Expected: emailsortpro.netlify.app');
+                
+                // Rediriger vers le bon domaine si nécessaire
+                if (window.location.hostname.includes('netlify') && !window.location.hostname.includes('emailsortpro.netlify.app')) {
+                    console.log('[INDEX] Redirecting to correct Netlify domain...');
+                    window.location.href = 'https://emailsortpro.netlify.app/';
+                    return;
+                }
+            }
+            
+            // Vérification et redirection si nécessaire
+            if (clientId === 'CONFIGURATION_REQUIRED') {
+                console.log('[INDEX] ⚠️ Configuration requise pour le nouveau domaine');
+                
+                if (isGitHubPages && window.location.pathname !== '/emailsortpro/setup.html') {
+                    console.log('[INDEX] Redirection vers setup pour GitHub Pages');
+                    setTimeout(() => {
+                        window.location.href = '/emailsortpro/setup.html';
+                    }, 1000);
+                } else if (isNetlify && window.location.pathname !== '/setup.html') {
+                    console.log('[INDEX] Redirection vers setup pour Netlify');
+                    setTimeout(() => {
+                        window.location.href = '/setup.html';
+                    }, 1000);
+                }
+            } else {
+                console.log('[INDEX] ✅ Configuration valide pour emailsortpro.netlify.app');
+            }
+        })();
     </script>
+    
+    <!-- Chargement du fichier config.js principal (optionnel, pour surcharge) -->
+    <script src="config.js" onerror="console.log('[INDEX] config.js non trouvé, utilisation de la configuration inline')"></script>
 
-    <!-- STYLES COMPLETS -->
+    <!-- Styles MODERNISÉS pour l'application -->
     <style>
-        /* === RESET === */
+        /* Reset et styles de base */
         * {
             margin: 0;
             padding: 0;
@@ -214,16 +267,17 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: #f8fafc;
-            line-height: 1.5;
-            color: #1f2937;
+            overflow-x: hidden;
+            transition: all 0.3s ease;
         }
 
-        /* === PAGE DE CONNEXION === */
+        /* === STYLES POUR LA PAGE DE LOGIN === */
         .login-page-styles {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             height: 100vh;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -237,7 +291,7 @@
 
         .login-container {
             text-align: center;
-            max-width: 500px;
+            max-width: 600px;
             padding: 40px;
             color: white;
         }
@@ -262,29 +316,32 @@
 
         .login-subtitle {
             font-size: 1.3rem;
-            margin-bottom: 40px;
+            margin-bottom: 50px;
             opacity: 0.9;
+            line-height: 1.5;
         }
 
         .login-button {
             background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
             color: #667eea;
-            padding: 18px 40px;
+            padding: 20px 50px;
             border: none;
             border-radius: 50px;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.3);
             display: inline-flex;
             align-items: center;
-            gap: 12px;
+            gap: 15px;
+            text-decoration: none;
         }
 
-        .login-button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(255, 255, 255, 0.4);
+        .login-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(255, 255, 255, 0.4);
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         }
 
         .login-button:disabled {
@@ -293,7 +350,7 @@
             transform: none;
         }
 
-        .login-security {
+        .login-security-note {
             margin-top: 25px;
             font-size: 0.9rem;
             opacity: 0.8;
@@ -303,120 +360,141 @@
             gap: 8px;
         }
 
-        /* === HEADER APPLICATION === */
+        /* === STYLES POUR L'APPLICATION === */
+        /* Header Application */
         .app-header {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            height: 60px;
+            height: 70px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            display: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            display: none; /* Caché par défaut */
         }
 
         .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 20px;
+            padding: 0 30px;
             height: 100%;
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             font-weight: 700;
-            font-size: 18px;
+            font-size: 22px;
+            color: white;
         }
 
         .ai-badge {
             background: rgba(255,255,255,0.2);
-            padding: 2px 8px;
-            border-radius: 12px;
+            padding: 4px 12px;
+            border-radius: 16px;
             font-size: 12px;
-        }
-
-        .real-mode-indicator {
-            background: #10b981;
-            color: white;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-size: 11px;
             font-weight: 600;
-            text-transform: uppercase;
-            margin-left: 8px;
+            backdrop-filter: blur(10px);
+            color: white;
         }
 
-        /* === NAVIGATION === */
+        .auth-status {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .auth-status .text-muted {
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* Navigation sobre et minimaliste */
         .app-nav {
             position: fixed;
-            top: 60px;
+            top: 70px;
             left: 0;
             right: 0;
-            height: 60px;
             background: white;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e2e8f0;
             z-index: 999;
-            display: none;
+            overflow-x: auto;
+            display: none; /* Caché par défaut */
         }
 
         #mainNav {
             display: flex;
             align-items: center;
-            padding: 0 20px;
-            height: 100%;
-            max-width: 1200px;
+            justify-content: center;
+            padding: 0 30px;
+            min-height: 50px;
+            gap: 0;
+            max-width: 1400px;
             margin: 0 auto;
-            gap: 8px;
-            overflow-x: auto;
         }
 
         .nav-item {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 10px 16px;
-            border-radius: 8px;
-            background: none;
+            padding: 12px 20px;
+            border-radius: 0;
+            background: transparent;
             border: none;
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
-            color: #6b7280;
+            color: #64748b;
             transition: all 0.2s ease;
             white-space: nowrap;
-            text-decoration: none;
+            position: relative;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-item i {
+            font-size: 16px;
+            transition: all 0.2s ease;
         }
 
         .nav-item:hover {
-            background: #f3f4f6;
-            color: #374151;
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
         }
 
         .nav-item.active {
-            background: #667eea;
-            color: white;
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: rgba(102, 126, 234, 0.08);
         }
 
-        /* === CONTENU PRINCIPAL === */
+        /* Contenu principal */
         .app-main {
-            margin-top: 0;
+            margin-top: 0; /* Pas de marge par défaut */
             min-height: 100vh;
+            padding: 0;
         }
 
         #pageContent {
-            display: none;
+            display: none; /* Caché par défaut */
             opacity: 0;
-            transition: opacity 0.3s ease;
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px;
         }
 
-        /* === ÉTAT ACTIF DE L'APP === */
+        /* Classes pour l'état actif de l'app */
+        body.app-active {
+            background: #f8fafc;
+        }
+
         body.app-active #loginPage {
             display: none !important;
         }
@@ -430,7 +508,7 @@
         }
 
         body.app-active .app-main {
-            margin-top: 120px;
+            margin-top: 120px; /* Header + Nav minimaliste */
         }
 
         body.app-active #pageContent {
@@ -438,8 +516,105 @@
             opacity: 1 !important;
         }
 
-        /* === OVERLAY DE CHARGEMENT === */
-        .loading-overlay {
+        /* Dashboard modernisé */
+        .dashboard-container {
+            padding: 30px;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .dashboard-title {
+            font-size: 38px;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .dashboard-subtitle {
+            font-size: 18px;
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+
+        .dashboard-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 40px;
+        }
+
+        .action-card {
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 32px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            border: 2px solid rgba(255,255,255,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .action-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+        }
+
+        .action-card:hover::before {
+            opacity: 1;
+        }
+
+        .action-icon {
+            font-size: 56px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+            z-index: 1;
+        }
+
+        .action-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .action-description {
+            font-size: 15px;
+            color: #64748b;
+            line-height: 1.6;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Loading overlay */
+        .login-loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -451,16 +626,16 @@
             justify-content: center;
             z-index: 9999;
             flex-direction: column;
-            gap: 24px;
+            gap: 30px;
         }
 
-        .loading-overlay.active {
+        .login-loading-overlay.active {
             display: flex;
         }
 
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
+        .login-spinner {
+            width: 60px;
+            height: 60px;
             border: 4px solid rgba(255, 255, 255, 0.2);
             border-top: 4px solid white;
             border-radius: 50%;
@@ -472,94 +647,74 @@
             100% { transform: rotate(360deg); }
         }
 
-        .loading-text {
+        .login-loading-text {
             color: white;
             font-size: 18px;
             font-weight: 600;
             text-align: center;
         }
 
-        /* === STYLES DE BASE POUR LES PAGES === */
-        .page-container {
-            padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .page-header {
+        /* Configuration error styles */
+        .config-error-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #dc2626;
+            color: white;
+            padding: 15px;
             text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .page-title {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: #1f2937;
-            margin-bottom: 12px;
-        }
-
-        .page-subtitle {
-            font-size: 1.1rem;
-            color: #6b7280;
-            margin-bottom: 20px;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            text-decoration: none;
+            z-index: 99999;
+            font-family: monospace;
             font-size: 14px;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+        .config-error-actions {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .config-error-btn {
+            background: rgba(255, 255, 255, 0.2);
             color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            text-decoration: none;
         }
 
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        .config-error-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
-        .btn-secondary {
-            background: #e5e7eb;
-            color: #374151;
-        }
-
-        .btn-secondary:hover {
-            background: #d1d5db;
-        }
-
-        /* === BADGE ENVIRONNEMENT === */
-        .env-badge {
+        /* Domain warning banner */
+        .domain-warning {
             position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #10b981;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #f59e0b;
             color: white;
-            padding: 6px 12px;
-            border-radius: 16px;
-            font-size: 11px;
+            padding: 12px;
+            text-align: center;
+            z-index: 99998;
+            font-size: 14px;
             font-weight: 600;
-            z-index: 99999;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
 
-        /* === RESPONSIVE === */
+        /* Responsive amélioré */
         @media (max-width: 768px) {
             .login-container {
                 padding: 20px;
             }
 
             .login-title {
-                font-size: 2.2rem;
+                font-size: 2.5rem;
             }
 
             .login-subtitle {
@@ -567,81 +722,137 @@
             }
 
             .login-button {
-                padding: 16px 32px;
+                padding: 18px 40px;
                 font-size: 1.1rem;
             }
 
+            .header-content {
+                padding: 0 20px;
+            }
+
+            .logo {
+                font-size: 18px;
+            }
+
+            .app-nav {
+                padding: 0;
+            }
+            
             #mainNav {
-                padding: 0 16px;
+                padding: 0 20px;
+                min-height: 45px;
+                flex-wrap: nowrap;
                 justify-content: flex-start;
+                overflow-x: auto;
+                gap: 0;
             }
 
+            .nav-item {
+                min-width: auto;
+                padding: 10px 16px;
+                font-size: 13px;
+                flex-shrink: 0;
+            }
+
+            .nav-item i {
+                font-size: 15px;
+            }
+            
             body.app-active .app-main {
-                margin-top: 140px;
+                margin-top: 115px;
+            }
+            
+            .dashboard-container {
+                padding: 20px;
             }
 
-            .page-container {
-                padding: 16px;
+            .dashboard-title {
+                font-size: 28px;
+            }
+            
+            .dashboard-actions {
+                grid-template-columns: 1fr;
+                gap: 20px;
             }
 
-            .page-title {
-                font-size: 2rem;
+            .action-card {
+                padding: 24px;
             }
+
+            #pageContent {
+                padding: 20px;
+            }
+        }
+
+        /* Animation pour les transitions */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.5s ease;
+        }
+
+        /* Effet glassmorphism supprimé pour plus de simplicité */
+        @supports (backdrop-filter: blur(20px)) {
+            .app-nav {
+                background: white;
+                border-bottom: 1px solid #e2e8f0;
+            }
+        }
+
+        /* Micro-animations simplifiées */
+        .nav-item i {
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover i {
+            transform: translateX(2px);
         }
     </style>
 </head>
 <body>
-    <!-- Badge d'environnement -->
+    <!-- Vérification du domaine -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const badge = document.createElement('div');
-            badge.className = 'env-badge';
-            badge.innerHTML = `
-                <i class="fas fa-check-circle"></i>
-                RÉEL: ${window.CURRENT_HOSTNAME}
+        if (window.location.hostname !== 'emailsortpro.netlify.app' && 
+            window.location.hostname !== 'localhost' && 
+            window.location.hostname !== '127.0.0.1') {
+            const banner = document.createElement('div');
+            banner.className = 'domain-warning';
+            banner.innerHTML = `
+                ⚠️ Domaine incorrect détecté: ${window.location.hostname} | 
+                Domaine attendu: emailsortpro.netlify.app | 
+                <a href="https://emailsortpro.netlify.app/" style="color: white; text-decoration: underline;">
+                    Cliquez ici pour aller sur le bon domaine
+                </a>
             `;
-            badge.title = 'Mode emails réels activé';
-            document.body.appendChild(badge);
-        });
-    </script>
-
-    <!-- Vérification de configuration -->
-    <script>
-        if (!window.AppConfig || window.AppConfig.error) {
-            console.error('[INDEX] ❌ Configuration error');
-            
-            document.addEventListener('DOMContentLoaded', () => {
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'config-error';
-                errorDiv.innerHTML = `
-                    <div>❌ <strong>ERREUR DE CONFIGURATION</strong></div>
-                    <div>${window.AppConfig?.message || 'Configuration non chargée'}</div>
-                    <div>Domaine: ${window.CURRENT_HOSTNAME}</div>
-                `;
-                document.body.appendChild(errorDiv);
-            });
-        } else {
-            console.log('[INDEX] ✅ Configuration OK');
+            document.body.appendChild(banner);
         }
     </script>
 
     <div id="app">
-        <!-- Header -->
+        <!-- Header Application -->
         <header class="app-header">
             <div class="header-content">
                 <div class="logo">
                     <i class="fas fa-envelope-open-text"></i>
                     <span>EmailSortPro</span>
                     <span class="ai-badge">AI</span>
-                    <span class="real-mode-indicator">Mode Réel</span>
                 </div>
-                <div id="authStatus">
-                    <span style="opacity: 0.8;">Initialisation...</span>
+                <div id="authStatus" class="auth-status">
+                    <span class="text-muted">vianney hastings</span>
                 </div>
             </div>
         </header>
 
-        <!-- Navigation -->
+        <!-- Navigation Modernisée -->
         <nav class="app-nav">
             <div id="mainNav">
                 <button class="nav-item active" data-page="dashboard">
@@ -673,7 +884,7 @@
 
         <!-- Contenu Principal -->
         <main class="app-main">
-            <!-- Page de Connexion -->
+            <!-- Page de Connexion épurée (visible par défaut) -->
             <div id="loginPage" class="login-page-styles">
                 <div class="login-container">
                     <div class="login-logo">
@@ -681,9 +892,9 @@
                     </div>
                     
                     <h1 class="login-title">EmailSortPro</h1>
+                    
                     <p class="login-subtitle">
-                        Organisez vos emails Outlook avec l'intelligence artificielle
-                        <br><strong>Mode emails réels uniquement</strong>
+                        Organisez vos emails Outlook avec l'IA
                     </p>
 
                     <button id="loginBtn" class="login-button">
@@ -691,327 +902,241 @@
                         Se connecter à Outlook
                     </button>
 
-                    <div class="login-security">
+                    <div class="login-security-note">
                         <i class="fas fa-shield-alt"></i>
                         Connexion sécurisée Microsoft
-                        <span class="real-mode-indicator">Emails réels</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Contenu des Pages (sera rempli dynamiquement) -->
+            <!-- Contenu Dynamique des Pages -->
             <div id="pageContent">
-                <!-- Le contenu sera injecté par PageManager -->
+                <!-- Dashboard par défaut -->
+                <div class="dashboard-container">
+                    <div class="dashboard-header">
+                        <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
+                        <p class="dashboard-subtitle">Organisez vos emails intelligemment avec l'IA</p>
+                    </div>
+                    
+                    <div class="dashboard-actions">
+                        <div class="action-card" onclick="window.pageManager?.loadPage('scanner')">
+                            <div class="action-icon">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <h3 class="action-title">Scanner des emails</h3>
+                            <p class="action-description">Analysez et catégorisez vos emails automatiquement</p>
+                        </div>
+                        
+                        <div class="action-card" onclick="window.pageManager?.loadPage('emails')">
+                            <div class="action-icon">
+                                <i class="fas fa-inbox"></i>
+                            </div>
+                            <h3 class="action-title">Voir les emails</h3>
+                            <p class="action-description">Consultez vos emails catégorisés</p>
+                        </div>
+                        
+                        <div class="action-card" onclick="window.pageManager?.loadPage('tasks')">
+                            <div class="action-icon">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <h3 class="action-title">Gérer les tâches</h3>
+                            <p class="action-description">Suivez vos tâches créées depuis vos emails</p>
+                        </div>
+                        
+                        <div class="action-card" onclick="window.pageManager?.loadPage('ranger')">
+                            <div class="action-icon">
+                                <i class="fas fa-folder-tree"></i>
+                            </div>
+                            <h3 class="action-title">Ranger par domaine</h3>
+                            <p class="action-description">Organisez vos emails par expéditeur</p>
+                        </div>
+                        
+                        <div class="action-card" onclick="window.pageManager?.loadPage('settings')">
+                            <div class="action-icon">
+                                <i class="fas fa-cog"></i>
+                            </div>
+                            <h3 class="action-title">Paramètres</h3>
+                            <p class="action-description">Configurez vos catégories et préférences</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
 
-        <!-- Overlay de Chargement -->
-        <div id="loadingOverlay" class="loading-overlay">
-            <div class="loading-spinner"></div>
-            <div class="loading-text">Connexion en cours...</div>
+        <!-- Overlay de Chargement épuré -->
+        <div id="loadingOverlay" class="login-loading-overlay">
+            <div class="login-spinner"></div>
+            <div class="login-loading-text">
+                <div>Connexion à Outlook...</div>
+                <div style="font-size: 14px; opacity: 0.8; margin-top: 10px;">Authentification en cours</div>
+            </div>
         </div>
+
+        <!-- Notifications Toast -->
+        <div id="toastContainer" class="toast-container"></div>
     </div>
 
-    <!-- ===== CHARGEMENT DES SCRIPTS DANS L'ORDRE CORRECT ===== -->
+    <!-- ========================================= -->
+    <!-- SCRIPTS - ORDRE CRITIQUE POUR UNIFICATION -->
+    <!-- ========================================= -->
     
-    <!-- 1. Services de base -->
+    <!-- 1. Services Core -->
     <script src="AuthService.js"></script>
     <script src="MailService.js"></script>
-    <script src="UIManager.js"></script>
+    <script src="UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
+    <script src="CategoryManagerUI.js" onerror="console.warn('CategoryManagerUI.js sera créé automatiquement')"></script>
+
+    <!-- 2. CategoryManager -->
+    <script src="CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
     
-    <!-- 2. Gestionnaires de données -->
-    <script src="CategoryManager.js"></script>
-    <script src="TaskManager.js"></script>
+    <!-- 3. TaskManager AVANT PageManager pour éviter les conflits -->
+    <script src="TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
     
-    <!-- 3. Modules de pages spécialisés -->
-    <script src="StartScan.js"></script>
+    <!-- 4. Autres Managers -->
+    <script src="EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
+    <script src="AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
     
-    <!-- 4. Créer les autres modules de pages -->
-    <script>
-        console.log('[INDEX] Creating page modules...');
-        
-        // Module pour la page Emails
-        window.EmailsModule = {
-            render: function() {
-                console.log('[EmailsModule] Rendering emails page...');
-                return `
-                    <div class="page-container">
-                        <div class="page-header">
-                            <h1 class="page-title"><i class="fas fa-inbox"></i> Vos emails</h1>
-                            <p class="page-subtitle">Consultez vos emails catégorisés</p>
-                        </div>
-                        <div id="emailsContent">
-                            <p>Chargement des emails...</p>
-                        </div>
-                    </div>
-                `;
-            },
-            
-            init: function() {
-                console.log('[EmailsModule] Initializing...');
-                this.loadEmails();
-            },
-            
-            loadEmails: function() {
-                setTimeout(() => {
-                    const emailsContent = document.getElementById('emailsContent');
-                    if (emailsContent && window.emailScanner) {
-                        const emails = window.emailScanner.getAllEmails();
-                        const realEmails = emails.filter(e => !e.isDemo && e.source !== 'demo');
-                        
-                        if (realEmails.length === 0) {
-                            emailsContent.innerHTML = `
-                                <div style="text-align: center; padding: 60px 20px;">
-                                    <div style="font-size: 4rem; color: #667eea; margin-bottom: 20px;">
-                                        <i class="fas fa-inbox"></i>
-                                    </div>
-                                    <h2>Aucun email scanné</h2>
-                                    <p>Commencez par scanner vos emails pour les voir apparaître ici.</p>
-                                    <button onclick="window.pageManager.loadPage('scanner')" class="btn btn-primary" style="margin-top: 20px;">
-                                        <i class="fas fa-search"></i>
-                                        Scanner mes emails
-                                    </button>
-                                </div>
-                            `;
-                        } else {
-                            emailsContent.innerHTML = `
-                                <div style="margin-bottom: 20px;">
-                                    <strong>${realEmails.length} emails trouvés</strong>
-                                    <button onclick="window.pageManager.loadPage('scanner')" class="btn btn-secondary" style="float: right;">
-                                        <i class="fas fa-sync"></i>
-                                        Nouveau scan
-                                    </button>
-                                </div>
-                                <div style="background: white; border-radius: 8px; padding: 20px;">
-                                    ${realEmails.slice(0, 10).map(email => `
-                                        <div style="border-bottom: 1px solid #e5e7eb; padding: 15px 0;">
-                                            <div style="font-weight: 600;">${email.subject || '(Sans objet)'}</div>
-                                            <div style="color: #667eea; font-size: 14px;">${email.from?.name || email.from?.address}</div>
-                                            <div style="color: #6b7280; font-size: 13px; margin-top: 5px;">${email.bodyPreview || ''}</div>
-                                        </div>
-                                    `).join('')}
-                                    ${realEmails.length > 10 ? `<div style="text-align: center; padding: 20px; color: #6b7280;">... et ${realEmails.length - 10} autres emails</div>` : ''}
-                                </div>
-                            `;
-                        }
-                    }
-                }, 500);
-            }
-        };
-        
-        // Module pour la page Tâches
-        window.TasksModule = {
-            render: function() {
-                console.log('[TasksModule] Rendering tasks page...');
-                return `
-                    <div class="page-container">
-                        <div class="page-header">
-                            <h1 class="page-title"><i class="fas fa-tasks"></i> Vos tâches</h1>
-                            <p class="page-subtitle">Gérez vos tâches créées depuis vos emails</p>
-                        </div>
-                        <div id="tasksContent">
-                            <p>Chargement des tâches...</p>
-                        </div>
-                    </div>
-                `;
-            },
-            
-            init: function() {
-                console.log('[TasksModule] Initializing...');
-                this.loadTasks();
-            },
-            
-            loadTasks: function() {
-                setTimeout(() => {
-                    const tasksContent = document.getElementById('tasksContent');
-                    if (tasksContent && window.taskManager) {
-                        const tasks = window.taskManager.getAllTasks();
-                        
-                        if (tasks.length === 0) {
-                            tasksContent.innerHTML = `
-                                <div style="text-align: center; padding: 60px 20px;">
-                                    <div style="font-size: 4rem; color: #667eea; margin-bottom: 20px;">
-                                        <i class="fas fa-clipboard-list"></i>
-                                    </div>
-                                    <h2>Aucune tâche</h2>
-                                    <p>Créez votre première tâche ou générez-en depuis vos emails.</p>
-                                    <button onclick="window.taskManager.showCreateTaskModal()" class="btn btn-primary" style="margin-top: 20px;">
-                                        <i class="fas fa-plus"></i>
-                                        Créer une tâche
-                                    </button>
-                                </div>
-                            `;
-                        } else {
-                            tasksContent.innerHTML = `
-                                <div style="margin-bottom: 20px;">
-                                    <strong>${tasks.length} tâches</strong>
-                                    <button onclick="window.taskManager.showCreateTaskModal()" class="btn btn-primary" style="float: right;">
-                                        <i class="fas fa-plus"></i>
-                                        Nouvelle tâche
-                                    </button>
-                                </div>
-                                <div style="background: white; border-radius: 8px; padding: 20px;">
-                                    ${tasks.map(task => `
-                                        <div style="border-bottom: 1px solid #e5e7eb; padding: 15px 0; display: flex; align-items: center; gap: 15px;">
-                                            <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="window.taskManager.toggleTaskCompletion('${task.id}')">
-                                            <div style="flex: 1;">
-                                                <div style="font-weight: 600; ${task.completed ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${task.title}</div>
-                                                ${task.description ? `<div style="color: #6b7280; font-size: 14px;">${task.description}</div>` : ''}
-                                                ${task.emailSubject ? `<div style="color: #667eea; font-size: 12px;"><i class="fas fa-envelope"></i> ${task.emailSubject}</div>` : ''}
-                                            </div>
-                                            <button onclick="window.taskManager.deleteTask('${task.id}')" style="background: #ef4444; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer;">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            `;
-                        }
-                    }
-                }, 500);
-            }
-        };
-        
-        // Module pour la page Ranger
-        window.RangerModule = {
-            render: function() {
-                console.log('[RangerModule] Rendering ranger page...');
-                return `
-                    <div class="page-container">
-                        <div class="page-header">
-                            <h1 class="page-title"><i class="fas fa-folder-tree"></i> Ranger vos emails</h1>
-                            <p class="page-subtitle">Organisez automatiquement vos emails par dossiers</p>
-                        </div>
-                        <div style="text-align: center; padding: 60px 20px;">
-                            <div style="font-size: 4rem; color: #667eea; margin-bottom: 20px;">
-                                <i class="fas fa-tools"></i>
-                            </div>
-                            <h2>Fonctionnalité en développement</h2>
-                            <p>La fonction de rangement automatique sera bientôt disponible.</p>
-                        </div>
-                    </div>
-                `;
-            },
-            
-            init: function() {
-                console.log('[RangerModule] Module initialized');
-            }
-        };
-        
-        // Module pour la page Paramètres
-        window.SettingsModule = {
-            render: function() {
-                console.log('[SettingsModule] Rendering settings page...');
-                const user = window.APP_AUTHENTICATED_USER || window.authService?.getAccount();
-                
-                return `
-                    <div class="page-container">
-                        <div class="page-header">
-                            <h1 class="page-title"><i class="fas fa-cog"></i> Paramètres</h1>
-                            <p class="page-subtitle">Configurez votre application</p>
-                        </div>
-                        <div style="background: white; border-radius: 8px; padding: 30px; max-width: 600px; margin: 0 auto;">
-                            <div style="margin-bottom: 30px;">
-                                <h3 style="margin-bottom: 15px;">Compte</h3>
-                                <div style="margin-bottom: 10px;">
-                                    <strong>Utilisateur:</strong> ${user?.displayName || user?.name || user?.username || 'Inconnu'}
-                                </div>
-                                <div style="margin-bottom: 20px;">
-                                    <strong>Email:</strong> ${user?.mail || user?.username || 'Inconnu'}
-                                </div>
-                                <button onclick="window.app.logout()" class="btn" style="background: #ef4444; color: white;">
-                                    <i class="fas fa-sign-out-alt"></i>
-                                    Se déconnecter
-                                </button>
-                            </div>
-                            
-                            <div style="margin-bottom: 30px;">
-                                <h3 style="margin-bottom: 15px;">Mode d'application</h3>
-                                <div style="background: #f0fdf4; border: 1px solid #10b981; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                                    <div style="color: #10b981; font-weight: 600;">
-                                        <i class="fas fa-check-circle"></i>
-                                        Mode emails réels activé
-                                    </div>
-                                    <div style="font-size: 14px; color: #059669;">Vous travaillez avec vos vraies données</div>
-                                </div>
-                                <button onclick="window.pageManager.refreshAllData()" class="btn btn-primary">
-                                    <i class="fas fa-sync"></i>
-                                    Actualiser les données
-                                </button>
-                            </div>
-                            
-                            <div>
-                                <h3 style="margin-bottom: 15px;">Actions</h3>
-                                <button onclick="window.emergencyReset()" class="btn" style="background: #f59e0b; color: white;">
-                                    <i class="fas fa-undo"></i>
-                                    Réinitialiser l'application
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            },
-            
-            init: function() {
-                console.log('[SettingsModule] Module initialized');
-            }
-        };
-        
-        console.log('[INDEX] ✅ Page modules created');
-    </script>
+    <!-- 5. Page Manager APRÈS TaskManager -->
+    <script src="PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
     
-    <!-- 5. Gestionnaire de pages (doit être après les modules) -->
-    <script src="PageManager.js"></script>
+    <!-- 6. Modules de pages -->
+    <script src="startscan.js" onerror="console.error('startscan.js manquant')"></script>
+    <script src="DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
+    <script src="CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
     
-    <!-- 6. Application principale -->
+    <!-- 7. Modules Optionnels -->
+    <script src="Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
+    
+    <!-- 8. Application Principal EN DERNIER -->
     <script src="app.js"></script>
     
-    <!-- 7. Initialisation finale -->
+    <!-- Scripts de gestion des événements -->
     <script>
-        // Fonction de diagnostic
-        window.checkConfig = function() {
-            console.log('=== DIAGNOSTIC v7.2 ===');
-            console.log('Hostname:', window.CURRENT_HOSTNAME);
-            console.log('Environment:', DOMAIN_CONFIG.environment);
-            console.log('Real Mode:', window.APP_REAL_MODE);
-            console.log('Demo Mode:', window.APP_DEMO_MODE);
-            console.log('AppConfig:', !!window.AppConfig);
-            console.log('Services:', {
-                authService: !!window.authService,
-                uiManager: !!window.uiManager,
-                pageManager: !!window.pageManager,
-                mailService: !!window.mailService,
-                app: !!window.app
-            });
-            console.log('Page Modules:', {
-                EmailsModule: !!window.EmailsModule,
-                TasksModule: !!window.TasksModule,
-                RangerModule: !!window.RangerModule,
-                SettingsModule: !!window.SettingsModule,
-                StartScan: !!window.minimalScanModule
-            });
+        // Fonction pour forcer l'affichage de l'app
+        window.forceShowApp = function() {
+            console.log('[FORCE] Forcing app display...');
             
-            return window.AppConfig?.getDebugInfo() || null;
-        };
-
-        // Attendre le DOM et initialiser
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('[INDEX] DOM loaded v7.2');
+            // Ajouter la classe pour activer l'app
+            document.body.classList.add('app-active');
             
-            // Vérification finale
-            if (!window.AppConfig || window.AppConfig.error) {
-                console.error('[INDEX] ❌ Config failed');
-                return;
+            // Masquer explicitement la page de login
+            const loginPage = document.getElementById('loginPage');
+            if (loginPage) {
+                loginPage.style.display = 'none';
             }
             
-            console.log('[INDEX] ✅ Ready to initialize app');
-            
-            // L'app va s'initialiser automatiquement grâce à app.js
-        });
+            console.log('[FORCE] App display activated');
+        };
 
-        console.log('[INDEX] ✅ EmailSortPro v7.2 - FIXED STRUCTURE');
-        console.log('[INDEX] Environment:', DOMAIN_CONFIG.environment);
-        console.log('[INDEX] Domain:', window.CURRENT_HOSTNAME);
+        // Gestion du bouton de connexion
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[INDEX] DOM loaded for emailsortpro.netlify.app...');
+            
+            const loginBtn = document.getElementById('loginBtn');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', function() {
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
+                    this.disabled = true;
+                    
+                    const loadingOverlay = document.getElementById('loadingOverlay');
+                    if (loadingOverlay) {
+                        loadingOverlay.classList.add('active');
+                    }
+                    
+                    if (window.app && window.app.login) {
+                        window.app.login();
+                    }
+                });
+            }
+            
+            // Vérifier la configuration après le chargement du DOM
+            setTimeout(function() {
+                if (window.AppConfig) {
+                    const validation = window.AppConfig.validate();
+                    console.log('[INDEX] Configuration validation for new domain:', validation);
+                    
+                    const debugInfo = window.AppConfig.getDebugInfo();
+                    console.log('[INDEX] Debug info for emailsortpro.netlify.app:', debugInfo);
+                    
+                    if (!validation.valid) {
+                        console.log('[INDEX] Configuration invalid for new domain:', validation.issues);
+                        
+                        const errorBanner = document.createElement('div');
+                        errorBanner.className = 'config-error-banner';
+                        errorBanner.innerHTML = `
+                            <div>
+                                ⚠️ <strong>CONFIGURATION:</strong> URI de redirection invalide pour emailsortpro.netlify.app
+                            </div>
+                            <div>
+                                Vérifiez votre configuration Azure App Registration
+                            </div>
+                            <div class="config-error-actions">
+                                <button class="config-error-btn" onclick="this.parentElement.parentElement.remove()">Masquer</button>
+                                <a href="/setup.html" class="config-error-btn">Configuration</a>
+                                <button class="config-error-btn" onclick="console.log('Debug:', window.AppConfig.getDebugInfo())">Debug</button>
+                            </div>
+                        `;
+                        document.body.appendChild(errorBanner);
+                    } else {
+                        console.log('[INDEX] ✅ Configuration valid for emailsortpro.netlify.app');
+                    }
+                } else {
+                    console.warn('[INDEX] AppConfig not available');
+                }
+            }, 1000);
+        });
+        
+        // Fonction de diagnostic accessible globalement
+        window.checkServices = function() {
+            console.log('=== Diagnostic des services pour emailsortpro.netlify.app ===');
+            console.log('AppConfig:', window.AppConfig ? 'OK' : 'MANQUANT');
+            if (window.AppConfig) {
+                console.log('Environment:', window.AppConfig.app.environment);
+                console.log('Domain:', window.AppConfig.app.domain);
+                console.log('Client ID:', window.AppConfig.msal.clientId?.substring(0, 8) + '...');
+                console.log('Redirect URI:', window.AppConfig.msal.redirectUri);
+                console.log('Debug info:', window.AppConfig.getDebugInfo());
+            }
+            console.log('authService:', window.authService ? 'OK' : 'MANQUANT');
+            console.log('mailService:', window.mailService ? 'OK' : 'MANQUANT');
+            console.log('uiManager:', window.uiManager ? 'OK' : 'MANQUANT');
+            console.log('taskManager:', window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT');
+            console.log('tasksView:', window.tasksView ? 'OK' : 'MANQUANT');
+            console.log('pageManager:', window.pageManager ? 'OK' : 'MANQUANT');
+            console.log('categoryManager:', window.categoryManager ? 'OK' : 'MANQUANT');
+            console.log('Current hostname:', window.location.hostname);
+            console.log('Expected hostname: emailsortpro.netlify.app');
+            console.log('=== Ordre de chargement ===');
+            console.log('1. TaskManager chargé AVANT PageManager');
+            console.log('2. TasksView créé dans TaskManager');
+            console.log('3. PageManager délègue les tâches à TasksView');
+            console.log('4. Interface unifiée entre emails et tâches');
+        };
+
+        // Fonction pour créer CategoryManagerUI si manquant
+        if (!window.CategoryManagerUI) {
+            window.CategoryManagerUI = class {
+                static renderCategorySelector(categories = {}) {
+                    return Object.entries(categories).map(([id, cat]) => 
+                        `<div class="category-item" data-category="${id}">
+                            <span>${cat.icon || '📂'}</span>
+                            <span>${cat.name}</span>
+                        </div>`
+                    ).join('');
+                }
+            };
+            console.log('✅ CategoryManagerUI créé automatiquement');
+        }
+
+        // Log de confirmation du domaine
+        console.log('[INDEX] ✅ Configuration loaded for emailsortpro.netlify.app');
+        console.log('[INDEX] Current hostname:', window.location.hostname);
+        console.log('[INDEX] Expected hostname: emailsortpro.netlify.app');
+        console.log('[INDEX] Domain match:', window.location.hostname === 'emailsortpro.netlify.app');
+        console.log('[INDEX] 🎯 ORDRE DE CHARGEMENT CORRIGÉ:');
+        console.log('[INDEX] 1. TaskManager.js AVANT PageManager.js');
+        console.log('[INDEX] 2. Interface unifiée pour emails et tâches');
+        console.log('[INDEX] 3. PageManager délègue les tâches à TasksView');
     </script>
 </body>
 </html>
