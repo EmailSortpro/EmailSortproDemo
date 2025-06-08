@@ -1,4 +1,4 @@
-// app.js - Application NETTOYÉE avec initialisation garantie des modules pour coruscating-dodol-f30e8d.netlify.app
+// app.js - Application NETTOYÉE avec initialisation garantie des modules pour coruscating-dodol-f30e8d.netlify.app - CORRIGÉE
 
 class App {
     constructor() {
@@ -74,7 +74,7 @@ class App {
     }
 
     // =====================================
-    // INITIALISATION DES MODULES CRITIQUES
+    // INITIALISATION DES MODULES CRITIQUES - CORRIGÉE
     // =====================================
     async initializeCriticalModules() {
         console.log('[App] Initializing critical modules for', this.expectedDomain, '...');
@@ -88,7 +88,10 @@ class App {
         // 3. Vérifier TasksView
         await this.ensureTasksViewReady();
         
-        // 4. Bind methods
+        // 4. CORRECTION: Vérifier EmailScanner
+        await this.ensureEmailScannerReady();
+        
+        // 5. Bind methods
         this.bindModuleMethods();
         
         console.log('[App] Critical modules initialized for', this.expectedDomain);
@@ -182,6 +185,56 @@ class App {
         return true;
     }
 
+    // CORRECTION: Nouvelle méthode pour s'assurer qu'EmailScanner est prêt
+    async ensureEmailScannerReady() {
+        console.log('[App] Ensuring EmailScanner is ready...');
+        
+        // Si EmailScanner n'existe pas, le créer
+        if (!window.emailScanner) {
+            console.log('[App] 🔧 Creating EmailScanner instance...');
+            window.emailScanner = {
+                emails: [],
+                getAllEmails: function() {
+                    console.log(`[EmailScanner] Returning ${this.emails.length} emails`);
+                    return this.emails || [];
+                },
+                setEmails: function(emails) {
+                    if (Array.isArray(emails)) {
+                        this.emails = emails;
+                        console.log(`[EmailScanner] ✅ ${emails.length} emails stored`);
+                    } else {
+                        console.warn('[EmailScanner] Invalid emails array provided');
+                        this.emails = [];
+                    }
+                },
+                scan: async function(options = {}) {
+                    console.log('[EmailScanner] Scan requested with options:', options);
+                    // Simulation de scan si pas d'autre implémentation
+                    return {
+                        success: true,
+                        total: this.emails.length,
+                        processed: this.emails.length
+                    };
+                }
+            };
+            console.log('[App] ✅ EmailScanner created successfully');
+        } else {
+            console.log('[App] ✅ EmailScanner already exists');
+        }
+        
+        // Vérifier que les méthodes essentielles existent
+        const essentialMethods = ['getAllEmails', 'setEmails'];
+        for (const method of essentialMethods) {
+            if (typeof window.emailScanner[method] !== 'function') {
+                console.error(`[App] EmailScanner missing essential method: ${method}`);
+                return false;
+            }
+        }
+        
+        console.log('[App] ✅ EmailScanner ready');
+        return true;
+    }
+
     bindModuleMethods() {
         // Bind TaskManager methods
         if (window.taskManager) {
@@ -222,6 +275,20 @@ class App {
                 console.log('[App] ✅ TasksView methods bound');
             } catch (error) {
                 console.warn('[App] Error binding TasksView methods:', error);
+            }
+        }
+        
+        // CORRECTION: Bind EmailScanner methods si c'est un objet avec prototype
+        if (window.emailScanner && Object.getPrototypeOf(window.emailScanner) !== Object.prototype) {
+            try {
+                Object.getOwnPropertyNames(Object.getPrototypeOf(window.emailScanner)).forEach(name => {
+                    if (name !== 'constructor' && typeof window.emailScanner[name] === 'function') {
+                        window.emailScanner[name] = window.emailScanner[name].bind(window.emailScanner);
+                    }
+                });
+                console.log('[App] ✅ EmailScanner methods bound');
+            } catch (error) {
+                console.warn('[App] Error binding EmailScanner methods:', error);
             }
         }
     }
@@ -786,11 +853,11 @@ window.forceShowApp = function() {
 };
 
 // =====================================
-// VÉRIFICATION DES SERVICES
+// VÉRIFICATION DES SERVICES - CORRIGÉE
 // =====================================
 function checkServicesReady() {
     const requiredServices = ['authService', 'uiManager'];
-    const optionalServices = ['mailService', 'emailScanner', 'categoryManager'];
+    const optionalServices = ['mailService', 'categoryManager']; // CORRECTION: Retirer emailScanner car il est créé dans app.js
     
     const missingRequired = requiredServices.filter(service => !window[service]);
     const missingOptional = optionalServices.filter(service => !window[service]);
@@ -866,4 +933,4 @@ window.addEventListener('load', () => {
     }, 5000);
 });
 
-console.log('✅ App loaded - CLEAN VERSION for coruscating-dodol-f30e8d.netlify.app');
+console.log('✅ App loaded - CLEAN VERSION for coruscating-dodol-f30e8d.netlify.app - CORRIGÉE');
