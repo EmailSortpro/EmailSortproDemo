@@ -5,18 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="page-title">EmailSortPro - Scanner d'Emails Intelligent avec IA</title>
     
-    <!-- SEO Meta Tags - Adaptatives -->
+    <!-- SEO Meta Tags -->
     <meta name="description" content="Organisez vos emails Outlook intelligemment avec l'IA. Catégorisation automatique et organisation par domaine.">
     <meta name="keywords" content="email, outlook, microsoft, gestion, ia, productivité, organisation">
     <meta name="author" content="EmailSortPro">
     
-    <!-- Open Graph / Facebook - Adaptatifs -->
+    <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:url" id="og-url" content="">
     <meta property="og:title" content="EmailSortPro - Scanner d'Emails Intelligent">
     <meta property="og:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
     
-    <!-- Twitter - Adaptatifs -->
+    <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" id="twitter-url" content="">
     <meta property="twitter:title" content="EmailSortPro - Scanner d'Emails Intelligent">
@@ -31,60 +31,58 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Styles principaux -->
-    <link rel="stylesheet" href="styles.css">
-    
-    <!-- CONFIGURATION ADAPTATIVE MULTI-DOMAINES -->
+    <!-- CONFIGURATION ADAPTATIVE UNIVERSELLE v5.0 -->
     <script>
         // =====================================================
-        // CONFIGURATION ADAPTATIVE POUR TOUS LES DOMAINES
+        // CONFIGURATION ADAPTATIVE POUR TOUS LES DOMAINES v5.0
         // =====================================================
         
         // Détection automatique du domaine actuel
         const CURRENT_HOSTNAME = window.location.hostname;
         const CURRENT_ORIGIN = window.location.origin;
-        const IS_TEST_ENVIRONMENT = CURRENT_HOSTNAME.includes('coruscating-dodol') || 
-                                   CURRENT_HOSTNAME.includes('localhost') || 
-                                   CURRENT_HOSTNAME.includes('127.0.0.1');
+        const CURRENT_URL = window.location.href;
         
-        console.log('[INDEX] 🚀 Loading adaptive configuration for', CURRENT_HOSTNAME);
-        console.log('[INDEX] Test environment:', IS_TEST_ENVIRONMENT);
+        console.log('[INDEX] 🚀 Loading adaptive configuration v5.0 for', CURRENT_HOSTNAME);
         
-        // Client ID par défaut fonctionnel pour tous les domaines
-        window.NETLIFY_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
-        
-        console.log('[INDEX] ✅ Client ID configured for current domain');
+        // Client ID universel fonctionnel
+        window.UNIVERSAL_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
         
         // =====================================================
-        // DÉTECTION DE L'ENVIRONNEMENT ADAPTATIVE
+        // GÉNÉRATION DYNAMIQUE DE LA CONFIGURATION
         // =====================================================
         (function() {
-            // Détection de l'environnement basée sur le domaine actuel
-            const isNetlify = CURRENT_HOSTNAME.includes('netlify.app') || CURRENT_HOSTNAME.includes('netlifyapp.com');
-            const isGitHubPages = CURRENT_HOSTNAME.includes('github.io');
-            const isLocalhost = CURRENT_HOSTNAME === 'localhost' || CURRENT_HOSTNAME === '127.0.0.1';
+            // URIs générées dynamiquement basées sur l'URL actuelle
+            const REDIRECT_URI = CURRENT_ORIGIN + '/auth-callback.html';
+            const POST_LOGOUT_URI = CURRENT_ORIGIN + '/';
             
-            console.log('[INDEX] Environment detection for current domain:', {
+            console.log('[INDEX] Generated URIs for current domain:', {
                 hostname: CURRENT_HOSTNAME,
-                isNetlify,
-                isGitHubPages,
-                isLocalhost,
                 origin: CURRENT_ORIGIN,
-                isTest: IS_TEST_ENVIRONMENT
+                redirectUri: REDIRECT_URI,
+                postLogoutUri: POST_LOGOUT_URI
             });
             
-            // Fonction pour obtenir le Client ID
+            // Détection de l'environnement
+            const isNetlify = CURRENT_HOSTNAME.includes('netlify');
+            const isLocalhost = CURRENT_HOSTNAME === 'localhost' || CURRENT_HOSTNAME === '127.0.0.1';
+            const isTest = CURRENT_HOSTNAME.includes('test') || CURRENT_HOSTNAME.includes('preview') || CURRENT_HOSTNAME.includes('coruscating-dodol');
+            
+            console.log('[INDEX] Environment detection:', {
+                isNetlify,
+                isLocalhost,
+                isTest,
+                hostname: CURRENT_HOSTNAME
+            });
+            
+            // Fonction pour obtenir le Client ID avec priorité
             function getClientIdForEnvironment() {
-                // Priorité 1: Client ID configuré directement
-                if (window.NETLIFY_CLIENT_ID) {
-                    console.log('[INDEX] ✅ Using configured client ID for current domain');
-                    return window.NETLIFY_CLIENT_ID;
-                }
-                
-                // Priorité 2: localStorage (configuration sauvegardée)
+                // Priorité 1: Client ID sauvegardé dans localStorage
                 try {
                     const savedClientId = localStorage.getItem('emailsortpro_client_id');
-                    if (savedClientId && savedClientId !== 'VOTRE_CLIENT_ID_ICI' && savedClientId !== 'CONFIGURATION_REQUIRED') {
+                    if (savedClientId && 
+                        savedClientId !== 'VOTRE_CLIENT_ID_ICI' && 
+                        savedClientId !== 'CONFIGURATION_REQUIRED' &&
+                        /^[a-f0-9-]{36}$/i.test(savedClientId)) {
                         console.log('[INDEX] ✅ Using saved client ID from localStorage');
                         return savedClientId;
                     }
@@ -92,59 +90,42 @@
                     console.warn('[INDEX] Cannot access localStorage:', e);
                 }
                 
-                // Priorité 3: Client ID par défaut pour le développement
-                if (isLocalhost) {
-                    console.log('[INDEX] Using localhost development client ID');
-                    return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
-                }
-                
-                // Priorité 4: Redirection vers setup pour GitHub Pages
-                if (isGitHubPages) {
-                    console.log('[INDEX] GitHub Pages - configuration requise');
-                    return 'CONFIGURATION_REQUIRED';
-                }
-                
-                console.log('[INDEX] ✅ Using default client ID for current domain');
-                return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
+                // Priorité 2: Client ID universel
+                console.log('[INDEX] ✅ Using universal client ID');
+                return window.UNIVERSAL_CLIENT_ID;
             }
             
-            // Fonction pour créer la configuration adaptative
+            // Créer la configuration adaptative
             function createConfig(clientId) {
-                // Base path toujours vide pour Netlify
-                const basePath = '';
-                
-                // URIs adaptatives basées sur le domaine actuel
-                const redirectUri = CURRENT_ORIGIN + '/auth-callback.html';
-                const postLogoutRedirectUri = CURRENT_ORIGIN + '/';
-                
-                console.log('[INDEX] Creating config with adaptive URIs:', {
-                    redirectUri,
-                    postLogoutRedirectUri,
+                console.log('[INDEX] Creating adaptive config with:', {
                     clientId: clientId.substring(0, 8) + '...',
-                    domain: CURRENT_HOSTNAME
+                    redirectUri: REDIRECT_URI,
+                    postLogoutUri: POST_LOGOUT_URI,
+                    hostname: CURRENT_HOSTNAME
                 });
                 
                 window.AppConfig = {
                     msal: {
                         clientId: clientId,
                         authority: 'https://login.microsoftonline.com/common',
-                        redirectUri: redirectUri,
-                        postLogoutRedirectUri: postLogoutRedirectUri,
+                        redirectUri: REDIRECT_URI,
+                        postLogoutRedirectUri: POST_LOGOUT_URI,
                         cache: {
                             cacheLocation: 'localStorage',
-                            storeAuthStateInCookie: true
+                            storeAuthStateInCookie: true // Important pour tous les environnements
                         },
                         system: {
                             loggerOptions: {
                                 loggerCallback: (level, message, containsPii) => {
-                                    if (window.debugMode || isLocalhost || IS_TEST_ENVIRONMENT) {
+                                    if (window.debugMode || isLocalhost || isTest) {
                                         console.log(`[MSAL ${level}] ${message}`);
                                     }
                                 },
                                 piiLoggingEnabled: false,
-                                logLevel: (isLocalhost || IS_TEST_ENVIRONMENT) ? 'Verbose' : 'Warning'
+                                logLevel: (isLocalhost || isTest) ? 'Verbose' : 'Warning'
                             },
-                            allowNativeBroker: false
+                            allowNativeBroker: false,
+                            allowRedirectInIframe: false
                         }
                     },
                     scopes: {
@@ -161,13 +142,17 @@
                     },
                     app: {
                         name: 'EmailSortPro',
-                        version: '4.0.0',
-                        debug: isLocalhost || IS_TEST_ENVIRONMENT,
-                        environment: IS_TEST_ENVIRONMENT ? 'test' : 
+                        version: '5.0.0',
+                        debug: isLocalhost || isTest,
+                        environment: isTest ? 'test' : 
                                    isNetlify ? 'netlify' : 
-                                   isGitHubPages ? 'github' : 
-                                   isLocalhost ? 'localhost' : 'other',
-                        domain: CURRENT_HOSTNAME
+                                   isLocalhost ? 'localhost' : 'production',
+                        domain: CURRENT_HOSTNAME,
+                        urls: {
+                            redirect: REDIRECT_URI,
+                            logout: POST_LOGOUT_URI,
+                            current: CURRENT_URL
+                        }
                     },
                     email: {
                         defaultFolder: 'inbox',
@@ -178,20 +163,27 @@
                     errors: {
                         'unauthorized_client': `Configuration Azure incorrecte pour ${CURRENT_HOSTNAME}. Vérifiez votre Client ID.`,
                         'invalid_client': 'Application non autorisée. Contactez l\'administrateur.',
+                        'invalid_request': `URI de redirection invalide. Configurez ${REDIRECT_URI} dans Azure Portal.`,
                         'consent_required': 'Autorisation requise. Veuillez accepter les permissions.',
                         'interaction_required': 'Reconnexion requise.',
                         'login_required': 'Connexion requise.',
                         'network_error': 'Erreur réseau. Vérifiez votre connexion.',
-                        'token_expired': 'Session expirée. Reconnexion nécessaire.',
-                        'invalid_request': `URI de redirection invalide pour ${CURRENT_HOSTNAME}. Configuration Azure requise.`
+                        'token_expired': 'Session expirée. Reconnexion nécessaire.'
                     },
                     validate() {
                         const issues = [];
+                        
+                        // Validation du Client ID
                         if (!this.msal.clientId || this.msal.clientId === 'VOTRE_CLIENT_ID_ICI' || this.msal.clientId === 'CONFIGURATION_REQUIRED') {
                             issues.push(`Client ID non configuré pour ${CURRENT_HOSTNAME}`);
                         }
                         
-                        // Vérifier que les URIs correspondent au domaine actuel
+                        // Validation du format GUID
+                        if (this.msal.clientId && !/^[a-f0-9-]{36}$/i.test(this.msal.clientId)) {
+                            issues.push(`Format Client ID invalide: ${this.msal.clientId}`);
+                        }
+                        
+                        // Validation des URIs (doit correspondre au domaine actuel)
                         if (!this.msal.redirectUri.includes(CURRENT_HOSTNAME)) {
                             issues.push(`URI de redirection ne correspond pas au domaine actuel: ${CURRENT_HOSTNAME}`);
                         }
@@ -208,25 +200,31 @@
                         return {
                             hostname: CURRENT_HOSTNAME,
                             origin: CURRENT_ORIGIN,
+                            currentUrl: CURRENT_URL,
                             environment: this.app.environment,
-                            domain: this.app.domain,
                             configValid: this.validate().valid,
                             clientId: this.msal.clientId.substring(0, 8) + '...',
                             redirectUri: this.msal.redirectUri,
                             postLogoutRedirectUri: this.msal.postLogoutRedirectUri,
-                            isCurrentDomain: true, // Toujours true maintenant car adaptatif
-                            isTestEnvironment: IS_TEST_ENVIRONMENT,
+                            uriValidation: {
+                                redirectUriIncludesHostname: this.msal.redirectUri.includes(CURRENT_HOSTNAME),
+                                exactRedirectUri: this.msal.redirectUri,
+                                expectedRedirectUri: REDIRECT_URI,
+                                match: this.msal.redirectUri === REDIRECT_URI
+                            },
+                            isAdaptive: true,
+                            generatedDynamically: true,
                             timestamp: new Date().toISOString()
                         };
                     }
                 };
                 
-                console.log('[INDEX] ✅ Configuration créée pour le domaine actuel:', {
+                console.log('[INDEX] ✅ Configuration created successfully:', {
                     environment: window.AppConfig.app.environment,
                     domain: window.AppConfig.app.domain,
                     clientId: clientId.substring(0, 8) + '...',
                     redirectUri: window.AppConfig.msal.redirectUri,
-                    isTestEnvironment: IS_TEST_ENVIRONMENT
+                    validation: window.AppConfig.validate()
                 });
             }
             
@@ -234,43 +232,29 @@
             const clientId = getClientIdForEnvironment();
             createConfig(clientId);
             
-            // Mettre à jour les meta tags avec le domaine actuel
+            // Mettre à jour les meta tags
             document.getElementById('og-url').setAttribute('content', CURRENT_ORIGIN + '/');
             document.getElementById('twitter-url').setAttribute('content', CURRENT_ORIGIN + '/');
             
             // Adapter le titre en mode test
-            if (IS_TEST_ENVIRONMENT) {
+            if (isTest) {
                 const titleElement = document.getElementById('page-title');
                 if (titleElement) {
                     titleElement.textContent = `EmailSortPro [TEST] - ${CURRENT_HOSTNAME}`;
                 }
             }
             
-            // Vérification et redirection si nécessaire
-            if (clientId === 'CONFIGURATION_REQUIRED') {
-                console.log('[INDEX] ⚠️ Configuration requise pour', CURRENT_HOSTNAME);
-                
-                if (isGitHubPages && window.location.pathname !== '/emailsortpro/setup.html') {
-                    console.log('[INDEX] Redirection vers setup pour GitHub Pages');
-                    setTimeout(() => {
-                        window.location.href = '/emailsortpro/setup.html';
-                    }, 1000);
-                } else if (isNetlify && window.location.pathname !== '/setup.html') {
-                    console.log('[INDEX] Redirection vers setup pour Netlify');
-                    setTimeout(() => {
-                        window.location.href = '/setup.html';
-                    }, 1000);
-                }
+            // Vérification finale
+            const validation = window.AppConfig.validate();
+            if (!validation.valid) {
+                console.error('[INDEX] ❌ Configuration issues:', validation.issues);
             } else {
-                console.log('[INDEX] ✅ Configuration valide pour', CURRENT_HOSTNAME);
+                console.log('[INDEX] ✅ Configuration valid for', CURRENT_HOSTNAME);
             }
         })();
     </script>
-    
-    <!-- Chargement du fichier config.js principal (optionnel, pour surcharge) -->
-    <script src="config.js" onerror="console.log('[INDEX] config.js non trouvé, utilisation de la configuration inline')"></script>
 
-    <!-- Styles CORRIGÉS pour l'application (identiques au fichier original) -->
+    <!-- Styles COMPLETS pour l'application -->
     <style>
         /* Reset et styles de base */
         * {
@@ -373,7 +357,7 @@
             gap: 8px;
         }
 
-        /* Badge d'environnement de test */
+        /* Badge d'environnement */
         .test-badge {
             position: fixed;
             top: 10px;
@@ -389,7 +373,6 @@
         }
 
         /* === STYLES POUR L'APPLICATION === */
-        /* Header Application */
         .app-header {
             position: fixed;
             top: 0;
@@ -400,7 +383,7 @@
             color: white;
             z-index: 1000;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            display: none; /* Caché par défaut */
+            display: none;
         }
 
         .header-content {
@@ -437,7 +420,7 @@
             border-bottom: 1px solid #e5e7eb;
             z-index: 999;
             overflow-x: auto;
-            display: none; /* Caché par défaut */
+            display: none;
         }
 
         #mainNav {
@@ -476,13 +459,13 @@
 
         /* Contenu principal */
         .app-main {
-            margin-top: 0; /* Pas de marge par défaut */
+            margin-top: 0;
             min-height: 100vh;
             padding: 0;
         }
 
         #pageContent {
-            display: none; /* Caché par défaut */
+            display: none;
             opacity: 0;
             width: 100%;
             max-width: 1200px;
@@ -508,7 +491,7 @@
         }
 
         body.app-active .app-main {
-            margin-top: 120px; /* Header + Nav */
+            margin-top: 120px;
         }
 
         body.app-active #pageContent {
@@ -516,7 +499,7 @@
             opacity: 1 !important;
         }
 
-        /* Dashboard par défaut */
+        /* Dashboard */
         .dashboard-container {
             padding: 20px;
         }
@@ -723,6 +706,10 @@
 <body>
     <!-- Badge d'environnement de test (affiché automatiquement si nécessaire) -->
     <script>
+        const IS_TEST_ENVIRONMENT = CURRENT_HOSTNAME.includes('test') || 
+                                   CURRENT_HOSTNAME.includes('preview') || 
+                                   CURRENT_HOSTNAME.includes('coruscating-dodol');
+        
         if (IS_TEST_ENVIRONMENT) {
             const testBadge = document.createElement('div');
             testBadge.className = 'test-badge';
@@ -740,7 +727,6 @@
                     <span>EmailSortPro</span>
                     <span class="ai-badge">AI</span>
                     <script>
-                        // Ajouter le badge TEST dans le header si nécessaire
                         if (IS_TEST_ENVIRONMENT) {
                             document.write('<span style="background: #f59e0b; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-left: 5px;">TEST</span>');
                         }
@@ -784,7 +770,7 @@
 
         <!-- Contenu Principal -->
         <main class="app-main">
-            <!-- Page de Connexion épurée (visible par défaut) -->
+            <!-- Page de Connexion (visible par défaut) -->
             <div id="loginPage" class="login-page-styles">
                 <div class="login-container">
                     <div class="login-logo">
@@ -793,7 +779,6 @@
                     
                     <h1 class="login-title">EmailSortPro</h1>
                     <script>
-                        // Adapter le titre en mode test
                         if (IS_TEST_ENVIRONMENT) {
                             document.write('<p style="font-size: 1rem; background: rgba(245, 158, 11, 0.2); padding: 8px 16px; border-radius: 20px; margin: 10px auto; display: inline-block;">🧪 Environnement de test</p>');
                         }
@@ -823,7 +808,6 @@
                         <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
                         <p class="dashboard-subtitle">Organisez vos emails intelligemment avec l'IA</p>
                         <script>
-                            // Ajouter info de domaine en mode test
                             if (IS_TEST_ENVIRONMENT) {
                                 document.write('<p style="color: #f59e0b; font-weight: 600; margin-top: 10px;">🧪 Environnement de test - ' + CURRENT_HOSTNAME + '</p>');
                             }
@@ -875,7 +859,7 @@
             </div>
         </main>
 
-        <!-- Overlay de Chargement épuré -->
+        <!-- Overlay de Chargement -->
         <div id="loadingOverlay" class="login-loading-overlay">
             <div class="login-spinner"></div>
             <div class="login-loading-text">
@@ -889,37 +873,29 @@
     </div>
 
     <!-- ========================================= -->
-    <!-- SCRIPTS - ORDRE CRITIQUE POUR UNIFICATION -->
+    <!-- SCRIPTS - ORDRE CRITIQUE -->
     <!-- ========================================= -->
     
-    <!-- 1. Services Core -->
+    <!-- Services Core -->
     <script src="AuthService.js"></script>
     <script src="MailService.js"></script>
     <script src="UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
     <script src="CategoryManagerUI.js" onerror="console.warn('CategoryManagerUI.js sera créé automatiquement')"></script>
 
-    <!-- 2. CategoryManager -->
+    <!-- Managers -->
     <script src="CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
-    
-    <!-- 3. TaskManager AVANT PageManager pour éviter les conflits -->
     <script src="TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
-    
-    <!-- 4. Autres Managers -->
     <script src="EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
     <script src="AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
-    
-    <!-- 5. Page Manager APRÈS TaskManager -->
     <script src="PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
     
-    <!-- 6. Modules de pages -->
+    <!-- Modules de pages -->
     <script src="startscan.js" onerror="console.error('startscan.js manquant')"></script>
     <script src="DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
     <script src="CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
-    
-    <!-- 7. Modules Optionnels -->
     <script src="Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
     
-    <!-- 8. Application Principal EN DERNIER -->
+    <!-- Application Principal -->
     <script src="app.js"></script>
     
     <!-- Scripts de gestion des événements -->
@@ -927,16 +903,11 @@
         // Fonction pour forcer l'affichage de l'app
         window.forceShowApp = function() {
             console.log('[FORCE] Forcing app display...');
-            
-            // Ajouter la classe pour activer l'app
             document.body.classList.add('app-active');
-            
-            // Masquer explicitement la page de login
             const loginPage = document.getElementById('loginPage');
             if (loginPage) {
                 loginPage.style.display = 'none';
             }
-            
             console.log('[FORCE] App display activated');
         };
 
@@ -961,26 +932,26 @@
                 });
             }
             
-            // Vérifier la configuration après le chargement du DOM
+            // Vérifier la configuration
             setTimeout(function() {
                 if (window.AppConfig) {
                     const validation = window.AppConfig.validate();
-                    console.log('[INDEX] Configuration validation for current domain:', validation);
+                    console.log('[INDEX] Configuration validation:', validation);
                     
                     const debugInfo = window.AppConfig.getDebugInfo();
-                    console.log('[INDEX] Debug info for', CURRENT_HOSTNAME, debugInfo);
+                    console.log('[INDEX] Debug info:', debugInfo);
                     
                     if (!validation.valid) {
-                        console.log('[INDEX] Configuration invalid for current domain:', validation.issues);
+                        console.log('[INDEX] Configuration issues:', validation.issues);
                         
                         const errorBanner = document.createElement('div');
                         errorBanner.className = 'config-error-banner';
                         errorBanner.innerHTML = `
                             <div>
-                                ⚠️ <strong>CONFIGURATION:</strong> URI de redirection invalide pour ${CURRENT_HOSTNAME}
+                                ⚠️ <strong>CONFIGURATION:</strong> Problème de configuration détecté pour ${CURRENT_HOSTNAME}
                             </div>
                             <div>
-                                Vérifiez votre configuration Azure App Registration
+                                ${validation.issues.join(' | ')}
                             </div>
                             <div class="config-error-actions">
                                 <button class="config-error-btn" onclick="this.parentElement.parentElement.remove()">Masquer</button>
@@ -1000,29 +971,24 @@
         
         // Fonction de diagnostic accessible globalement
         window.checkServices = function() {
-            console.log('=== Diagnostic des services pour', CURRENT_HOSTNAME, '===');
+            console.log('=== DIAGNOSTIC v5.0 pour', CURRENT_HOSTNAME, '===');
             console.log('AppConfig:', window.AppConfig ? 'OK' : 'MANQUANT');
             if (window.AppConfig) {
-                console.log('Environment:', window.AppConfig.app.environment);
-                console.log('Domain:', window.AppConfig.app.domain);
-                console.log('Client ID:', window.AppConfig.msal.clientId?.substring(0, 8) + '...');
-                console.log('Redirect URI:', window.AppConfig.msal.redirectUri);
-                console.log('Debug info:', window.AppConfig.getDebugInfo());
+                const debug = window.AppConfig.getDebugInfo();
+                console.log('Configuration debug:', debug);
             }
             console.log('authService:', window.authService ? 'OK' : 'MANQUANT');
             console.log('mailService:', window.mailService ? 'OK' : 'MANQUANT');
             console.log('uiManager:', window.uiManager ? 'OK' : 'MANQUANT');
             console.log('taskManager:', window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT');
-            console.log('tasksView:', window.tasksView ? 'OK' : 'MANQUANT');
             console.log('pageManager:', window.pageManager ? 'OK' : 'MANQUANT');
             console.log('categoryManager:', window.categoryManager ? 'OK' : 'MANQUANT');
             console.log('Current hostname:', CURRENT_HOSTNAME);
             console.log('Test environment:', IS_TEST_ENVIRONMENT);
-            console.log('=== Ordre de chargement ===');
-            console.log('1. TaskManager chargé AVANT PageManager');
-            console.log('2. TasksView créé dans TaskManager');
-            console.log('3. PageManager délègue les tâches à TasksView');
-            console.log('4. Interface unifiée entre emails et tâches');
+            console.log('Generated URIs:', {
+                redirect: window.AppConfig?.msal?.redirectUri,
+                logout: window.AppConfig?.msal?.postLogoutRedirectUri
+            });
         };
 
         // Fonction pour créer CategoryManagerUI si manquant
@@ -1040,14 +1006,12 @@
             console.log('✅ CategoryManagerUI créé automatiquement');
         }
 
-        // Log de confirmation du domaine
-        console.log('[INDEX] ✅ Configuration loaded for', CURRENT_HOSTNAME);
+        // Log de confirmation
+        console.log('[INDEX] ✅ Configuration v5.0 loaded for', CURRENT_HOSTNAME);
         console.log('[INDEX] Current hostname:', CURRENT_HOSTNAME);
+        console.log('[INDEX] Current origin:', CURRENT_ORIGIN);
         console.log('[INDEX] Test environment:', IS_TEST_ENVIRONMENT);
-        console.log('[INDEX] 🎯 ORDRE DE CHARGEMENT CORRIGÉ:');
-        console.log('[INDEX] 1. TaskManager.js AVANT PageManager.js');
-        console.log('[INDEX] 2. Interface unifiée pour emails et tâches');
-        console.log('[INDEX] 3. PageManager délègue les tâches à TasksView');
+        console.log('[INDEX] Configuration adaptative active avec URIs dynamiques');
     </script>
 </body>
 </html>
