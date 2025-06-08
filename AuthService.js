@@ -349,8 +349,10 @@ class AuthService {
             }
 
             // Préparer la requête de login avec validation
+            const scopes = window.AppConfig.scopes?.login || ['https://graph.microsoft.com/User.Read'];
+            
             const loginRequest = {
-                scopes: window.AppConfig.scopes.login,
+                scopes: scopes,
                 prompt: 'select_account'
             };
 
@@ -490,8 +492,11 @@ class AuthService {
         }
 
         try {
+            // Définir les scopes par défaut si non disponibles
+            const scopes = window.AppConfig.scopes?.silent || ['https://graph.microsoft.com/User.Read'];
+            
             const tokenRequest = {
-                scopes: window.AppConfig.scopes.silent,
+                scopes: scopes,
                 account: this.account,
                 forceRefresh: false
             };
@@ -556,9 +561,8 @@ class AuthService {
         
         try {
             if (this.msalInstance && this.account) {
-                await this.msalInstance.logoutSilent({
-                    account: this.account
-                });
+                // Utiliser la méthode correcte pour le logout silencieux
+                await this.msalInstance.getTokenCache().removeAccount(this.account);
             }
         } catch (error) {
             console.warn('[AuthService] Silent logout failed during reset:', error);
