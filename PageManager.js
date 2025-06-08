@@ -934,7 +934,14 @@ class PageManager {
     async renderEmails(container) {
         console.log('[PageManager] 📧 Rendering emails page with full interface...');
         
-        const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
+        // Récupérer les emails du scanner ou générer des emails simulés
+        let emails = window.emailScanner?.getAllEmails() || [];
+        
+        // Si pas d'emails du scanner, utiliser les résultats du scan simulé
+        if (emails.length === 0) {
+            emails = this.getSimulatedEmailsFromScan();
+        }
+        
         const categories = window.categoryManager?.getCategories() || {};
         
         // Initialize view mode
@@ -945,6 +952,8 @@ class PageManager {
             const categoryCounts = this.calculateCategoryCounts(emails);
             const totalEmails = emails.length;
             const selectedCount = this.selectedEmails.size;
+            
+            console.log('[PageManager] 📊 Rendering with', totalEmails, 'emails');
             
             container.innerHTML = `
                 <!-- HEADER INFORMATIF MODERNE -->
@@ -1034,7 +1043,7 @@ class PageManager {
 
                 <!-- CONTENU DES EMAILS -->
                 <div class="emails-container">
-                    ${this.renderEmailsList()}
+                    ${this.renderEmailsList(emails)}
                 </div>
             `;
 
@@ -1044,14 +1053,7 @@ class PageManager {
 
         renderEmailsPage();
         
-        // Auto-analyze if enabled
-        if (this.autoAnalyzeEnabled && emails.length > 0) {
-            setTimeout(() => {
-                this.analyzeFirstEmails(emails.slice(0, 5));
-            }, 1000);
-        }
-
-        console.log('[PageManager] ✅ Full emails interface rendered');
+        console.log('[PageManager] ✅ Full emails interface rendered with', emails.length, 'emails');
     }
 
     // =====================================
@@ -1100,8 +1102,12 @@ class PageManager {
     // =====================================
     // RENDU DES EMAILS
     // =====================================
-    renderEmailsList() {
-        const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
+    renderEmailsList(emails = null) {
+        // Si pas d'emails passés, utiliser la logique standard
+        if (!emails) {
+            emails = window.emailScanner?.getAllEmails() || this.getSimulatedEmailsFromScan() || [];
+        }
+        
         let filteredEmails = emails;
         
         // Apply filters
@@ -1112,6 +1118,8 @@ class PageManager {
         if (this.searchTerm) {
             filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
         }
+        
+        console.log('[PageManager] 📋 Rendering', filteredEmails.length, 'filtered emails');
         
         if (filteredEmails.length === 0) {
             return this.renderEmptyState();
@@ -1500,7 +1508,7 @@ class PageManager {
     }
 
     getVisibleEmails() {
-        const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
+        const emails = window.emailScanner?.getAllEmails() || this.getSimulatedEmailsFromScan() || [];
         let filteredEmails = emails;
         
         if (this.currentCategory !== 'all') {
