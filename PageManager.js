@@ -1,4 +1,4 @@
-// PageManager.js - Version 13.0 - Compatible Netlify
+// PageManager.js - Version 13.1 - Compatible avec systèmes existants
 
 class PageManager {
     constructor() {
@@ -53,7 +53,7 @@ class PageManager {
         try {
             this.setupEventListeners();
             this.isInitialized = true;
-            console.log('[PageManager] ✅ Version 13.0 - Compatible Netlify initialized');
+            console.log('[PageManager] ✅ Version 13.1 - Compatible avec systèmes existants');
         } catch (error) {
             console.error('[PageManager] Initialization error:', error);
         }
@@ -105,7 +105,14 @@ class PageManager {
         
         if (settingsData.settings?.taskPreselectedCategories) {
             console.log('[PageManager] 📋 Preselected categories changed:', settingsData.settings.taskPreselectedCategories);
-            this.triggerRecategorization();
+            
+            // Déclencher la re-catégorisation si des emails existent
+            if (this.safeCall(() => window.emailScanner?.emails?.length > 0)) {
+                console.log('[PageManager] 🔄 Triggering re-categorization...');
+                setTimeout(() => {
+                    this.safeCall(() => window.emailScanner.recategorizeEmails?.());
+                }, 100);
+            }
         }
         
         if (this.currentPage === 'emails') {
@@ -122,36 +129,36 @@ class PageManager {
         
         switch (type) {
             case 'taskPreselectedCategories':
-                this.updateTaskPreselectedCategories(value);
+                console.log('[PageManager] 📋 Task categories changed:', value);
+                if (window.aiTaskAnalyzer && typeof window.aiTaskAnalyzer.updatePreselectedCategories === 'function') {
+                    window.aiTaskAnalyzer.updatePreselectedCategories(value);
+                }
+                
+                // Déclencher la re-catégorisation
+                if (this.safeCall(() => window.emailScanner?.emails?.length > 0)) {
+                    setTimeout(() => {
+                        this.safeCall(() => window.emailScanner.recategorizeEmails?.());
+                    }, 150);
+                }
                 break;
                 
             case 'activeCategories':
-                this.triggerRecategorization();
+                console.log('[PageManager] 🏷️ Active categories changed:', value);
+                if (this.safeCall(() => window.emailScanner?.emails?.length > 0)) {
+                    setTimeout(() => {
+                        this.safeCall(() => window.emailScanner.recategorizeEmails?.());
+                    }, 150);
+                }
                 break;
                 
             case 'preferences':
+                console.log('[PageManager] ⚙️ Preferences changed:', value);
                 if (this.currentPage === 'emails') {
                     setTimeout(() => {
                         this.refreshEmailsView();
                     }, 100);
                 }
                 break;
-        }
-    }
-
-    updateTaskPreselectedCategories(categories) {
-        console.log('[PageManager] 📋 Updating task preselected categories:', categories);
-        
-        if (window.aiTaskAnalyzer && typeof window.aiTaskAnalyzer.updatePreselectedCategories === 'function') {
-            window.aiTaskAnalyzer.updatePreselectedCategories(categories);
-        }
-    }
-
-    triggerRecategorization() {
-        if (this.safeCall(() => window.emailScanner?.emails?.length > 0)) {
-            setTimeout(() => {
-                this.safeCall(() => window.emailScanner.recategorizeEmails?.());
-            }, 150);
         }
     }
 
@@ -203,12 +210,6 @@ class PageManager {
                 }
             }
             
-            // Check if page requires real data
-            if (pageName === 'emails' || pageName === 'tasks') {
-                console.log('[PageManager] Page requires real data, ensuring data is loaded...');
-                await this.ensureRealDataLoaded();
-            }
-            
             // Render page
             await this.renderPage(pageName, container);
             
@@ -233,196 +234,6 @@ class PageManager {
         // Pages that require authentication
         const authPages = ['emails', 'tasks', 'scanner'];
         return authPages.includes(pageName);
-    }
-
-    renderAuthRequiredState(pageName) {
-        return `
-            <div class="auth-required-state">
-                <div class="auth-icon">
-                    <i class="fas fa-lock"></i>
-                </div>
-                <h3 class="auth-title">Authentification requise</h3>
-                <p class="auth-text">
-                    Vous devez être connecté pour accéder à cette page.
-                </p>
-                <div class="auth-actions">
-                    <button class="btn btn-primary" onclick="window.pageManager.handleLogin()">
-                        <i class="fas fa-sign-in-alt"></i>
-                        Se connecter
-                    </button>
-                    <button class="btn btn-secondary" onclick="window.pageManager.loadPage('dashboard')">
-                        <i class="fas fa-home"></i>
-                        Retour au tableau de bord
-                    </button>
-                </div>
-                <div class="auth-debug" style="margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 8px; font-size: 12px; color: #666;">
-                    <strong>Debug info:</strong><br>
-                    AuthService available: ${!!window.authService}<br>
-                    Page: ${pageName}<br>
-                    Timestamp: ${new Date().toLocaleString()}
-                </div>
-            </div>
-        `;
-    }
-
-    async handleLogin() {
-        console.log('[PageManager] Handling login request...');
-        
-        try {
-            if (window.authService && typeof window.authService.login === 'function') {
-                console.log('[PageManager] Using AuthService.login()');
-                await window.authService.login();
-            } else if (window.authService && typeof window.authService.signIn === 'function') {
-                console.log('[PageManager] Using AuthService.signIn()');
-                await window.authService.signIn();
-            } else {
-                console.log('[PageManager] No login method available, redirecting to auth page');
-                // Fallback: redirect to a login page or show instructions
-                window.location.href = '/auth.html';
-            }
-        } catch (error) {
-            console.error('[PageManager] Login error:', error);
-            this.showError('Erreur lors de la connexion: ' + error.message);
-        }
-    }
-
-    async renderPage(pageName, container) {
-        console.log(`[PageManager] Rendering page: ${pageName}`);
-        
-        // Check if we should delegate to a module
-        const moduleName = this.pageModules[pageName];
-        if (moduleName && window[moduleName]) {
-            console.log(`[PageManager] Delegating to module: ${moduleName}`);
-            return await this.delegateToModule(moduleName, container);
-        }
-        
-        // Handle internal pages
-        switch (pageName) {
-            case 'emails':
-                return await this.renderEmails(container);
-            case 'tasks':
-                return await this.renderTasks(container);
-            case 'categories':
-                return await this.renderCategories(container);
-            case 'settings':
-                return await this.renderSettings(container);
-            case 'scanner':
-                return await this.renderScanner(container);
-            case 'ranger':
-                return await this.renderRanger(container);
-            default:
-                throw new Error(`Page ${pageName} not found`);
-        }
-    }
-
-    async delegateToModule(moduleName, container) {
-        const module = window[moduleName];
-        if (!module) {
-            throw new Error(`Module ${moduleName} not found`);
-        }
-
-        try {
-            if (typeof module.render === 'function') {
-                await module.render(container);
-            } else if (typeof module.showPage === 'function') {
-                await module.showPage(container);
-            } else if (typeof module.renderSettings === 'function') {
-                await module.renderSettings(container);
-            } else {
-                console.log(`[PageManager] Initializing module: ${moduleName}`);
-                // Module doesn't have a render method, just initialize it
-                container.innerHTML = `
-                    <div class="module-placeholder">
-                        <div class="loading-spinner">
-                            <i class="fas fa-spinner fa-spin"></i>
-                        </div>
-                        <p>Loading ${moduleName}...</p>
-                    </div>
-                `;
-            }
-        } catch (error) {
-            console.error(`[PageManager] Error rendering module: ${moduleName}`, error);
-            throw error;
-        }
-    }
-
-    initializePageEvents(pageName) {
-        console.log(`[PageManager] Initializing events for page: ${pageName}`);
-        
-        // Page-specific event initialization
-        switch (pageName) {
-            case 'emails':
-                this.setupEmailsEventListeners();
-                break;
-            case 'scanner':
-                // Scanner events handled by the module
-                break;
-            // Add other page-specific events as needed
-        }
-    }
-
-    // ================================================
-    // DATA LOADING
-    // ================================================
-    async ensureRealDataLoaded() {
-        console.log('[PageManager] Ensuring real data is loaded...');
-        
-        try {
-            // First, check authentication status properly
-            const authStatus = await this.checkAuthenticationStatus();
-            console.log('[PageManager] Auth status:', authStatus);
-            
-            if (!authStatus.isAuthenticated) {
-                console.log('[PageManager] User not authenticated, returning null');
-                return null;
-            }
-
-            // Try to use MailService to get real emails
-            if (window.mailService) {
-                try {
-                    console.log('[PageManager] Attempting to use MailService...');
-                    
-                    // Initialize MailService if needed
-                    if (!window.mailService.isInitialized) {
-                        console.log('[PageManager] Initializing MailService...');
-                        await window.mailService.initialize();
-                    }
-                    
-                    // Get emails from inbox
-                    console.log('[PageManager] Fetching emails from inbox...');
-                    const emails = await window.mailService.getEmailsFromFolder('inbox', { top: 50 });
-                    console.log(`[PageManager] Successfully loaded ${emails?.length || 0} real emails`);
-                    
-                    if (emails && emails.length > 0) {
-                        // Store in emailScanner for compatibility
-                        if (window.emailScanner) {
-                            window.emailScanner.emails = emails;
-                            console.log('[PageManager] Stored emails in emailScanner for compatibility');
-                        }
-                        return emails;
-                    }
-                    
-                } catch (mailError) {
-                    console.error('[PageManager] MailService error:', mailError);
-                    // Continue to fallback options
-                }
-            }
-            
-            // Check if we have existing email scanner data
-            if (window.emailScanner && window.emailScanner.emails && window.emailScanner.emails.length > 0) {
-                console.log(`[PageManager] Using existing emailScanner data: ${window.emailScanner.emails.length} emails`);
-                return window.emailScanner.emails;
-            }
-            
-            // Generate demo data if authenticated but no real data available
-            console.log('[PageManager] No real data available, using demo data');
-            return this.generateDemoData();
-            
-        } catch (error) {
-            console.error('[PageManager] Error loading real data:', error);
-            // Return demo data as fallback
-            return this.generateDemoData();
-        }
     }
 
     async checkAuthenticationStatus() {
@@ -492,297 +303,130 @@ class PageManager {
         }
     }
 
-    generateDemoData() {
-        console.log('[PageManager] Generating demo data...');
-        
-        const demoEmails = [
-            {
-                id: 'demo-1',
-                subject: 'Meeting tomorrow at 10am',
-                from: { emailAddress: { name: 'John Doe', address: 'john@company.com' } },
-                receivedDateTime: new Date(Date.now() - 3600000).toISOString(),
-                bodyPreview: 'Hi team, just a reminder about our meeting tomorrow...',
-                category: 'work',
-                categoryScore: 85,
-                categoryConfidence: 0.9,
-                hasAttachments: false,
-                isPreselectedForTasks: true
-            },
-            {
-                id: 'demo-2',
-                subject: 'Invoice #12345',
-                from: { emailAddress: { name: 'Billing', address: 'billing@service.com' } },
-                receivedDateTime: new Date(Date.now() - 7200000).toISOString(),
-                bodyPreview: 'Your monthly invoice is ready for review...',
-                category: 'finance',
-                categoryScore: 92,
-                categoryConfidence: 0.95,
-                hasAttachments: true,
-                isPreselectedForTasks: false
-            },
-            {
-                id: 'demo-3',
-                subject: 'Weekend plans',
-                from: { emailAddress: { name: 'Jane Smith', address: 'jane@personal.com' } },
-                receivedDateTime: new Date(Date.now() - 10800000).toISOString(),
-                bodyPreview: 'Hey! Want to grab dinner this weekend?',
-                category: 'personal',
-                categoryScore: 78,
-                categoryConfidence: 0.8,
-                hasAttachments: false,
-                isPreselectedForTasks: false
-            }
-        ];
-
-        // Store demo data in emailScanner if available
-        if (window.emailScanner) {
-            window.emailScanner.emails = demoEmails;
-        }
-
-        return demoEmails;
-    }
-
-    // ================================================
-    // PAGE RENDERERS
-    // ================================================
-    async renderScanner(container) {
-        console.log('[PageManager] Rendering scanner page...');
-        
-        // Check authentication first
-        const authStatus = await this.checkAuthenticationStatus();
-        console.log('[PageManager] Scanner auth check:', authStatus);
-        
-        if (!authStatus.isAuthenticated) {
-            console.log('[PageManager] User not authenticated for scanner');
-            container.innerHTML = `
-                <div class="scanner-auth-required">
-                    <div class="scanner-header">
-                        <h1><i class="fas fa-search"></i> Scanner d'emails</h1>
-                        <p>Connectez-vous à votre compte Microsoft pour analyser vos emails</p>
-                    </div>
-                    
-                    <div class="auth-card">
-                        <div class="auth-icon">
-                            <i class="fab fa-microsoft"></i>
-                        </div>
-                        <h3>Connexion Microsoft Graph</h3>
-                        <p>Accédez à vos emails Outlook/Exchange de manière sécurisée</p>
-                        <button class="btn btn-primary btn-large" onclick="window.pageManager.handleLogin()">
-                            <i class="fas fa-sign-in-alt"></i>
-                            Se connecter à Microsoft
-                        </button>
-                    </div>
-                    
-                    <div class="scanner-info">
-                        <div class="info-card">
-                            <i class="fas fa-shield-alt"></i>
-                            <h4>Sécurisé</h4>
-                            <p>Authentification OAuth2 Microsoft officielle</p>
-                        </div>
-                        <div class="info-card">
-                            <i class="fas fa-robot"></i>
-                            <h4>IA Intégrée</h4>
-                            <p>Analyse intelligente avec Claude AI</p>
-                        </div>
-                        <div class="info-card">
-                            <i class="fas fa-tasks"></i>
-                            <h4>Productivité</h4>
-                            <p>Convertit automatiquement en tâches</p>
-                        </div>
-                    </div>
+    renderAuthRequiredState(pageName) {
+        return `
+            <div class="auth-required-state">
+                <div class="auth-icon">
+                    <i class="fas fa-lock"></i>
                 </div>
-            `;
-            this.addScannerStyles();
-            return;
-        }
-        
-        // User is authenticated, try to use the minimal scan module
-        if (window.minimalScanModule && typeof window.minimalScanModule.render === 'function') {
-            try {
-                console.log('[PageManager] Using minimalScanModule for authenticated user');
-                await window.minimalScanModule.render(container);
-                return;
-            } catch (error) {
-                console.error('[PageManager] Error with minimalScanModule:', error);
-            }
-        }
-        
-        // Fallback authenticated scanner interface
-        container.innerHTML = `
-            <div class="scanner-authenticated">
-                <div class="scanner-header">
-                    <h1><i class="fas fa-search"></i> Scanner d'emails</h1>
-                    <p>Analysez vos emails et créez des tâches automatiquement</p>
-                </div>
-                
-                <div class="scanner-controls">
-                    <div class="control-group">
-                        <label for="folder-select">Dossier à analyser:</label>
-                        <select id="folder-select" class="form-select">
-                            <option value="inbox">Boîte de réception</option>
-                            <option value="sentitems">Éléments envoyés</option>
-                            <option value="junkemail">Courrier indésirable</option>
-                        </select>
-                    </div>
-                    
-                    <div class="control-group">
-                        <label for="email-count">Nombre d'emails à analyser:</label>
-                        <select id="email-count" class="form-select">
-                            <option value="25">25 emails</option>
-                            <option value="50" selected>50 emails</option>
-                            <option value="100">100 emails</option>
-                            <option value="200">200 emails</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="scanner-actions">
-                    <button class="btn btn-primary btn-large" onclick="window.pageManager.startEmailScan()">
-                        <i class="fas fa-play"></i>
-                        Démarrer l'analyse
+                <h3 class="auth-title">Authentification requise</h3>
+                <p class="auth-text">
+                    Vous devez être connecté pour accéder à cette page.
+                </p>
+                <div class="auth-actions">
+                    <button class="btn btn-primary" onclick="window.pageManager.handleLogin()">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Se connecter
                     </button>
-                    
-                    <button class="btn btn-secondary" onclick="window.pageManager.testMailConnection()">
-                        <i class="fas fa-plug"></i>
-                        Tester la connexion
+                    <button class="btn btn-secondary" onclick="window.pageManager.loadPage('dashboard')">
+                        <i class="fas fa-home"></i>
+                        Retour au tableau de bord
                     </button>
                 </div>
-                
-                <div id="scan-results" class="scan-results" style="display: none;">
-                    <!-- Results will be populated here -->
-                </div>
-                
-                <div class="scanner-status">
-                    <div class="status-item">
-                        <i class="fas fa-user"></i>
-                        <span>Connecté${authStatus.user ? ' en tant que ' + authStatus.user : ''}</span>
-                    </div>
-                    <div class="status-item">
-                        <i class="fas fa-database"></i>
-                        <span>MailService: ${window.mailService ? 'Disponible' : 'Non disponible'}</span>
-                    </div>
+                <div class="auth-debug" style="margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 8px; font-size: 12px; color: #666;">
+                    <strong>Debug info:</strong><br>
+                    AuthService available: ${!!window.authService}<br>
+                    Page: ${pageName}<br>
+                    Timestamp: ${new Date().toLocaleString()}
                 </div>
             </div>
         `;
-        
-        this.addScannerStyles();
     }
 
-    async startEmailScan() {
-        console.log('[PageManager] Starting email scan...');
-        
-        const folderSelect = document.getElementById('folder-select');
-        const countSelect = document.getElementById('email-count');
-        const resultsDiv = document.getElementById('scan-results');
-        
-        const folder = folderSelect ? folderSelect.value : 'inbox';
-        const count = countSelect ? parseInt(countSelect.value) : 50;
+    async handleLogin() {
+        console.log('[PageManager] Handling login request...');
         
         try {
-            this.showLoading(`Analyse de ${count} emails du dossier ${folder}...`);
-            
-            if (!window.mailService) {
-                throw new Error('MailService not available');
-            }
-            
-            // Initialize if needed
-            if (!window.mailService.isInitialized) {
-                await window.mailService.initialize();
-            }
-            
-            // Get emails
-            const emails = await window.mailService.getEmailsFromFolder(folder, { top: count });
-            
-            if (!emails || emails.length === 0) {
-                throw new Error('Aucun email trouvé dans ce dossier');
-            }
-            
-            console.log(`[PageManager] Retrieved ${emails.length} emails`);
-            
-            // Store in emailScanner for compatibility
-            if (window.emailScanner) {
-                window.emailScanner.emails = emails;
-                
-                // Trigger categorization if available
-                if (typeof window.emailScanner.categorizeEmails === 'function') {
-                    console.log('[PageManager] Starting email categorization...');
-                    await window.emailScanner.categorizeEmails();
-                }
-            }
-            
-            // Show results
-            if (resultsDiv) {
-                resultsDiv.style.display = 'block';
-                resultsDiv.innerHTML = `
-                    <div class="scan-success">
-                        <h3><i class="fas fa-check-circle"></i> Analyse terminée</h3>
-                        <p>${emails.length} emails analysés avec succès</p>
-                        <div class="result-actions">
-                            <button class="btn btn-primary" onclick="window.pageManager.loadPage('emails')">
-                                <i class="fas fa-envelope"></i>
-                                Voir les emails
-                            </button>
-                            <button class="btn btn-secondary" onclick="window.pageManager.loadPage('tasks')">
-                                <i class="fas fa-tasks"></i>
-                                Voir les tâches
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            this.hideLoading();
-            this.showToast(`${emails.length} emails analysés avec succès!`, 'success');
-            
-        } catch (error) {
-            console.error('[PageManager] Email scan error:', error);
-            this.hideLoading();
-            this.showError('Erreur lors de l\'analyse: ' + error.message);
-            
-            if (resultsDiv) {
-                resultsDiv.style.display = 'block';
-                resultsDiv.innerHTML = `
-                    <div class="scan-error">
-                        <h3><i class="fas fa-exclamation-triangle"></i> Erreur d'analyse</h3>
-                        <p>${error.message}</p>
-                        <button class="btn btn-secondary" onclick="window.pageManager.testMailConnection()">
-                            <i class="fas fa-plug"></i>
-                            Tester la connexion
-                        </button>
-                    </div>
-                `;
-            }
-        }
-    }
-
-    async testMailConnection() {
-        console.log('[PageManager] Testing mail connection...');
-        
-        try {
-            this.showLoading('Test de connexion...');
-            
-            if (!window.mailService) {
-                throw new Error('MailService not available');
-            }
-            
-            const result = await window.mailService.testConnection();
-            
-            this.hideLoading();
-            
-            if (result.success) {
-                this.showToast(`Connexion réussie! Utilisateur: ${result.user}`, 'success');
+            if (window.authService && typeof window.authService.login === 'function') {
+                console.log('[PageManager] Using AuthService.login()');
+                await window.authService.login();
+            } else if (window.authService && typeof window.authService.signIn === 'function') {
+                console.log('[PageManager] Using AuthService.signIn()');
+                await window.authService.signIn();
             } else {
-                this.showError(`Test de connexion échoué: ${result.error}`);
+                console.log('[PageManager] No login method available, redirecting to auth page');
+                window.location.href = '/auth.html';
             }
-            
         } catch (error) {
-            console.error('[PageManager] Connection test error:', error);
-            this.hideLoading();
-            this.showError('Erreur de test: ' + error.message);
+            console.error('[PageManager] Login error:', error);
+            this.showError('Erreur lors de la connexion: ' + error.message);
         }
     }
 
+    async renderPage(pageName, container) {
+        console.log(`[PageManager] Rendering page: ${pageName}`);
+        
+        // Check if we should delegate to a module
+        const moduleName = this.pageModules[pageName];
+        if (moduleName && window[moduleName]) {
+            console.log(`[PageManager] Delegating to module: ${moduleName}`);
+            return await this.delegateToModule(moduleName, container);
+        }
+        
+        // Handle internal pages
+        switch (pageName) {
+            case 'emails':
+                return await this.renderEmails(container);
+            case 'tasks':
+                return await this.renderTasks(container);
+            case 'categories':
+                return await this.renderCategories(container);
+            case 'settings':
+                return await this.renderSettings(container);
+            case 'scanner':
+                return await this.renderScanner(container);
+            case 'ranger':
+                return await this.renderRanger(container);
+            default:
+                throw new Error(`Page ${pageName} not found`);
+        }
+    }
+
+    async delegateToModule(moduleName, container) {
+        const module = window[moduleName];
+        if (!module) {
+            throw new Error(`Module ${moduleName} not found`);
+        }
+
+        try {
+            if (typeof module.render === 'function') {
+                await module.render(container);
+            } else if (typeof module.showPage === 'function') {
+                await module.showPage(container);
+            } else if (typeof module.renderSettings === 'function') {
+                await module.renderSettings(container);
+            } else {
+                console.log(`[PageManager] Initializing module: ${moduleName}`);
+                container.innerHTML = `
+                    <div class="module-placeholder">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                        <p>Loading ${moduleName}...</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error(`[PageManager] Error rendering module: ${moduleName}`, error);
+            throw error;
+        }
+    }
+
+    initializePageEvents(pageName) {
+        console.log(`[PageManager] Initializing events for page: ${pageName}`);
+        
+        switch (pageName) {
+            case 'emails':
+                this.setupEmailsEventListeners();
+                break;
+        }
+    }
+
+    // ================================================
+    // PAGE RENDERERS - Utilise les systèmes existants
+    // ================================================
     async renderEmails(container) {
+        // Utiliser le système existant
         const emails = this.getAllEmails();
         const categories = this.getCategories();
         
@@ -801,7 +445,6 @@ class PageManager {
         
         container.innerHTML = `
             <div class="tasks-page-modern">
-                <!-- Explanation text -->
                 ${!this.hideExplanation ? `
                     <div class="explanation-text-harmonized">
                         <i class="fas fa-info-circle"></i>
@@ -812,7 +455,6 @@ class PageManager {
                     </div>
                 ` : ''}
 
-                <!-- Controls bar -->
                 <div class="controls-bar-harmonized">
                     <div class="search-section-harmonized">
                         <div class="search-box-harmonized">
@@ -876,12 +518,10 @@ class PageManager {
                     </div>
                 </div>
 
-                <!-- Category filters -->
                 <div class="status-filters-harmonized-twolines">
                     ${this.buildCategoryTabs(categoryCounts, totalEmails, categories)}
                 </div>
 
-                <!-- Emails container -->
                 <div class="tasks-container-harmonized">
                     ${this.renderEmailsList()}
                 </div>
@@ -890,6 +530,542 @@ class PageManager {
 
         this.addHarmonizedEmailStyles();
         this.setupEmailsEventListeners();
+    }
+
+    // ================================================
+    // MÉTHODES POUR UTILISER LES SYSTÈMES EXISTANTS
+    // ================================================
+    getAllEmails() {
+        // Priorité 1: EmailScanner
+        if (window.emailScanner && window.emailScanner.getAllEmails) {
+            return window.emailScanner.getAllEmails();
+        }
+        
+        // Priorité 2: Emails directs
+        if (window.emailScanner && window.emailScanner.emails) {
+            return window.emailScanner.emails;
+        }
+        
+        // Fallback
+        return [];
+    }
+
+    getCategories() {
+        // Priorité 1: CategoryManager
+        if (window.categoryManager && window.categoryManager.getCategories) {
+            return window.categoryManager.getCategories();
+        }
+        
+        // Fallback: Catégories basiques
+        return {
+            'all': { name: 'Tous', icon: '📧', color: '#1e293b' },
+            'other': { name: 'Autre', icon: '❓', color: '#64748b' }
+        };
+    }
+
+    getTaskPreselectedCategories() {
+        // Priorité 1: CategoryManager
+        if (window.categoryManager && window.categoryManager.getTaskPreselectedCategories) {
+            return window.categoryManager.getTaskPreselectedCategories();
+        }
+        
+        // Priorité 2: EmailScanner
+        if (window.emailScanner && window.emailScanner.getTaskPreselectedCategories) {
+            return window.emailScanner.getTaskPreselectedCategories();
+        }
+        
+        // Fallback: localStorage
+        try {
+            const settings = JSON.parse(this.getLocalStorageItem('categorySettings') || '{}');
+            return settings.taskPreselectedCategories || [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    buildCategoryTabs(categoryCounts, totalEmails, categories) {
+        const preselectedCategories = this.getTaskPreselectedCategories();
+        console.log('[PageManager] 📌 Preselected categories for display:', preselectedCategories);
+        
+        const tabs = [
+            { 
+                id: 'all', 
+                name: 'Tous', 
+                icon: '📧', 
+                count: totalEmails,
+                isPreselected: false 
+            }
+        ];
+        
+        // Ajouter les catégories avec emails
+        Object.entries(categories).forEach(([catId, category]) => {
+            const count = categoryCounts[catId] || 0;
+            if (count > 0) {
+                const isPreselected = preselectedCategories.includes(catId);
+                tabs.push({
+                    id: catId,
+                    name: category.name,
+                    icon: category.icon,
+                    color: category.color,
+                    count: count,
+                    isPreselected: isPreselected
+                });
+                
+                if (isPreselected) {
+                    console.log(`[PageManager] ⭐ Preselected category: ${category.name} (${count} emails)`);
+                }
+            }
+        });
+        
+        // Ajouter "Autre" si nécessaire
+        const otherCount = categoryCounts.other || 0;
+        if (otherCount > 0) {
+            tabs.push({
+                id: 'other',
+                name: 'Autre',
+                icon: '📌',
+                count: otherCount,
+                isPreselected: false
+            });
+        }
+        
+        return tabs.map(tab => {
+            const isCurrentCategory = this.currentCategory === tab.id;
+            const baseClasses = `status-pill-harmonized-twolines ${isCurrentCategory ? 'active' : ''}`;
+            
+            let extraClasses = '';
+            let extraStyles = '';
+            let preselectedBadge = '';
+            
+            if (tab.isPreselected && !isCurrentCategory) {
+                extraClasses = ' preselected-category';
+                extraStyles = `style="border: 2px solid ${tab.color || '#8b5cf6'}; background: ${tab.color ? tab.color + '10' : '#f3e8ff'};"`;
+                preselectedBadge = '<span class="preselected-star">⭐</span>';
+            } else if (tab.isPreselected && isCurrentCategory) {
+                extraStyles = `style="box-shadow: 0 0 0 3px ${tab.color || '#8b5cf6'}40;"`;
+                preselectedBadge = '<span class="preselected-star">⭐</span>';
+            }
+            
+            return `
+                <button class="${baseClasses}${extraClasses}" 
+                        ${extraStyles}
+                        onclick="window.pageManager.filterByCategory('${tab.id}')"
+                        title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
+                    <div class="pill-content-twolines">
+                        <div class="pill-first-line-twolines">
+                            <span class="pill-icon-twolines">${tab.icon}</span>
+                            <span class="pill-count-twolines">${tab.count}</span>
+                            ${preselectedBadge}
+                        </div>
+                        <div class="pill-second-line-twolines">
+                            <span class="pill-text-twolines">${tab.name}</span>
+                        </div>
+                    </div>
+                </button>
+            `;
+        }).join('');
+    }
+
+    renderEmailsList() {
+        const emails = this.getAllEmails();
+        let filteredEmails = emails;
+        
+        // Appliquer les filtres
+        if (this.currentCategory && this.currentCategory !== 'all') {
+            filteredEmails = filteredEmails.filter(email => (email.category || 'other') === this.currentCategory);
+        }
+        
+        if (this.searchTerm) {
+            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
+        }
+        
+        if (filteredEmails.length === 0) {
+            return this.renderEmptyState();
+        }
+
+        switch (this.currentViewMode) {
+            case 'flat':
+                return this.renderFlatView(filteredEmails);
+            case 'grouped-domain':
+            case 'grouped-sender':
+                return this.renderGroupedView(filteredEmails, this.currentViewMode);
+            default:
+                return this.renderFlatView(filteredEmails);
+        }
+    }
+
+    renderFlatView(emails) {
+        return `
+            <div class="tasks-harmonized-list">
+                ${emails.map(email => this.renderEmailRow(email)).join('')}
+            </div>
+        `;
+    }
+
+    renderEmailRow(email) {
+        const isSelected = this.selectedEmails.has(email.id);
+        const hasTask = this.createdTasks.has(email.id);
+        const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
+        const preselectedCategories = this.getTaskPreselectedCategories();
+        const isPreselectedForTasks = email.isPreselectedForTasks === true || preselectedCategories.includes(email.category);
+        
+        const cardClasses = [
+            'task-harmonized-card',
+            isSelected ? 'selected' : '',
+            hasTask ? 'has-task' : '',
+            isPreselectedForTasks ? 'preselected-task' : ''
+        ].filter(Boolean).join(' ');
+        
+        return `
+            <div class="${cardClasses}" 
+                 data-email-id="${email.id}"
+                 onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
+                
+                <input type="checkbox" 
+                       class="task-checkbox-harmonized" 
+                       ${isSelected ? 'checked' : ''}
+                       onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
+                
+                <div class="priority-bar-harmonized" 
+                     style="background-color: ${isPreselectedForTasks ? '#8b5cf6' : this.getEmailPriorityColor(email)}"></div>
+                
+                <div class="task-main-content-harmonized">
+                    <div class="task-header-harmonized">
+                        <h3 class="task-title-harmonized">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
+                        <div class="task-meta-harmonized">
+                            <span class="task-type-badge-harmonized">📧 Email</span>
+                            <span class="deadline-badge-harmonized">
+                                📅 ${this.formatEmailDate(email.receivedDateTime)}
+                            </span>
+                            ${isPreselectedForTasks ? `
+                                <span class="preselected-badge-harmonized">
+                                    ⭐ Pré-sélectionné
+                                </span>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="task-recipient-harmonized">
+                        <i class="fas fa-envelope"></i>
+                        <span class="recipient-name-harmonized">${this.escapeHtml(senderName)}</span>
+                        ${email.hasAttachments ? '<span class="reply-indicator-harmonized">• Pièce jointe</span>' : ''}
+                        ${email.category && email.category !== 'other' ? `
+                            <span class="category-indicator-harmonized" 
+                                  style="background: ${this.getCategoryColor(email.category)}20; 
+                                         color: ${this.getCategoryColor(email.category)};">
+                                ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
+                            </span>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="task-actions-harmonized">
+                    ${this.renderEmailActions(email)}
+                </div>
+            </div>
+        `;
+    }
+
+    renderGroupedView(emails, groupMode) {
+        const groups = this.createEmailGroups(emails, groupMode);
+        
+        return `
+            <div class="tasks-grouped-harmonized">
+                ${groups.map(group => this.renderEmailGroup(group, groupMode)).join('')}
+            </div>
+        `;
+    }
+
+    createEmailGroups(emails, groupMode) {
+        const groups = {};
+        
+        emails.forEach(email => {
+            let groupKey, groupName;
+            
+            if (groupMode === 'grouped-domain') {
+                const domain = email.from?.emailAddress?.address?.split('@')[1] || 'unknown';
+                groupKey = domain;
+                groupName = domain;
+            } else {
+                const senderEmail = email.from?.emailAddress?.address || 'unknown';
+                const senderName = email.from?.emailAddress?.name || senderEmail;
+                groupKey = senderEmail;
+                groupName = senderName;
+            }
+            
+            if (!groups[groupKey]) {
+                groups[groupKey] = {
+                    key: groupKey,
+                    name: groupName,
+                    emails: [],
+                    count: 0,
+                    latestDate: null
+                };
+            }
+            
+            groups[groupKey].emails.push(email);
+            groups[groupKey].count++;
+            
+            const emailDate = new Date(email.receivedDateTime);
+            if (!groups[groupKey].latestDate || emailDate > groups[groupKey].latestDate) {
+                groups[groupKey].latestDate = emailDate;
+            }
+        });
+        
+        return Object.values(groups).sort((a, b) => {
+            if (!a.latestDate && !b.latestDate) return 0;
+            if (!a.latestDate) return 1;
+            if (!b.latestDate) return -1;
+            return b.latestDate - a.latestDate;
+        });
+    }
+
+    renderEmailGroup(group, groupType) {
+        const displayName = groupType === 'grouped-domain' ? `@${group.name}` : group.name;
+        const avatarColor = this.generateAvatarColor(group.name);
+        
+        return `
+            <div class="task-group-harmonized" data-group-key="${group.key}">
+                <div class="group-header-harmonized" onclick="window.pageManager.toggleGroup('${group.key}')">
+                    <div class="group-avatar-harmonized" style="background: ${avatarColor}">
+                        ${groupType === 'grouped-domain' ? 
+                            '<i class="fas fa-globe"></i>' : 
+                            group.name.charAt(0).toUpperCase()
+                        }
+                    </div>
+                    <div class="group-info-harmonized">
+                        <div class="group-name-harmonized">${displayName}</div>
+                        <div class="group-meta-harmonized">${group.count} email${group.count > 1 ? 's' : ''} • ${this.formatEmailDate(group.latestDate)}</div>
+                    </div>
+                    <div class="group-expand-harmonized">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                
+                <div class="group-content-harmonized" style="display: none;">
+                    ${group.emails.map(email => this.renderEmailRow(email)).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    // ================================================
+    // AUTRES MÉTHODES PAGES
+    // ================================================
+    async renderScanner(container) {
+        console.log('[PageManager] Rendering scanner page...');
+        
+        const authStatus = await this.checkAuthenticationStatus();
+        
+        if (!authStatus.isAuthenticated) {
+            container.innerHTML = `
+                <div class="scanner-auth-required">
+                    <div class="scanner-header">
+                        <h1><i class="fas fa-search"></i> Scanner d'emails</h1>
+                        <p>Connectez-vous pour analyser vos emails</p>
+                    </div>
+                    
+                    <div class="auth-card">
+                        <div class="auth-icon">
+                            <i class="fab fa-microsoft"></i>
+                        </div>
+                        <h3>Connexion Microsoft Graph</h3>
+                        <p>Accédez à vos emails Outlook/Exchange</p>
+                        <button class="btn btn-primary btn-large" onclick="window.pageManager.handleLogin()">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Se connecter à Microsoft
+                        </button>
+                    </div>
+                    
+                    <div class="scanner-info">
+                        <div class="info-card">
+                            <i class="fas fa-shield-alt"></i>
+                            <h4>Sécurisé</h4>
+                            <p>Authentification OAuth2 Microsoft</p>
+                        </div>
+                        <div class="info-card">
+                            <i class="fas fa-robot"></i>
+                            <h4>IA Intégrée</h4>
+                            <p>Analyse intelligente avec Claude AI</p>
+                        </div>
+                        <div class="info-card">
+                            <i class="fas fa-tasks"></i>
+                            <h4>Productivité</h4>
+                            <p>Convertit automatiquement en tâches</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            this.addScannerStyles();
+            return;
+        }
+        
+        // User is authenticated, try to use the scan module
+        if (window.minimalScanModule && typeof window.minimalScanModule.render === 'function') {
+            try {
+                await window.minimalScanModule.render(container);
+                return;
+            } catch (error) {
+                console.error('[PageManager] Error with minimalScanModule:', error);
+            }
+        }
+        
+        // Fallback scanner interface
+        container.innerHTML = `
+            <div class="scanner-authenticated">
+                <div class="scanner-header">
+                    <h1><i class="fas fa-search"></i> Scanner d'emails</h1>
+                    <p>Analysez vos emails et créez des tâches automatiquement</p>
+                </div>
+                
+                <div class="scanner-controls">
+                    <div class="control-group">
+                        <label for="folder-select">Dossier à analyser:</label>
+                        <select id="folder-select" class="form-select">
+                            <option value="inbox">Boîte de réception</option>
+                            <option value="sentitems">Éléments envoyés</option>
+                            <option value="junkemail">Courrier indésirable</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="email-count">Nombre d'emails:</label>
+                        <select id="email-count" class="form-select">
+                            <option value="25">25 emails</option>
+                            <option value="50" selected>50 emails</option>
+                            <option value="100">100 emails</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="scanner-actions">
+                    <button class="btn btn-primary btn-large" onclick="window.pageManager.startEmailScan()">
+                        <i class="fas fa-play"></i>
+                        Démarrer l'analyse
+                    </button>
+                    
+                    <button class="btn btn-secondary" onclick="window.pageManager.testMailConnection()">
+                        <i class="fas fa-plug"></i>
+                        Tester la connexion
+                    </button>
+                </div>
+                
+                <div id="scan-results" class="scan-results" style="display: none;"></div>
+                
+                <div class="scanner-status">
+                    <div class="status-item">
+                        <i class="fas fa-user"></i>
+                        <span>Connecté${authStatus.user ? ' en tant que ' + authStatus.user : ''}</span>
+                    </div>
+                    <div class="status-item">
+                        <i class="fas fa-database"></i>
+                        <span>EmailScanner: ${window.emailScanner ? 'Disponible' : 'Non disponible'}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        this.addScannerStyles();
+    }
+
+    async startEmailScan() {
+        console.log('[PageManager] Starting email scan...');
+        
+        const folderSelect = document.getElementById('folder-select');
+        const countSelect = document.getElementById('email-count');
+        const resultsDiv = document.getElementById('scan-results');
+        
+        const folder = folderSelect ? folderSelect.value : 'inbox';
+        const count = countSelect ? parseInt(countSelect.value) : 50;
+        
+        try {
+            this.showLoading(`Analyse de ${count} emails...`);
+            
+            // Utiliser EmailScanner si disponible
+            if (window.emailScanner && typeof window.emailScanner.scan === 'function') {
+                const results = await window.emailScanner.scan({
+                    folder: folder,
+                    maxEmails: count,
+                    onProgress: (progress) => {
+                        console.log('[PageManager] Scan progress:', progress);
+                    }
+                });
+                
+                console.log(`[PageManager] Scan completed with ${results.total} emails`);
+                
+                if (resultsDiv) {
+                    resultsDiv.style.display = 'block';
+                    resultsDiv.innerHTML = `
+                        <div class="scan-success">
+                            <h3><i class="fas fa-check-circle"></i> Analyse terminée</h3>
+                            <p>${results.total} emails analysés avec succès</p>
+                            <div class="result-actions">
+                                <button class="btn btn-primary" onclick="window.pageManager.loadPage('emails')">
+                                    <i class="fas fa-envelope"></i>
+                                    Voir les emails
+                                </button>
+                                <button class="btn btn-secondary" onclick="window.pageManager.loadPage('tasks')">
+                                    <i class="fas fa-tasks"></i>
+                                    Voir les tâches
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                this.hideLoading();
+                this.showToast(`${results.total} emails analysés avec succès!`, 'success');
+                
+            } else {
+                throw new Error('EmailScanner non disponible');
+            }
+            
+        } catch (error) {
+            console.error('[PageManager] Email scan error:', error);
+            this.hideLoading();
+            this.showError('Erreur lors de l\'analyse: ' + error.message);
+            
+            if (resultsDiv) {
+                resultsDiv.style.display = 'block';
+                resultsDiv.innerHTML = `
+                    <div class="scan-error">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Erreur d'analyse</h3>
+                        <p>${error.message}</p>
+                        <button class="btn btn-secondary" onclick="window.pageManager.testMailConnection()">
+                            <i class="fas fa-plug"></i>
+                            Tester la connexion
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    async testMailConnection() {
+        console.log('[PageManager] Testing mail connection...');
+        
+        try {
+            this.showLoading('Test de connexion...');
+            
+            if (window.mailService && typeof window.mailService.testConnection === 'function') {
+                const result = await window.mailService.testConnection();
+                
+                this.hideLoading();
+                
+                if (result.success) {
+                    this.showToast(`Connexion réussie! Utilisateur: ${result.user}`, 'success');
+                } else {
+                    this.showError(`Test de connexion échoué: ${result.error}`);
+                }
+            } else {
+                throw new Error('MailService non disponible');
+            }
+            
+        } catch (error) {
+            console.error('[PageManager] Connection test error:', error);
+            this.hideLoading();
+            this.showError('Erreur de test: ' + error.message);
+        }
     }
 
     async renderTasks(container) {
@@ -997,280 +1173,6 @@ class PageManager {
     // ================================================
     // EMAIL MANAGEMENT
     // ================================================
-    getAllEmails() {
-        return this.safeCall(() => window.emailScanner?.getAllEmails()) || 
-               this.safeCall(() => window.emailScanner?.emails) || 
-               [];
-    }
-
-    getCategories() {
-        return this.safeCall(() => window.categoryManager?.getCategories()) || {};
-    }
-
-    getTaskPreselectedCategories() {
-        if (this.safeCall(() => window.categoryManager?.getTaskPreselectedCategories)) {
-            return window.categoryManager.getTaskPreselectedCategories();
-        }
-        
-        if (this.safeCall(() => window.categoriesPage?.getTaskPreselectedCategories)) {
-            return window.categoriesPage.getTaskPreselectedCategories();
-        }
-        
-        try {
-            const settings = JSON.parse(this.getLocalStorageItem('categorySettings') || '{}');
-            return settings.taskPreselectedCategories || [];
-        } catch (error) {
-            console.error('[PageManager] Error getting preselected categories:', error);
-            return [];
-        }
-    }
-
-    renderEmailsList() {
-        const emails = this.getAllEmails();
-        let filteredEmails = emails;
-        
-        // Apply filters
-        if (this.currentCategory && this.currentCategory !== 'all') {
-            filteredEmails = filteredEmails.filter(email => (email.category || 'other') === this.currentCategory);
-        }
-        
-        if (this.searchTerm) {
-            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
-        }
-        
-        if (filteredEmails.length === 0) {
-            return this.renderEmptyState();
-        }
-
-        switch (this.currentViewMode) {
-            case 'flat':
-                return this.renderFlatView(filteredEmails);
-            case 'grouped-domain':
-            case 'grouped-sender':
-                return this.renderGroupedView(filteredEmails, this.currentViewMode);
-            default:
-                return this.renderFlatView(filteredEmails);
-        }
-    }
-
-    renderFlatView(emails) {
-        return `
-            <div class="tasks-harmonized-list">
-                ${emails.map(email => this.renderEmailRow(email)).join('')}
-            </div>
-        `;
-    }
-
-    renderEmailRow(email) {
-        const isSelected = this.selectedEmails.has(email.id);
-        const hasTask = this.createdTasks.has(email.id);
-        const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
-        const preselectedCategories = this.getTaskPreselectedCategories();
-        const isPreselectedForTasks = email.isPreselectedForTasks === true || preselectedCategories.includes(email.category);
-        
-        const cardClasses = [
-            'task-harmonized-card',
-            isSelected ? 'selected' : '',
-            hasTask ? 'has-task' : '',
-            isPreselectedForTasks ? 'preselected-task' : ''
-        ].filter(Boolean).join(' ');
-        
-        return `
-            <div class="${cardClasses}" 
-                 data-email-id="${email.id}"
-                 onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
-                
-                <input type="checkbox" 
-                       class="task-checkbox-harmonized" 
-                       ${isSelected ? 'checked' : ''}
-                       onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
-                
-                <div class="priority-bar-harmonized" 
-                     style="background-color: ${isPreselectedForTasks ? '#8b5cf6' : this.getEmailPriorityColor(email)}"></div>
-                
-                <div class="task-main-content-harmonized">
-                    <div class="task-header-harmonized">
-                        <h3 class="task-title-harmonized">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
-                        <div class="task-meta-harmonized">
-                            <span class="task-type-badge-harmonized">📧 Email</span>
-                            <span class="deadline-badge-harmonized">
-                                📅 ${this.formatEmailDate(email.receivedDateTime)}
-                            </span>
-                            ${isPreselectedForTasks ? `
-                                <span class="preselected-badge-harmonized">
-                                    ⭐ Pré-sélectionné
-                                </span>
-                            ` : ''}
-                        </div>
-                    </div>
-                    
-                    <div class="task-recipient-harmonized">
-                        <i class="fas fa-envelope"></i>
-                        <span class="recipient-name-harmonized">${this.escapeHtml(senderName)}</span>
-                        ${email.hasAttachments ? '<span class="reply-indicator-harmonized">• Pièce jointe</span>' : ''}
-                        ${email.category && email.category !== 'other' ? `
-                            <span class="category-indicator-harmonized" 
-                                  style="background: ${this.getCategoryColor(email.category)}20; 
-                                         color: ${this.getCcategoryColor(email.category)};">
-                                ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
-                            </span>
-                        ` : ''}
-                    </div>
-                </div>
-                
-                <div class="task-actions-harmonized">
-                    ${this.renderEmailActions(email)}
-                </div>
-            </div>
-        `;
-    }
-
-    renderEmailActions(email) {
-        const hasTask = this.createdTasks.has(email.id);
-        const actions = [];
-        
-        if (!hasTask) {
-            actions.push(`
-                <button class="action-btn-harmonized create-task" 
-                        onclick="event.stopPropagation(); window.pageManager.showTaskCreationModal('${email.id}')"
-                        title="Créer une tâche">
-                    <i class="fas fa-tasks"></i>
-                </button>
-            `);
-        } else {
-            actions.push(`
-                <button class="action-btn-harmonized view-task" 
-                        onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')"
-                        title="Voir la tâche">
-                    <i class="fas fa-check-circle"></i>
-                </button>
-            `);
-        }
-        
-        actions.push(`
-            <button class="action-btn-harmonized details" 
-                    onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')"
-                    title="Voir l'email">
-                <i class="fas fa-eye"></i>
-            </button>
-        `);
-        
-        return actions.join('');
-    }
-
-    // ================================================
-    // UTILITY METHODS
-    // ================================================
-    safeCall(fn) {
-        try {
-            return fn();
-        } catch (error) {
-            console.warn('[PageManager] Safe call failed:', error);
-            return null;
-        }
-    }
-
-    getPageContainer() {
-        return document.getElementById('pageContent') || document.querySelector('.page-content') || document.querySelector('#content');
-    }
-
-    showPageContent() {
-        const pageContent = this.getPageContainer();
-        if (pageContent) {
-            pageContent.style.display = 'block';
-            pageContent.style.opacity = '1';
-        }
-    }
-
-    updateNavigation(activePage) {
-        document.querySelectorAll('.nav-item').forEach(item => {
-            if (item.dataset.page === activePage) {
-                item.classList.add('active');
-            } else {
-                item.classList.remove('active');
-            }
-        });
-    }
-
-    showLoading(message = 'Chargement...') {
-        if (window.uiManager && window.uiManager.showLoading) {
-            window.uiManager.showLoading(message);
-        } else {
-            console.log(`[PageManager] Loading: ${message}`);
-        }
-    }
-
-    hideLoading() {
-        if (window.uiManager && window.uiManager.hideLoading) {
-            window.uiManager.hideLoading();
-        }
-    }
-
-    showError(message) {
-        if (window.uiManager && window.uiManager.showToast) {
-            window.uiManager.showToast(message, 'error');
-        } else {
-            console.error(`[PageManager] Error: ${message}`);
-        }
-    }
-
-    renderErrorPage(error) {
-        return `
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <h3 class="empty-state-title">Erreur de chargement</h3>
-                <p class="empty-state-text">${error.message}</p>
-                <button class="btn btn-primary" onclick="window.location.reload()">
-                    <i class="fas fa-refresh"></i>
-                    Recharger la page
-                </button>
-            </div>
-        `;
-    }
-
-    renderEmptyEmailsState() {
-        return `
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    <i class="fas fa-inbox"></i>
-                </div>
-                <h3 class="empty-state-title">Aucun email trouvé</h3>
-                <p class="empty-state-text">
-                    Utilisez le scanner pour récupérer et analyser vos emails.
-                </p>
-                <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
-                    <i class="fas fa-search"></i>
-                    Aller au scanner
-                </button>
-            </div>
-        `;
-    }
-
-    renderEmptyState() {
-        return `
-            <div class="empty-state-harmonized">
-                <div class="empty-state-icon-harmonized">
-                    <i class="fas fa-inbox"></i>
-                </div>
-                <h3 class="empty-state-title-harmonized">Aucun email trouvé</h3>
-                <p class="empty-state-text-harmonized">
-                    ${this.searchTerm ? 'Aucun résultat pour votre recherche' : 'Aucun email dans cette catégorie'}
-                </p>
-                ${this.searchTerm ? `
-                    <button class="btn-harmonized btn-primary" onclick="window.pageManager.clearSearch()">
-                        <i class="fas fa-undo"></i>
-                        <span>Effacer la recherche</span>
-                    </button>
-                ` : ''}
-            </div>
-        `;
-    }
-
-    // ================================================
-    // EMAIL INTERACTIONS
-    // ================================================
     toggleEmailSelection(emailId) {
         if (this.selectedEmails.has(emailId)) {
             this.selectedEmails.delete(emailId);
@@ -1328,9 +1230,6 @@ class PageManager {
         }
     }
 
-    // ================================================
-    // SEARCH AND FILTERS
-    // ================================================
     setupEmailsEventListeners() {
         const searchInput = document.getElementById('emailSearchInput');
         if (searchInput) {
@@ -1356,121 +1255,33 @@ class PageManager {
         this.refreshEmailsView();
     }
 
-    matchesSearch(email, searchTerm) {
-        if (!searchTerm) return true;
-        
-        const search = searchTerm.toLowerCase();
-        const subject = (email.subject || '').toLowerCase();
-        const sender = (email.from?.emailAddress?.name || '').toLowerCase();
-        const senderEmail = (email.from?.emailAddress?.address || '').toLowerCase();
-        const preview = (email.bodyPreview || '').toLowerCase();
-        
-        return subject.includes(search) || 
-               sender.includes(search) || 
-               senderEmail.includes(search) || 
-               preview.includes(search);
+    hideExplanationMessage() {
+        this.hideExplanation = true;
+        this.setLocalStorageItem('hideEmailExplanation', 'true');
+        this.refreshEmailsView();
     }
 
-    getVisibleEmails() {
-        const emails = this.getAllEmails();
-        let filteredEmails = emails;
+    toggleGroup(groupKey) {
+        const group = document.querySelector(`[data-group-key="${groupKey}"]`);
+        if (!group) return;
         
-        if (this.currentCategory && this.currentCategory !== 'all') {
-            filteredEmails = filteredEmails.filter(email => (email.category || 'other') === this.currentCategory);
+        const content = group.querySelector('.group-content-harmonized');
+        const icon = group.querySelector('.group-expand-harmonized i');
+        const header = group.querySelector('.group-header-harmonized');
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+            group.classList.add('expanded');
+            header.classList.add('expanded-header');
+        } else {
+            content.style.display = 'none';
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+            group.classList.remove('expanded');
+            header.classList.remove('expanded-header');
         }
-        
-        if (this.searchTerm) {
-            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
-        }
-        
-        return filteredEmails;
-    }
-
-    calculateCategoryCounts(emails) {
-        const counts = {};
-        emails.forEach(email => {
-            const cat = email.category || 'other';
-            counts[cat] = (counts[cat] || 0) + 1;
-        });
-        return counts;
-    }
-
-    buildCategoryTabs(categoryCounts, totalEmails, categories) {
-        const preselectedCategories = this.getTaskPreselectedCategories();
-        
-        const tabs = [
-            { 
-                id: 'all', 
-                name: 'Tous', 
-                icon: '📧', 
-                count: totalEmails,
-                isPreselected: false 
-            }
-        ];
-        
-        // Add categories with emails
-        Object.entries(categories).forEach(([catId, category]) => {
-            const count = categoryCounts[catId] || 0;
-            if (count > 0) {
-                const isPreselected = preselectedCategories.includes(catId);
-                tabs.push({
-                    id: catId,
-                    name: category.name,
-                    icon: category.icon,
-                    color: category.color,
-                    count: count,
-                    isPreselected: isPreselected
-                });
-            }
-        });
-        
-        // Add "Other" if necessary
-        const otherCount = categoryCounts.other || 0;
-        if (otherCount > 0) {
-            tabs.push({
-                id: 'other',
-                name: 'Autre',
-                icon: '📌',
-                count: otherCount,
-                isPreselected: false
-            });
-        }
-        
-        return tabs.map(tab => {
-            const isCurrentCategory = this.currentCategory === tab.id;
-            const baseClasses = `status-pill-harmonized-twolines ${isCurrentCategory ? 'active' : ''}`;
-            
-            let extraClasses = '';
-            let extraStyles = '';
-            let preselectedBadge = '';
-            
-            if (tab.isPreselected && !isCurrentCategory) {
-                extraClasses = ' preselected-category';
-                extraStyles = `style="border: 2px solid ${tab.color || '#8b5cf6'}; background: ${tab.color ? tab.color + '10' : '#f3e8ff'};"`;
-                preselectedBadge = '<span class="preselected-star">⭐</span>';
-            } else if (tab.isPreselected && isCurrentCategory) {
-                extraStyles = `style="box-shadow: 0 0 0 3px ${tab.color || '#8b5cf6'}40;"`;
-                preselectedBadge = '<span class="preselected-star">⭐</span>';
-            }
-            
-            return `
-                <button class="${baseClasses}${extraClasses}" 
-                        ${extraStyles}
-                        onclick="window.pageManager.filterByCategory('${tab.id}')"
-                        title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
-                    <div class="pill-content-twolines">
-                        <div class="pill-first-line-twolines">
-                            <span class="pill-icon-twolines">${tab.icon}</span>
-                            <span class="pill-count-twolines">${tab.count}</span>
-                            ${preselectedBadge}
-                        </div>
-                        <div class="pill-second-line-twolines">
-                            <span class="pill-text-twolines">${tab.name}</span>
-                        </div>
-                    </div>
-                </button>
-            `;
-        }).join('');
     }
 
     // ================================================
@@ -1490,11 +1301,14 @@ class PageManager {
             if (!email || this.createdTasks.has(emailId)) continue;
             
             try {
+                const taskData = this.buildTaskDataFromEmail(email);
+                
                 if (window.taskManager) {
-                    const taskData = this.buildTaskDataFromEmail(email);
                     const task = window.taskManager.createTaskFromEmail(taskData, email);
-                    this.createdTasks.set(emailId, task.id);
-                    created++;
+                    if (task) {
+                        this.createdTasks.set(emailId, task.id);
+                        created++;
+                    }
                 }
             } catch (error) {
                 console.error('[PageManager] Error creating task:', emailId, error);
@@ -1555,7 +1369,6 @@ class PageManager {
         const email = this.getEmailById(emailId);
         if (!email) return;
 
-        // Remove existing modals
         document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
         
         const uniqueId = 'email_modal_' + Date.now();
@@ -1609,7 +1422,6 @@ class PageManager {
         const email = this.getEmailById(emailId);
         if (!email) return;
 
-        // Remove existing modals
         document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
         
         const uniqueId = 'task_modal_' + Date.now();
@@ -1727,20 +1539,6 @@ class PageManager {
         }
     }
 
-    hideExplanationMessage() {
-        this.hideExplanation = true;
-        this.setLocalStorageItem('hideEmailExplanation', 'true');
-        this.refreshEmailsView();
-    }
-
-    initializeScanner() {
-        if (window.minimalScanModule && window.minimalScanModule.startScan) {
-            window.minimalScanModule.startScan();
-        } else {
-            this.showToast('Scanner non disponible', 'warning');
-        }
-    }
-
     configureAI() {
         if (window.aiTaskAnalyzer && window.aiTaskAnalyzer.showConfigurationModal) {
             window.aiTaskAnalyzer.showConfigurationModal();
@@ -1762,9 +1560,95 @@ class PageManager {
         });
     }
 
+    renderEmailActions(email) {
+        const hasTask = this.createdTasks.has(email.id);
+        const actions = [];
+        
+        if (!hasTask) {
+            actions.push(`
+                <button class="action-btn-harmonized create-task" 
+                        onclick="event.stopPropagation(); window.pageManager.showTaskCreationModal('${email.id}')"
+                        title="Créer une tâche">
+                    <i class="fas fa-tasks"></i>
+                </button>
+            `);
+        } else {
+            actions.push(`
+                <button class="action-btn-harmonized view-task" 
+                        onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')"
+                        title="Voir la tâche">
+                    <i class="fas fa-check-circle"></i>
+                </button>
+            `);
+        }
+        
+        actions.push(`
+            <button class="action-btn-harmonized details" 
+                    onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')"
+                    title="Voir l'email">
+                <i class="fas fa-eye"></i>
+            </button>
+        `);
+        
+        return actions.join('');
+    }
+
     // ================================================
-    // UTILITY FUNCTIONS
+    // UTILITY METHODS
     // ================================================
+    safeCall(fn) {
+        try {
+            return fn();
+        } catch (error) {
+            console.warn('[PageManager] Safe call failed:', error);
+            return null;
+        }
+    }
+
+    getPageContainer() {
+        return document.getElementById('pageContent') || document.querySelector('.page-content') || document.querySelector('#content');
+    }
+
+    showPageContent() {
+        const pageContent = this.getPageContainer();
+        if (pageContent) {
+            pageContent.style.display = 'block';
+            pageContent.style.opacity = '1';
+        }
+    }
+
+    updateNavigation(activePage) {
+        document.querySelectorAll('.nav-item').forEach(item => {
+            if (item.dataset.page === activePage) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+
+    showLoading(message = 'Chargement...') {
+        if (window.uiManager && window.uiManager.showLoading) {
+            window.uiManager.showLoading(message);
+        } else {
+            console.log(`[PageManager] Loading: ${message}`);
+        }
+    }
+
+    hideLoading() {
+        if (window.uiManager && window.uiManager.hideLoading) {
+            window.uiManager.hideLoading();
+        }
+    }
+
+    showError(message) {
+        if (window.uiManager && window.uiManager.showToast) {
+            window.uiManager.showToast(message, 'error');
+        } else {
+            console.error(`[PageManager] Error: ${message}`);
+        }
+    }
+
     showToast(message, type = 'info') {
         if (window.uiManager && window.uiManager.showToast) {
             window.uiManager.showToast(message, type);
@@ -1773,11 +1657,117 @@ class PageManager {
         }
     }
 
-    escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    renderErrorPage(error) {
+        return `
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3 class="empty-state-title">Erreur de chargement</h3>
+                <p class="empty-state-text">${error.message}</p>
+                <button class="btn btn-primary" onclick="window.location.reload()">
+                    <i class="fas fa-refresh"></i>
+                    Recharger la page
+                </button>
+            </div>
+        `;
+    }
+
+    renderEmptyEmailsState() {
+        return `
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h3 class="empty-state-title">Aucun email trouvé</h3>
+                <p class="empty-state-text">
+                    Utilisez le scanner pour récupérer et analyser vos emails.
+                </p>
+                <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
+                    <i class="fas fa-search"></i>
+                    Aller au scanner
+                </button>
+            </div>
+        `;
+    }
+
+    renderEmptyState() {
+        return `
+            <div class="empty-state-harmonized">
+                <div class="empty-state-icon-harmonized">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h3 class="empty-state-title-harmonized">Aucun email trouvé</h3>
+                <p class="empty-state-text-harmonized">
+                    ${this.searchTerm ? 'Aucun résultat pour votre recherche' : 'Aucun email dans cette catégorie'}
+                </p>
+                ${this.searchTerm ? `
+                    <button class="btn-harmonized btn-primary" onclick="window.pageManager.clearSearch()">
+                        <i class="fas fa-undo"></i>
+                        <span>Effacer la recherche</span>
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    getVisibleEmails() {
+        const emails = this.getAllEmails();
+        let filteredEmails = emails;
+        
+        if (this.currentCategory && this.currentCategory !== 'all') {
+            filteredEmails = filteredEmails.filter(email => (email.category || 'other') === this.currentCategory);
+        }
+        
+        if (this.searchTerm) {
+            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
+        }
+        
+        return filteredEmails;
+    }
+
+    matchesSearch(email, searchTerm) {
+        if (!searchTerm) return true;
+        
+        const search = searchTerm.toLowerCase();
+        const subject = (email.subject || '').toLowerCase();
+        const sender = (email.from?.emailAddress?.name || '').toLowerCase();
+        const senderEmail = (email.from?.emailAddress?.address || '').toLowerCase();
+        const preview = (email.bodyPreview || '').toLowerCase();
+        
+        return subject.includes(search) || 
+               sender.includes(search) || 
+               senderEmail.includes(search) || 
+               preview.includes(search);
+    }
+
+    calculateCategoryCounts(emails) {
+        const counts = {};
+        emails.forEach(email => {
+            const cat = email.category || 'other';
+            counts[cat] = (counts[cat] || 0) + 1;
+        });
+        return counts;
+    }
+
+    generateAvatarColor(text) {
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+            hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        
+        const hue = Math.abs(hash) % 360;
+        const saturation = 65 + (Math.abs(hash) % 20);
+        const lightness = 45 + (Math.abs(hash) % 15);
+        
+        return `linear-gradient(135deg, hsl(${hue}, ${saturation}%, ${lightness}%), hsl(${(hue + 30) % 360}, ${saturation}%, ${lightness + 10}%))`;
+    }
+
+    getEmailPriorityColor(email) {
+        if (email.importance === 'high') return '#ef4444';
+        if (email.hasAttachments) return '#f97316';
+        if (email.categoryScore >= 80) return '#10b981';
+        return '#3b82f6';
     }
 
     formatEmailDate(dateString) {
@@ -1797,18 +1787,18 @@ class PageManager {
         }
     }
 
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
     getEmailContent(email) {
         if (email.body?.content) {
             return email.body.content;
         }
         return `<p>${email.bodyPreview || 'Aucun contenu disponible'}</p>`;
-    }
-
-    getEmailPriorityColor(email) {
-        if (email.importance === 'high') return '#ef4444';
-        if (email.hasAttachments) return '#f97316';
-        if (email.categoryScore >= 80) return '#10b981';
-        return '#3b82f6';
     }
 
     getCategoryColor(categoryId) {
@@ -1824,125 +1814,6 @@ class PageManager {
     getCategoryName(categoryId) {
         const category = this.safeCall(() => window.categoryManager?.getCategory(categoryId));
         return category?.name || categoryId || 'Autre';
-    }
-
-    renderGroupedView(emails, groupMode) {
-        const groups = this.createEmailGroups(emails, groupMode);
-        
-        return `
-            <div class="tasks-grouped-harmonized">
-                ${groups.map(group => this.renderEmailGroup(group, groupMode)).join('')}
-            </div>
-        `;
-    }
-
-    createEmailGroups(emails, groupMode) {
-        const groups = {};
-        
-        emails.forEach(email => {
-            let groupKey, groupName;
-            
-            if (groupMode === 'grouped-domain') {
-                const domain = email.from?.emailAddress?.address?.split('@')[1] || 'unknown';
-                groupKey = domain;
-                groupName = domain;
-            } else {
-                const senderEmail = email.from?.emailAddress?.address || 'unknown';
-                const senderName = email.from?.emailAddress?.name || senderEmail;
-                groupKey = senderEmail;
-                groupName = senderName;
-            }
-            
-            if (!groups[groupKey]) {
-                groups[groupKey] = {
-                    key: groupKey,
-                    name: groupName,
-                    emails: [],
-                    count: 0,
-                    latestDate: null
-                };
-            }
-            
-            groups[groupKey].emails.push(email);
-            groups[groupKey].count++;
-            
-            const emailDate = new Date(email.receivedDateTime);
-            if (!groups[groupKey].latestDate || emailDate > groups[groupKey].latestDate) {
-                groups[groupKey].latestDate = emailDate;
-            }
-        });
-        
-        return Object.values(groups).sort((a, b) => {
-            if (!a.latestDate && !b.latestDate) return 0;
-            if (!a.latestDate) return 1;
-            if (!b.latestDate) return -1;
-            return b.latestDate - a.latestDate;
-        });
-    }
-
-    renderEmailGroup(group, groupType) {
-        const displayName = groupType === 'grouped-domain' ? `@${group.name}` : group.name;
-        const avatarColor = this.generateAvatarColor(group.name);
-        
-        return `
-            <div class="task-group-harmonized" data-group-key="${group.key}">
-                <div class="group-header-harmonized" onclick="window.pageManager.toggleGroup('${group.key}')">
-                    <div class="group-avatar-harmonized" style="background: ${avatarColor}">
-                        ${groupType === 'grouped-domain' ? 
-                            '<i class="fas fa-globe"></i>' : 
-                            group.name.charAt(0).toUpperCase()
-                        }
-                    </div>
-                    <div class="group-info-harmonized">
-                        <div class="group-name-harmonized">${displayName}</div>
-                        <div class="group-meta-harmonized">${group.count} email${group.count > 1 ? 's' : ''} • ${this.formatEmailDate(group.latestDate)}</div>
-                    </div>
-                    <div class="group-expand-harmonized">
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                </div>
-                
-                <div class="group-content-harmonized" style="display: none;">
-                    ${group.emails.map(email => this.renderEmailRow(email)).join('')}
-                </div>
-            </div>
-        `;
-    }
-
-    toggleGroup(groupKey) {
-        const group = document.querySelector(`[data-group-key="${groupKey}"]`);
-        if (!group) return;
-        
-        const content = group.querySelector('.group-content-harmonized');
-        const icon = group.querySelector('.group-expand-harmonized i');
-        const header = group.querySelector('.group-header-harmonized');
-        
-        if (content.style.display === 'none') {
-            content.style.display = 'block';
-            icon.classList.remove('fa-chevron-down');
-            icon.classList.add('fa-chevron-up');
-            group.classList.add('expanded');
-            header.classList.add('expanded-header');
-        } else {
-            content.style.display = 'none';
-            icon.classList.remove('fa-chevron-up');
-            icon.classList.add('fa-chevron-down');
-            group.classList.remove('expanded');
-            header.classList.remove('expanded-header');
-        }
-    }
-
-    generateAvatarColor(text) {
-        let hash = 0;
-        for (let i = 0; i < text.length; i++) {
-            hash = text.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        
-        const hue = Math.abs(hash) % 360;
-        const saturation = 65 + (Math.abs(hash) % 20);
-        const lightness = 45 + (Math.abs(hash) % 15);
-        
-        return `linear-gradient(135deg, hsl(${hue}, ${saturation}%, ${lightness}%), hsl(${(hue + 30) % 360}, ${saturation}%, ${lightness + 10}%))`;
     }
 
     // ================================================
@@ -1967,6 +1838,63 @@ class PageManager {
                 --shadow-base: 0 2px 8px rgba(0, 0, 0, 0.05);
                 --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
                 --preselect-color: #8b5cf6;
+            }
+            
+            /* Auth Required State */
+            .auth-required-state {
+                text-align: center;
+                padding: 60px 30px;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border-radius: 20px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+                max-width: 500px;
+                margin: 0 auto;
+            }
+            
+            .auth-icon {
+                font-size: 48px;
+                margin-bottom: 20px;
+                color: #f59e0b;
+                background: linear-gradient(135deg, #f59e0b, #d97706);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+            
+            .auth-title {
+                font-size: 24px;
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: 16px;
+            }
+            
+            .auth-text {
+                font-size: 16px;
+                color: #6b7280;
+                margin-bottom: 32px;
+                line-height: 1.6;
+            }
+            
+            .auth-actions {
+                display: flex;
+                gap: 16px;
+                justify-content: center;
+                flex-wrap: wrap;
+                margin-bottom: 20px;
+            }
+            
+            .auth-debug {
+                background: #f8f9fa !important;
+                border: 1px solid #e9ecef;
+                border-radius: 8px;
+                padding: 12px;
+                font-size: 12px;
+                color: #666;
+                text-align: left;
+                font-family: monospace;
+                line-height: 1.4;
             }
             
             /* Modal Styles */
@@ -2784,7 +2712,169 @@ class PageManager {
                 color: #7c3aed;
             }
             
-            /* Empty States */
+            /* Vue groupée */
+            .tasks-grouped-harmonized {
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .task-group-harmonized {
+                background: transparent;
+                border: none;
+                border-radius: 0;
+                overflow: visible;
+                margin: 0;
+                padding: 0;
+            }
+            
+            .group-header-harmonized {
+                display: flex;
+                align-items: center;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 0;
+                padding: var(--card-padding);
+                cursor: pointer;
+                transition: all 0.3s ease;
+                position: relative;
+                min-height: 76px;
+                max-height: 76px;
+                border-bottom: 1px solid #e5e7eb;
+                gap: 12px;
+            }
+            
+            .task-group-harmonized:first-child .group-header-harmonized {
+                border-top-left-radius: var(--card-border-radius);
+                border-top-right-radius: var(--card-border-radius);
+                border-top: 1px solid #e5e7eb;
+            }
+            
+            .task-group-harmonized:last-child .group-header-harmonized:not(.expanded-header) {
+                border-bottom-left-radius: var(--card-border-radius);
+                border-bottom-right-radius: var(--card-border-radius);
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .group-header-harmonized:hover {
+                background: white;
+                transform: translateY(-1px);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+                border-color: rgba(99, 102, 241, 0.2);
+                border-left: 3px solid #6366f1;
+                z-index: 1;
+            }
+            
+            .task-group-harmonized.expanded .group-header-harmonized {
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                border-left: 4px solid #3b82f6;
+                border-color: #3b82f6;
+                transform: translateY(-1px);
+                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+                z-index: 2;
+                border-bottom-left-radius: 0;
+                border-bottom-right-radius: 0;
+            }
+            
+            .group-avatar-harmonized {
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 700;
+                font-size: 16px;
+                flex-shrink: 0;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            }
+            
+            .group-info-harmonized {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                gap: 4px;
+                height: 100%;
+            }
+            
+            .group-name-harmonized {
+                font-weight: 700;
+                color: #1f2937;
+                font-size: 15px;
+                margin: 0;
+                line-height: 1.3;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            .group-meta-harmonized {
+                color: #6b7280;
+                font-size: 12px;
+                font-weight: 500;
+                line-height: 1.2;
+            }
+            
+            .group-expand-harmonized {
+                width: 36px;
+                height: 36px;
+                border: 2px solid transparent;
+                border-radius: var(--btn-border-radius);
+                background: rgba(255, 255, 255, 0.9);
+                color: #6b7280;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+                font-size: 13px;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+                flex-shrink: 0;
+            }
+            
+            .group-expand-harmonized:hover {
+                background: white;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                color: #374151;
+            }
+            
+            .task-group-harmonized.expanded .group-expand-harmonized {
+                transform: rotate(180deg) translateY(-1px);
+                color: #3b82f6;
+                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+                border-color: #3b82f6;
+            }
+            
+            .group-content-harmonized {
+                background: transparent;
+                margin: 0;
+                padding: 0;
+                display: none;
+            }
+            
+            .task-group-harmonized.expanded .group-content-harmonized {
+                display: block;
+            }
+            
+            .group-content-harmonized .task-harmonized-card {
+                border-radius: 0;
+                margin: 0;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .group-content-harmonized .task-harmonized-card:last-child {
+                border-bottom-left-radius: var(--card-border-radius);
+                border-bottom-right-radius: var(--card-border-radius);
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            /* États vides */
             .empty-state, .empty-state-harmonized {
                 text-align: center;
                 padding: 60px 30px;
@@ -2821,68 +2911,25 @@ class PageManager {
                 font-weight: 500;
             }
             
-            /* Auth Required State */
-            .auth-required-state {
-                text-align: center;
-                padding: 60px 30px;
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border-radius: 20px;
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
-                max-width: 500px;
+            /* Scanner Styles */
+            .scanner-authenticated, .scanner-auth-required {
+                max-width: 800px;
                 margin: 0 auto;
+                padding: 40px 20px;
+                text-align: center;
             }
             
-            .auth-icon {
-                font-size: 48px;
-                margin-bottom: 20px;
-                color: #f59e0b;
-                background: linear-gradient(135deg, #f59e0b, #d97706);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-            }
-            
-            .auth-title {
-                font-size: 24px;
+            .scanner-header h1 {
+                font-size: 32px;
                 font-weight: 700;
                 color: #1f2937;
                 margin-bottom: 16px;
             }
             
-            .auth-text {
-                font-size: 16px;
+            .scanner-header p {
+                font-size: 18px;
                 color: #6b7280;
-                margin-bottom: 32px;
-                line-height: 1.6;
-            }
-            
-            .auth-actions {
-                display: flex;
-                gap: 16px;
-                justify-content: center;
-                flex-wrap: wrap;
-                margin-bottom: 20px;
-            }
-            
-            .auth-debug {
-                background: #f8f9fa !important;
-                border: 1px solid #e9ecef;
-                border-radius: 8px;
-                padding: 12px;
-                font-size: 12px;
-                color: #666;
-                text-align: left;
-                font-family: monospace;
-                line-height: 1.4;
-            }
-            
-            /* Scanner Authenticated */
-            .scanner-authenticated {
-                max-width: 800px;
-                margin: 0 auto;
-                padding: 40px 20px;
+                margin-bottom: 40px;
             }
             
             .scanner-controls {
@@ -2942,11 +2989,6 @@ class PageManager {
                 margin-bottom: 12px;
             }
             
-            .scan-success p {
-                font-size: 16px;
-                margin-bottom: 20px;
-            }
-            
             .scan-error {
                 text-align: center;
                 color: #dc2626;
@@ -2958,16 +3000,12 @@ class PageManager {
                 margin-bottom: 12px;
             }
             
-            .scan-error p {
-                font-size: 16px;
-                margin-bottom: 20px;
-            }
-            
             .result-actions {
                 display: flex;
                 gap: 16px;
                 justify-content: center;
                 flex-wrap: wrap;
+                margin-top: 20px;
             }
             
             .scanner-status {
@@ -2995,14 +3033,6 @@ class PageManager {
             .status-item i {
                 color: #3b82f6;
                 width: 16px;
-                text-align: center;
-            }
-            
-            /* Scanner Auth Required */
-            .scanner-auth-required {
-                max-width: 800px;
-                margin: 0 auto;
-                padding: 40px 20px;
                 text-align: center;
             }
             
@@ -3036,7 +3066,40 @@ class PageManager {
                 line-height: 1.6;
             }
             
-            /* Settings and Categories Pages */
+            .scanner-info {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 30px;
+                margin-top: 40px;
+            }
+            
+            .info-card {
+                background: white;
+                padding: 30px;
+                border-radius: 16px;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+                border: 1px solid #e5e7eb;
+            }
+            
+            .info-card i {
+                font-size: 32px;
+                color: #3b82f6;
+                margin-bottom: 16px;
+            }
+            
+            .info-card h4 {
+                font-size: 18px;
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: 12px;
+            }
+            
+            .info-card p {
+                color: #6b7280;
+                line-height: 1.6;
+            }
+            
+            /* Pages */
             .page-header {
                 text-align: center;
                 margin-bottom: 40px;
@@ -3297,4 +3360,4 @@ if (!window.pageManager) {
     });
 }
 
-console.log('✅ PageManager v13.0 - Compatible Netlify loaded');
+console.log('✅ PageManager v13.1 - Compatible avec systèmes existants loaded');
