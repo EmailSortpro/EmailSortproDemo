@@ -1,4 +1,4 @@
-// EmailScanner.js - Version 9.0 - Compatible Web (coruscating-dodol-f30e8d.netlify.app)
+// EmailScanner.js - Version 10.0 - Compatible Web avec synchronisation StartScan complète
 
 class EmailScanner {
     constructor() {
@@ -28,18 +28,23 @@ class EmailScanner {
             startTime: null,
             categorizedCount: 0,
             keywordMatches: {},
-            categoryDistribution: {}
+            categoryDistribution: {},
+            taskPreselectedCategories: []
         };
         
         // Cache pour optimisation web
         this.cache = new Map();
         
-        console.log('[EmailScanner] ✅ Version 9.0 - Compatible Web');
+        // Indicateur de synchronisation StartScan
+        this.startScanSynced = false;
+        this.lastSyncTimestamp = null;
+        
+        console.log('[EmailScanner] ✅ Version 10.0 - Compatible Web avec synchronisation StartScan');
         this.initializeWebMode();
     }
 
     // ================================================
-    // INITIALISATION MODE WEB
+    // INITIALISATION MODE WEB AVEC SYNCHRONISATION STARTSCAN
     // ================================================
     async initializeWebMode() {
         try {
@@ -52,18 +57,136 @@ class EmailScanner {
             // 3. S'enregistrer comme listener si CategoryManager disponible
             this.registerWebChangeListener();
             
-            // 4. Démarrer la surveillance adaptée au web
+            // 4. Écouter les événements StartScan
+            this.setupStartScanListeners();
+            
+            // 5. Démarrer la surveillance adaptée au web
             this.startWebSync();
             
-            // 5. Setup event listeners web
+            // 6. Setup event listeners web
             this.setupWebEventListeners();
             
-            console.log('[EmailScanner] 🌐 Mode web initialisé');
+            console.log('[EmailScanner] 🌐 Mode web initialisé avec synchronisation StartScan');
             console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
         } catch (error) {
             console.error('[EmailScanner] ❌ Erreur initialisation web:', error);
             this.settings = this.getDefaultWebSettings();
             this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
+        }
+    }
+
+    setupStartScanListeners() {
+        console.log('[EmailScanner] 📡 Configuration des listeners StartScan...');
+        
+        // Écouter les événements de scan terminé
+        window.addEventListener('scanCompleted', (event) => {
+            console.log('[EmailScanner] 📨 Événement scanCompleted reçu:', event.detail);
+            this.handleStartScanCompleted(event.detail);
+        });
+        
+        // Écouter les événements de synchronisation EmailScanner
+        window.addEventListener('emailScannerSynced', (event) => {
+            console.log('[EmailScanner] 🔄 Événement emailScannerSynced reçu:', event.detail);
+            this.handleStartScanSync(event.detail);
+        });
+        
+        console.log('[EmailScanner] ✅ Listeners StartScan configurés');
+    }
+
+    handleStartScanCompleted(scanData) {
+        console.log('[EmailScanner] 🎯 Traitement scan terminé depuis StartScan...');
+        
+        try {
+            if (scanData.source === 'MinimalScanModule') {
+                console.log('[EmailScanner] 📊 Scan provenant de StartScan détecté');
+                
+                // Marquer comme synchronisé
+                this.startScanSynced = true;
+                this.lastSyncTimestamp = scanData.timestamp || Date.now();
+                
+                // Mettre à jour les catégories si nécessaire
+                if (scanData.taskPreselectedCategories) {
+                    this.updateTaskPreselectedCategories(scanData.taskPreselectedCategories);
+                }
+                
+                // Si des emails sont fournis, les utiliser
+                if (scanData.emails && Array.isArray(scanData.emails)) {
+                    console.log(`[EmailScanner] 📧 ${scanData.emails.length} emails reçus depuis StartScan`);
+                    this.emails = [...scanData.emails];
+                    
+                    // Re-catégoriser si nécessaire
+                    setTimeout(() => {
+                        this.processSyncedEmails();
+                    }, 100);
+                }
+                
+                console.log('[EmailScanner] ✅ Scan StartScan traité avec succès');
+            }
+        } catch (error) {
+            console.error('[EmailScanner] ❌ Erreur traitement scan StartScan:', error);
+        }
+    }
+
+    handleStartScanSync(syncData) {
+        console.log('[EmailScanner] 🔄 Traitement synchronisation StartScan...');
+        
+        try {
+            if (syncData.source === 'MinimalScanModule') {
+                this.startScanSynced = true;
+                this.lastSyncTimestamp = syncData.timestamp || Date.now();
+                
+                if (syncData.taskPreselectedCategories) {
+                    this.updateTaskPreselectedCategories(syncData.taskPreselectedCategories);
+                }
+                
+                console.log(`[EmailScanner] ✅ Synchronisation StartScan: ${syncData.emailCount} emails`);
+            }
+        } catch (error) {
+            console.error('[EmailScanner] ❌ Erreur synchronisation StartScan:', error);
+        }
+    }
+
+    async processSyncedEmails() {
+        console.log('[EmailScanner] 🔄 Traitement des emails synchronisés...');
+        
+        if (this.emails.length === 0) {
+            console.log('[EmailScanner] Aucun email à traiter');
+            return;
+        }
+        
+        try {
+            // Réinitialiser les métriques
+            this.scanMetrics = {
+                startTime: Date.now(),
+                categorizedCount: 0,
+                keywordMatches: {},
+                categoryDistribution: {},
+                taskPreselectedCategories: [...this.taskPreselectedCategories]
+            };
+            
+            // Réinitialiser les catégories
+            this.initializeDefaultCategories();
+            
+            // Traiter les emails synchronisés
+            await this.categorizeEmails();
+            
+            // Dispatcher l'événement de re-catégorisation
+            setTimeout(() => {
+                this.dispatchEvent('emailsRecategorized', {
+                    emails: this.emails,
+                    breakdown: this.getDetailedResults().breakdown,
+                    taskPreselectedCategories: this.taskPreselectedCategories,
+                    preselectedCount: this.emails.filter(e => e.isPreselectedForTasks).length,
+                    keywordStats: this.scanMetrics.keywordMatches,
+                    webMode: true,
+                    startScanSynced: true
+                });
+            }, 100);
+            
+            console.log('[EmailScanner] ✅ Emails synchronisés traités');
+            
+        } catch (error) {
+            console.error('[EmailScanner] ❌ Erreur traitement emails synchronisés:', error);
         }
     }
 
@@ -225,7 +348,8 @@ class EmailScanner {
                 value,
                 settings: this.settings,
                 taskPreselectedCategories: this.taskPreselectedCategories,
-                webMode: true
+                webMode: true,
+                startScanSynced: this.startScanSynced
             });
         }, 10);
     }
@@ -273,7 +397,7 @@ class EmailScanner {
     }
 
     // ================================================
-    // SCAN PRINCIPAL ADAPTÉ AU WEB
+    // SCAN PRINCIPAL ADAPTÉ AU WEB AVEC SUPPORT STARTSCAN
     // ================================================
     async scan(options = {}) {
         console.log('[EmailScanner] 🚀 === DÉMARRAGE SCAN WEB ===');
@@ -292,7 +416,8 @@ class EmailScanner {
             autoCategrize: options.autoCategrize !== undefined ? options.autoCategrize : scanSettings.autoCategrize,
             taskPreselectedCategories: [...this.taskPreselectedCategories],
             webMode: true,
-            simulationMode: this.webConfig.simulationMode
+            simulationMode: this.webConfig.simulationMode,
+            fromStartScan: options.fromStartScan || false
         };
 
         if (this.isScanning) {
@@ -308,6 +433,7 @@ class EmailScanner {
 
             console.log('[EmailScanner] 📊 Options scan web:', mergedOptions);
             console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
+            console.log('[EmailScanner] 🔄 StartScan synchronisé:', this.startScanSynced);
 
             if (this.scanProgress) {
                 this.scanProgress({ 
@@ -317,11 +443,18 @@ class EmailScanner {
                 });
             }
 
-            // Mode simulation pour environnement web
+            // Mode simulation pour environnement web ou si appelé depuis StartScan
             let emails;
-            if (mergedOptions.simulationMode || !window.mailService) {
-                console.log('[EmailScanner] 🎭 Mode simulation web');
-                emails = await this.generateSimulatedEmails(mergedOptions);
+            if (mergedOptions.simulationMode || mergedOptions.fromStartScan || !window.mailService) {
+                console.log('[EmailScanner] 🎭 Mode simulation web ou synchronisation StartScan');
+                
+                // Si déjà synchronisé avec StartScan et que nous avons des emails, les utiliser
+                if (this.startScanSynced && this.emails.length > 0) {
+                    console.log('[EmailScanner] 📧 Utilisation des emails synchronisés depuis StartScan');
+                    emails = [...this.emails];
+                } else {
+                    emails = await this.generateSimulatedEmails(mergedOptions);
+                }
             } else {
                 console.log('[EmailScanner] 🔄 Tentative scan réel');
                 try {
@@ -387,7 +520,8 @@ class EmailScanner {
                     taskPreselectedCategories: [...this.taskPreselectedCategories],
                     preselectedCount: results.stats.preselectedForTasks,
                     scanMetrics: this.scanMetrics,
-                    webMode: true
+                    webMode: true,
+                    startScanSynced: this.startScanSynced
                 });
             }, 10);
 
@@ -581,7 +715,8 @@ class EmailScanner {
             emails: [],
             taskPreselectedCategories: [...this.taskPreselectedCategories],
             scanMetrics: this.scanMetrics,
-            webMode: true
+            webMode: true,
+            startScanSynced: this.startScanSynced
         };
     }
 
@@ -598,6 +733,7 @@ class EmailScanner {
         console.log('[EmailScanner] 🏷️ === CATÉGORISATION WEB ===');
         console.log('[EmailScanner] 📊 Total emails:', total);
         console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', taskPreselectedCategories);
+        console.log('[EmailScanner] 🔄 StartScan synchronisé:', this.startScanSynced);
 
         const categoryStats = {};
         const keywordStats = {};
@@ -982,6 +1118,7 @@ class EmailScanner {
 
         console.log('[EmailScanner] 🔄 === RE-CATÉGORISATION WEB ===');
         console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
+        console.log('[EmailScanner] 🔄 StartScan synchronisé:', this.startScanSynced);
         
         // Réinitialiser les métriques
         this.scanMetrics.startTime = Date.now();
@@ -1007,7 +1144,8 @@ class EmailScanner {
                 taskPreselectedCategories: this.taskPreselectedCategories,
                 preselectedCount: this.emails.filter(e => e.isPreselectedForTasks).length,
                 keywordStats: this.scanMetrics.keywordMatches,
-                webMode: true
+                webMode: true,
+                startScanSynced: this.startScanSynced
             });
         }, 10);
     }
@@ -1077,7 +1215,8 @@ class EmailScanner {
                 ccDetected: this.emails.filter(e => e.isCC).length,
                 excluded: totalExcluded,
                 scanDuration: scanDuration,
-                webMode: true
+                webMode: true,
+                startScanSynced: this.startScanSynced
             },
             keywordStats: this.scanMetrics.keywordMatches,
             emails: this.emails,
@@ -1119,13 +1258,18 @@ class EmailScanner {
             startTime: Date.now(),
             categorizedCount: 0,
             keywordMatches: {},
-            categoryDistribution: {}
+            categoryDistribution: {},
+            taskPreselectedCategories: [...this.taskPreselectedCategories]
         };
         
         // Initialiser avec catégories par défaut web
         Object.keys(this.defaultWebCategories).forEach(catId => {
             this.categorizedEmails[catId] = [];
         });
+        
+        // Réinitialiser l'état de synchronisation StartScan
+        this.startScanSynced = false;
+        this.lastSyncTimestamp = null;
         
         console.log('[EmailScanner] ✅ Réinitialisation web terminée');
     }
@@ -1183,6 +1327,11 @@ class EmailScanner {
             webConfig: this.webConfig,
             webMode: true,
             changeListener: !!this.changeListener,
+            startScanSync: {
+                synced: this.startScanSynced,
+                lastSync: this.lastSyncTimestamp,
+                available: !!window.minimalScanModule
+            },
             syncStatus: {
                 lastSync: this.lastSettingsSync,
                 categoriesInSync: this.verifyCategoriesSync(),
@@ -1208,7 +1357,7 @@ class EmailScanner {
     // ================================================
     logScanResults(results) {
         console.log('[EmailScanner] 📊 === RÉSULTATS WEB FINAUX ===');
-        console.log(`[EmailScanner] Mode: WEB SIMULATION`);
+        console.log(`[EmailScanner] Mode: WEB SIMULATION ${this.startScanSynced ? '+ STARTSCAN SYNC' : ''}`);
         console.log(`[EmailScanner] Total emails: ${results.total}`);
         console.log(`[EmailScanner] Catégorisés: ${results.categorized} (${Math.round((results.categorized / results.total) * 100)}%)`);
         console.log(`[EmailScanner] ⭐ PRÉ-SÉLECTIONNÉS POUR TÂCHES: ${results.stats.preselectedForTasks}`);
@@ -1216,6 +1365,7 @@ class EmailScanner {
         console.log(`[EmailScanner] Confiance moyenne: ${results.stats.averageConfidence}`);
         console.log(`[EmailScanner] Durée du scan: ${results.stats.scanDuration}s`);
         console.log(`[EmailScanner] 📋 Catégories pré-sélectionnées: ${results.taskPreselectedCategories.join(', ')}`);
+        console.log(`[EmailScanner] 🔄 StartScan synchronisé: ${this.startScanSynced}`);
         
         console.log('[EmailScanner] Distribution par catégorie:');
         Object.entries(results.breakdown).forEach(([cat, count]) => {
@@ -1243,6 +1393,7 @@ class EmailScanner {
             settings: this.settings,
             webConfig: this.webConfig,
             webMode: true,
+            startScanSynced: this.startScanSynced,
             categories: {},
             emails: []
         };
@@ -1424,7 +1575,8 @@ class EmailScanner {
                     ...detail,
                     source: 'EmailScanner',
                     timestamp: Date.now(),
-                    webMode: true
+                    webMode: true,
+                    startScanSynced: this.startScanSynced
                 }
             }));
         } catch (error) {
@@ -1462,7 +1614,17 @@ class EmailScanner {
         this.categorizedEmails = {};
         this.taskPreselectedCategories = [];
         this.scanProgress = null;
-        this.scanMetrics = { startTime: null, categorizedCount: 0, keywordMatches: {}, categoryDistribution: {} };
+        this.scanMetrics = { 
+            startTime: null, 
+            categorizedCount: 0, 
+            keywordMatches: {}, 
+            categoryDistribution: {},
+            taskPreselectedCategories: []
+        };
+        
+        // Réinitialiser l'état de synchronisation StartScan
+        this.startScanSynced = false;
+        this.lastSyncTimestamp = null;
         
         console.log('[EmailScanner] ✅ Nettoyage web terminé');
     }
@@ -1499,6 +1661,115 @@ class EmailScanner {
     getWebConfig() {
         return { ...this.webConfig };
     }
+
+    getStartScanSyncStatus() {
+        return {
+            synced: this.startScanSynced,
+            lastSync: this.lastSyncTimestamp,
+            available: !!window.minimalScanModule
+        };
+    }
+
+    // ================================================
+    // MÉTHODES PUBLIQUES POUR INTEGRATION STARTSCAN
+    // ================================================
+    
+    // Méthode pour vérifier si EmailScanner est prêt pour la synchronisation
+    isReadyForSync() {
+        return this.isInitialized && !this.isScanning;
+    }
+
+    // Méthode pour injecter des emails depuis StartScan
+    injectEmailsFromStartScan(emails, categories = null) {
+        console.log('[EmailScanner] 📥 Injection d\'emails depuis StartScan...');
+        
+        if (!Array.isArray(emails)) {
+            console.error('[EmailScanner] Emails invalides pour injection');
+            return false;
+        }
+        
+        try {
+            // Sauvegarder les anciens emails si nécessaire
+            const oldEmails = [...this.emails];
+            
+            // Injecter les nouveaux emails
+            this.emails = [...emails];
+            
+            // Mettre à jour les catégories si fournies
+            if (categories && Array.isArray(categories)) {
+                this.updateTaskPreselectedCategories(categories);
+            }
+            
+            // Marquer comme synchronisé avec StartScan
+            this.startScanSynced = true;
+            this.lastSyncTimestamp = Date.now();
+            
+            console.log(`[EmailScanner] ✅ ${emails.length} emails injectés depuis StartScan`);
+            
+            // Re-catégoriser si nécessaire
+            setTimeout(() => {
+                this.processSyncedEmails();
+            }, 100);
+            
+            return true;
+            
+        } catch (error) {
+            console.error('[EmailScanner] ❌ Erreur injection emails StartScan:', error);
+            return false;
+        }
+    }
+
+    // Méthode pour notifier StartScan que EmailScanner est prêt
+    notifyStartScanReady() {
+        try {
+            window.dispatchEvent(new CustomEvent('emailScannerReady', {
+                detail: {
+                    ready: true,
+                    emailCount: this.emails.length,
+                    categories: this.taskPreselectedCategories,
+                    timestamp: Date.now(),
+                    source: 'EmailScanner'
+                }
+            }));
+            
+            console.log('[EmailScanner] 📢 Notification StartScan: EmailScanner prêt');
+            
+        } catch (error) {
+            console.error('[EmailScanner] ❌ Erreur notification StartScan:', error);
+        }
+    }
+
+    // Méthode pour synchroniser manuellement avec StartScan
+    syncWithStartScan() {
+        console.log('[EmailScanner] 🔄 Synchronisation manuelle avec StartScan...');
+        
+        if (!window.minimalScanModule) {
+            console.warn('[EmailScanner] StartScan non disponible pour synchronisation');
+            return false;
+        }
+        
+        try {
+            // Obtenir les paramètres depuis StartScan
+            const startScanSettings = window.minimalScanModule.settings;
+            const startScanCategories = window.minimalScanModule.taskPreselectedCategories;
+            
+            if (startScanSettings && startScanCategories) {
+                // Synchroniser les paramètres
+                this.settings = { ...this.settings, ...startScanSettings };
+                this.updateTaskPreselectedCategories(startScanCategories);
+                
+                console.log('[EmailScanner] ✅ Synchronisation manuelle StartScan réussie');
+                return true;
+            }
+            
+            console.warn('[EmailScanner] Paramètres StartScan non disponibles');
+            return false;
+            
+        } catch (error) {
+            console.error('[EmailScanner] ❌ Erreur synchronisation manuelle StartScan:', error);
+            return false;
+        }
+    }
 }
 
 // ================================================
@@ -1511,12 +1782,12 @@ if (window.emailScanner) {
     window.emailScanner.destroy?.();
 }
 
-console.log('[EmailScanner] 🚀 Création instance web v9.0...');
+console.log('[EmailScanner] 🚀 Création instance web v10.0...');
 window.emailScanner = new EmailScanner();
 
 // Fonctions utilitaires pour débogage web
 window.testEmailScannerWeb = function() {
-    console.group('🧪 TEST EmailScanner Web v9.0');
+    console.group('🧪 TEST EmailScanner Web v10.0');
     
     const testEmails = [
         {
@@ -1544,9 +1815,10 @@ window.testEmailScannerWeb = function() {
     console.log('Debug Info Web:', window.emailScanner.getDebugInfo());
     console.log('Catégories pré-sélectionnées:', window.emailScanner.getTaskPreselectedCategories());
     console.log('Configuration web:', window.emailScanner.getWebConfig());
+    console.log('StartScan Sync:', window.emailScanner.getStartScanSyncStatus());
     
     console.groupEnd();
-    return { success: true, testsRun: testEmails.length, webMode: true };
+    return { success: true, testsRun: testEmails.length, webMode: true, startScanSync: true };
 };
 
 window.simulateEmailScanWeb = async function() {
@@ -1570,24 +1842,81 @@ window.simulateEmailScanWeb = async function() {
 };
 
 window.debugEmailCategoriesWeb = function() {
-    console.group('📊 DEBUG Catégories Web v9.0');
-    console.log('Mode:', 'WEB SIMULATION');
+    console.group('📊 DEBUG Catégories Web v10.0');
+    console.log('Mode:', 'WEB SIMULATION + STARTSCAN SYNC');
     console.log('Settings:', window.emailScanner.settings);
     console.log('Catégories par défaut:', window.emailScanner.defaultWebCategories);
     console.log('Task Preselected Categories:', window.emailScanner.taskPreselectedCategories);
     console.log('Emails total:', window.emailScanner.emails.length);
     console.log('Emails pré-sélectionnés:', window.emailScanner.getPreselectedEmails().length);
+    console.log('StartScan synchronisé:', window.emailScanner.startScanSynced);
     console.log('Debug complet web:', window.emailScanner.getDebugInfo());
     console.groupEnd();
+};
+
+// Fonctions de synchronisation StartScan
+window.testStartScanSync = function() {
+    console.group('🔄 TEST Synchronisation StartScan');
+    
+    const emailScanner = window.emailScanner;
+    const startScan = window.minimalScanModule;
+    
+    console.log('EmailScanner disponible:', !!emailScanner);
+    console.log('StartScan disponible:', !!startScan);
+    
+    if (emailScanner && startScan) {
+        console.log('EmailScanner prêt pour sync:', emailScanner.isReadyForSync());
+        console.log('StartScan catégories:', startScan.taskPreselectedCategories);
+        console.log('EmailScanner catégories:', emailScanner.taskPreselectedCategories);
+        console.log('Sync status:', emailScanner.getStartScanSyncStatus());
+        
+        // Test de synchronisation manuelle
+        const syncResult = emailScanner.syncWithStartScan();
+        console.log('Synchronisation manuelle:', syncResult);
+    }
+    
+    console.groupEnd();
+    return { 
+        available: { emailScanner: !!emailScanner, startScan: !!startScan },
+        ready: emailScanner?.isReadyForSync() || false,
+        synced: emailScanner?.startScanSynced || false
+    };
+};
+
+window.forceStartScanSync = function() {
+    console.log('🔄 Force synchronisation StartScan...');
+    
+    if (window.emailScanner && window.minimalScanModule) {
+        const result = window.emailScanner.syncWithStartScan();
+        console.log('Résultat synchronisation forcée:', result);
+        return result;
+    } else {
+        console.error('EmailScanner ou StartScan non disponible');
+        return false;
+    }
 };
 
 // Auto-initialisation si DOM prêt
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('[EmailScanner] 📱 DOM prêt - Scanner web initialisé');
+        console.log('[EmailScanner] 📱 DOM prêt - Scanner web avec sync StartScan initialisé');
+        
+        // Notifier StartScan que EmailScanner est prêt
+        setTimeout(() => {
+            if (window.emailScanner) {
+                window.emailScanner.notifyStartScanReady();
+            }
+        }, 1000);
     });
 } else {
-    console.log('[EmailScanner] 📱 Scanner web prêt');
+    console.log('[EmailScanner] 📱 Scanner web avec sync StartScan prêt');
+    
+    // Notifier immédiatement
+    setTimeout(() => {
+        if (window.emailScanner) {
+            window.emailScanner.notifyStartScanReady();
+        }
+    }, 500);
 }
 
-console.log('✅ EmailScanner v9.0 loaded - Web Compatible Mode (coruscating-dodol-f30e8d.netlify.app)');
+console.log('✅ EmailScanner v10.0 loaded - Web Compatible avec synchronisation StartScan complète');
