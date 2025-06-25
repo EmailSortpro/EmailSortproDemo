@@ -1,6 +1,6 @@
-// StartScan.js - Version 11.0 - Compatible Web avec synchronisation EmailScanner complète
+// StartScan.js - Version 11.1 - Compatible Web avec priorité emails réels et fallback simulation
 
-console.log('[StartScan] 🚀 Loading StartScan.js v11.0 - Synchronisation complète...');
+console.log('[StartScan] 🚀 Loading StartScan.js v11.1 - Emails réels prioritaires...');
 
 class MinimalScanModule {
     constructor() {
@@ -16,14 +16,15 @@ class MinimalScanModule {
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
         
-        // Configuration pour environnement web
-        this.webConfig = {
-            apiEndpoint: 'https://coruscating-dodol-f30e8d.netlify.app/.netlify/functions',
-            isDemoMode: true,
-            simulateEmailData: true
+        // Configuration pour emails réels et simulation fallback
+        this.scanConfig = {
+            preferRealEmails: true,
+            simulationFallback: true,
+            maxRealEmails: 100,
+            maxSimulatedEmails: 50
         };
         
-        console.log('[MinimalScan] Scanner v11.0 initialized - Synchronisation EmailScanner');
+        console.log('[MinimalScan] Scanner v11.1 initialized - Priorité emails réels');
         this.loadSettingsFromStorage();
         this.addMinimalStyles();
     }
@@ -50,7 +51,7 @@ class MinimalScanModule {
             this.lastSettingsSync = Date.now();
         } catch (error) {
             console.error('[MinimalScan] ❌ Erreur chargement paramètres:', error);
-            this.settings = this.getDefaultWebSettings();
+            this.settings = this.getDefaultSettings();
             this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
         }
     }
@@ -67,35 +68,30 @@ class MinimalScanModule {
                     this.selectedDays = this.settings.scanSettings.defaultPeriod;
                 }
             } else {
-                this.settings = this.getDefaultWebSettings();
+                this.settings = this.getDefaultSettings();
                 this.taskPreselectedCategories = [];
             }
         } catch (error) {
             console.warn('[MinimalScan] ⚠️ Erreur localStorage:', error);
-            this.settings = this.getDefaultWebSettings();
+            this.settings = this.getDefaultSettings();
             this.taskPreselectedCategories = [];
         }
     }
 
-    getDefaultWebSettings() {
+    getDefaultSettings() {
         return {
             scanSettings: {
                 defaultPeriod: 7,
                 defaultFolder: 'inbox',
                 autoAnalyze: true,
                 autoCategrize: true,
-                webMode: true
+                preferRealEmails: true
             },
             taskPreselectedCategories: ['tasks', 'commercial', 'meetings'],
             preferences: {
                 excludeSpam: true,
                 detectCC: true,
-                showNotifications: true,
-                demoMode: true
-            },
-            webConfig: {
-                simulateData: true,
-                maxEmails: 100
+                showNotifications: true
             }
         };
     }
@@ -141,20 +137,23 @@ class MinimalScanModule {
         const display = document.getElementById('preselected-categories-display');
         if (!display) return;
         
+        // Vérifier disponibilité emails réels
+        const hasRealEmails = this.hasRealEmailAccess();
+        
         if (this.taskPreselectedCategories.length === 0) {
             display.innerHTML = `
                 <div class="preselected-info no-selection">
                     <i class="fas fa-info-circle"></i>
-                    <span>Mode démonstration - Simulation intelligente activée</span>
+                    <span>${hasRealEmails ? 'Scan emails réels - Analyse intelligente' : 'Mode simulation - Emails de démonstration'}</span>
                 </div>
             `;
         } else {
-            const categoryDetails = this.getWebCompatibleCategories();
+            const categoryDetails = this.getCompatibleCategories();
             
             display.innerHTML = `
                 <div class="preselected-info">
                     <i class="fas fa-star"></i>
-                    <span>Catégories pré-sélectionnées pour simulation:</span>
+                    <span>Catégories pré-sélectionnées ${hasRealEmails ? '(emails réels)' : '(simulation)'}:</span>
                 </div>
                 <div class="preselected-categories-grid">
                     ${categoryDetails.map(cat => `
@@ -168,8 +167,8 @@ class MinimalScanModule {
         }
     }
 
-    getWebCompatibleCategories() {
-        // Catégories par défaut pour le mode web
+    getCompatibleCategories() {
+        // Catégories par défaut
         const defaultCategories = {
             'tasks': { icon: '✅', name: 'Tâches', color: '#10b981' },
             'commercial': { icon: '💼', name: 'Commercial', color: '#3b82f6' },
@@ -194,6 +193,19 @@ class MinimalScanModule {
         }).filter(Boolean);
     }
 
+    hasRealEmailAccess() {
+        // Vérifier si on a accès aux vrais emails
+        if (!window.mailService) return false;
+        
+        try {
+            return window.mailService.hasRealEmails?.() || 
+                   window.mailService.isAuthenticationValid?.() || 
+                   false;
+        } catch (error) {
+            return false;
+        }
+    }
+
     addMinimalStyles() {
         if (this.stylesAdded || document.getElementById('minimal-scan-styles')) {
             return;
@@ -202,7 +214,7 @@ class MinimalScanModule {
         const styles = document.createElement('style');
         styles.id = 'minimal-scan-styles';
         styles.textContent = `
-            /* Scanner Web Compatible v11.0 */
+            /* Scanner v11.1 - Emails réels prioritaires */
             .minimal-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -259,19 +271,29 @@ class MinimalScanModule {
                 margin-bottom: 35px;
             }
             
-            /* Affichage mode web */
-            .web-mode-badge {
+            /* Mode badge */
+            .email-mode-badge {
                 display: inline-flex;
                 align-items: center;
                 gap: 6px;
-                background: rgba(16, 185, 129, 0.1);
-                color: #10b981;
                 padding: 4px 12px;
                 border-radius: 20px;
                 font-size: 12px;
                 font-weight: 600;
                 margin-bottom: 20px;
-                border: 1px solid rgba(16, 185, 129, 0.2);
+                border: 1px solid;
+            }
+            
+            .email-mode-badge.real {
+                background: rgba(16, 185, 129, 0.1);
+                color: #10b981;
+                border-color: rgba(16, 185, 129, 0.2);
+            }
+            
+            .email-mode-badge.simulation {
+                background: rgba(249, 115, 22, 0.1);
+                color: #f97316;
+                border-color: rgba(249, 115, 22, 0.2);
             }
             
             /* Catégories pré-sélectionnées */
@@ -585,22 +607,21 @@ class MinimalScanModule {
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[MinimalScan] ✅ Styles web v11.0 ajoutés');
+        console.log('[MinimalScan] ✅ Styles v11.1 ajoutés');
     }
 
     async render(container) {
-        console.log('[MinimalScan] 🎯 Rendu du scanner web v11.0...');
+        console.log('[MinimalScan] 🎯 Rendu du scanner v11.1...');
         
         try {
             this.addMinimalStyles();
             this.checkSettingsUpdate();
             
-            // Mode web - pas besoin d'authentification complexe
-            container.innerHTML = this.renderWebScanner();
+            container.innerHTML = this.renderScanner();
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log('[MinimalScan] ✅ Scanner web v11.0 rendu avec succès');
+            console.log('[MinimalScan] ✅ Scanner v11.1 rendu avec succès');
             
         } catch (error) {
             console.error('[MinimalScan] ❌ Erreur lors du rendu:', error);
@@ -608,21 +629,23 @@ class MinimalScanModule {
         }
     }
 
-    renderWebScanner() {
+    renderScanner() {
+        const hasRealEmails = this.hasRealEmailAccess();
+        
         return `
             <div class="minimal-scanner">
                 <div class="scanner-card-minimal">
-                    <div class="web-mode-badge">
-                        <i class="fas fa-robot"></i>
-                        <span>Simulation IA Intelligente</span>
+                    <div class="email-mode-badge ${hasRealEmails ? 'real' : 'simulation'}">
+                        <i class="fas ${hasRealEmails ? 'fa-envelope' : 'fa-robot'}"></i>
+                        <span>${hasRealEmails ? 'Emails réels disponibles' : 'Mode simulation'}</span>
                     </div>
                     
                     <div class="scanner-icon">
                         <i class="fas fa-search"></i>
                     </div>
                     
-                    <h1 class="scanner-title">Scanner Email IA</h1>
-                    <p class="scanner-subtitle">Démonstration d'organisation automatique intelligente</p>
+                    <h1 class="scanner-title">Scanner Email Intelligent</h1>
+                    <p class="scanner-subtitle">${hasRealEmails ? 'Analysez vos emails réels avec IA' : 'Démonstration avec emails simulés'}</p>
                     
                     <div id="preselected-categories-display">
                         ${this.renderPreselectedCategories()}
@@ -635,24 +658,24 @@ class MinimalScanModule {
                         </div>
                         <div class="step" id="step2">
                             <div class="step-number">2</div>
-                            <div class="step-label">Simulation IA</div>
+                            <div class="step-label">${hasRealEmails ? 'Récupération' : 'Simulation'}</div>
                         </div>
                         <div class="step" id="step3">
                             <div class="step-number">3</div>
-                            <div class="step-label">Synchronisation</div>
+                            <div class="step-label">Analyse IA</div>
                         </div>
                     </div>
                     
                     <div class="duration-section">
-                        <div class="duration-label">Période de simulation</div>
+                        <div class="duration-label">Période d'analyse</div>
                         <div class="duration-options">
                             ${this.renderDurationOptions()}
                         </div>
                     </div>
                     
                     <button class="scan-button-minimal" id="minimalScanBtn" onclick="window.minimalScanModule.startScan()">
-                        <i class="fas fa-robot"></i>
-                        <span>Lancer la simulation intelligente</span>
+                        <i class="fas ${hasRealEmails ? 'fa-search' : 'fa-robot'}"></i>
+                        <span>${hasRealEmails ? 'Scanner mes emails' : 'Lancer la simulation'}</span>
                     </button>
                     
                     <div class="progress-section-minimal" id="progressSection">
@@ -660,13 +683,13 @@ class MinimalScanModule {
                             <div class="progress-fill" id="progressFill"></div>
                         </div>
                         <div class="progress-text" id="progressText">Initialisation...</div>
-                        <div class="progress-status" id="progressStatus">Préparation simulation</div>
+                        <div class="progress-status" id="progressStatus">Préparation</div>
                     </div>
                     
                     <div class="scan-info">
                         <div class="scan-info-main">
                             <i class="fas fa-info-circle"></i>
-                            <span>Simulation IA avec synchronisation EmailScanner</span>
+                            <span>${hasRealEmails ? 'Scan sécurisé avec IA Claude' : 'Simulation avec données réalistes'}</span>
                         </div>
                         ${this.renderScanInfoDetails()}
                     </div>
@@ -676,21 +699,23 @@ class MinimalScanModule {
     }
 
     renderPreselectedCategories() {
+        const hasRealEmails = this.hasRealEmailAccess();
+        
         if (this.taskPreselectedCategories.length === 0) {
             return `
                 <div class="preselected-info no-selection">
                     <i class="fas fa-info-circle"></i>
-                    <span>Mode simulation intelligente - IA complète activée</span>
+                    <span>${hasRealEmails ? 'Analyse intelligente complète activée' : 'Mode simulation avec IA complète'}</span>
                 </div>
             `;
         }
         
-        const categoryDetails = this.getWebCompatibleCategories();
+        const categoryDetails = this.getCompatibleCategories();
         
         return `
             <div class="preselected-info">
                 <i class="fas fa-star"></i>
-                <span>Catégories IA de simulation:</span>
+                <span>Catégories d'analyse ${hasRealEmails ? '(emails réels)' : '(simulation)'}:</span>
             </div>
             <div class="preselected-categories-grid">
                 ${categoryDetails.map(cat => `
@@ -726,8 +751,13 @@ class MinimalScanModule {
 
     renderScanInfoDetails() {
         let details = [];
+        const hasRealEmails = this.hasRealEmailAccess();
         
-        details.push('Simulation IA Claude');
+        if (hasRealEmails) {
+            details.push('Emails réels Microsoft/Gmail');
+        } else {
+            details.push('Simulation IA Claude');
+        }
         
         if (this.taskPreselectedCategories.length > 0) {
             details.push(`${this.taskPreselectedCategories.length} catégorie(s) IA`);
@@ -758,16 +788,16 @@ class MinimalScanModule {
     }
 
     initializeEvents() {
-        console.log('[MinimalScan] ✅ Événements web initialisés');
+        console.log('[MinimalScan] ✅ Événements v11.1 initialisés');
         
         if (this.settingsCheckInterval) {
             clearInterval(this.settingsCheckInterval);
         }
         
-        // Vérification périodique moins fréquente en mode web
+        // Vérification périodique des paramètres
         this.settingsCheckInterval = setInterval(() => {
             this.checkSettingsUpdate();
-        }, 15000);
+        }, 10000);
     }
 
     selectDuration(days) {
@@ -791,7 +821,8 @@ class MinimalScanModule {
             return;
         }
         
-        console.log('[MinimalScan] 🚀 Démarrage simulation avec synchronisation EmailScanner');
+        const hasRealEmails = this.hasRealEmailAccess();
+        console.log(`[MinimalScan] 🚀 Démarrage scan v11.1 - Mode: ${hasRealEmails ? 'EMAILS RÉELS' : 'SIMULATION'}`);
         console.log('[MinimalScan] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
         
         try {
@@ -808,145 +839,218 @@ class MinimalScanModule {
             const scanBtn = document.getElementById('minimalScanBtn');
             if (scanBtn) {
                 scanBtn.disabled = true;
-                scanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Simulation IA en cours...</span>';
+                scanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${hasRealEmails ? 'Scan en cours...' : 'Simulation en cours...'}</span>`;
             }
             
-            // SIMULATION AVEC SYNCHRONISATION EMAILSCANNER
-            await this.executeWebSimulationWithSync();
+            // SCAN AVEC PRIORITÉ EMAILS RÉELS
+            await this.executeSmartScan();
             
             this.setActiveStep(3);
             this.completeScan();
             
         } catch (error) {
-            console.error('[MinimalScan] ❌ Erreur simulation:', error);
+            console.error('[MinimalScan] ❌ Erreur scan:', error);
             this.showScanError(error);
         }
     }
 
-    async executeWebSimulationWithSync() {
-        console.log('[MinimalScan] 🎭 Simulation IA avec synchronisation EmailScanner...');
+    async executeSmartScan() {
+        const hasRealEmails = this.hasRealEmailAccess();
         
+        if (hasRealEmails) {
+            console.log('[MinimalScan] 📧 Tentative scan emails réels...');
+            await this.executeRealEmailScan();
+        } else {
+            console.log('[MinimalScan] 🎭 Fallback simulation...');
+            await this.executeSimulationScan();
+        }
+    }
+
+    async executeRealEmailScan() {
         const phases = [
-            { progress: 10, message: 'Initialisation de la simulation IA...', status: 'Démarrage' },
-            { progress: 25, message: 'Génération d\'emails intelligents...', status: 'Création IA' },
-            { progress: 40, message: 'Synchronisation avec EmailScanner...', status: 'Connexion' },
-            { progress: 60, message: 'Classification par IA Claude...', status: 'Analyse IA' },
-            { progress: 80, message: 'Injection dans EmailScanner...', status: 'Synchronisation' },
-            { progress: 95, message: 'Finalisation des résultats...', status: 'Compilation' },
-            { progress: 100, message: 'Simulation terminée et synchronisée !', status: 'Terminé' }
+            { progress: 10, message: 'Connexion au service email...', status: 'Authentification' },
+            { progress: 25, message: 'Récupération des emails...', status: 'Téléchargement' },
+            { progress: 50, message: 'Synchronisation EmailScanner...', status: 'Synchronisation' },
+            { progress: 75, message: 'Classification par IA...', status: 'Analyse IA' },
+            { progress: 90, message: 'Finalisation...', status: 'Compilation' },
+            { progress: 100, message: 'Scan terminé !', status: 'Terminé' }
         ];
         
         for (const phase of phases) {
             this.updateProgress(phase.progress, phase.message, phase.status);
             
-            // Traitement spécial pour la synchronisation EmailScanner
-            if (phase.progress === 40) {
-                await this.prepareEmailScannerSync();
-            } else if (phase.progress === 60) {
-                await this.generateAndCategorizeEmails();
-            } else if (phase.progress === 80) {
+            if (phase.progress === 25) {
+                await this.fetchRealEmails();
+            } else if (phase.progress === 50) {
                 await this.syncWithEmailScanner();
+            } else if (phase.progress === 75) {
+                await this.categorizeRealEmails();
             }
             
-            // Délai réaliste pour la simulation
-            const delay = Math.random() * 1000 + 500; // 500ms à 1.5s
-            await new Promise(resolve => setTimeout(resolve, delay));
+            await new Promise(resolve => setTimeout(resolve, 800));
         }
-        
-        // Finaliser la synchronisation
-        await this.finalizeSync();
     }
 
-    async prepareEmailScannerSync() {
-        console.log('[MinimalScan] 📡 Préparation synchronisation EmailScanner...');
+    async fetchRealEmails() {
+        console.log('[MinimalScan] 📧 Récupération emails réels...');
         
-        // S'assurer qu'EmailScanner existe
-        if (!window.emailScanner) {
-            console.warn('[MinimalScan] EmailScanner non trouvé, création d\'instance...');
-            // Attendre un peu au cas où il se charge
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            if (!window.emailScanner) {
-                console.warn('[MinimalScan] EmailScanner toujours absent, scan indépendant');
-                return false;
+        try {
+            if (!window.mailService) {
+                throw new Error('MailService non disponible');
             }
+            
+            // Initialiser le service si nécessaire
+            if (!window.mailService.isInitialized) {
+                await window.mailService.initialize();
+            }
+            
+            // Calculer les dates
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - this.selectedDays);
+            
+            // Récupérer les emails
+            const emails = await window.mailService.getEmailsFromFolder('inbox', {
+                startDate: startDate.toISOString().split('T')[0],
+                endDate: endDate.toISOString().split('T')[0],
+                top: this.scanConfig.maxRealEmails || 100
+            });
+            
+            this.realEmails = emails || [];
+            console.log(`[MinimalScan] ✅ ${this.realEmails.length} emails réels récupérés`);
+            
+            return this.realEmails;
+            
+        } catch (error) {
+            console.error('[MinimalScan] ❌ Erreur récupération emails réels:', error);
+            // Fallback vers simulation si échec
+            console.log('[MinimalScan] 🔄 Fallback vers simulation...');
+            await this.generateFallbackEmails();
+            throw error;
         }
-        
-        // Synchroniser les paramètres avec EmailScanner
-        if (window.emailScanner.updateTaskPreselectedCategories) {
-            window.emailScanner.updateTaskPreselectedCategories(this.taskPreselectedCategories);
-            console.log('[MinimalScan] ✅ Catégories synchronisées avec EmailScanner');
-        }
-        
-        return true;
     }
 
-    async generateAndCategorizeEmails() {
-        console.log('[MinimalScan] 🏭 Génération et catégorisation d\'emails...');
+    async generateFallbackEmails() {
+        console.log('[MinimalScan] 🎭 Génération emails de fallback...');
         
-        const emailCount = Math.floor(Math.random() * 50) + 50; // 50-100 emails
+        const emailCount = Math.min(30, this.scanConfig.maxSimulatedEmails || 50);
+        const emails = [];
+        
+        const templates = [
+            { domain: 'company.com', name: 'Jean Dupont', type: 'commercial' },
+            { domain: 'urgent.fr', name: 'Marie Martin', type: 'tasks' },
+            { domain: 'meeting.org', name: 'Pierre Bernard', type: 'meetings' },
+            { domain: 'finance.com', name: 'Service Finance', type: 'finance' }
+        ];
+        
+        for (let i = 0; i < emailCount; i++) {
+            const template = templates[Math.floor(Math.random() * templates.length)];
+            const daysAgo = Math.floor(Math.random() * this.selectedDays);
+            const date = new Date();
+            date.setDate(date.getDate() - daysAgo);
+            
+            emails.push({
+                id: `fallback-${i}-${Date.now()}`,
+                subject: `${template.type} - Email fallback ${i + 1}`,
+                from: {
+                    emailAddress: {
+                        address: `${template.name.toLowerCase().replace(' ', '.')}@${template.domain}`,
+                        name: template.name
+                    }
+                },
+                receivedDateTime: date.toISOString(),
+                bodyPreview: `Contenu de démonstration pour ${template.type}`,
+                hasAttachments: Math.random() > 0.8,
+                importance: 'normal',
+                isRead: Math.random() > 0.3,
+                realEmail: false,
+                webSimulated: true,
+                simulatedCategory: template.type
+            });
+        }
+        
+        this.realEmails = emails;
+        console.log(`[MinimalScan] ✅ ${emails.length} emails de fallback générés`);
+    }
+
+    async executeSimulationScan() {
+        const phases = [
+            { progress: 10, message: 'Initialisation simulation IA...', status: 'Démarrage' },
+            { progress: 30, message: 'Génération emails intelligents...', status: 'Création IA' },
+            { progress: 60, message: 'Synchronisation EmailScanner...', status: 'Synchronisation' },
+            { progress: 80, message: 'Classification IA...', status: 'Analyse' },
+            { progress: 100, message: 'Simulation terminée !', status: 'Terminé' }
+        ];
+        
+        for (const phase of phases) {
+            this.updateProgress(phase.progress, phase.message, phase.status);
+            
+            if (phase.progress === 30) {
+                await this.generateSimulatedEmails();
+            } else if (phase.progress === 60) {
+                await this.syncWithEmailScanner();
+            } else if (phase.progress === 80) {
+                await this.categorizeEmails();
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 600));
+        }
+    }
+
+    async generateSimulatedEmails() {
+        console.log('[MinimalScan] 🎭 Génération emails simulés...');
+        
+        const emailCount = Math.floor(Math.random() * 30) + 40; // 40-70 emails
         const emails = [];
         
         const senderTemplates = [
-            { domain: 'company.com', name: 'Jean Dupont', type: 'commercial', priority: 'medium' },
-            { domain: 'client-urgent.fr', name: 'Marie Martin', type: 'tasks', priority: 'high' },
-            { domain: 'meetings.org', name: 'Pierre Bernard', type: 'meetings', priority: 'medium' },
-            { domain: 'finance-corp.com', name: 'Service Comptabilité', type: 'finance', priority: 'high' },
-            { domain: 'newsletter-tech.com', name: 'TechNews', type: 'newsletters', priority: 'low' },
-            { domain: 'support-app.com', name: 'Support Technique', type: 'support', priority: 'medium' },
-            { domain: 'gmail.com', name: 'Ami Personnel', type: 'personal', priority: 'low' },
-            { domain: 'project-manager.io', name: 'Project Manager', type: 'tasks', priority: 'high' },
-            { domain: 'sales-team.com', name: 'Équipe Commerciale', type: 'commercial', priority: 'medium' },
-            { domain: 'calendly.com', name: 'Calendly', type: 'meetings', priority: 'medium' }
+            { domain: 'company.com', name: 'Jean Dupont', type: 'commercial' },
+            { domain: 'client.fr', name: 'Marie Martin', type: 'tasks' },
+            { domain: 'meeting.org', name: 'Pierre Bernard', type: 'meetings' },
+            { domain: 'bank.com', name: 'Service Client', type: 'finance' },
+            { domain: 'newsletter.com', name: 'Newsletter', type: 'newsletters' },
+            { domain: 'support.com', name: 'Support Tech', type: 'support' },
+            { domain: 'gmail.com', name: 'Ami Personnel', type: 'personal' }
         ];
         
         const subjectTemplates = {
             commercial: [
-                'Proposition commerciale urgente - Q1 2025',
-                'Nouvelle offre exclusive - 30% de réduction',
-                'Rendez-vous commercial confirmé',
+                'Proposition commerciale importante - Q1 2025',
+                'Nouvelle offre exclusive - Réponse attendue',
+                'Rendez-vous commercial urgent cette semaine',
                 'Présentation produit innovant - Demo disponible'
             ],
             tasks: [
                 'Action requise: Validation projet Alpha',
                 'Tâche critique à compléter avant vendredi',
-                'Livrable attendu pour demain 16h',
-                'Projet urgent à finaliser cette semaine',
-                'Review code requis - URGENT',
-                'Deadline projet approche - Action nécessaire'
+                'Livrable attendu pour demain 16h - URGENT',
+                'Projet urgent à finaliser cette semaine'
             ],
             meetings: [
                 'Réunion équipe - Lundi 14h salle de conf',
                 'Planning meeting Q1 - Préparation nécessaire',
                 'Confirmation rendez-vous client important',
-                'Invitation conférence innovation 2025',
-                'Daily standup - Points bloquants',
-                'Réunion stratégique - Participation requise'
+                'Invitation conférence innovation 2025'
             ],
             finance: [
                 'Facture en attente de validation - Urgent',
                 'Relevé de compte mensuel disponible',
                 'Autorisation virement - Signature requise',
-                'Budget Q1 approuvé - Détails en PJ',
-                'Rapport financier trimestriel',
-                'Remboursement frais mission - Action requise'
+                'Budget Q1 approuvé - Détails en PJ'
             ],
             newsletters: [
                 'Newsletter tech hebdomadaire - Innovations',
                 'Actualités du secteur - Janvier 2025',
-                'Tendances marché - Rapport mensuel',
-                'Veille technologique - Points clés'
+                'Tendances marché - Rapport mensuel'
             ],
             support: [
                 'Ticket #12345 résolu - Vérification requise',
-                'Mise à jour système planifiée - Action requise',
-                'Maintenance programmée cette nuit',
+                'Mise à jour système planifiée',
                 'Nouvelle fonctionnalité disponible'
             ],
             personal: [
                 'Invitation anniversaire samedi',
-                'Photos vacances Noël à voir',
-                'Nouvelles de la famille',
+                'Photos vacances à voir',
                 'Plan weekend - Confirmation souhaitée'
             ]
         };
@@ -960,17 +1064,6 @@ class MinimalScanModule {
             const date = new Date();
             date.setDate(date.getDate() - daysAgo);
             
-            // Générer une priorité intelligente basée sur le contenu
-            let importance = 'normal';
-            let categoryScore = 60 + Math.floor(Math.random() * 40); // 60-100
-            let categoryConfidence = 0.6 + Math.random() * 0.4; // 0.6-1.0
-            
-            if (subject.includes('urgent') || subject.includes('URGENT') || template.priority === 'high') {
-                importance = 'high';
-                categoryScore += 10;
-                categoryConfidence += 0.1;
-            }
-            
             const email = {
                 id: `sim-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 subject: subject,
@@ -983,43 +1076,39 @@ class MinimalScanModule {
                 receivedDateTime: date.toISOString(),
                 bodyPreview: this.generateEmailPreview(template.type, subject),
                 hasAttachments: Math.random() > 0.7,
-                importance: importance,
+                importance: Math.random() > 0.9 ? 'high' : 'normal',
                 isRead: Math.random() > 0.3,
-                
-                // Métadonnées de simulation IA
-                simulatedCategory: template.type,
-                category: template.type,
-                categoryScore: Math.min(100, categoryScore),
-                categoryConfidence: Math.min(1.0, categoryConfidence),
-                isPreselectedForTasks: this.taskPreselectedCategories.includes(template.type),
+                realEmail: false,
                 webSimulated: true,
-                aiGenerated: true,
-                
-                // Métadonnées d'analyse
-                matchedPatterns: [
-                    { type: 'domain', keyword: template.domain, score: 20 },
-                    { type: 'subject', keyword: template.type, score: 25 }
-                ],
-                hasAbsolute: categoryScore >= 90,
-                isSpam: false,
-                isCC: Math.random() > 0.8,
-                isExcluded: false
+                simulatedCategory: template.type
             };
             
             emails.push(email);
         }
         
-        this.generatedEmails = emails;
-        console.log(`[MinimalScan] ✅ ${emails.length} emails générés avec IA`);
+        this.realEmails = emails;
+        console.log(`[MinimalScan] ✅ ${emails.length} emails simulés générés`);
+    }
+
+    generateEmailPreview(category, subject) {
+        const previews = {
+            commercial: 'Nous avons le plaisir de vous présenter notre nouvelle offre commerciale. Cette proposition exclusive vous permettra d\'optimiser vos résultats business...',
+            tasks: 'Action requise de votre part. Ce projet nécessite votre validation avant la fin de semaine. Merci de traiter cette demande en priorité...',
+            meetings: 'Nous confirmons votre participation à la réunion prévue. L\'ordre du jour sera envoyé séparément. Préparation recommandée...',
+            finance: 'Veuillez trouver ci-joint les documents financiers pour validation. Votre signature est requise pour finaliser...',
+            newsletters: 'Découvrez les dernières actualités et innovations de notre secteur. Ce mois-ci, focus sur les tendances émergentes...',
+            support: 'Votre demande de support a été traitée avec succès. Les modifications ont été appliquées et testées...',
+            personal: 'J\'espère que tu vas bien. Je voulais te tenir au courant des dernières nouvelles et organiser notre prochaine rencontre...'
+        };
         
-        return emails;
+        return previews[category] || 'Contenu de l\'email...';
     }
 
     async syncWithEmailScanner() {
         console.log('[MinimalScan] 🔄 Synchronisation avec EmailScanner...');
         
-        if (!window.emailScanner || !this.generatedEmails) {
-            console.warn('[MinimalScan] Impossible de synchroniser avec EmailScanner');
+        if (!window.emailScanner || !this.realEmails) {
+            console.warn('[MinimalScan] EmailScanner ou emails non disponibles');
             return false;
         }
         
@@ -1029,26 +1118,22 @@ class MinimalScanModule {
                 window.emailScanner.reset();
             }
             
-            // Injecter les emails générés
-            window.emailScanner.emails = [...this.generatedEmails];
-            console.log('[MinimalScan] ✅ Emails injectés dans EmailScanner');
+            // Injecter les emails
+            window.emailScanner.emails = [...this.realEmails];
+            console.log(`[MinimalScan] ✅ ${this.realEmails.length} emails injectés dans EmailScanner`);
             
             // Synchroniser les paramètres
             if (typeof window.emailScanner.updateTaskPreselectedCategories === 'function') {
                 window.emailScanner.updateTaskPreselectedCategories(this.taskPreselectedCategories);
             }
             
-            // Re-catégoriser avec les bonnes catégories
-            if (typeof window.emailScanner.categorizeEmails === 'function') {
-                await window.emailScanner.categorizeEmails(this.taskPreselectedCategories);
-                console.log('[MinimalScan] ✅ Re-catégorisation effectuée');
-            }
-            
-            // Mettre à jour les métriques
+            // Marquer la source
+            const hasRealEmails = this.realEmails.some(e => e.realEmail === true);
             if (window.emailScanner.scanMetrics) {
                 window.emailScanner.scanMetrics.startTime = this.scanStartTime;
-                window.emailScanner.scanMetrics.categorizedCount = this.generatedEmails.length;
                 window.emailScanner.scanMetrics.taskPreselectedCategories = [...this.taskPreselectedCategories];
+                window.emailScanner.scanMetrics.hasRealEmails = hasRealEmails;
+                window.emailScanner.scanMetrics.source = 'StartScan';
             }
             
             console.log('[MinimalScan] ✅ Synchronisation EmailScanner complète');
@@ -1060,117 +1145,339 @@ class MinimalScanModule {
         }
     }
 
-    async finalizeSync() {
-        console.log('[MinimalScan] 🎯 Finalisation de la synchronisation...');
+    async categorizeRealEmails() {
+        console.log('[MinimalScan] 🏷️ Catégorisation des emails réels...');
         
-        // Générer les résultats finaux
-        this.generateSimulatedResults();
-        
-        // Sauvegarder les résultats pour la page emails
-        try {
-            const scanResults = {
-                success: true,
-                total: this.generatedEmails?.length || 0,
-                categorized: this.generatedEmails?.length || 0,
-                taskPreselectedCategories: [...this.taskPreselectedCategories],
-                preselectedForTasks: this.generatedEmails?.filter(e => e.isPreselectedForTasks).length || 0,
-                scanDuration: Math.floor((Date.now() - this.scanStartTime) / 1000),
-                timestamp: Date.now(),
-                webSimulation: true,
-                emailScannerSynced: true
-            };
-            
-            localStorage.setItem('scanResults', JSON.stringify(scanResults));
-            console.log('[MinimalScan] 💾 Résultats sauvegardés');
-            
-        } catch (error) {
-            console.warn('[MinimalScan] Erreur sauvegarde résultats:', error);
+        if (!window.emailScanner || !this.realEmails) {
+            console.warn('[MinimalScan] Données non disponibles pour catégorisation');
+            return;
         }
         
-        // Dispatcher les événements pour notifier les autres modules
-        setTimeout(() => {
-            this.dispatchSyncEvents();
-        }, 100);
+        try {
+            // Catégoriser via EmailScanner
+            if (typeof window.emailScanner.categorizeEmails === 'function') {
+                await window.emailScanner.categorizeEmails(this.taskPreselectedCategories);
+                console.log('[MinimalScan] ✅ Catégorisation réelle effectuée');
+            }
+        } catch (error) {
+            console.error('[MinimalScan] ❌ Erreur catégorisation réelle:', error);
+        }
     }
 
-    dispatchSyncEvents() {
+    async categorizeEmails() {
+        console.log('[MinimalScan] 🏷️ Catégorisation des emails simulés...');
+        
+        if (!window.emailScanner || !this.realEmails) {
+            console.warn('[MinimalScan] Données non disponibles pour catégorisation');
+            return;
+        }
+        
+        try {
+            // Catégoriser via EmailScanner
+            if (typeof window.emailScanner.categorizeEmails === 'function') {
+                await window.emailScanner.categorizeEmails(this.taskPreselectedCategories);
+                console.log('[MinimalScan] ✅ Catégorisation simulée effectuée');
+            }
+        } catch (error) {
+            console.error('[MinimalScan] ❌ Erreur catégorisation simulée:', error);
+        }
+    }
+
+    generateResults() {
+        const emailCount = this.realEmails?.length || 0;
+        const preselectedCount = this.realEmails?.filter(e => 
+            this.taskPreselectedCategories.includes(e.simulatedCategory)
+        ).length || 0;
+        const hasRealEmails = this.realEmails?.some(e => e.realEmail === true) || false;
+        
+        this.scanResults = {
+            success: true,
+            total: emailCount,
+            categorized: emailCount,
+            taskPreselectedCategories: [...this.taskPreselectedCategories],
+            stats: { 
+                preselectedForTasks: preselectedCount,
+                taskSuggestions: Math.floor(preselectedCount * 0.8),
+                highConfidence: Math.floor(emailCount * 0.7),
+                hasRealEmails: hasRealEmails,
+                emailType: hasRealEmails ? 'real' : 'simulated'
+            },
+            breakdown: this.calculateBreakdown(),
+            source: 'StartScan'
+        };
+        
+        console.log('[MinimalScan] 📊 Résultats générés:', this.scanResults);
+    }
+
+    calculateBreakdown() {
+        if (!this.realEmails) return {};
+        
+        const breakdown = {};
+        
+        this.realEmails.forEach(email => {
+            const category = email.simulatedCategory || 'other';
+            breakdown[category] = (breakdown[category] || 0) + 1;
+        });
+        
+        return breakdown;
+    }
+
+    completeScan() {
+        this.generateResults();
+        
+        setTimeout(() => {
+            const scanBtn = document.getElementById('minimalScanBtn');
+            if (scanBtn) {
+                const hasRealEmails = this.scanResults?.stats?.hasRealEmails || false;
+                const emailCount = this.scanResults?.total || 0;
+                const preselectedCount = this.scanResults?.stats?.preselectedForTasks || 0;
+                
+                scanBtn.innerHTML = `<i class="fas fa-check"></i> <span>${hasRealEmails ? 'Emails réels analysés !' : 'Simulation terminée !'}</span>`;
+                scanBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                
+                if (emailCount > 0) {
+                    scanBtn.style.position = 'relative';
+                    scanBtn.insertAdjacentHTML('beforeend', `
+                        <span class="success-badge">
+                            ${hasRealEmails ? '📧' : '🤖'} ${emailCount} ${preselectedCount > 0 ? `(${preselectedCount} ⭐)` : ''}
+                        </span>
+                    `);
+                }
+            }
+            
+            setTimeout(() => {
+                this.redirectToResults();
+            }, 1500);
+        }, 500);
+    }
+
+    redirectToResults() {
+        this.scanInProgress = false;
+        
+        const hasRealEmails = this.scanResults?.stats?.hasRealEmails || false;
+        
+        const essentialResults = {
+            success: true,
+            total: this.scanResults?.total || 0,
+            categorized: this.scanResults?.categorized || 0,
+            taskPreselectedCategories: [...this.taskPreselectedCategories],
+            preselectedForTasks: this.scanResults?.stats?.preselectedForTasks || 0,
+            scanDuration: Math.floor((Date.now() - this.scanStartTime) / 1000),
+            timestamp: Date.now(),
+            hasRealEmails: hasRealEmails,
+            emailType: hasRealEmails ? 'real' : 'simulated',
+            source: 'StartScan'
+        };
+        
+        try {
+            localStorage.setItem('scanResults', JSON.stringify(essentialResults));
+            console.log('[MinimalScan] 💾 Résultats finaux sauvegardés');
+        } catch (error) {
+            console.warn('[MinimalScan] Erreur stockage final:', error);
+        }
+        
+        // Notification de succès
+        this.showNotification(essentialResults);
+        
+        // Dispatcher les événements
+        setTimeout(() => {
+            this.dispatchEvents(essentialResults);
+        }, 100);
+        
+        // Rediriger vers les emails
+        setTimeout(() => {
+            if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
+                window.pageManager.loadPage('emails');
+            } else {
+                this.showResultsInPlace(essentialResults);
+            }
+        }, 1000);
+    }
+
+    showNotification(results) {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+            z-index: 10000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            font-weight: 600;
+            max-width: 300px;
+            animation: slideIn 0.3s ease;
+        `;
+        
+        const emailType = results.hasRealEmails ? 'emails réels' : 'emails simulés';
+        const preselectedText = results.preselectedForTasks > 0 ? 
+            `<br>⭐ ${results.preselectedForTasks} pré-sélectionnés` : '';
+        
+        notification.innerHTML = `
+            ${results.hasRealEmails ? '📧' : '🤖'} ${results.total} ${emailType} analysés${preselectedText}
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Animation CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        setTimeout(() => {
+            notification.remove();
+            style.remove();
+        }, 4000);
+    }
+
+    dispatchEvents(results) {
         try {
             // Événement de fin de scan
             window.dispatchEvent(new CustomEvent('scanCompleted', {
                 detail: {
-                    results: this.scanResults,
-                    emails: this.generatedEmails,
+                    results: results,
+                    emails: this.realEmails || [],
                     taskPreselectedCategories: this.taskPreselectedCategories,
-                    source: 'MinimalScanModule',
-                    timestamp: Date.now()
+                    source: 'StartScan',
+                    timestamp: Date.now(),
+                    hasRealEmails: results.hasRealEmails
                 }
             }));
             
             // Événement de synchronisation EmailScanner
             window.dispatchEvent(new CustomEvent('emailScannerSynced', {
                 detail: {
-                    emailCount: this.generatedEmails?.length || 0,
+                    emailCount: results.total,
                     taskPreselectedCategories: this.taskPreselectedCategories,
-                    source: 'MinimalScanModule',
-                    timestamp: Date.now()
+                    source: 'StartScan',
+                    timestamp: Date.now(),
+                    hasRealEmails: results.hasRealEmails
                 }
             }));
             
-            console.log('[MinimalScan] ✅ Événements de synchronisation envoyés');
+            console.log('[MinimalScan] ✅ Événements dispatchés');
             
         } catch (error) {
             console.error('[MinimalScan] ❌ Erreur dispatch événements:', error);
         }
     }
 
-    generateEmailPreview(category, subject) {
-        const previews = {
-            commercial: 'Nous avons le plaisir de vous présenter notre nouvelle offre commerciale exceptionnelle. Cette proposition unique vous permettra d\'optimiser vos résultats...',
-            tasks: 'Action requise de votre part. Ce projet nécessite votre validation avant la fin de semaine. Merci de bien vouloir traiter cette demande en priorité...',
-            meetings: 'Nous confirmons votre participation à la réunion prévue. L\'ordre du jour sera envoyé séparément. Préparation recommandée...',
-            finance: 'Veuillez trouver ci-joint les documents financiers pour validation. Votre signature est requise pour finaliser cette opération...',
-            newsletters: 'Découvrez les dernières actualités et innovations de notre secteur. Ce mois-ci, focus sur les tendances émergentes...',
-            support: 'Votre demande de support a été traitée avec succès. Les modifications ont été appliquées et testées...',
-            personal: 'J\'espère que tu vas bien. Je voulais te tenir au courant des dernières nouvelles et organiser notre prochaine rencontre...'
-        };
+    showResultsInPlace(results) {
+        const container = document.querySelector('.scanner-card-minimal');
+        if (!container) return;
         
-        return previews[category] || 'Contenu de l\'email simulé par IA...';
+        const emailType = results.hasRealEmails ? 'emails réels' : 'emails simulés';
+        const typeIcon = results.hasRealEmails ? 'fa-envelope' : 'fa-robot';
+        const typeColor = results.hasRealEmails ? '#10b981' : '#f97316';
+        
+        container.innerHTML = `
+            <div class="scanner-icon" style="background: linear-gradient(135deg, ${typeColor} 0%, ${typeColor}dd 100%);">
+                <i class="fas ${typeIcon}"></i>
+            </div>
+            
+            <h1 class="scanner-title">${results.hasRealEmails ? 'Emails Réels Analysés !' : 'Simulation Terminée !'}</h1>
+            <p class="scanner-subtitle">Analyse IA complète avec synchronisation EmailScanner</p>
+            
+            <div style="background: rgba(16, 185, 129, 0.1); border-radius: 15px; padding: 25px; margin: 25px 0;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 20px; text-align: center;">
+                    <div>
+                        <div style="font-size: 28px; font-weight: 700; color: ${typeColor};">${results.total}</div>
+                        <div style="font-size: 14px; color: #6b7280;">${emailType}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 28px; font-weight: 700; color: #3b82f6;">${results.categorized}</div>
+                        <div style="font-size: 14px; color: #6b7280;">Catégorisés</div>
+                    </div>
+                    ${results.preselectedForTasks > 0 ? `
+                        <div>
+                            <div style="font-size: 28px; font-weight: 700; color: #8b5cf6;">⭐ ${results.preselectedForTasks}</div>
+                            <div style="font-size: 14px; color: #6b7280;">Pré-sélectionnés</div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                <button class="scan-button-minimal" onclick="window.minimalScanModule.resetScanner()" 
+                        style="width: auto; padding: 0 24px; height: 50px;">
+                    <i class="fas fa-redo"></i>
+                    <span>Nouveau scan</span>
+                </button>
+                
+                <button class="scan-button-minimal" onclick="window.pageManager?.loadPage('emails')" 
+                        style="width: auto; padding: 0 24px; height: 50px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                    <i class="fas fa-envelope"></i>
+                    <span>Voir les emails</span>
+                </button>
+            </div>
+            
+            <div class="scan-info" style="margin-top: 20px;">
+                <div class="scan-info-main">
+                    <i class="fas ${typeIcon}"></i>
+                    <span>${results.hasRealEmails ? 'Analyse emails réels avec IA Claude' : 'Simulation IA avec données réalistes'}</span>
+                </div>
+                <div class="scan-info-details">Durée: ${results.scanDuration}s • Mode: ${results.hasRealEmails ? 'Réel' : 'Simulation'} • Synchronisé</div>
+            </div>
+        `;
     }
 
-    generateSimulatedResults() {
-        const emailCount = this.generatedEmails?.length || 0;
-        const categorizedCount = emailCount;
-        const preselectedCount = this.generatedEmails?.filter(e => e.isPreselectedForTasks).length || 0;
+    showScanError(error) {
+        const progressSection = document.getElementById('progressSection');
+        if (progressSection) {
+            progressSection.innerHTML = `
+                <div style="text-align: center; padding: 20px 0;">
+                    <div style="font-size: 16px; font-weight: 600; color: #ef4444; margin-bottom: 8px;">Erreur de scan</div>
+                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 16px;">${error.message}</div>
+                    
+                    <button class="scan-button-minimal" onclick="window.minimalScanModule.resetScanner()" 
+                            style="width: auto; padding: 0 20px; height: 40px; font-size: 14px;">
+                        <i class="fas fa-redo"></i>
+                        <span>Réessayer</span>
+                    </button>
+                </div>
+            `;
+        }
         
-        this.scanResults = {
-            success: true,
-            total: emailCount,
-            categorized: categorizedCount,
-            taskPreselectedCategories: [...this.taskPreselectedCategories],
-            stats: { 
-                preselectedForTasks: preselectedCount,
-                taskSuggestions: Math.floor(preselectedCount * 0.8),
-                highConfidence: Math.floor(categorizedCount * 0.7),
-                webSimulation: true,
-                emailScannerSynced: true
-            },
-            breakdown: this.generateCategoryBreakdown(categorizedCount)
-        };
-        
-        console.log('[MinimalScan] 📊 Résultats simulés générés:', this.scanResults);
+        this.scanInProgress = false;
     }
 
-    generateCategoryBreakdown(total) {
-        if (!this.generatedEmails) return {};
+    resetScanner() {
+        this.scanInProgress = false;
+        this.scanResults = null;
+        this.realEmails = null;
         
-        const breakdown = {};
+        this.setActiveStep(1);
         
-        this.generatedEmails.forEach(email => {
-            const category = email.category || 'other';
-            breakdown[category] = (breakdown[category] || 0) + 1;
-        });
+        const progressSection = document.getElementById('progressSection');
+        if (progressSection) {
+            progressSection.classList.remove('visible');
+            progressSection.innerHTML = `
+                <div class="progress-bar-minimal">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">Initialisation...</div>
+                <div class="progress-status" id="progressStatus">Préparation</div>
+            `;
+        }
         
-        return breakdown;
+        // Recharger l'interface complète
+        const container = document.querySelector('.scanner-card-minimal');
+        if (container) {
+            container.outerHTML = this.renderScanner();
+        }
+        
+        this.loadSettingsFromStorage();
+        this.updatePreselectedCategoriesDisplay();
+        
+        console.log('[MinimalScan] 🔄 Scanner v11.1 réinitialisé');
     }
 
     updateProgress(percent, text, status) {
@@ -1194,217 +1501,8 @@ class MinimalScanModule {
         }
     }
 
-    completeScan() {
-        setTimeout(() => {
-            const scanBtn = document.getElementById('minimalScanBtn');
-            if (scanBtn) {
-                const preselectedCount = this.scanResults?.stats?.preselectedForTasks || 0;
-                
-                scanBtn.innerHTML = `<i class="fas fa-check"></i> <span>Simulation IA terminée !</span>`;
-                scanBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                
-                if (preselectedCount > 0) {
-                    scanBtn.style.position = 'relative';
-                    scanBtn.insertAdjacentHTML('beforeend', `
-                        <span class="success-badge">
-                            ✅ ${preselectedCount} emails synchronisés
-                        </span>
-                    `);
-                }
-            }
-            
-            setTimeout(() => {
-                this.redirectToResults();
-            }, 1500);
-        }, 500);
-    }
-
-    redirectToResults() {
-        this.scanInProgress = false;
-        
-        const essentialResults = {
-            success: true,
-            total: this.scanResults?.total || 0,
-            categorized: this.scanResults?.categorized || 0,
-            taskPreselectedCategories: [...this.taskPreselectedCategories],
-            preselectedForTasks: this.scanResults?.stats?.preselectedForTasks || 0,
-            scanDuration: Math.floor((Date.now() - this.scanStartTime) / 1000),
-            timestamp: Date.now(),
-            webSimulation: true,
-            emailScannerSynced: true
-        };
-        
-        try {
-            localStorage.setItem('scanResults', JSON.stringify(essentialResults));
-            console.log('[MinimalScan] 💾 Résultats finaux sauvegardés');
-        } catch (error) {
-            console.warn('[MinimalScan] Erreur stockage final:', error);
-        }
-        
-        // Notification de succès
-        this.showWebNotification(essentialResults);
-        
-        setTimeout(() => {
-            if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
-                window.pageManager.loadPage('emails');
-            } else {
-                // Fallback pour mode web standalone
-                this.showResultsInPlace(essentialResults);
-            }
-        }, 500);
-    }
-
-    showWebNotification(results) {
-        // Créer une notification personnalisée pour le web
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            padding: 16px 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
-            z-index: 10000;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            font-weight: 600;
-            max-width: 300px;
-            animation: slideIn 0.3s ease;
-        `;
-        
-        const message = results.preselectedForTasks > 0 ?
-            `✅ ${results.total} emails simulés<br>🔄 ${results.preselectedForTasks} synchronisés avec EmailScanner` :
-            `✅ ${results.total} emails simulés<br>🔄 Synchronisés avec EmailScanner`;
-        
-        notification.innerHTML = message;
-        document.body.appendChild(notification);
-        
-        // Ajouter animation CSS
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-        `;
-        document.head.appendChild(style);
-        
-        setTimeout(() => {
-            notification.remove();
-            style.remove();
-        }, 4000);
-    }
-
-    showResultsInPlace(results) {
-        // Afficher les résultats directement dans le scanner pour mode standalone
-        const container = document.querySelector('.scanner-card-minimal');
-        if (!container) return;
-        
-        container.innerHTML = `
-            <div class="scanner-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                <i class="fas fa-check"></i>
-            </div>
-            
-            <h1 class="scanner-title">Simulation IA Terminée !</h1>
-            <p class="scanner-subtitle">Synchronisation EmailScanner réussie</p>
-            
-            <div style="background: rgba(16, 185, 129, 0.1); border-radius: 15px; padding: 25px; margin: 25px 0;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 20px; text-align: center;">
-                    <div>
-                        <div style="font-size: 28px; font-weight: 700; color: #10b981;">${results.total}</div>
-                        <div style="font-size: 14px; color: #6b7280;">Emails simulés</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 28px; font-weight: 700; color: #3b82f6;">${results.categorized}</div>
-                        <div style="font-size: 14px; color: #6b7280;">Catégorisés</div>
-                    </div>
-                    ${results.preselectedForTasks > 0 ? `
-                        <div>
-                            <div style="font-size: 28px; font-weight: 700; color: #8b5cf6;">🔄 ${results.preselectedForTasks}</div>
-                            <div style="font-size: 14px; color: #6b7280;">Synchronisés</div>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-            
-            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                <button class="scan-button-minimal" onclick="window.minimalScanModule.resetScanner()" 
-                        style="width: auto; padding: 0 24px; height: 50px;">
-                    <i class="fas fa-redo"></i>
-                    <span>Nouvelle simulation</span>
-                </button>
-                
-                <button class="scan-button-minimal" onclick="window.pageManager?.loadPage('emails')" 
-                        style="width: auto; padding: 0 24px; height: 50px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
-                    <i class="fas fa-envelope"></i>
-                    <span>Voir les emails</span>
-                </button>
-            </div>
-            
-            <div class="scan-info" style="margin-top: 20px;">
-                <div class="scan-info-main">
-                    <i class="fas fa-robot"></i>
-                    <span>Simulation IA avec synchronisation EmailScanner</span>
-                </div>
-                <div class="scan-info-details">Durée: ${results.scanDuration}s • Mode: IA Complète • Synchronisé</div>
-            </div>
-        `;
-    }
-
-    showScanError(error) {
-        const progressSection = document.getElementById('progressSection');
-        if (progressSection) {
-            progressSection.innerHTML = `
-                <div style="text-align: center; padding: 20px 0;">
-                    <div style="font-size: 16px; font-weight: 600; color: #ef4444; margin-bottom: 8px;">Erreur de simulation</div>
-                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 16px;">${error.message}</div>
-                    
-                    <button class="scan-button-minimal" onclick="window.minimalScanModule.resetScanner()" 
-                            style="width: auto; padding: 0 20px; height: 40px; font-size: 14px;">
-                        <i class="fas fa-redo"></i>
-                        <span>Réessayer</span>
-                    </button>
-                </div>
-            `;
-        }
-        
-        this.scanInProgress = false;
-    }
-
-    resetScanner() {
-        this.scanInProgress = false;
-        this.scanResults = null;
-        this.generatedEmails = null;
-        
-        this.setActiveStep(1);
-        
-        const progressSection = document.getElementById('progressSection');
-        if (progressSection) {
-            progressSection.classList.remove('visible');
-            progressSection.innerHTML = `
-                <div class="progress-bar-minimal">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-                <div class="progress-text" id="progressText">Initialisation...</div>
-                <div class="progress-status" id="progressStatus">Préparation simulation</div>
-            `;
-        }
-        
-        // Recharger l'interface complète
-        const container = document.querySelector('.scanner-card-minimal');
-        if (container) {
-            container.outerHTML = this.renderWebScanner();
-        }
-        
-        this.loadSettingsFromStorage();
-        this.updatePreselectedCategoriesDisplay();
-        
-        console.log('[MinimalScan] 🔄 Scanner web réinitialisé');
-    }
-
     updateSettings(newSettings) {
-        console.log('[MinimalScan] 📝 Mise à jour paramètres web:', newSettings);
+        console.log('[MinimalScan] 📝 Mise à jour paramètres v11.1:', newSettings);
         this.settings = { ...this.settings, ...newSettings };
         
         if (newSettings.taskPreselectedCategories) {
@@ -1415,7 +1513,7 @@ class MinimalScanModule {
             this.selectedDays = newSettings.scanSettings.defaultPeriod;
         }
         
-        // Sauvegarder en localStorage pour persistance web
+        // Sauvegarder en localStorage
         try {
             localStorage.setItem('categorySettings', JSON.stringify(this.settings));
         } catch (error) {
@@ -1426,7 +1524,10 @@ class MinimalScanModule {
     }
 
     getDebugInfo() {
+        const hasRealEmails = this.hasRealEmailAccess();
+        
         return {
+            version: '11.1',
             isInitialized: this.isInitialized,
             scanInProgress: this.scanInProgress,
             selectedDays: this.selectedDays,
@@ -1434,12 +1535,15 @@ class MinimalScanModule {
             settings: this.settings,
             lastSettingsSync: this.lastSettingsSync,
             scanResults: this.scanResults,
-            generatedEmails: this.generatedEmails?.length || 0,
-            webConfig: this.webConfig,
-            webMode: true,
-            emailScannerSync: {
+            emailAccess: {
+                hasRealEmails: hasRealEmails,
+                mailServiceAvailable: !!window.mailService,
+                mailServiceInitialized: window.mailService?.isInitialized || false
+            },
+            scanConfig: this.scanConfig,
+            emailScanner: {
                 available: !!window.emailScanner,
-                synced: this.scanResults?.emailScannerSynced || false
+                emailCount: window.emailScanner?.emails?.length || 0
             }
         };
     }
@@ -1453,62 +1557,64 @@ class MinimalScanModule {
         this.scanInProgress = false;
         this.isInitialized = false;
         this.scanResults = null;
-        this.generatedEmails = null;
+        this.realEmails = null;
         
-        console.log('[MinimalScan] 🧹 Nettoyage web terminé');
+        console.log('[MinimalScan] 🧹 Nettoyage v11.1 terminé');
     }
 
     destroy() {
         this.cleanup();
         this.settings = {};
         this.taskPreselectedCategories = [];
-        console.log('[MinimalScan] Instance web détruite');
+        console.log('[MinimalScan] Instance v11.1 détruite');
     }
 }
 
 // ================================================
-// INITIALISATION WEB COMPATIBLE
+// INITIALISATION GLOBALE CORRIGÉE
 // ================================================
 
-// Créer l'instance globale avec protection
+// Nettoyer ancienne instance
 if (window.minimalScanModule) {
     window.minimalScanModule.destroy?.();
 }
 
-// Configuration pour environnement web
+// Créer nouvelle instance
 window.MinimalScanModule = MinimalScanModule;
 window.minimalScanModule = new MinimalScanModule();
 window.scanStartModule = window.minimalScanModule;
 
-// Fonctions utilitaires pour débogage web
-window.testWebScanner = function() {
-    console.group('🧪 TEST Scanner Web v11.0');
-    console.log('Configuration:', window.minimalScanModule.webConfig);
-    console.log('Paramètres:', window.minimalScanModule.settings);
-    console.log('Catégories:', window.minimalScanModule.taskPreselectedCategories);
+// Fonctions utilitaires de debug
+window.testScannerReal = function() {
+    console.group('🧪 TEST Scanner Emails Réels v11.1');
+    console.log('Configuration:', window.minimalScanModule.scanConfig);
+    console.log('Accès emails réels:', window.minimalScanModule.hasRealEmailAccess());
+    console.log('MailService disponible:', !!window.mailService);
+    console.log('MailService initialisé:', window.mailService?.isInitialized);
     console.log('Debug Info:', window.minimalScanModule.getDebugInfo());
     console.groupEnd();
-    return { success: true, webMode: true, syncEnabled: true };
+    return { success: true, realEmailsAvailable: window.minimalScanModule.hasRealEmailAccess() };
 };
 
-window.simulateWebScan = function() {
+window.simulateRealScan = function() {
     if (window.minimalScanModule.scanInProgress) {
-        console.log('Simulation déjà en cours');
+        console.log('Scan déjà en cours');
         return;
     }
     
-    console.log('🚀 Démarrage simulation manuelle avec sync');
+    const hasReal = window.minimalScanModule.hasRealEmailAccess();
+    console.log(`🚀 Démarrage scan manuel - Mode: ${hasReal ? 'RÉEL' : 'SIMULATION'}`);
     window.minimalScanModule.startScan();
-    return { success: true, message: 'Simulation avec sync démarrée' };
+    return { success: true, mode: hasReal ? 'real' : 'simulation' };
 };
 
-// Auto-initialisation si DOM prêt
+// Auto-initialisation DOM
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('[MinimalScan] 📱 DOM prêt - Scanner web avec sync initialisé');
+        console.log('[MinimalScan] 📱 DOM prêt - Scanner v11.1 emails réels prioritaires');
     });
 } else {
-    console.log('[MinimalScan] 📱 Scanner web avec sync prêt');
+    console.log('[MinimalScan] 📱 Scanner v11.1 emails réels prioritaires prêt');
 }
 
-console.log('✅ StartScan v11.0 loaded - Web Compatible avec synchronisation EmailScanner complète');
+console.log('✅ StartScan v11.1 loaded - Emails réels prioritaires avec fallback simulation');
