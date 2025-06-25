@@ -1,4 +1,4 @@
-// PageManager.js - Version 15.0 - Affichage corrigé et bouton créer tâche
+// PageManager.js - Version 15.1 - Détection newsletters améliorée
 
 class PageManager {
     constructor() {
@@ -65,7 +65,7 @@ class PageManager {
             this.setupSyncListeners();
             this.setupCategoryManagerIntegration();
             this.isInitialized = true;
-            console.log('[PageManager] ✅ Version 15.0 - Affichage corrigé');
+            console.log('[PageManager] ✅ Version 15.1 - Détection newsletters améliorée');
         } catch (error) {
             console.error('[PageManager] Erreur initialisation:', error);
         }
@@ -3666,7 +3666,7 @@ if (window.pageManager) {
     window.pageManager.cleanup?.();
 }
 
-console.log('[PageManager] 🚀 Création nouvelle instance v15.0...');
+console.log('[PageManager] 🚀 Création nouvelle instance v15.1...');
 window.pageManager = new PageManager();
 
 Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
@@ -3688,4 +3688,4 @@ window.refreshPageManagerEmails = function() {
     return { success: false, message: 'Pas sur la page emails ou PageManager non disponible' };
 };
 
-console.log('✅ PageManager v15.0 loaded - Affichage corrigé et bouton créer tâche');
+console.log('✅ PageManager v15.1 loaded - Détection newsletters améliorée');
