@@ -12,13 +12,13 @@
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://coruscating-dodol-f30e8d.netlify.app/">
+    <meta property="og:url" content="">
     <meta property="og:title" content="EmailSortProAI - Scanner d'Emails Intelligent">
     <meta property="og:description" content="Organisez vos emails Outlook et Gmail intelligemment avec l'IA.">
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://coruscating-dodol-f30e8d.netlify.app/">
+    <meta property="twitter:url" content="">
     <meta property="twitter:title" content="EmailSortProAI - Scanner d'Emails Intelligent">
     <meta property="twitter:description" content="Organisez vos emails Outlook et Gmail intelligemment avec l'IA.">
     
@@ -34,23 +34,30 @@
     <!-- Styles principaux -->
     <link rel="stylesheet" href="styles.css">
     
-    <!-- CONFIGURATION NETLIFY -->
+    <!-- CONFIGURATION NETLIFY DYNAMIQUE -->
     <script>
-        console.log('[INDEX] 🚀 Loading Netlify configuration for coruscating-dodol-f30e8d.netlify.app...');
+        console.log('[INDEX] 🚀 Loading dynamic Netlify configuration...');
         
-        // Client ID par défaut fonctionnel pour le nouveau domaine
+        // Détection automatique du domaine actuel
+        const currentDomain = window.location.hostname;
+        const currentOrigin = window.location.origin;
+        
+        console.log('[INDEX] 🌐 Domaine détecté:', currentDomain);
+        console.log('[INDEX] 🌐 Origin détecté:', currentOrigin);
+        
+        // Client ID fonctionnel pour tous les domaines Netlify
         window.NETLIFY_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
         
-        console.log('[INDEX] ✅ Netlify Client ID configured for new domain');
+        console.log('[INDEX] ✅ Client ID configuré pour domaine Netlify');
         
-        // Détection de l'environnement
+        // Détection de l'environnement - VERSION CORRIGÉE
         (function() {
             const hostname = window.location.hostname;
             const isNetlify = hostname.includes('netlify.app') || hostname.includes('netlifyapp.com');
             const isGitHubPages = hostname.includes('github.io');
             const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
             
-            console.log('[INDEX] Environment detection for new domain:', {
+            console.log('[INDEX] Environment detection:', {
                 hostname,
                 isNetlify,
                 isGitHubPages,
@@ -58,10 +65,11 @@
                 origin: window.location.origin
             });
             
-            // Fonction pour obtenir le Client ID
+            // Fonction pour obtenir le Client ID - SIMPLIFIÉE
             function getClientIdForEnvironment() {
-                if (isNetlify && window.NETLIFY_CLIENT_ID) {
-                    console.log('[INDEX] ✅ Using configured Netlify client ID for new domain');
+                // Toujours utiliser le client ID Netlify pour les domaines netlify.app
+                if (isNetlify) {
+                    console.log('[INDEX] ✅ Using Netlify client ID');
                     return window.NETLIFY_CLIENT_ID;
                 }
                 
@@ -80,25 +88,21 @@
                     return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
                 }
                 
-                if (isGitHubPages) {
-                    console.log('[INDEX] GitHub Pages - configuration requise');
-                    return 'CONFIGURATION_REQUIRED';
-                }
-                
-                console.log('[INDEX] ✅ Netlify with default client ID for new domain');
+                console.log('[INDEX] ✅ Using default client ID');
                 return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
             }
             
-            // Fonction pour créer la configuration
+            // Fonction pour créer la configuration - DYNAMIQUE
             function createConfig(clientId) {
-                const basePath = '';
-                const redirectUri = 'https://coruscating-dodol-f30e8d.netlify.app/auth-callback.html';
-                const postLogoutRedirectUri = 'https://coruscating-dodol-f30e8d.netlify.app/';
+                // URLs dynamiques basées sur le domaine actuel
+                const redirectUri = currentOrigin + '/auth-callback.html';
+                const postLogoutRedirectUri = currentOrigin + '/';
                 
-                console.log('[INDEX] Creating config with corrected URIs:', {
+                console.log('[INDEX] Creating dynamic config:', {
                     redirectUri,
                     postLogoutRedirectUri,
-                    clientId: clientId.substring(0, 8) + '...'
+                    clientId: clientId.substring(0, 8) + '...',
+                    currentDomain: hostname
                 });
                 
                 window.AppConfig = {
@@ -138,10 +142,11 @@
                     },
                     app: {
                         name: 'EmailSortProAI',
-                        version: '3.0.1',
+                        version: '3.0.2',
                         debug: isLocalhost,
                         environment: isNetlify ? 'netlify' : isGitHubPages ? 'github' : isLocalhost ? 'localhost' : 'other',
-                        domain: 'coruscating-dodol-f30e8d.netlify.app'
+                        domain: hostname, // Domaine dynamique
+                        currentUrl: currentOrigin
                     },
                     email: {
                         defaultFolder: 'inbox',
@@ -162,11 +167,7 @@
                     validate() {
                         const issues = [];
                         if (!this.msal.clientId || this.msal.clientId === 'VOTRE_CLIENT_ID_ICI' || this.msal.clientId === 'CONFIGURATION_REQUIRED') {
-                            issues.push('Client ID non configuré pour coruscating-dodol-f30e8d.netlify.app');
-                        }
-                        
-                        if (!this.msal.redirectUri.includes('coruscating-dodol-f30e8d.netlify.app')) {
-                            issues.push('URI de redirection ne correspond pas au nouveau domaine');
+                            issues.push('Client ID non configuré');
                         }
                         
                         return { 
@@ -187,18 +188,16 @@
                             clientId: this.msal.clientId.substring(0, 8) + '...',
                             redirectUri: this.msal.redirectUri,
                             postLogoutRedirectUri: this.msal.postLogoutRedirectUri,
-                            isCorrectDomain: window.location.hostname === 'coruscating-dodol-f30e8d.netlify.app',
                             timestamp: new Date().toISOString()
                         };
                     }
                 };
                 
-                console.log('[INDEX] ✅ Configuration créée pour le nouveau domaine:', {
+                console.log('[INDEX] ✅ Configuration créée pour:', {
                     environment: window.AppConfig.app.environment,
                     domain: window.AppConfig.app.domain,
                     clientId: clientId.substring(0, 8) + '...',
-                    redirectUri: window.AppConfig.msal.redirectUri,
-                    isCorrectDomain: window.location.hostname === 'coruscating-dodol-f30e8d.netlify.app'
+                    redirectUri: window.AppConfig.msal.redirectUri
                 });
             }
             
@@ -206,36 +205,7 @@
             const clientId = getClientIdForEnvironment();
             createConfig(clientId);
             
-            // Vérification spéciale pour le nouveau domaine
-            if (window.location.hostname !== 'coruscating-dodol-f30e8d.netlify.app' && !isLocalhost) {
-                console.warn('[INDEX] ⚠️ Not on correct domain! Current:', window.location.hostname);
-                console.warn('[INDEX] Expected: coruscating-dodol-f30e8d.netlify.app');
-                
-                if (window.location.hostname.includes('netlify') && !window.location.hostname.includes('coruscating-dodol-f30e8d.netlify.app')) {
-                    console.log('[INDEX] Redirecting to correct Netlify domain...');
-                    window.location.href = 'https://coruscating-dodol-f30e8d.netlify.app/';
-                    return;
-                }
-            }
-            
-            // Vérification et redirection si nécessaire
-            if (clientId === 'CONFIGURATION_REQUIRED') {
-                console.log('[INDEX] ⚠️ Configuration requise pour le nouveau domaine');
-                
-                if (isGitHubPages && window.location.pathname !== '/emailsortpro/setup.html') {
-                    console.log('[INDEX] Redirection vers setup pour GitHub Pages');
-                    setTimeout(() => {
-                        window.location.href = '/emailsortpro/setup.html';
-                    }, 1000);
-                } else if (isNetlify && window.location.pathname !== '/setup.html') {
-                    console.log('[INDEX] Redirection vers setup pour Netlify');
-                    setTimeout(() => {
-                        window.location.href = '/setup.html';
-                    }, 1000);
-                }
-            } else {
-                console.log('[INDEX] ✅ Configuration valide pour coruscating-dodol-f30e8d.netlify.app');
-            }
+            console.log('[INDEX] ✅ Configuration terminée pour:', hostname);
         })();
     </script>
 
@@ -1142,23 +1112,7 @@
     </style>
 </head>
 <body>
-    <!-- Vérification du domaine -->
-    <script>
-        if (window.location.hostname !== 'coruscating-dodol-f30e8d.netlify.app' && 
-            window.location.hostname !== 'localhost' && 
-            window.location.hostname !== '127.0.0.1') {
-            const banner = document.createElement('div');
-            banner.className = 'domain-warning';
-            banner.innerHTML = `
-                ⚠️ Domaine incorrect détecté: ${window.location.hostname} | 
-                Domaine attendu: coruscating-dodol-f30e8d.netlify.app | 
-                <a href="https://coruscating-dodol-f30e8d.netlify.app/" style="color: white; text-decoration: underline;">
-                    Cliquez ici pour aller sur le bon domaine
-                </a>
-            `;
-            document.body.appendChild(banner);
-        }
-    </script>
+    <!-- Vérification du domaine - SUPPRIMÉE -->
 
     <div id="app">
         <!-- Header Application -->
@@ -1286,17 +1240,17 @@
                         </div>
                     </div>
 
-                    <!-- FOOTER CONFORMITÉ GOOGLE - NOUVEAU -->
+                    <!-- FOOTER CONFORMITÉ GOOGLE -->
                     <div class="google-compliance-footer">
                         <p style="font-size: 0.875rem; color: #4b5563; margin-bottom: 8px;">
                             EmailSortProAI respecte votre vie privée et se conforme aux politiques Google.
                         </p>
                         <div class="compliance-links">
-                            <a href="/privacy-policy.html" class="compliance-link">
+                            <a href="./privacy-policy.html" class="compliance-link">
                                 <i class="fas fa-shield-alt"></i>
                                 Politique de Confidentialité
                             </a>
-                            <a href="/terms.html" class="compliance-link">
+                            <a href="./terms.html" class="compliance-link">
                                 <i class="fas fa-file-contract"></i>
                                 Conditions d'Utilisation
                             </a>
@@ -1334,40 +1288,41 @@
     <!-- Scripts - Ordre CORRIGÉ pour éviter le délai de 10 secondes -->
     
     <!-- 1. UIManager EN PREMIER pour éviter l'attente -->
-    <script src="UIManager.js"></script>
+    <script src="./UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
     
     <!-- 2. Services Core -->
-    <script src="AuthService.js"></script>
-    <script src="GoogleAuthService.js"></script>
-    <script src="MailService.js"></script>
+    <script src="./AuthService.js" onerror="console.error('AuthService.js manquant')"></script>
+    <script src="./GoogleAuthService.js" onerror="console.error('GoogleAuthService.js manquant')"></script>
+    <script src="./MailService.js" onerror="console.error('MailService.js manquant')"></script>
 
     <!-- 3. CategoryManager -->
-    <script src="CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
+    <script src="./CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
     
     <!-- 4. TaskManager AVANT PageManager -->
-    <script src="TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
+    <script src="./TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
     
     <!-- 5. Autres Managers -->
-    <script src="EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
-    <script src="EmailDeduplicationManager.js"></script>
-    <script src="AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
+    <script src="./EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
+    <script src="./EmailDeduplicationManager.js" onerror="console.error('EmailDeduplicationManager.js manquant')"></script>
+    <script src="./AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
     
     <!-- 6. DASHBOARD MODULE -->
-    <script src="dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
+    <script src="./dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
     
     <!-- 7. Page Manager APRÈS Dashboard et TaskManager -->
-    <script src="PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
+    <script src="./PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
     
     <!-- 8. Modules de pages -->
-    <script src="startscan.js" onerror="console.error('startscan.js manquant')"></script>
-    <script src="DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
-    <script src="CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
+    <script src="./startscan.js" onerror="console.error('startscan.js manquant - utilisation de StartScan.js à la place')"></script>
+    <script src="./StartScan.js" onerror="console.error('StartScan.js manquant')"></script>
+    <script src="./DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
+    <script src="./CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
     
     <!-- 9. Modules Optionnels -->
-    <script src="Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
+    <script src="./Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
     
     <!-- 10. Application Principal EN DERNIER -->
-    <script src="app.js"></script>
+    <script src="./app.js" onerror="console.error('app.js manquant')"></script>
     
     <!-- Scripts de gestion des événements -->
     <script>
@@ -1886,7 +1841,7 @@
                 categoryManager: window.categoryManager ? 'OK' : 'MANQUANT',
                 dashboardModule: window.dashboardModule ? 'OK' : 'MANQUANT',
                 hostname: window.location.hostname,
-                expectedHostname: 'coruscating-dodol-f30e8d.netlify.app',
+                currentDomain: window.location.hostname,
                 authenticationStatus: {
                     microsoft: window.authService ? window.authService.isAuthenticated() : false,
                     google: window.googleAuthService ? window.googleAuthService.isAuthenticated() : false
@@ -1922,15 +1877,6 @@
         setTimeout(() => {
             window.checkGoogleCallback();
         }, 500);
-
-        console.log('[INDEX] ✅ Configuration loaded for coruscating-dodol-f30e8d.netlify.app');
-        console.log('[INDEX] Current hostname:', window.location.hostname);
-        console.log('[INDEX] Expected hostname: coruscating-dodol-f30e8d.netlify.app');
-        console.log('[INDEX] Domain match:', window.location.hostname === 'coruscating-dodol-f30e8d.netlify.app');
-        console.log('[INDEX] 🎯 ORDRE DE CHARGEMENT CORRIGÉ:');
-        console.log('[INDEX] 1. TaskManager.js AVANT PageManager.js');
-        console.log('[INDEX] 2. Interface unifiée pour emails et tâches');
-        console.log('[INDEX] 3. PageManager délègue les tâches à TasksView');
     </script>
 </body>
 </html>
