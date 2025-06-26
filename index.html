@@ -3,954 +3,393 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EmailSortPro - Organisateur d'emails intelligent</title>
+    <title>EmailSortPro - Gestionnaire d'Emails Intelligent</title>
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Configuration et scripts de base -->
-    <script src="./config-supabase.js"></script>
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- 1. Configuration CRITIQUE - Doit être chargée en premier -->
+    <script src="config.js"></script>
+    
+    <!-- 2. Bibliothèques tierces -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 2rem;
-        }
-
-        .header h1 {
-            font-size: 3.5rem;
-            margin-bottom: 1rem;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            font-weight: 700;
-        }
-
-        .header p {
-            font-size: 1.25rem;
-            opacity: 0.9;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        }
-
-        .main-content {
-            background: rgba(255, 255, 255, 0.98);
-            border-radius: 20px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
-            overflow: hidden;
-            backdrop-filter: blur(10px);
-        }
-
-        .auth-section {
-            padding: 3rem 2rem;
-            text-align: center;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        }
-
-        .auth-section h2 {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            color: #1f2937;
-        }
-
-        .auth-section p {
-            font-size: 1.1rem;
-            color: #6b7280;
-            margin-bottom: 2rem;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-            color: white;
-            border: none;
-            padding: 16px 32px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 30px rgba(79, 70, 229, 0.4);
-        }
-
-        .btn:active {
-            transform: translateY(-1px);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-        }
-
-        .app-content {
-            display: none;
-            padding: 3rem 2rem;
-        }
-
-        .welcome-section {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-
-        .welcome-section h2 {
-            font-size: 2.5rem;
-            color: #1f2937;
-            margin-bottom: 1rem;
-        }
-
-        .welcome-section .user-info {
-            display: inline-flex;
-            align-items: center;
-            gap: 16px;
-            background: #f3f4f6;
-            padding: 16px 24px;
-            border-radius: 12px;
-            margin-bottom: 2rem;
-        }
-
-        .user-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #4F46E5, #6366F1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 1.25rem;
-        }
-
-        .user-details h3 {
-            color: #1f2937;
-            margin-bottom: 4px;
-        }
-
-        .user-details p {
-            color: #6b7280;
-            font-size: 0.9rem;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
-            margin-bottom: 3rem;
-        }
-
-        .feature-card {
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 16px;
-            padding: 24px;
-            text-align: center;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .feature-card:hover {
-            border-color: #4F46E5;
-            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.1);
-            transform: translateY(-2px);
-        }
-
-        .feature-icon {
-            width: 64px;
-            height: 64px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 16px;
-            font-size: 1.5rem;
-            color: white;
-        }
-
-        .feature-icon.scanner { background: linear-gradient(135deg, #10b981, #34d399); }
-        .feature-icon.analytics { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
-        .feature-icon.ai { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
-        .feature-icon.organizer { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
-
-        .feature-card h3 {
-            font-size: 1.25rem;
-            color: #1f2937;
-            margin-bottom: 8px;
-        }
-
-        .feature-card p {
-            color: #6b7280;
-            font-size: 0.9rem;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 16px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .status-bar {
-            background: #f8f9fa;
-            border-top: 1px solid #e5e7eb;
-            padding: 16px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.875rem;
-            color: #6b7280;
-        }
-
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .status-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #10b981;
-        }
-
-        .status-indicator.warning { background: #f59e0b; }
-        .status-indicator.error { background: #ef4444; }
-
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #10b981;
-            color: white;
-            padding: 16px 24px;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            z-index: 10000;
-            display: none;
-            align-items: center;
-            gap: 12px;
-            font-weight: 500;
-        }
-
-        .toast.error {
-            background: #ef4444;
-        }
-
-        .toast.warning {
-            background: #f59e0b;
-        }
-
+        /* Styles critiques inline pour le chargement */
         .loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
             align-items: center;
             justify-content: center;
             z-index: 9999;
-            backdrop-filter: blur(4px);
         }
-
+        
         .loading-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem 3rem;
+            border-radius: 20px;
             text-align: center;
-            max-width: 300px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
         }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
             border: 4px solid #f3f4f6;
-            border-top: 4px solid #4F46E5;
+            border-top: 4px solid #667eea;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 16px;
+            margin: 0 auto 1rem;
         }
-
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
-        .debug-panel {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.85);
-            color: white;
-            padding: 12px 16px;
-            border-radius: 8px;
-            font-size: 11px;
-            font-family: 'Courier New', monospace;
-            z-index: 1000;
-            max-width: 250px;
-            border: 1px solid rgba(255,255,255,0.2);
+        
+        .loading-text {
+            color: #4b5563;
+            font-size: 1.125rem;
+            margin-top: 1rem;
         }
-
-        .debug-panel .debug-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 4px;
+        
+        .login-mode .app-header,
+        .login-mode .app-nav,
+        .login-mode .page-content {
+            display: none !important;
         }
-
-        .debug-panel .debug-value {
-            font-weight: bold;
-        }
-
-        .debug-panel .debug-value.success { color: #10b981; }
-        .debug-panel .debug-value.warning { color: #f59e0b; }
-        .debug-panel .debug-value.error { color: #ef4444; }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                padding: 16px;
-            }
-
-            .header h1 {
-                font-size: 2.5rem;
-            }
-
-            .auth-section, .app-content {
-                padding: 2rem 1.5rem;
-            }
-
-            .features-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .action-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .btn {
-                width: 100%;
-                max-width: 300px;
-                justify-content: center;
-            }
-
-            .status-bar {
-                flex-direction: column;
-                gap: 8px;
-                text-align: center;
-            }
+        
+        .app-active .login-page {
+            display: none !important;
         }
     </style>
 </head>
-<body>
+<body class="login-mode">
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="loading-content">
-            <div class="spinner"></div>
-            <h3>Initialisation...</h3>
-            <p id="loadingMessage">Chargement de l'application</p>
+            <div class="loading-spinner"></div>
+            <h3>EmailSortPro</h3>
+            <div class="loading-text">Initialisation...</div>
         </div>
     </div>
 
-    <div class="container">
-        <div class="header">
-            <h1><i class="fas fa-envelope-open-text"></i> EmailSortPro</h1>
-            <p>Organisez vos emails intelligemment avec l'IA et l'analyse avancée</p>
+    <!-- Login Page -->
+    <div id="loginPage" class="login-page">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <div class="logo">
+                        <i class="fas fa-envelope-open-text"></i>
+                    </div>
+                    <h1>EmailSortPro</h1>
+                    <p>Gérez vos emails intelligemment</p>
+                </div>
+                
+                <div class="login-providers">
+                    <button id="loginMicrosoftBtn" class="login-btn microsoft">
+                        <i class="fas fa-envelope"></i>
+                        <span>Se connecter avec Outlook</span>
+                    </button>
+                    
+                    <button id="loginGoogleBtn" class="login-btn google">
+                        <i class="fab fa-google"></i>
+                        <span>Se connecter avec Gmail</span>
+                    </button>
+                </div>
+                
+                <div class="login-footer">
+                    <p><i class="fas fa-lock"></i> Connexion sécurisée</p>
+                </div>
+            </div>
         </div>
+    </div>
 
-        <div class="main-content">
-            <!-- Section d'authentification -->
-            <div id="authSection" class="auth-section">
-                <h2><i class="fas fa-shield-alt"></i> Connexion sécurisée</h2>
-                <p>Connectez-vous avec votre compte Microsoft pour accéder à EmailSortPro</p>
-                <button id="loginBtn" class="btn">
-                    <i class="fab fa-microsoft"></i>
-                    Se connecter avec Microsoft
+    <!-- Main Application (Hidden initially) -->
+    <header class="app-header" style="display: none;">
+        <div class="header-content">
+            <div class="header-left">
+                <h1><i class="fas fa-envelope-open-text"></i> EmailSortPro</h1>
+            </div>
+            <div class="header-right">
+                <div class="user-info" id="userInfo"></div>
+                <button id="logoutBtn" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
                 </button>
-                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
-                    <p style="font-size: 0.9rem; color: #9ca3af;">
-                        <i class="fas fa-lock"></i> Connexion sécurisée via Azure AD
-                    </p>
-                </div>
-            </div>
-
-            <!-- Section application principale -->
-            <div id="appContent" class="app-content">
-                <div class="welcome-section">
-                    <h2>Bienvenue dans EmailSortPro !</h2>
-                    
-                    <div id="userInfo" class="user-info">
-                        <div class="user-avatar" id="userAvatar">U</div>
-                        <div class="user-details">
-                            <h3 id="userName">Utilisateur</h3>
-                            <p id="userEmail">email@example.com</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="features-grid">
-                    <div class="feature-card" onclick="window.open('./scanner.html', '_blank')">
-                        <div class="feature-icon scanner">
-                            <i class="fas fa-search"></i>
-                        </div>
-                        <h3>Scanner d'emails</h3>
-                        <p>Analysez et organisez vos emails automatiquement</p>
-                    </div>
-
-                    <div class="feature-card" onclick="window.location.href='./analytics.html'">
-                        <div class="feature-icon analytics">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <h3>Analytics avancées</h3>
-                        <p>Visualisez vos données et gérez les utilisateurs</p>
-                    </div>
-
-                    <div class="feature-card" onclick="window.open('./ai-analyzer.html', '_blank')">
-                        <div class="feature-icon ai">
-                            <i class="fas fa-brain"></i>
-                        </div>
-                        <h3>Analyse IA</h3>
-                        <p>Génération automatique de tâches et insights</p>
-                    </div>
-
-                    <div class="feature-card" onclick="window.open('./organizer.html', '_blank')">
-                        <div class="feature-icon organizer">
-                            <i class="fas fa-layer-group"></i>
-                        </div>
-                        <h3>Organisateur</h3>
-                        <p>Triez par domaines et catégories intelligentes</p>
-                    </div>
-                </div>
-
-                <div class="action-buttons">
-                    <a href="./analytics.html" class="btn btn-success">
-                        <i class="fas fa-chart-bar"></i>
-                        Tableau de bord Analytics
-                    </a>
-                    
-                    <button id="testConnectionBtn" class="btn btn-secondary">
-                        <i class="fas fa-database"></i>
-                        Tester la connexion BDD
-                    </button>
-                    
-                    <button id="logoutBtn" class="btn btn-secondary">
-                        <i class="fas fa-sign-out-alt"></i>
-                        Déconnexion
-                    </button>
-                </div>
-            </div>
-
-            <!-- Barre de statut -->
-            <div class="status-bar">
-                <div class="status-item">
-                    <div class="status-indicator" id="authStatus"></div>
-                    <span id="authStatusText">Vérification...</span>
-                </div>
-                <div class="status-item">
-                    <div class="status-indicator" id="dbStatus"></div>
-                    <span id="dbStatusText">Base de données</span>
-                </div>
-                <div class="status-item">
-                    <div class="status-indicator" id="licenseStatus"></div>
-                    <span id="licenseStatusText">Licence</span>
-                </div>
             </div>
         </div>
-    </div>
+    </header>
 
-    <!-- Toast pour les notifications -->
-    <div id="toast" class="toast">
-        <i class="fas fa-check-circle"></i>
-        <span id="toastMessage">Message</span>
-    </div>
+    <nav class="app-nav" style="display: none;">
+        <a href="#" data-page="dashboard" class="nav-item active">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Tableau de bord</span>
+        </a>
+        <a href="#" data-page="scanner" class="nav-item">
+            <i class="fas fa-search"></i>
+            <span>Scanner</span>
+        </a>
+        <a href="#" data-page="tasks" class="nav-item">
+            <i class="fas fa-tasks"></i>
+            <span>Tâches</span>
+        </a>
+    </nav>
 
-    <!-- Panel de debug -->
-    <div class="debug-panel" id="debugPanel">
-        <div style="font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px;">
-            EmailSortPro Debug
-        </div>
-        <div class="debug-item">
-            <span>Status:</span>
-            <span class="debug-value" id="debugStatus">Init...</span>
-        </div>
-        <div class="debug-item">
-            <span>Auth:</span>
-            <span class="debug-value" id="debugAuth">-</span>
-        </div>
-        <div class="debug-item">
-            <span>DB:</span>
-            <span class="debug-value" id="debugDB">-</span>
-        </div>
-        <div class="debug-item">
-            <span>License:</span>
-            <span class="debug-value" id="debugLicense">-</span>
-        </div>
-        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); font-size: 10px;">
-            F12 → debugApp() pour plus d'infos
-        </div>
-    </div>
+    <main id="pageContent" class="page-content" style="display: none;"></main>
 
-    <!-- Scripts -->
-    <!-- MSAL pour Microsoft Authentication -->
-    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
-    
-    <!-- Services EmailSortPro -->
-    <script src="./AuthService.js"></script>
-    <script src="./LicenseService.js"></script>
-    <script src="./analytics.js"></script>
-
-    <!-- Script principal -->
+    <!-- Script d'initialisation précoce -->
     <script>
-        // Variables globales
-        let currentUser = null;
-        let isAuthenticated = false;
-        let licenseInfo = null;
-
-        // Interface utilisateur
-        const UI = {
-            showLoading(message = 'Chargement...') {
-                document.getElementById('loadingMessage').textContent = message;
-                document.getElementById('loadingOverlay').style.display = 'flex';
-            },
-
-            hideLoading() {
-                document.getElementById('loadingOverlay').style.display = 'none';
-            },
-
-            showToast(message, type = 'success', icon = 'check-circle') {
-                const toast = document.getElementById('toast');
-                const iconElement = toast.querySelector('i');
-                const messageElement = document.getElementById('toastMessage');
-                
-                iconElement.className = `fas fa-${icon}`;
-                messageElement.textContent = message;
-                toast.className = `toast ${type}`;
-                toast.style.display = 'flex';
-                
-                setTimeout(() => {
-                    toast.style.display = 'none';
-                }, 4000);
-            },
-
-            updateStatus(auth, db, license) {
-                // Statut d'authentification
-                const authIndicator = document.getElementById('authStatus');
-                const authText = document.getElementById('authStatusText');
-                if (auth.status === 'success') {
-                    authIndicator.className = 'status-indicator';
-                    authText.textContent = auth.message;
-                } else if (auth.status === 'warning') {
-                    authIndicator.className = 'status-indicator warning';
-                    authText.textContent = auth.message;
-                } else {
-                    authIndicator.className = 'status-indicator error';
-                    authText.textContent = auth.message;
-                }
-
-                // Statut base de données
-                const dbIndicator = document.getElementById('dbStatus');
-                const dbText = document.getElementById('dbStatusText');
-                if (db.status === 'success') {
-                    dbIndicator.className = 'status-indicator';
-                    dbText.textContent = db.message;
-                } else if (db.status === 'warning') {
-                    dbIndicator.className = 'status-indicator warning';
-                    dbText.textContent = db.message;
-                } else {
-                    dbIndicator.className = 'status-indicator error';
-                    dbText.textContent = db.message;
-                }
-
-                // Statut licence
-                const licenseIndicator = document.getElementById('licenseStatus');
-                const licenseText = document.getElementById('licenseStatusText');
-                if (license.status === 'success') {
-                    licenseIndicator.className = 'status-indicator';
-                    licenseText.textContent = license.message;
-                } else if (license.status === 'warning') {
-                    licenseIndicator.className = 'status-indicator warning';
-                    licenseText.textContent = license.message;
-                } else {
-                    licenseIndicator.className = 'status-indicator error';
-                    licenseText.textContent = license.message;
-                }
-            },
-
-            updateDebugPanel(status, auth, db, license) {
-                document.getElementById('debugStatus').textContent = status;
-                document.getElementById('debugStatus').className = `debug-value ${status.includes('✅') ? 'success' : status.includes('⚠️') ? 'warning' : status.includes('❌') ? 'error' : ''}`;
-                
-                document.getElementById('debugAuth').textContent = auth;
-                document.getElementById('debugAuth').className = `debug-value ${auth.includes('✅') ? 'success' : auth.includes('⚠️') ? 'warning' : auth.includes('❌') ? 'error' : ''}`;
-                
-                document.getElementById('debugDB').textContent = db;
-                document.getElementById('debugDB').className = `debug-value ${db.includes('✅') ? 'success' : db.includes('⚠️') ? 'warning' : db.includes('❌') ? 'error' : ''}`;
-                
-                document.getElementById('debugLicense').textContent = license;
-                document.getElementById('debugLicense').className = `debug-value ${license.includes('✅') ? 'success' : license.includes('⚠️') ? 'warning' : license.includes('❌') ? 'error' : ''}`;
-            },
-
-            showAuthSection() {
-                document.getElementById('authSection').style.display = 'block';
-                document.getElementById('appContent').style.display = 'none';
-            },
-
-            showAppContent(user) {
-                document.getElementById('authSection').style.display = 'none';
-                document.getElementById('appContent').style.display = 'block';
-                
-                // Mettre à jour les infos utilisateur
-                const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : user.username.substring(0, 2).toUpperCase();
-                document.getElementById('userAvatar').textContent = initials;
-                document.getElementById('userName').textContent = user.name || user.username;
-                document.getElementById('userEmail').textContent = user.username;
-            }
+        // Initialisation minimale pour éviter les erreurs
+        window.appState = {
+            isInitializing: true,
+            configLoaded: false,
+            servicesLoaded: false,
+            user: null,
+            isAuthenticated: false
         };
-
-        // Initialisation de l'application
-        async function initializeApp() {
-            try {
-                console.log('[App] 🚀 Starting EmailSortPro initialization...');
-                UI.showLoading('Initialisation des services...');
-                UI.updateDebugPanel('Init...', 'Init...', 'Init...', 'Init...');
-
-                // 1. Vérifier la configuration Supabase
-                UI.showLoading('Vérification de la configuration...');
-                await waitForSupabase();
-                
-                const supabaseValidation = window.supabaseConfig.validate();
-                if (!supabaseValidation.valid) {
-                    throw new Error('Configuration Supabase invalide: ' + supabaseValidation.issues.join(', '));
-                }
-
-                console.log('[App] ✅ Supabase config validated');
-
-                // 2. Tester la connexion Supabase
-                UI.showLoading('Test de connexion à la base de données...');
-                const dbTest = await window.supabaseConfig.testConnection();
-                console.log('[App] Database test result:', dbTest);
-
-                // 3. Initialiser les services
-                UI.showLoading('Initialisation des services...');
-                await initializeServices();
-
-                // 4. Vérifier l'authentification existante
-                UI.showLoading('Vérification de l\'authentification...');
-                await checkExistingAuth();
-
-                // 5. Mettre à jour l'interface
-                UI.updateStatus(
-                    { 
-                        status: isAuthenticated ? 'success' : 'warning', 
-                        message: isAuthenticated ? 'Connecté' : 'Non connecté' 
-                    },
-                    { 
-                        status: dbTest.success ? 'success' : 'warning', 
-                        message: dbTest.success ? 'Connectée' : 'Avertissement' 
-                    },
-                    { 
-                        status: licenseInfo?.valid ? 'success' : 'warning', 
-                        message: licenseInfo?.valid ? licenseInfo.status : 'Vérification requise' 
-                    }
-                );
-
-                UI.updateDebugPanel(
-                    '✅ Ready',
-                    isAuthenticated ? '✅ Auth' : '⚠️ No Auth',
-                    dbTest.success ? '✅ DB' : '⚠️ DB',
-                    licenseInfo?.valid ? '✅ License' : '⚠️ License'
-                );
-
-                UI.hideLoading();
-                console.log('[App] ✅ Initialization complete');
-
-            } catch (error) {
-                console.error('[App] ❌ Initialization failed:', error);
-                UI.hideLoading();
-                UI.updateDebugPanel('❌ Error', '❌ Failed', '❌ Failed', '❌ Failed');
-                UI.showToast('Erreur d\'initialisation: ' + error.message, 'error', 'exclamation-triangle');
-                
-                // Afficher quand même la section d'authentification
-                UI.showAuthSection();
+        
+        // Vérifier que la config est chargée
+        function checkConfig() {
+            if (window.AppConfig || window.EmailSortProConfig || window.CONFIG) {
+                window.appState.configLoaded = true;
+                console.log('[Init] ✅ Configuration loaded');
+                return true;
             }
+            return false;
         }
-
-        // Attendre que Supabase soit chargé
-        async function waitForSupabase() {
-            let attempts = 0;
-            while (!window.supabaseConfig && attempts < 50) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
+        
+        // Gestionnaire d'erreurs global
+        window.addEventListener('error', function(event) {
+            console.error('[Global Error]', event.error);
+            if (window.uiManager && window.uiManager.showToast) {
+                window.uiManager.showToast('Erreur: ' + event.error.message, 'error');
             }
+        });
+        
+        // Vérifier la config immédiatement
+        if (checkConfig()) {
+            console.log('[Init] Configuration already available');
+        } else {
+            console.log('[Init] Waiting for configuration...');
             
-            if (!window.supabaseConfig) {
-                throw new Error('Configuration Supabase non disponible');
-            }
-        }
-
-        // Initialiser les services
-        async function initializeServices() {
-            console.log('[App] Initializing services...');
-
-            // AuthService
-            if (window.authService) {
-                await window.authService.initialize();
-                console.log('[App] ✅ AuthService initialized');
-            } else {
-                console.warn('[App] ⚠️ AuthService not available');
-            }
-
-            // LicenseService
-            if (window.licenseService) {
-                await window.licenseService.initialize();
-                console.log('[App] ✅ LicenseService initialized');
-            } else {
-                console.warn('[App] ⚠️ LicenseService not available');
-            }
-
-            // Analytics
-            if (window.analyticsManager) {
-                window.analyticsManager.onPageLoad('index');
-                console.log('[App] ✅ Analytics tracking started');
-            } else {
-                console.warn('[App] ⚠️ Analytics not available');
-            }
-        }
-
-        // Vérifier l'authentification existante
-        async function checkExistingAuth() {
-            if (window.authService && window.authService.isAuthenticated()) {
-                const account = window.authService.getAccount();
-                if (account) {
-                    await handleSuccessfulAuth(account);
-                } else {
-                    UI.showAuthSection();
+            // Attendre la config
+            let configCheckInterval = setInterval(() => {
+                if (checkConfig()) {
+                    clearInterval(configCheckInterval);
                 }
-            } else {
-                UI.showAuthSection();
-            }
+            }, 100);
+            
+            // Timeout après 10 secondes
+            setTimeout(() => {
+                if (!window.appState.configLoaded) {
+                    clearInterval(configCheckInterval);
+                    console.error('[Init] Configuration timeout!');
+                    document.getElementById('loadingOverlay').innerHTML = `
+                        <div class="loading-content">
+                            <h3 style="color: #ef4444;">Erreur de configuration</h3>
+                            <p>Impossible de charger la configuration.</p>
+                            <button onclick="location.reload()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                Recharger
+                            </button>
+                        </div>
+                    `;
+                }
+            }, 10000);
         }
+    </script>
 
-        // Gérer l'authentification réussie
-        async function handleSuccessfulAuth(account) {
+    <!-- Services (chargés après la config) -->
+    <script src="services/UIManager.js"></script>
+    <script src="services/AuthService.js"></script>
+    <script src="services/GoogleAuthService.js"></script>
+    <script src="services/LicenseService.js"></script>
+    <script src="services/MailService.js"></script>
+    <script src="services/EmailScanner.js"></script>
+    <script src="services/CategoryManager.js"></script>
+    <script src="services/TaskManager.js"></script>
+    <script src="services/PageManager.js"></script>
+    <script src="services/AnalyticsManager.js"></script>
+    
+    <!-- Modules -->
+    <script src="modules/DashboardModule.js"></script>
+    <script src="modules/MinimalScanModule.js"></script>
+    <script src="modules/TasksView.js"></script>
+    
+    <!-- Application principale -->
+    <script src="app.js"></script>
+    
+    <!-- Script d'initialisation finale -->
+    <script>
+        // Fonction d'initialisation principale
+        async function initializeEmailSortPro() {
+            console.log('[Main] Starting EmailSortPro initialization...');
+            
             try {
-                console.log('[App] Handling successful authentication for:', account.username);
-                currentUser = account;
-                isAuthenticated = true;
-
-                // Vérifier/créer l'utilisateur dans la BDD
-                if (window.licenseService) {
-                    console.log('[App] Checking user license...');
-                    licenseInfo = await window.licenseService.checkUserLicense(account.username);
-                    console.log('[App] License check result:', licenseInfo);
+                // 1. Attendre que la config soit chargée
+                if (!window.appState.configLoaded) {
+                    console.log('[Main] Waiting for configuration...');
                     
-                    if (!licenseInfo.valid) {
-                        UI.showToast(`Licence: ${licenseInfo.message}`, 'warning', 'exclamation-triangle');
-                    } else {
-                        UI.showToast(`Licence ${licenseInfo.status} - ${licenseInfo.daysRemaining || 0} jours restants`, 'success', 'check-circle');
+                    let attempts = 0;
+                    while (!window.appState.configLoaded && attempts < 100) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        attempts++;
+                    }
+                    
+                    if (!window.appState.configLoaded) {
+                        throw new Error('Configuration not loaded after 10 seconds');
                     }
                 }
-
-                // Analytics
-                if (window.analyticsManager) {
-                    window.analyticsManager.onAuthSuccess('microsoft', {
-                        name: account.name,
-                        email: account.username,
-                        id: account.homeAccountId
-                    });
+                
+                console.log('[Main] Configuration ready');
+                
+                // 2. Vérifier les services critiques
+                const criticalServices = ['uiManager', 'authService'];
+                const missingServices = criticalServices.filter(service => !window[service]);
+                
+                if (missingServices.length > 0) {
+                    console.warn('[Main] Missing services:', missingServices);
+                    // Continuer quand même
                 }
-
-                UI.showAppContent(account);
-                UI.showToast(`Bienvenue ${account.name || account.username} !`, 'success', 'user-check');
-
+                
+                // 3. L'application sera créée automatiquement par app.js
+                console.log('[Main] Waiting for app initialization...');
+                
+                // Masquer le loading après un délai
+                setTimeout(() => {
+                    const loadingOverlay = document.getElementById('loadingOverlay');
+                    if (loadingOverlay && loadingOverlay.style.display !== 'none') {
+                        loadingOverlay.style.display = 'none';
+                    }
+                }, 1000);
+                
             } catch (error) {
-                console.error('[App] Error handling auth:', error);
-                UI.showToast('Erreur lors de la connexion: ' + error.message, 'error', 'exclamation-triangle');
+                console.error('[Main] Initialization error:', error);
+                
+                // Afficher l'erreur
+                document.getElementById('loadingOverlay').innerHTML = `
+                    <div class="loading-content">
+                        <h3 style="color: #ef4444;">Erreur d'initialisation</h3>
+                        <p>${error.message}</p>
+                        <button onclick="location.reload()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            Recharger
+                        </button>
+                    </div>
+                `;
             }
         }
-
-        // Test de connexion à la base de données
-        async function testDatabaseConnection() {
-            try {
-                UI.showLoading('Test de connexion à la base de données...');
-                
-                if (!window.supabaseConfig) {
-                    throw new Error('Configuration Supabase non disponible');
-                }
-
-                const result = await window.supabaseConfig.testConnection();
-                
-                if (result.success) {
-                    UI.showToast('Connexion à la base de données réussie !', 'success', 'database');
-                } else {
-                    UI.showToast('Problème de connexion BDD: ' + result.message, 'warning', 'exclamation-triangle');
-                }
-
-                UI.hideLoading();
-                console.log('[App] Database test completed:', result);
-
-            } catch (error) {
-                UI.hideLoading();
-                console.error('[App] Database test failed:', error);
-                UI.showToast('Erreur de test BDD: ' + error.message, 'error', 'exclamation-triangle');
-            }
+        
+        // Démarrer l'initialisation au chargement du DOM
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeEmailSortPro);
+        } else {
+            initializeEmailSortPro();
         }
-
-        // Gestionnaires d'événements
-        document.getElementById('loginBtn').addEventListener('click', async () => {
-            try {
-                if (!window.authService) {
-                    throw new Error('Service d\'authentification non disponible');
-                }
-
-                UI.showLoading('Connexion en cours...');
-                await window.authService.login();
-                // La redirection va se produire, pas de code après
-                
-            } catch (error) {
-                UI.hideLoading();
-                console.error('[App] Login error:', error);
-                UI.showToast('Erreur de connexion: ' + error.message, 'error', 'exclamation-triangle');
+        
+        // Gestionnaires d'événements pour les boutons
+        document.addEventListener('DOMContentLoaded', function() {
+            // Bouton Microsoft
+            const microsoftBtn = document.getElementById('loginMicrosoftBtn');
+            if (microsoftBtn) {
+                microsoftBtn.addEventListener('click', async function() {
+                    console.log('[Login] Microsoft button clicked');
+                    try {
+                        if (window.app && window.app.loginMicrosoft) {
+                            await window.app.loginMicrosoft();
+                        } else if (window.authService && window.authService.login) {
+                            await window.authService.login();
+                        } else {
+                            console.error('[Login] No login method available');
+                            if (window.uiManager) {
+                                window.uiManager.showToast('Service de connexion non disponible', 'error');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('[Login] Error:', error);
+                    }
+                });
+            }
+            
+            // Bouton Google
+            const googleBtn = document.getElementById('loginGoogleBtn');
+            if (googleBtn) {
+                googleBtn.addEventListener('click', async function() {
+                    console.log('[Login] Google button clicked');
+                    try {
+                        if (window.app && window.app.loginGoogle) {
+                            await window.app.loginGoogle();
+                        } else if (window.googleAuthService && window.googleAuthService.login) {
+                            await window.googleAuthService.login();
+                        } else {
+                            console.error('[Login] No Google login method available');
+                            if (window.uiManager) {
+                                window.uiManager.showToast('Service Google non disponible', 'error');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('[Login] Error:', error);
+                    }
+                });
+            }
+            
+            // Bouton Logout
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async function() {
+                    console.log('[Logout] Button clicked');
+                    try {
+                        if (window.app && window.app.logout) {
+                            await window.app.logout();
+                        } else {
+                            console.error('[Logout] No logout method available');
+                        }
+                    } catch (error) {
+                        console.error('[Logout] Error:', error);
+                    }
+                });
             }
         });
-
-        document.getElementById('logoutBtn').addEventListener('click', async () => {
-            try {
-                UI.showLoading('Déconnexion...');
-                
-                if (window.authService) {
-                    await window.authService.logout();
-                    // La redirection va se produire
-                } else {
-                    // Fallback
-                    currentUser = null;
-                    isAuthenticated = false;
-                    licenseInfo = null;
-                    UI.hideLoading();
-                    UI.showAuthSection();
-                    UI.showToast('Déconnecté', 'success', 'sign-out-alt');
-                }
-            } catch (error) {
-                UI.hideLoading();
-                console.error('[App] Logout error:', error);
-                UI.showToast('Erreur de déconnexion: ' + error.message, 'error', 'exclamation-triangle');
-            }
-        });
-
-        document.getElementById('testConnectionBtn').addEventListener('click', testDatabaseConnection);
-
-        // Fonctions de debug globales
-        window.debugApp = function() {
-            console.group('=== EMAILSORTPRO DEBUG ===');
-            console.log('Current user:', currentUser);
-            console.log('Is authenticated:', isAuthenticated);
-            console.log('License info:', licenseInfo);
-            console.log('Auth service:', window.authService?.getDiagnosticInfo());
-            console.log('License service:', window.licenseService?.getCurrentUser());
-            console.log('Supabase config:', window.supabaseConfig?.validate());
-            console.log('Analytics manager:', !!window.analyticsManager);
-            console.groupEnd();
+        
+        // Fonctions de diagnostic globales
+        window.diagnoseApp = function() {
+            console.group('🔍 DIAGNOSTIC EMAILSORTPRO');
             
-            return {
-                user: currentUser,
-                authenticated: isAuthenticated,
-                license: licenseInfo,
-                services: {
-                    auth: !!window.authService,
-                    license: !!window.licenseService,
-                    analytics: !!window.analyticsManager,
-                    supabase: !!window.supabaseConfig
-                },
-                validation: window.supabaseConfig?.validate()
-            };
-        };
-
-        window.testSupabase = async function() {
-            if (window.supabaseConfig) {
-                const result = await window.supabaseConfig.testConnection();
-                console.log('Supabase test result:', result);
-                return result;
-            } else {
-                console.error('Supabase config not available');
-                return { success: false, message: 'Config not available' };
-            }
-        };
-
-        window.diagnoseAll = function() {
-            console.group('=== DIAGNOSTIC COMPLET ===');
+            console.log('App State:', window.appState);
+            console.log('Configuration:', {
+                loaded: window.appState.configLoaded,
+                AppConfig: !!window.AppConfig,
+                validation: window.AppConfig ? window.AppConfig.validate() : null
+            });
             
-            // Diagnostic Supabase
-            if (window.diagnoseSupabase) {
-                window.diagnoseSupabase();
-            }
+            console.log('Services:', {
+                app: !!window.app,
+                authService: !!window.authService,
+                googleAuthService: !!window.googleAuthService,
+                uiManager: !!window.uiManager,
+                licenseService: !!window.licenseService,
+                analyticsManager: !!window.analyticsManager
+            });
             
-            // Diagnostic Auth
-            if (window.authService && window.authService.getDiagnosticInfo) {
-                console.log('AuthService diagnostic:', window.authService.getDiagnosticInfo());
-            }
-            
-            // Diagnostic App
-            const appDebug = window.debugApp();
-            console.log('App state:', appDebug);
+            console.log('Authentication:', {
+                isAuthenticated: window.app?.isAuthenticated || false,
+                user: window.app?.user || null,
+                provider: window.app?.activeProvider || null
+            });
             
             console.groupEnd();
-            
-            return {
-                supabase: window.supabaseConfig?.validate(),
-                auth: window.authService?.getDiagnosticInfo(),
-                app: appDebug
-            };
         };
-
-        // Initialisation au chargement de la page
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('[App] 🎯 DOM loaded, starting EmailSortPro...');
-            initializeApp();
-        });
-
-        // Gestion des erreurs globales
-        window.addEventListener('error', (event) => {
-            console.error('[App] Global error:', event.error);
-            UI.showToast('Erreur système: ' + event.error?.message, 'error', 'exclamation-triangle');
-        });
-
-        window.addEventListener('unhandledrejection', (event) => {
-            console.error('[App] Unhandled promise rejection:', event.reason);
-            UI.showToast('Erreur Promise: ' + event.reason?.message, 'error', 'exclamation-triangle');
-        });
-
-        console.log('[App] ✅ EmailSortPro main script loaded');
-        console.log('[App] 🔧 Use debugApp() or diagnoseAll() for debug info');
+        
+        console.log('✅ EmailSortPro index.html loaded');
+        console.log('Use diagnoseApp() for diagnostic');
     </script>
 </body>
 </html>
