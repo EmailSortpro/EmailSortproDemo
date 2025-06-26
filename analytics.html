@@ -8,9 +8,6 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <style>
         * {
             margin: 0;
@@ -37,6 +34,7 @@
             background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
             color: white;
             border-radius: 16px;
+            margin: 0 0 48px 0;
         }
 
         .page-header h1 {
@@ -82,38 +80,6 @@
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
         }
 
-        .connection-status {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .connection-status.connected {
-            background: #dcfce7;
-            color: #16a34a;
-            border: 1px solid #bbf7d0;
-        }
-
-        .connection-status.disconnected {
-            background: #fef2f2;
-            color: #dc2626;
-            border: 1px solid #fecaca;
-        }
-
-        .connection-status.connecting {
-            background: #fef3c7;
-            color: #d97706;
-            border: 1px solid #fde68a;
-        }
-
         .real-time-indicator {
             display: inline-flex;
             align-items: center;
@@ -138,58 +104,6 @@
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
-        }
-
-        /* Summary Cards */
-        .analytics-summary {
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 32px;
-            border: 1px solid #cbd5e1;
-        }
-
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-        }
-
-        .summary-item {
-            text-align: center;
-            padding: 16px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-        }
-
-        .summary-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 12px;
-            font-size: 1.25rem;
-        }
-
-        .summary-icon.users { background: #dbeafe; color: #1d4ed8; }
-        .summary-icon.scans { background: #dcfce7; color: #16a34a; }
-        .summary-icon.errors { background: #fef2f2; color: #dc2626; }
-        .summary-icon.licenses { background: #f3e8ff; color: #7c3aed; }
-
-        .summary-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 4px;
-        }
-
-        .summary-label {
-            font-size: 0.875rem;
-            color: #64748b;
-            font-weight: 500;
         }
 
         /* Tabs Navigation */
@@ -241,52 +155,57 @@
             display: block;
         }
 
-        /* Loading States */
-        .loading-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 400px;
-            flex-direction: column;
+        /* Summary Cards */
+        .analytics-summary {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
         }
 
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #f3f4f6;
-            border-top: 4px solid #4F46E5;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            color: #64748b;
-            font-size: 1.125rem;
-            font-weight: 500;
-        }
-
-        .empty-state {
+        .summary-item {
             text-align: center;
-            padding: 60px 20px;
-            color: #6b7280;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
-        .empty-state i {
-            font-size: 4rem;
-            margin-bottom: 16px;
-            color: #d1d5db;
-        }
-
-        .empty-state h3 {
+        .summary-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
             font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 8px;
+        }
+
+        .summary-icon.users { background: #dbeafe; color: #1d4ed8; }
+        .summary-icon.scans { background: #dcfce7; color: #16a34a; }
+        .summary-icon.errors { background: #fef2f2; color: #dc2626; }
+        .summary-icon.activity { background: #fef3c7; color: #d97706; }
+        .summary-icon.licenses { background: #f3e8ff; color: #7c3aed; }
+
+        .summary-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .summary-label {
+            font-size: 0.875rem;
+            color: #64748b;
+            font-weight: 500;
         }
 
         /* Users Management */
@@ -335,6 +254,12 @@
             font-size: 0.875rem;
             cursor: pointer;
             min-width: 150px;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         }
 
         .refresh-btn {
@@ -433,19 +358,47 @@
             color: #16a34a;
         }
 
-        .status-badge.trial {
-            background: #fef3c7;
-            color: #d97706;
+        .status-badge.inactive {
+            background: #f3f4f6;
+            color: #6b7280;
         }
 
-        .status-badge.expired {
+        .status-badge.error {
             background: #fef2f2;
             color: #dc2626;
         }
 
-        .status-badge.blocked {
-            background: #f3f4f6;
-            color: #6b7280;
+        .license-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .license-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .license-badge.active {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .license-badge.expired {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .license-badge.trial {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .actions-cell {
+            display: flex;
+            gap: 8px;
         }
 
         .action-btn {
@@ -456,7 +409,6 @@
             font-size: 0.75rem;
             font-weight: 600;
             transition: all 0.2s ease;
-            margin-right: 8px;
         }
 
         .action-btn.edit {
@@ -474,7 +426,7 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        /* Modal */
+        /* User Details Modal */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -578,30 +530,289 @@
             color: #1f2937;
         }
 
-        /* Toast notifications */
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 20px;
+        .error-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .error-item {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
             border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .error-item .error-time {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .error-item .error-message {
+            color: #dc2626;
+            font-weight: 500;
+        }
+
+        /* License Management */
+        .license-management {
+            padding: 24px;
+        }
+
+        .license-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .license-header h2 {
+            font-size: 1.5rem;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .add-user-form {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .add-user-form input {
+            flex: 1;
+            padding: 10px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .add-user-form button {
+            padding: 10px 20px;
+            background: #10b981;
             color: white;
+            border: none;
+            border-radius: 6px;
             font-weight: 600;
-            z-index: 10001;
-            opacity: 0;
-            transform: translateX(100%);
-            transition: all 0.3s ease;
+            cursor: pointer;
+            white-space: nowrap;
         }
 
-        .toast.show {
-            opacity: 1;
-            transform: translateX(0);
+        .add-user-form button:hover {
+            background: #059669;
         }
 
-        .toast.success { background: #16a34a; }
-        .toast.error { background: #dc2626; }
-        .toast.warning { background: #d97706; }
-        .toast.info { background: #4F46E5; }
+        .license-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .license-stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .license-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4F46E5;
+            margin-bottom: 4px;
+        }
+
+        .license-stat-label {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .license-users-table {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .license-users-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .license-users-table th {
+            background: #f8fafc;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.875rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .license-users-table td {
+            padding: 16px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .license-users-table tr:hover {
+            background: #f8fafc;
+        }
+
+        .user-email {
+            font-weight: 500;
+            color: #1f2937;
+        }
+
+        .license-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .license-status.active {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .license-status.trial {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .license-status.expired {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .license-status.blocked {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .license-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .license-action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .license-action-btn.activate {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .license-action-btn.block {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .license-action-btn.extend {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .license-action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .company-info {
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            border-left: 4px solid #4F46E5;
+        }
+
+        .company-info h3 {
+            font-size: 1.125rem;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .company-info p {
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+
+        .no-permissions {
+            text-align: center;
+            padding: 60px;
+            color: #64748b;
+        }
+
+        .no-permissions i {
+            font-size: 4rem;
+            color: #d1d5db;
+            margin-bottom: 16px;
+        }
+
+        /* Loading & Error States */
+        .loading-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #4F46E5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #64748b;
+            font-size: 1.125rem;
+            font-weight: 500;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 16px;
+            color: #d1d5db;
+        }
+
+        .empty-state h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
 
         .last-updated {
             text-align: center;
@@ -672,11 +883,6 @@
             <i class="fas fa-arrow-left"></i>
             Retour à l'application
         </a>
-
-        <div class="connection-status" id="connectionStatus">
-            <div class="real-time-dot"></div>
-            Connexion en cours...
-        </div>
 
         <div class="page-header">
             <h1>
@@ -760,9 +966,8 @@
                     <select class="filter-select" id="statusFilter">
                         <option value="">Tous les statuts</option>
                         <option value="active">Actifs</option>
-                        <option value="trial">Essai</option>
-                        <option value="expired">Expirés</option>
-                        <option value="blocked">Bloqués</option>
+                        <option value="inactive">Inactifs</option>
+                        <option value="error">Avec erreurs</option>
                     </select>
                     <select class="filter-select" id="companyFilter">
                         <option value="">Toutes les sociétés</option>
@@ -783,6 +988,7 @@
                                 <th>Dernière connexion</th>
                                 <th>Scans</th>
                                 <th>Erreurs</th>
+                                <th>Licence</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -801,11 +1007,8 @@
 
             <!-- Licenses Tab -->
             <div class="tab-content" id="licensesTab">
-                <div id="licenseManagement">
-                    <div class="loading-container">
-                        <div class="spinner"></div>
-                        <div class="loading-text">Chargement de la gestion des licences...</div>
-                    </div>
+                <div id="licenseManagement" class="license-management">
+                    <!-- Le contenu sera généré dynamiquement -->
                 </div>
             </div>
         </div>
@@ -832,244 +1035,73 @@
     </div>
 
     <script>
-        // =============================================================================
-        // VARIABLES GLOBALES
-        // =============================================================================
-        
-        let supabaseClient = null;
+        // Global variables
         let analyticsManager = null;
         let analyticsModule = null;
         let licenseService = null;
         let currentUsers = [];
         let filteredUsers = [];
         let currentTab = 'overview';
-        let isConnected = false;
 
-        // =============================================================================
-        // DATABASE SERVICE
-        // =============================================================================
-        
-        class DatabaseService {
-            constructor() {
-                this.client = null;
-                this.initialized = false;
+        // Mock data for demonstration (will be replaced by real data)
+        const mockUsers = [
+            {
+                id: 'user1',
+                email: 'john.doe@company1.com',
+                name: 'John Doe',
+                company: 'Company One',
+                status: 'active',
+                lastLogin: new Date(Date.now() - 2 * 60 * 60 * 1000),
+                scansCount: 145,
+                errorsCount: 2,
+                license: { type: 'premium', status: 'active', expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) },
+                errors: [
+                    { timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), message: 'Connexion IMAP échouée' },
+                    { timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000), message: 'Limite de taux atteinte' }
+                ]
+            },
+            {
+                id: 'user2',
+                email: 'jane.smith@company2.com',
+                name: 'Jane Smith',
+                company: 'Company Two',
+                status: 'active',
+                lastLogin: new Date(Date.now() - 30 * 60 * 1000),
+                scansCount: 89,
+                errorsCount: 0,
+                license: { type: 'trial', status: 'active', expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+                errors: []
+            },
+            {
+                id: 'user3',
+                email: 'bob.wilson@company1.com',
+                name: 'Bob Wilson',
+                company: 'Company One',
+                status: 'inactive',
+                lastLogin: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+                scansCount: 234,
+                errorsCount: 5,
+                license: { type: 'basic', status: 'expired', expires: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
+                errors: [
+                    { timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), message: 'Licence expirée' },
+                    { timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), message: 'Accès refusé' }
+                ]
             }
+        ];
 
-            async initialize() {
-                try {
-                    if (!window.supabaseConfig) {
-                        await this.waitForConfig();
-                    }
-
-                    const config = window.supabaseConfig.getConfig();
-                    const validation = window.supabaseConfig.validate();
-
-                    if (!validation.valid) {
-                        throw new Error('Configuration invalide: ' + validation.issues.join(', '));
-                    }
-
-                    this.client = window.supabase.createClient(config.url, config.anonKey, config.auth);
-                    
-                    const { data, error } = await this.client
-                        .from('users')
-                        .select('count')
-                        .limit(1);
-
-                    if (error && error.code !== '42P01') {
-                        throw error;
-                    }
-
-                    this.initialized = true;
-                    console.log('[DatabaseService] ✅ Connexion établie');
-                    return true;
-
-                } catch (error) {
-                    console.error('[DatabaseService] ❌ Erreur de connexion:', error);
-                    throw error;
-                }
-            }
-
-            async waitForConfig() {
-                let attempts = 0;
-                while (!window.supabaseConfig && attempts < 50) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    attempts++;
-                }
-                if (!window.supabaseConfig) {
-                    throw new Error('Configuration Supabase non disponible');
-                }
-            }
-
-            async getAllUsers() {
-                if (!this.initialized) await this.initialize();
-                
-                const { data, error } = await this.client
-                    .from('users')
-                    .select(`
-                        *,
-                        companies(name),
-                        user_analytics(
-                            total_scans,
-                            total_emails,
-                            last_scan_at,
-                            error_count
-                        )
-                    `)
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-                return data || [];
-            }
-
-            async getUserDetails(userId) {
-                if (!this.initialized) await this.initialize();
-                
-                const { data, error } = await this.client
-                    .from('users')
-                    .select(`
-                        *,
-                        companies(name),
-                        user_analytics(*),
-                        analytics_events!analytics_events_user_id_fkey(
-                            event_type,
-                            event_data,
-                            created_at
-                        )
-                    `)
-                    .eq('id', userId)
-                    .single();
-
-                if (error) throw error;
-                return data;
-            }
-
-            async updateUserLicense(userId, status, expiresAt = null) {
-                if (!this.initialized) await this.initialize();
-                
-                const updates = { license_status: status };
-                if (expiresAt) {
-                    updates.license_expires_at = expiresAt.toISOString();
-                }
-
-                const { data, error } = await this.client
-                    .from('users')
-                    .update(updates)
-                    .eq('id', userId)
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                return data;
-            }
-
-            async getAnalyticsEvents(limit = 100) {
-                if (!this.initialized) await this.initialize();
-                
-                const { data, error } = await this.client
-                    .from('analytics_events')
-                    .select(`
-                        *,
-                        users(email, name)
-                    `)
-                    .order('created_at', { ascending: false })
-                    .limit(limit);
-
-                if (error) throw error;
-                return data || [];
-            }
-        }
-
-        // =============================================================================
-        // UTILITY FUNCTIONS
-        // =============================================================================
-        
-        function showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-
-            setTimeout(() => toast.classList.add('show'), 100);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => {
-                    if (document.body.contains(toast)) {
-                        document.body.removeChild(toast);
-                    }
-                }, 300);
-            }, 3000);
-        }
-
-        function updateConnectionStatus(status) {
-            const statusEl = document.getElementById('connectionStatus');
-            statusEl.className = `connection-status ${status}`;
-            
-            switch (status) {
-                case 'connected':
-                    statusEl.innerHTML = '<div class="real-time-dot"></div>Connecté à la base';
-                    isConnected = true;
-                    break;
-                case 'connecting':
-                    statusEl.innerHTML = '<div class="real-time-dot"></div>Connexion en cours...';
-                    isConnected = false;
-                    break;
-                case 'disconnected':
-                    statusEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i>Connexion échouée';
-                    isConnected = false;
-                    break;
-            }
-        }
-
-        function updateLastUpdated() {
-            const now = new Date();
-            document.getElementById('lastUpdated').textContent = now.toLocaleString('fr-FR');
-        }
-
-        function formatLastLogin(date) {
-            const now = new Date();
-            const diff = now - date;
-            const minutes = Math.floor(diff / 60000);
-            const hours = Math.floor(diff / 3600000);
-            const days = Math.floor(diff / 86400000);
-
-            if (minutes < 60) {
-                return `Il y a ${minutes} min`;
-            } else if (hours < 24) {
-                return `Il y a ${hours}h`;
-            } else if (days < 7) {
-                return `Il y a ${days} jour${days > 1 ? 's' : ''}`;
-            } else {
-                return date.toLocaleDateString('fr-FR');
-            }
-        }
-
-        function calculateDaysRemaining(expirationDate) {
-            const now = new Date();
-            const diff = expirationDate - now;
-            const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
-            
-            if (days < 0) {
-                return `Expirée depuis ${Math.abs(days)} jour${Math.abs(days) > 1 ? 's' : ''}`;
-            } else if (days === 0) {
-                return 'Expire aujourd\'hui';
-            } else {
-                return `${days} jour${days > 1 ? 's' : ''}`;
-            }
-        }
-
-        // =============================================================================
-        // TAB MANAGEMENT
-        // =============================================================================
-        
+        // Tab management
         function switchTab(tabName) {
+            // Update tab buttons
             document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
             document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
 
+            // Update tab content
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             document.getElementById(`${tabName}Tab`).classList.add('active');
 
             currentTab = tabName;
 
+            // Load content based on tab
             if (tabName === 'users') {
                 loadUsers();
             } else if (tabName === 'licenses') {
@@ -1077,32 +1109,18 @@
             }
         }
 
-        // =============================================================================
-        // USERS MANAGEMENT
-        // =============================================================================
-        
-        async function loadUsers() {
-            try {
-                showToast('Chargement des utilisateurs...', 'info');
-                const dbService = new DatabaseService();
-                currentUsers = await dbService.getAllUsers();
-                populateCompanyFilter();
-                filterUsers();
-                showToast('Utilisateurs chargés avec succès', 'success');
-            } catch (error) {
-                console.error('[loadUsers] Erreur:', error);
-                showToast('Erreur lors du chargement des utilisateurs', 'error');
-                currentUsers = [];
-                filterUsers();
-            }
+        // Users management
+        function loadUsers() {
+            currentUsers = mockUsers; // In real app, load from analyticsManager
+            populateCompanyFilter();
+            filterUsers();
         }
 
         function populateCompanyFilter() {
-            const companies = [...new Set(currentUsers
-                .filter(user => user.companies?.name)
-                .map(user => user.companies.name))];
-            
+            const companies = [...new Set(currentUsers.map(user => user.company))];
             const filter = document.getElementById('companyFilter');
+            
+            // Clear existing options except first one
             filter.innerHTML = '<option value="">Toutes les sociétés</option>';
             
             companies.forEach(company => {
@@ -1119,16 +1137,12 @@
             const companyFilter = document.getElementById('companyFilter').value;
 
             filteredUsers = currentUsers.filter(user => {
-                const userName = user.name || '';
-                const userEmail = user.email || '';
-                const companyName = user.companies?.name || '';
+                const matchesSearch = user.name.toLowerCase().includes(searchTerm) || 
+                                    user.email.toLowerCase().includes(searchTerm) ||
+                                    user.company.toLowerCase().includes(searchTerm);
                 
-                const matchesSearch = userName.toLowerCase().includes(searchTerm) || 
-                                    userEmail.toLowerCase().includes(searchTerm) ||
-                                    companyName.toLowerCase().includes(searchTerm);
-                
-                const matchesStatus = !statusFilter || user.license_status === statusFilter;
-                const matchesCompany = !companyFilter || companyName === companyFilter;
+                const matchesStatus = !statusFilter || user.status === statusFilter;
+                const matchesCompany = !companyFilter || user.company === companyFilter;
 
                 return matchesSearch && matchesStatus && matchesCompany;
             });
@@ -1149,17 +1163,12 @@
             emptyState.style.display = 'none';
 
             tbody.innerHTML = filteredUsers.map(user => {
-                const initials = (user.name || user.email || 'U')
-                    .split(' ')
-                    .map(n => n[0])
-                    .join('')
-                    .toUpperCase()
-                    .substring(0, 2);
-
-                const analytics = user.user_analytics?.[0] || {};
-                const scansCount = analytics.total_scans || 0;
-                const errorsCount = analytics.error_count || 0;
-                const lastLogin = user.last_login_at ? new Date(user.last_login_at) : null;
+                const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+                const statusClass = user.status === 'active' ? 'active' : 
+                                  user.status === 'inactive' ? 'inactive' : 'error';
+                
+                const licenseClass = user.license.status === 'active' ? 'active' : 
+                                   user.license.status === 'expired' ? 'expired' : 'trial';
 
                 return `
                     <tr>
@@ -1167,140 +1176,168 @@
                             <div class="user-info">
                                 <div class="user-avatar">${initials}</div>
                                 <div class="user-details">
-                                    <h4>${user.name || 'Non défini'}</h4>
+                                    <h4>${user.name}</h4>
                                     <p>${user.email}</p>
                                 </div>
                             </div>
                         </td>
-                        <td>${user.companies?.name || 'Non assigné'}</td>
-                        <td><span class="status-badge ${user.license_status || 'trial'}">${user.license_status || 'trial'}</span></td>
-                        <td>${lastLogin ? formatLastLogin(lastLogin) : 'Jamais'}</td>
-                        <td>${scansCount.toLocaleString()}</td>
+                        <td>${user.company}</td>
+                        <td><span class="status-badge ${statusClass}">${user.status}</span></td>
+                        <td>${formatLastLogin(user.lastLogin)}</td>
+                        <td>${user.scansCount.toLocaleString()}</td>
                         <td>
-                            ${errorsCount > 0 ? 
-                                `<span style="color: #dc2626; font-weight: 600;">${errorsCount}</span>` : 
+                            ${user.errorsCount > 0 ? 
+                                `<span style="color: #dc2626; font-weight: 600;">${user.errorsCount}</span>` : 
                                 `<span style="color: #16a34a;">0</span>`
                             }
                         </td>
                         <td>
-                            <button class="action-btn edit" onclick="viewUserDetails('${user.id}')">
-                                <i class="fas fa-eye"></i> Voir
-                            </button>
-                            <button class="action-btn license" onclick="manageLicense('${user.id}')">
-                                <i class="fas fa-key"></i> Licence
-                            </button>
+                            <div class="license-info">
+                                <span class="license-badge ${licenseClass}">${user.license.type}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="actions-cell">
+                                <button class="action-btn edit" onclick="viewUserDetails('${user.id}')">
+                                    <i class="fas fa-eye"></i> Voir
+                                </button>
+                                <button class="action-btn license" onclick="manageLicense('${user.id}')">
+                                    <i class="fas fa-key"></i> Licence
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
             }).join('');
         }
 
-        async function viewUserDetails(userId) {
-            try {
-                showToast('Chargement des détails...', 'info');
-                const dbService = new DatabaseService();
-                const user = await dbService.getUserDetails(userId);
-                
-                if (!user) {
-                    showToast('Utilisateur non trouvé', 'error');
-                    return;
-                }
+        function formatLastLogin(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
 
-                document.getElementById('modalTitle').textContent = `Détails - ${user.name || user.email}`;
-                
-                const analytics = user.user_analytics?.[0] || {};
-                const recentEvents = user.analytics_events?.slice(0, 10) || [];
+            if (minutes < 60) {
+                return `Il y a ${minutes} min`;
+            } else if (hours < 24) {
+                return `Il y a ${hours}h`;
+            } else if (days < 7) {
+                return `Il y a ${days} jour${days > 1 ? 's' : ''}`;
+            } else {
+                return date.toLocaleDateString('fr-FR');
+            }
+        }
 
-                const modalBody = document.getElementById('modalBody');
-                modalBody.innerHTML = `
-                    <div class="detail-group">
-                        <h4><i class="fas fa-user"></i> Informations générales</h4>
-                        <div class="detail-grid">
-                            <div class="detail-item">
-                                <label>Nom complet</label>
-                                <value>${user.name || 'Non défini'}</value>
-                            </div>
-                            <div class="detail-item">
-                                <label>Email</label>
-                                <value>${user.email}</value>
-                            </div>
-                            <div class="detail-item">
-                                <label>Société</label>
-                                <value>${user.companies?.name || 'Non assignée'}</value>
-                            </div>
-                            <div class="detail-item">
-                                <label>Créé le</label>
-                                <value>${new Date(user.created_at).toLocaleDateString('fr-FR')}</value>
-                            </div>
+        function viewUserDetails(userId) {
+            const user = currentUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            document.getElementById('modalTitle').textContent = `Détails - ${user.name}`;
+            
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <div class="detail-group">
+                    <h4><i class="fas fa-user"></i> Informations générales</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Nom complet</label>
+                            <value>${user.name}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Email</label>
+                            <value>${user.email}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Société</label>
+                            <value>${user.company}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Statut</label>
+                            <value><span class="status-badge ${user.status}">${user.status}</span></value>
                         </div>
                     </div>
+                </div>
 
-                    <div class="detail-group">
-                        <h4><i class="fas fa-chart-line"></i> Statistiques d'utilisation</h4>
-                        <div class="detail-grid">
-                            <div class="detail-item">
-                                <label>Dernière connexion</label>
-                                <value>${user.last_login_at ? new Date(user.last_login_at).toLocaleString('fr-FR') : 'Jamais'}</value>
-                            </div>
-                            <div class="detail-item">
-                                <label>Scans effectués</label>
-                                <value>${(analytics.total_scans || 0).toLocaleString()}</value>
-                            </div>
-                            <div class="detail-item">
-                                <label>Emails analysés</label>
-                                <value>${(analytics.total_emails || 0).toLocaleString()}</value>
-                            </div>
-                            <div class="detail-item">
-                                <label>Erreurs rencontrées</label>
-                                <value style="color: ${(analytics.error_count || 0) > 0 ? '#dc2626' : '#16a34a'}">${analytics.error_count || 0}</value>
-                            </div>
+                <div class="detail-group">
+                    <h4><i class="fas fa-chart-line"></i> Statistiques d'utilisation</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Dernière connexion</label>
+                            <value>${user.lastLogin.toLocaleString('fr-FR')}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Scans effectués</label>
+                            <value>${user.scansCount.toLocaleString()}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Erreurs rencontrées</label>
+                            <value style="color: ${user.errorsCount > 0 ? '#dc2626' : '#16a34a'}">${user.errorsCount}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Temps d'activité</label>
+                            <value>${calculateActiveTime(user)}</value>
                         </div>
                     </div>
+                </div>
 
-                    <div class="detail-group">
-                        <h4><i class="fas fa-key"></i> Informations licence</h4>
-                        <div class="detail-grid">
-                            <div class="detail-item">
-                                <label>Statut</label>
-                                <value><span class="status-badge ${user.license_status || 'trial'}">${user.license_status || 'trial'}</span></value>
-                            </div>
-                            <div class="detail-item">
-                                <label>Date d'expiration</label>
-                                <value>${user.license_expires_at ? new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 'Non définie'}</value>
-                            </div>
-                            <div class="detail-item">
-                                <label>Jours restants</label>
-                                <value>${user.license_expires_at ? calculateDaysRemaining(new Date(user.license_expires_at)) : 'N/A'}</value>
-                            </div>
-                            <div class="detail-item">
-                                <label>Dernière mise à jour</label>
-                                <value>${user.updated_at ? new Date(user.updated_at).toLocaleDateString('fr-FR') : 'N/A'}</value>
-                            </div>
+                <div class="detail-group">
+                    <h4><i class="fas fa-key"></i> Informations licence</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Type de licence</label>
+                            <value><span class="license-badge ${user.license.status}">${user.license.type}</span></value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Statut</label>
+                            <value><span class="license-badge ${user.license.status}">${user.license.status}</span></value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Date d'expiration</label>
+                            <value>${user.license.expires.toLocaleDateString('fr-FR')}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Jours restants</label>
+                            <value>${calculateDaysRemaining(user.license.expires)}</value>
                         </div>
                     </div>
+                </div>
 
-                    ${recentEvents.length > 0 ? `
-                    <div class="detail-group">
-                        <h4><i class="fas fa-history"></i> Activité récente</h4>
-                        <div style="max-height: 200px; overflow-y: auto;">
-                            ${recentEvents.map(event => `
-                                <div style="padding: 8px; margin-bottom: 8px; background: #f8fafc; border-radius: 6px; border-left: 3px solid #4F46E5;">
-                                    <div style="font-weight: 600; color: #1f2937;">${event.event_type}</div>
-                                    <div style="font-size: 0.875rem; color: #64748b;">${new Date(event.created_at).toLocaleString('fr-FR')}</div>
-                                    ${event.event_data ? `<div style="font-size: 0.75rem; color: #6b7280; margin-top: 4px;">${JSON.stringify(event.event_data)}</div>` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
+                ${user.errors.length > 0 ? `
+                <div class="detail-group">
+                    <h4><i class="fas fa-exclamation-triangle"></i> Erreurs récentes</h4>
+                    <div class="error-list">
+                        ${user.errors.map(error => `
+                            <div class="error-item">
+                                <div class="error-time">${error.timestamp.toLocaleString('fr-FR')}</div>
+                                <div class="error-message">${error.message}</div>
+                            </div>
+                        `).join('')}
                     </div>
-                    ` : ''}
-                `;
+                </div>
+                ` : ''}
+            `;
 
-                document.getElementById('userModal').classList.add('active');
-                showToast('Détails chargés', 'success');
+            document.getElementById('userModal').classList.add('active');
+        }
 
-            } catch (error) {
-                console.error('[viewUserDetails] Erreur:', error);
-                showToast('Erreur lors du chargement des détails', 'error');
+        function calculateActiveTime(user) {
+            // Mock calculation - in real app, calculate from actual data
+            const days = Math.floor((Date.now() - (Date.now() - 30 * 24 * 60 * 60 * 1000)) / (24 * 60 * 60 * 1000));
+            return `${days} jours`;
+        }
+
+        function calculateDaysRemaining(expirationDate) {
+            const now = new Date();
+            const diff = expirationDate - now;
+            const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
+            
+            if (days < 0) {
+                return `Expirée depuis ${Math.abs(days)} jour${Math.abs(days) > 1 ? 's' : ''}`;
+            } else if (days === 0) {
+                return 'Expire aujourd\'hui';
+            } else {
+                return `${days} jour${days > 1 ? 's' : ''}`;
             }
         }
 
@@ -1309,233 +1346,209 @@
         }
 
         function manageLicense(userId) {
+            const user = currentUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            // Pour l'instant, basculer vers l'onglet licences
             switchTab('licenses');
         }
 
-        async function refreshUsers() {
-            showToast('Actualisation en cours...', 'info');
-            await loadUsers();
+        function refreshUsers() {
+            // In real app, reload from server
+            console.log('Refreshing users data...');
+            loadUsers();
             updateLastUpdated();
         }
 
-        // =============================================================================
-        // LICENSE MANAGEMENT
-        // =============================================================================
-        
+        // License Management Functions
         async function loadLicenseManagement() {
             const container = document.getElementById('licenseManagement');
             
+            if (!window.licenseService) {
+                container.innerHTML = `
+                    <div class="no-permissions">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Service de licence non disponible</h3>
+                        <p>Veuillez recharger la page</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Vérifier si l'utilisateur est admin
+            if (!window.licenseService.isAdmin()) {
+                container.innerHTML = `
+                    <div class="no-permissions">
+                        <i class="fas fa-lock"></i>
+                        <h3>Accès refusé</h3>
+                        <p>Vous n'avez pas les droits d'administration</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const currentUser = window.licenseService.getCurrentUser();
+            const companyUsers = await window.licenseService.getCompanyUsers();
+
+            // Calculer les statistiques
+            const stats = {
+                total: companyUsers.length,
+                active: companyUsers.filter(u => u.license_status === 'active').length,
+                trial: companyUsers.filter(u => u.license_status === 'trial').length,
+                expired: companyUsers.filter(u => u.license_status === 'expired').length
+            };
+
             container.innerHTML = `
-                <div class="loading-container">
-                    <div class="spinner"></div>
-                    <div class="loading-text">Chargement de la gestion des licences...</div>
+                <div class="license-header">
+                    <h2>
+                        <i class="fas fa-key"></i>
+                        Gestion des licences
+                    </h2>
+                    <button class="refresh-btn" onclick="loadLicenseManagement()">
+                        <i class="fas fa-sync-alt"></i> Actualiser
+                    </button>
+                </div>
+
+                ${currentUser.company ? `
+                    <div class="company-info">
+                        <h3>${currentUser.company.name}</h3>
+                        <p>Administrateur : ${currentUser.name || currentUser.email}</p>
+                    </div>
+                ` : ''}
+
+                <div class="license-stats">
+                    <div class="license-stat-card">
+                        <div class="license-stat-value">${stats.total}</div>
+                        <div class="license-stat-label">Utilisateurs total</div>
+                    </div>
+                    <div class="license-stat-card">
+                        <div class="license-stat-value">${stats.active}</div>
+                        <div class="license-stat-label">Licences actives</div>
+                    </div>
+                    <div class="license-stat-card">
+                        <div class="license-stat-value">${stats.trial}</div>
+                        <div class="license-stat-label">Essais gratuits</div>
+                    </div>
+                    <div class="license-stat-card">
+                        <div class="license-stat-value">${stats.expired}</div>
+                        <div class="license-stat-label">Licences expirées</div>
+                    </div>
+                </div>
+
+                <div class="add-user-form">
+                    <input type="email" id="newUserEmail" placeholder="Email du nouvel utilisateur">
+                    <button onclick="addNewUser()">
+                        <i class="fas fa-user-plus"></i> Ajouter un utilisateur
+                    </button>
+                </div>
+
+                <div class="license-users-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Utilisateur</th>
+                                <th>Email</th>
+                                <th>Statut</th>
+                                <th>Expiration</th>
+                                <th>Dernière connexion</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${companyUsers.map(user => `
+                                <tr>
+                                    <td>${user.name || 'Non défini'}</td>
+                                    <td class="user-email">${user.email}</td>
+                                    <td>
+                                        <span class="license-status ${user.license_status}">
+                                            ${user.license_status}
+                                        </span>
+                                    </td>
+                                    <td>${new Date(user.license_expires_at).toLocaleDateString('fr-FR')}</td>
+                                    <td>${user.last_login_at ? new Date(user.last_login_at).toLocaleDateString('fr-FR') : 'Jamais'}</td>
+                                    <td>
+                                        <div class="license-actions">
+                                            ${user.license_status !== 'active' ? `
+                                                <button class="license-action-btn activate" 
+                                                        onclick="updateUserStatus('${user.id}', 'active')">
+                                                    Activer
+                                                </button>
+                                            ` : ''}
+                                            ${user.license_status === 'active' ? `
+                                                <button class="license-action-btn block" 
+                                                        onclick="updateUserStatus('${user.id}', 'blocked')">
+                                                    Bloquer
+                                                </button>
+                                            ` : ''}
+                                            <button class="license-action-btn extend" 
+                                                    onclick="extendLicense('${user.id}')">
+                                                +30 jours
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
             `;
-
-            try {
-                if (!window.licenseService) {
-                    container.innerHTML = `
-                        <div style="text-align: center; padding: 60px; color: #64748b;">
-                            <i class="fas fa-exclamation-triangle" style="font-size: 4rem; color: #d1d5db; margin-bottom: 16px;"></i>
-                            <h3>Service de licence non disponible</h3>
-                            <p>Veuillez recharger la page</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                if (!window.licenseService.isAdmin()) {
-                    container.innerHTML = `
-                        <div style="text-align: center; padding: 60px; color: #64748b;">
-                            <i class="fas fa-lock" style="font-size: 4rem; color: #d1d5db; margin-bottom: 16px;"></i>
-                            <h3>Accès refusé</h3>
-                            <p>Vous n'avez pas les droits d'administration</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                const currentUser = window.licenseService.getCurrentUser();
-                const companyUsers = await window.licenseService.getCompanyUsers();
-
-                const stats = {
-                    total: companyUsers.length,
-                    active: companyUsers.filter(u => u.license_status === 'active').length,
-                    trial: companyUsers.filter(u => u.license_status === 'trial').length,
-                    expired: companyUsers.filter(u => u.license_status === 'expired').length,
-                    blocked: companyUsers.filter(u => u.license_status === 'blocked').length
-                };
-
-                container.innerHTML = `
-                    <div style="padding: 24px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0;">
-                            <h2 style="font-size: 1.5rem; color: #1f2937; display: flex; align-items: center; gap: 12px;">
-                                <i class="fas fa-key"></i>
-                                Gestion des licences
-                            </h2>
-                            <button class="refresh-btn" onclick="loadLicenseManagement()">
-                                <i class="fas fa-sync-alt"></i> Actualiser
-                            </button>
-                        </div>
-
-                        ${currentUser.company ? `
-                            <div style="padding: 20px; background: #f8fafc; border-radius: 8px; margin-bottom: 24px; border-left: 4px solid #4F46E5;">
-                                <h3 style="font-size: 1.125rem; color: #1f2937; margin-bottom: 8px;">${currentUser.company.name}</h3>
-                                <p style="color: #64748b; font-size: 0.875rem;">Administrateur : ${currentUser.name || currentUser.email}</p>
-                            </div>
-                        ` : ''}
-
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px;">
-                            <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center;">
-                                <div style="font-size: 2rem; font-weight: 700; color: #4F46E5; margin-bottom: 4px;">${stats.total}</div>
-                                <div style="font-size: 0.875rem; color: #64748b;">Utilisateurs total</div>
-                            </div>
-                            <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center;">
-                                <div style="font-size: 2rem; font-weight: 700; color: #4F46E5; margin-bottom: 4px;">${stats.active}</div>
-                                <div style="font-size: 0.875rem; color: #64748b;">Licences actives</div>
-                            </div>
-                            <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center;">
-                                <div style="font-size: 2rem; font-weight: 700; color: #4F46E5; margin-bottom: 4px;">${stats.trial}</div>
-                                <div style="font-size: 0.875rem; color: #64748b;">Essais gratuits</div>
-                            </div>
-                            <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center;">
-                                <div style="font-size: 2rem; font-weight: 700; color: #4F46E5; margin-bottom: 4px;">${stats.expired + stats.blocked}</div>
-                                <div style="font-size: 0.875rem; color: #64748b;">Inactifs</div>
-                            </div>
-                        </div>
-
-                        <div style="display: flex; gap: 12px; margin-bottom: 24px; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-                            <input type="email" id="newUserEmail" placeholder="Email du nouvel utilisateur" style="flex: 1; padding: 10px 16px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem;">
-                            <button onclick="addNewUser()" style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; white-space: nowrap;">
-                                <i class="fas fa-user-plus"></i> Ajouter un utilisateur
-                            </button>
-                        </div>
-
-                        <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <thead>
-                                    <tr>
-                                        <th style="background: #f8fafc; padding: 12px 16px; text-align: left; font-weight: 600; color: #475569; font-size: 0.875rem; border-bottom: 1px solid #e2e8f0;">Utilisateur</th>
-                                        <th style="background: #f8fafc; padding: 12px 16px; text-align: left; font-weight: 600; color: #475569; font-size: 0.875rem; border-bottom: 1px solid #e2e8f0;">Email</th>
-                                        <th style="background: #f8fafc; padding: 12px 16px; text-align: left; font-weight: 600; color: #475569; font-size: 0.875rem; border-bottom: 1px solid #e2e8f0;">Statut</th>
-                                        <th style="background: #f8fafc; padding: 12px 16px; text-align: left; font-weight: 600; color: #475569; font-size: 0.875rem; border-bottom: 1px solid #e2e8f0;">Expiration</th>
-                                        <th style="background: #f8fafc; padding: 12px 16px; text-align: left; font-weight: 600; color: #475569; font-size: 0.875rem; border-bottom: 1px solid #e2e8f0;">Dernière connexion</th>
-                                        <th style="background: #f8fafc; padding: 12px 16px; text-align: left; font-weight: 600; color: #475569; font-size: 0.875rem; border-bottom: 1px solid #e2e8f0;">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${companyUsers.map(user => `
-                                        <tr style="border-bottom: 1px solid #f1f5f9;">
-                                            <td style="padding: 16px;">${user.name || 'Non défini'}</td>
-                                            <td style="padding: 16px; font-weight: 500; color: #1f2937;">${user.email}</td>
-                                            <td style="padding: 16px;">
-                                                <span class="status-badge ${user.license_status}">
-                                                    ${user.license_status}
-                                                </span>
-                                            </td>
-                                            <td style="padding: 16px;">${user.license_expires_at ? new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 'Non définie'}</td>
-                                            <td style="padding: 16px;">${user.last_login_at ? new Date(user.last_login_at).toLocaleDateString('fr-FR') : 'Jamais'}</td>
-                                            <td style="padding: 16px;">
-                                                <div style="display: flex; gap: 8px;">
-                                                    ${user.license_status !== 'active' ? `
-                                                        <button onclick="updateUserStatus('${user.id}', 'active')" style="padding: 6px 12px; border: none; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #dcfce7; color: #16a34a;">
-                                                            Activer
-                                                        </button>
-                                                    ` : ''}
-                                                    ${user.license_status === 'active' ? `
-                                                        <button onclick="updateUserStatus('${user.id}', 'blocked')" style="padding: 6px 12px; border: none; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #fef2f2; color: #dc2626;">
-                                                            Bloquer
-                                                        </button>
-                                                    ` : ''}
-                                                    <button onclick="extendLicense('${user.id}')" style="padding: 6px 12px; border: none; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #dbeafe; color: #1d4ed8;">
-                                                        +30 jours
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-
-            } catch (error) {
-                console.error('[loadLicenseManagement] Erreur:', error);
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 60px; color: #64748b;">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 4rem; color: #d1d5db; margin-bottom: 16px;"></i>
-                        <h3>Erreur de chargement</h3>
-                        <p>${error.message}</p>
-                    </div>
-                `;
-            }
         }
 
+        // Fonction pour ajouter un utilisateur
         async function addNewUser() {
             const emailInput = document.getElementById('newUserEmail');
             const email = emailInput.value.trim();
 
             if (!email || !email.includes('@')) {
-                showToast('Veuillez entrer une adresse email valide', 'error');
+                alert('Veuillez entrer une adresse email valide');
                 return;
             }
 
-            try {
-                const result = await window.licenseService.addUserToCompany(email);
-                
-                if (result.success) {
-                    emailInput.value = '';
-                    await loadLicenseManagement();
-                    showToast('Utilisateur ajouté avec succès', 'success');
-                } else {
-                    showToast('Erreur : ' + result.error, 'error');
+            const result = await window.licenseService.addUserToCompany(email);
+            
+            if (result.success) {
+                emailInput.value = '';
+                await loadLicenseManagement();
+                if (window.uiManager) {
+                    window.uiManager.showToast('Utilisateur ajouté avec succès', 'success');
                 }
-            } catch (error) {
-                console.error('[addNewUser] Erreur:', error);
-                showToast('Erreur lors de l\'ajout de l\'utilisateur', 'error');
+            } else {
+                alert('Erreur : ' + result.error);
             }
         }
 
+        // Fonction pour mettre à jour le statut
         async function updateUserStatus(userId, newStatus) {
-            try {
-                const result = await window.licenseService.updateUserLicense(userId, newStatus);
-                
-                if (result.success) {
-                    await loadLicenseManagement();
-                    showToast('Statut mis à jour', 'success');
-                } else {
-                    showToast('Erreur : ' + result.error, 'error');
+            const result = await window.licenseService.updateUserLicense(userId, newStatus);
+            
+            if (result.success) {
+                await loadLicenseManagement();
+                if (window.uiManager) {
+                    window.uiManager.showToast('Statut mis à jour', 'success');
                 }
-            } catch (error) {
-                console.error('[updateUserStatus] Erreur:', error);
-                showToast('Erreur lors de la mise à jour', 'error');
+            } else {
+                alert('Erreur : ' + result.error);
             }
         }
 
+        // Fonction pour étendre la licence
         async function extendLicense(userId) {
-            try {
-                const newExpiry = new Date();
-                newExpiry.setDate(newExpiry.getDate() + 30);
-                
-                const result = await window.licenseService.updateUserLicense(userId, 'active', newExpiry);
-                
-                if (result.success) {
-                    await loadLicenseManagement();
-                    showToast('Licence étendue de 30 jours', 'success');
-                } else {
-                    showToast('Erreur : ' + result.error, 'error');
+            const newExpiry = new Date();
+            newExpiry.setDate(newExpiry.getDate() + 30);
+            
+            const result = await window.licenseService.updateUserLicense(userId, 'active', newExpiry);
+            
+            if (result.success) {
+                await loadLicenseManagement();
+                if (window.uiManager) {
+                    window.uiManager.showToast('Licence étendue de 30 jours', 'success');
                 }
-            } catch (error) {
-                console.error('[extendLicense] Erreur:', error);
-                showToast('Erreur lors de l\'extension', 'error');
+            } else {
+                alert('Erreur : ' + result.error);
             }
         }
 
-        // =============================================================================
-        // ANALYTICS MANAGEMENT
-        // =============================================================================
-        
+        // Analytics loading (existing functionality)
         async function loadAnalyticsScript() {
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
@@ -1570,7 +1583,7 @@
                 analyticsManager = window.analyticsManager;
                 analyticsModule = window.analyticsModule;
 
-                const data = await loadAnalyticsFromDatabase();
+                const data = analyticsManager ? analyticsManager.getAnalyticsData() : {};
                 updateSummary(data);
 
                 const analyticsContent = document.getElementById('analyticsContent');
@@ -1580,8 +1593,6 @@
                 analyticsContent.appendChild(pageContent);
 
                 if (analyticsModule) {
-                    analyticsModule.databaseMode = true;
-                    analyticsModule.databaseData = data;
                     analyticsModule.render();
                 }
 
@@ -1597,380 +1608,92 @@
                         <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 16px;"></i>
                         <h3>Erreur de chargement</h3>
                         <p>Impossible de charger les données analytics</p>
-                        <button onclick="loadAnalytics()" style="margin-top: 16px; padding: 8px 16px; background: #4F46E5; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                            Réessayer
-                        </button>
                     </div>
                 `;
             }
         }
 
-        async function loadAnalyticsFromDatabase() {
-            try {
-                const dbService = new DatabaseService();
-                const events = await dbService.getAnalyticsEvents(1000);
-                
-                return {
-                    events: events.map(event => ({
-                        type: event.event_type,
-                        timestamp: event.created_at,
-                        data: event.event_data || {},
-                        userEmail: event.users?.email || 'anonymous',
-                        sessionId: event.session_id
-                    })),
-                    userStatsByEmail: await buildUserStatsByEmail(),
-                    scanStats: {
-                        totalScans: 0,
-                        totalEmails: 0,
-                        totalCost: 0,
-                        averageEmailsPerScan: 0,
-                        scansByDay: {},
-                        scansByUser: {}
-                    },
-                    createdAt: new Date().toISOString(),
-                    lastUpdated: new Date().toISOString()
-                };
-                
-            } catch (error) {
-                console.error('[loadAnalyticsFromDatabase] Erreur:', error);
-                if (window.analyticsManager) {
-                    return window.analyticsManager.getAnalyticsData();
-                }
-                throw error;
-            }
-        }
-
-        async function buildUserStatsByEmail() {
-            try {
-                const dbService = new DatabaseService();
-                const users = await dbService.getAllUsers();
-                const userStats = {};
-                
-                users.forEach(user => {
-                    const analytics = user.user_analytics?.[0] || {};
-                    userStats[user.email] = {
-                        name: user.name,
-                        domain: user.email ? user.email.split('@')[1] : 'unknown',
-                        firstSeen: user.created_at,
-                        lastAccess: user.last_login_at || user.updated_at,
-                        totalSessions: analytics.total_sessions || 0,
-                        totalScans: analytics.total_scans || 0,
-                        totalEmailsScanned: analytics.total_emails || 0,
-                        totalCost: analytics.total_cost || 0,
-                        providers: { 'oauth': 1 },
-                        scanHistory: [],
-                        costBreakdown: {
-                            emailScan: analytics.total_cost * 0.4 || 0,
-                            aiAnalysis: analytics.total_cost * 0.3 || 0,
-                            taskGeneration: analytics.total_cost * 0.2 || 0,
-                            domainOrganization: analytics.total_cost * 0.1 || 0
-                        }
-                    };
-                });
-                
-                return userStats;
-            } catch (error) {
-                console.error('[buildUserStatsByEmail] Erreur:', error);
-                return {};
-            }
-        }
-
-        async function updateSummary(data = {}) {
-            try {
-                const dbService = new DatabaseService();
-                const users = await dbService.getAllUsers();
-                
-                const activeUsers = users.filter(u => {
-                    const lastLogin = u.last_login_at ? new Date(u.last_login_at) : null;
-                    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-                    return lastLogin && lastLogin > thirtyDaysAgo;
-                }).length;
-                
-                const totalScans = users.reduce((sum, user) => {
-                    return sum + (user.user_analytics?.[0]?.total_scans || 0);
-                }, 0);
-                
-                const totalErrors = users.reduce((sum, user) => {
-                    return sum + (user.user_analytics?.[0]?.error_count || 0);
-                }, 0);
-                
-                const activeLicenses = users.filter(u => u.license_status === 'active').length;
-                
-                document.getElementById('summaryUsers').textContent = activeUsers.toLocaleString();
-                document.getElementById('summaryScans').textContent = totalScans.toLocaleString();
-                document.getElementById('summaryErrors').textContent = totalErrors.toLocaleString();
-                document.getElementById('summaryLicenses').textContent = activeLicenses.toLocaleString();
-                
-            } catch (error) {
-                console.error('[updateSummary] Erreur:', error);
-                document.getElementById('summaryUsers').textContent = '0';
-                document.getElementById('summaryScans').textContent = '0';
-                document.getElementById('summaryErrors').textContent = '0';
-                document.getElementById('summaryLicenses').textContent = '0';
-            }
-        }
-
-        // =============================================================================
-        // AUTO-REFRESH
-        // =============================================================================
-        
-        function startAutoRefresh() {
-            setInterval(async () => {
-                try {
-                    await updateSummary();
-                    updateLastUpdated();
-                    
-                    if (currentTab === 'users') {
-                        await loadUsers();
-                    } else if (currentTab === 'licenses') {
-                        await loadLicenseManagement();
-                    }
-                } catch (error) {
-                    console.error('[AutoRefresh] Erreur:', error);
-                }
-            }, 30000);
-        }
-
-        // =============================================================================
-        // EVENT LISTENERS
-        // =============================================================================
-        
-        function setupEventListeners() {
-            document.getElementById('userSearch').addEventListener('input', filterUsers);
-            document.getElementById('statusFilter').addEventListener('change', filterUsers);
-            document.getElementById('companyFilter').addEventListener('change', filterUsers);
-
-            document.getElementById('userModal').addEventListener('click', (e) => {
-                if (e.target.id === 'userModal') {
-                    closeUserModal();
-                }
-            });
-        }
-
-        // =============================================================================
-        // INITIALIZATION
-        // =============================================================================
-        
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('[Analytics Page] DOM loaded, initializing...');
+        function updateSummary(data = {}) {
+            // Users summary
+            document.getElementById('summaryUsers').textContent = mockUsers.filter(u => u.status === 'active').length;
             
-            updateConnectionStatus('connecting');
-            
-            try {
-                // Charger la configuration Supabase
-                const configScript = document.createElement('script');
-                configScript.src = './config-supabase.js';
-                
-                await new Promise((resolve, reject) => {
-                    configScript.onload = resolve;
-                    configScript.onerror = reject;
-                    document.head.appendChild(configScript);
-                });
-                
-                // Initialiser la base de données
-                const dbService = new DatabaseService();
-                await dbService.initialize();
-                updateConnectionStatus('connected');
-                
-                // Charger le service de licence
-                const licenseScript = document.createElement('script');
-                licenseScript.src = './LicenseService.js';
-                
-                await new Promise((resolve, reject) => {
-                    licenseScript.onload = () => {
-                        licenseService = window.licenseService;
-                        resolve();
-                    };
-                    licenseScript.onerror = reject;
-                    document.head.appendChild(licenseScript);
-                });
-                
-                // Configurer les event listeners
-                setupEventListeners();
-                
-                // Charger les analytics
-                await loadAnalytics();
-                
-                // Démarrer l'auto-refresh
-                startAutoRefresh();
-                
-                updateLastUpdated();
-                
-                showToast('Application analytics initialisée', 'success');
-                
-            } catch (error) {
-                console.error('[Init] Erreur d\'initialisation:', error);
-                updateConnectionStatus('disconnected');
-                showToast('Erreur d\'initialisation de l\'application', 'error');
-                
-                setTimeout(() => {
-                    if (window.diagnoseSupabase) {
-                        window.diagnoseSupabase();
-                    }
-                }, 2000);
+            // Scans summary
+            const totalScans = mockUsers.reduce((sum, user) => sum + user.scansCount, 0);
+            document.getElementById('summaryScans').textContent = totalScans.toLocaleString();
+
+            // Errors summary
+            const totalErrors = mockUsers.reduce((sum, user) => sum + user.errorsCount, 0);
+            document.getElementById('summaryErrors').textContent = totalErrors;
+
+            // Licenses summary
+            const activeLicenses = mockUsers.filter(u => u.license.status === 'active').length;
+            document.getElementById('summaryLicenses').textContent = activeLicenses;
+        }
+
+        function updateLastUpdated() {
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = now.toLocaleString('fr-FR');
+        }
+
+        // Event listeners
+        document.getElementById('userSearch').addEventListener('input', filterUsers);
+        document.getElementById('statusFilter').addEventListener('change', filterUsers);
+        document.getElementById('companyFilter').addEventListener('change', filterUsers);
+
+        // Close modal when clicking outside
+        document.getElementById('userModal').addEventListener('click', (e) => {
+            if (e.target.id === 'userModal') {
+                closeUserModal();
             }
         });
 
-        // =============================================================================
-        // DEBUG FUNCTIONS
-        // =============================================================================
-        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('[Analytics Page] DOM loaded, initializing...');
+            
+            // Charger le service de licence
+            const licenseScript = document.createElement('script');
+            licenseScript.src = './LicenseService.js';
+            licenseScript.onload = async () => {
+                console.log('[Analytics] LicenseService loaded');
+                licenseService = window.licenseService;
+                
+                // Charger la configuration Supabase
+                const configScript = document.createElement('script');
+                configScript.src = './config-supabase.js';
+                configScript.onload = () => {
+                    console.log('[Analytics] Supabase config loaded');
+                };
+                document.head.appendChild(configScript);
+            };
+            document.head.appendChild(licenseScript);
+            
+            loadAnalytics();
+            updateLastUpdated();
+        });
+
+        // Debug function
         window.debugAnalytics = function() {
-            console.group('🔍 ANALYTICS PAGE DEBUG');
-            
-            console.log('Connection status:', isConnected);
+            console.log('=== ANALYTICS PAGE DEBUG ===');
             console.log('Current tab:', currentTab);
-            console.log('Current users count:', currentUsers.length);
-            console.log('Filtered users count:', filteredUsers.length);
-            console.log('Analytics manager:', !!analyticsManager);
-            console.log('Analytics module:', !!analyticsModule);
-            console.log('License service:', !!licenseService);
-            console.log('Supabase client:', !!supabaseClient);
-            
-            if (window.supabaseConfig) {
-                console.log('Supabase config validation:', window.supabaseConfig.validate());
-            }
-            
-            console.groupEnd();
+            console.log('Current users:', currentUsers);
+            console.log('Filtered users:', filteredUsers);
+            console.log('Analytics manager:', analyticsManager);
+            console.log('Analytics module:', analyticsModule);
+            console.log('License service:', licenseService);
             
             return {
-                connected: isConnected,
                 currentTab,
                 usersCount: currentUsers.length,
                 filteredCount: filteredUsers.length,
-                services: {
-                    analyticsManager: !!analyticsManager,
-                    analyticsModule: !!analyticsModule,
-                    licenseService: !!licenseService,
-                    supabaseClient: !!supabaseClient
-                }
+                analyticsManager: !!analyticsManager,
+                analyticsModule: !!analyticsModule,
+                licenseService: !!licenseService
             };
         };
 
-        window.testDatabaseConnection = async function() {
-            try {
-                const dbService = new DatabaseService();
-                await dbService.initialize();
-                console.log('✅ Test de connexion réussi');
-                showToast('Connexion à la base de données réussie', 'success');
-                return true;
-            } catch (error) {
-                console.error('❌ Test de connexion échoué:', error);
-                showToast('Échec de la connexion à la base de données', 'error');
-                return false;
-            }
-        };
-
-        window.forceRefresh = async function() {
-            try {
-                showToast('Actualisation forcée en cours...', 'info');
-                await loadAnalytics();
-                await loadUsers();
-                if (currentTab === 'licenses') {
-                    await loadLicenseManagement();
-                }
-                updateLastUpdated();
-                showToast('Actualisation terminée', 'success');
-            } catch (error) {
-                console.error('Erreur lors de l\'actualisation:', error);
-                showToast('Erreur lors de l\'actualisation', 'error');
-            }
-        };
-
-        window.exportAnalyticsData = async function() {
-            try {
-                showToast('Exportation en cours...', 'info');
-                
-                const dbService = new DatabaseService();
-                const users = await dbService.getAllUsers();
-                const events = await dbService.getAnalyticsEvents(5000);
-                
-                const exportData = {
-                    exportDate: new Date().toISOString(),
-                    users: users.map(user => ({
-                        id: user.id,
-                        email: user.email,
-                        name: user.name,
-                        company: user.companies?.name,
-                        license_status: user.license_status,
-                        created_at: user.created_at,
-                        last_login_at: user.last_login_at,
-                        analytics: user.user_analytics?.[0] || {}
-                    })),
-                    events: events.map(event => ({
-                        event_type: event.event_type,
-                        created_at: event.created_at,
-                        user_email: event.users?.email,
-                        event_data: event.event_data
-                    })),
-                    summary: {
-                        totalUsers: users.length,
-                        activeUsers: users.filter(u => u.license_status === 'active').length,
-                        totalScans: users.reduce((sum, u) => sum + (u.user_analytics?.[0]?.total_scans || 0), 0),
-                        totalEmails: users.reduce((sum, u) => sum + (u.user_analytics?.[0]?.total_emails || 0), 0)
-                    }
-                };
-                
-                const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-                    type: 'application/json'
-                });
-                
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `emailsortpro-analytics-${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                showToast('Données exportées avec succès', 'success');
-                
-            } catch (error) {
-                console.error('Erreur lors de l\'exportation:', error);
-                showToast('Erreur lors de l\'exportation', 'error');
-            }
-        };
-
-        window.purgeOldData = async function(daysOld = 90) {
-            if (!confirm(`Êtes-vous sûr de vouloir supprimer les données de plus de ${daysOld} jours ?`)) {
-                return;
-            }
-            
-            try {
-                showToast('Purge en cours...', 'info');
-                
-                const dbService = new DatabaseService();
-                const cutoffDate = new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000);
-                
-                const { error } = await dbService.client
-                    .from('analytics_events')
-                    .delete()
-                    .lt('created_at', cutoffDate.toISOString());
-                
-                if (error) throw error;
-                
-                showToast(`Données de plus de ${daysOld} jours supprimées`, 'success');
-                await forceRefresh();
-                
-            } catch (error) {
-                console.error('Erreur lors de la purge:', error);
-                showToast('Erreur lors de la purge', 'error');
-            }
-        };
-
-        // =============================================================================
-        // CONSOLE MESSAGES
-        // =============================================================================
-        
-        console.log('[Analytics Page] ✅ Enhanced analytics page with database integration initialized');
-        console.log('[Analytics Page] Available debug functions:');
-        console.log('  - debugAnalytics() : Diagnostic général');
-        console.log('  - testDatabaseConnection() : Test de connexion BDD');
-        console.log('  - forceRefresh() : Actualisation forcée');
-        console.log('  - diagnoseSupabase() : Diagnostic Supabase');
-        console.log('  - exportAnalyticsData() : Exporter les données');
-        console.log('  - purgeOldData(days) : Purger les anciennes données');
+        console.log('[Analytics Page] ✅ Enhanced analytics page initialized with license management');
+        console.log('[Analytics Page] Use debugAnalytics() for debug information');
     </script>
 </body>
 </html>
