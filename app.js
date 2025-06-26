@@ -1,5 +1,4 @@
-// app.js - Application EmailSortPro avec authentification dual provider (Microsoft + Google) v4.1
-// Compatible avec Netlify et gestion robuste des erreurs
+// app.js - Application EmailSortPro avec intégration Analytics complète v4.3
 
 class App {
     constructor() {
@@ -14,9 +13,30 @@ class App {
         this.netlifyDomain = 'coruscating-dodol-f30e8d.netlify.app';
         this.isNetlifyEnv = window.location.hostname.includes('netlify.app');
         
-        console.log('[App] Constructor - EmailSortPro v4.1 starting with dual provider support...');
+        console.log('[App] Constructor - EmailSortPro v4.3 with Analytics integration...');
         console.log('[App] Environment:', this.isNetlifyEnv ? 'Netlify' : 'Local');
         console.log('[App] Domain:', window.location.hostname);
+        
+        // Initialiser Analytics dès le début
+        this.initializeAnalytics();
+    }
+
+    initializeAnalytics() {
+        // Vérifier que le manager analytics est disponible
+        if (!window.analyticsManager) {
+            console.warn('[App] Analytics manager not available yet, waiting...');
+            setTimeout(() => this.initializeAnalytics(), 500);
+            return;
+        }
+        
+        console.log('[App] ✅ Analytics manager ready');
+        
+        // Tracker le démarrage de l'application
+        window.analyticsManager.trackEvent('app_start', {
+            environment: this.isNetlifyEnv ? 'netlify' : 'local',
+            domain: window.location.hostname,
+            userAgent: navigator.userAgent
+        });
     }
 
     async init() {
@@ -411,6 +431,11 @@ class App {
             
             console.log(`[App] Page mode changed: ${previousPage} → ${pageName}`);
             
+            // ANALYTICS: Track page change
+            if (window.analyticsManager && typeof window.analyticsManager.onPageLoad === 'function') {
+                window.analyticsManager.onPageLoad(pageName);
+            }
+            
             // Nettoyer les anciennes classes de page
             body.classList.remove(
                 'page-dashboard', 'page-scanner', 'page-emails', 
@@ -737,6 +762,12 @@ class App {
                     this.isAuthenticated = true;
                     this.activeProvider = 'microsoft';
                     console.log('[App] ✅ Microsoft user authenticated:', this.user.displayName || this.user.mail);
+                    
+                    // ANALYTICS: Track Microsoft auth restoration
+                    if (window.analyticsManager && typeof window.analyticsManager.onAuthSuccess === 'function') {
+                        window.analyticsManager.onAuthSuccess('microsoft', this.user);
+                    }
+                    
                     this.showAppWithTransition();
                     return;
                 } catch (userInfoError) {
@@ -760,6 +791,12 @@ class App {
                     this.isAuthenticated = true;
                     this.activeProvider = 'google';
                     console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
+                    
+                    // ANALYTICS: Track Google auth restoration
+                    if (window.analyticsManager && typeof window.analyticsManager.onAuthSuccess === 'function') {
+                        window.analyticsManager.onAuthSuccess('google', this.user);
+                    }
+                    
                     this.showAppWithTransition();
                     return;
                 } catch (userInfoError) {
@@ -834,6 +871,14 @@ class App {
     async handleInitializationError(error) {
         console.error('[App] Initialization error:', error);
         
+        // ANALYTICS: Track initialization error
+        if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
+            window.analyticsManager.onError('app_init_error', {
+                message: error.message,
+                environment: this.isNetlifyEnv ? 'netlify' : 'local'
+            });
+        }
+        
         if (error.message.includes('unauthorized_client')) {
             this.showConfigurationError([
                 'Configuration Azure incorrecte',
@@ -890,6 +935,15 @@ class App {
                     }
                 } catch (error) {
                     console.error('[App] Navigation error:', error);
+                    
+                    // ANALYTICS: Track navigation error
+                    if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
+                        window.analyticsManager.onError('navigation_error', {
+                            message: error.message,
+                            page: e.currentTarget.dataset.page
+                        });
+                    }
+                    
                     if (window.uiManager) {
                         window.uiManager.showToast('Erreur de navigation: ' + error.message, 'error');
                     }
@@ -900,6 +954,16 @@ class App {
         // Gestion globale des erreurs avec informations détaillées
         window.addEventListener('error', (event) => {
             console.error('[App] Global error:', event.error);
+            
+            // ANALYTICS: Track global errors
+            if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
+                window.analyticsManager.onError('global_error', {
+                    message: event.error?.message || 'Unknown error',
+                    stack: event.error?.stack,
+                    filename: event.filename,
+                    lineno: event.lineno
+                });
+            }
             
             if (event.error && event.error.message) {
                 const message = event.error.message;
@@ -940,6 +1004,14 @@ class App {
 
         window.addEventListener('unhandledrejection', (event) => {
             console.error('[App] Unhandled promise rejection:', event.reason);
+            
+            // ANALYTICS: Track unhandled rejections
+            if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
+                window.analyticsManager.onError('promise_rejection', {
+                    reason: event.reason?.message || event.reason || 'Unknown rejection',
+                    stack: event.reason?.stack
+                });
+            }
             
             if (event.reason && event.reason.message) {
                 const message = event.reason.message;
@@ -1116,7 +1188,7 @@ class App {
             
             this.showModernLoading('Déconnexion...');
             
-            // Déconnexion selon le provider actif
+            // Déconnecter du service actuel
             if (this.activeProvider === 'microsoft' && window.authService) {
                 await window.authService.logout();
             } else if (this.activeProvider === 'google' && window.googleAuthService) {
@@ -1166,7 +1238,7 @@ class App {
         }
         
         // Nettoyer le localStorage sélectivement
-        const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
+        const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id', 'emailsortpro_analytics'];
         const allKeys = Object.keys(localStorage);
         
         allKeys.forEach(key => {
@@ -1644,6 +1716,10 @@ class App {
                 uiManager: window.uiManager ? {
                     available: true,
                     hasUpdateAuthStatus: typeof window.uiManager.updateAuthStatus === 'function'
+                } : { available: false },
+                analyticsManager: window.analyticsManager ? {
+                    available: true,
+                    hasData: !!window.analyticsManager.getAnalyticsData
                 } : { available: false }
             },
             dom: {
@@ -1726,6 +1802,17 @@ class App {
             tests.push({ service: 'Google Auth', status: '❌ ERROR', details: error.message });
         }
         
+        // Test Analytics
+        try {
+            if (window.analyticsManager) {
+                tests.push({ service: 'Analytics', status: '✅ OK', details: 'Manager disponible' });
+            } else {
+                tests.push({ service: 'Analytics', status: '❌ ERROR', details: 'Manager non disponible' });
+            }
+        } catch (error) {
+            tests.push({ service: 'Analytics', status: '❌ ERROR', details: error.message });
+        }
+        
         tests.forEach(test => {
             console.log(`${test.status} ${test.service}: ${test.details}`);
         });
@@ -1742,7 +1829,7 @@ class App {
 window.emergencyReset = function() {
     console.log('[App] Emergency reset triggered for dual provider');
     
-    const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
+    const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id', 'emailsortpro_analytics'];
     const allKeys = Object.keys(localStorage);
     
     allKeys.forEach(key => {
@@ -1829,7 +1916,7 @@ window.repairScanModule = function() {
 function checkServicesReady() {
     const requiredServices = ['uiManager'];
     const authServices = ['authService', 'googleAuthService'];
-    const optionalServices = ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule'];
+    const optionalServices = ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule', 'analyticsManager'];
     
     try {
         const missingRequired = requiredServices.filter(service => !window[service]);
@@ -1867,7 +1954,7 @@ window.checkServices = function() {
     const services = {
         required: ['uiManager', 'AppConfig'],
         auth: ['authService', 'googleAuthService'],
-        optional: ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule', 'pageManager', 'taskManager']
+        optional: ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule', 'pageManager', 'taskManager', 'analyticsManager']
     };
     
     const result = {
@@ -1942,6 +2029,14 @@ document.addEventListener('DOMContentLoaded', () => {
         
         window.app = new App();
         
+        // ANALYTICS: Track app start
+        if (window.analyticsManager && typeof window.analyticsManager.trackEvent === 'function') {
+            window.analyticsManager.trackEvent('dom_loaded', {
+                environment: window.location.hostname.includes('netlify.app') ? 'netlify' : 'local',
+                userAgent: navigator.userAgent
+            });
+        }
+        
         const waitForServices = (attempts = 0) => {
             const maxAttempts = 50;
             
@@ -1954,6 +2049,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             window.app.init();
                         } catch (initError) {
                             console.error('[App] Error during app initialization:', initError);
+                            
+                            // ANALYTICS: Track init error
+                            if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
+                                window.analyticsManager.onError('app_init_error', {
+                                    message: initError.message,
+                                    stack: initError.stack
+                                });
+                            }
+                            
                             if (window.app) {
                                 window.app.showError('Erreur lors de l\'initialisation: ' + initError.message);
                             }
@@ -1985,6 +2089,14 @@ document.addEventListener('DOMContentLoaded', () => {
         
     } catch (domError) {
         console.error('[App] Critical error during DOM initialization:', domError);
+        
+        // ANALYTICS: Track critical error
+        if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
+            window.analyticsManager.onError('critical_dom_error', {
+                message: domError.message,
+                stack: domError.stack
+            });
+        }
         
         // Affichage d'erreur d'urgence
         document.body.innerHTML = `
@@ -2026,10 +2138,10 @@ window.addEventListener('load', () => {
 });
 
 // =====================================
-// DIAGNOSTIC GLOBAL DUAL PROVIDER AMÉLIORÉ
+// DIAGNOSTIC GLOBAL DUAL PROVIDER AMÉLIORÉ AVEC ANALYTICS
 // =====================================
 window.diagnoseApp = function() {
-    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER - EmailSortPro v4.1');
+    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER - EmailSortPro v4.3');
     
     try {
         if (window.app) {
@@ -2044,6 +2156,19 @@ window.diagnoseApp = function() {
             
             if (appDiag.errors.lastGlobalError || appDiag.errors.lastPromiseRejection) {
                 console.log('❌ Recent Errors:', appDiag.errors);
+            }
+            
+            // Analytics diagnostic
+            if (window.analyticsManager) {
+                const analyticsData = window.analyticsManager.getAnalyticsData();
+                console.log('📊 Analytics Status:', {
+                    initialized: window.analyticsManager.initialized,
+                    sessionId: window.analyticsManager.currentSession?.sessionId,
+                    totalEvents: analyticsData.events?.length || 0,
+                    totalUsers: Object.keys(analyticsData.userStatsByEmail || {}).length,
+                    totalScans: analyticsData.scanStats?.totalScans || 0,
+                    totalRevenue: window.analyticsManager.getUserCostAnalysis().totalRevenue
+                });
             }
             
             // Test des services critiques
@@ -2066,7 +2191,8 @@ window.diagnoseApp = function() {
                     isNetlify: window.location.hostname.includes('netlify.app'),
                     domain: window.location.hostname,
                     userAgent: navigator.userAgent.substring(0, 100)
-                }
+                },
+                analytics: window.analyticsManager ? 'Available' : 'Not available'
             };
             
             console.log('📊 Basic Diagnostic:', basicDiag);
@@ -2131,9 +2257,29 @@ window.netlifyHelpers = {
         
         console.log('Auth test results:', results);
         return results;
+    },
+    
+    checkAnalytics: () => {
+        if (!window.analyticsManager) {
+            console.error('Analytics not available');
+            return null;
+        }
+        
+        const data = window.analyticsManager.getAnalyticsData();
+        const summary = {
+            totalEvents: data.events?.length || 0,
+            totalUsers: Object.keys(data.userStatsByEmail || {}).length,
+            totalScans: data.scanStats?.totalScans || 0,
+            totalEmails: data.scanStats?.totalEmails || 0,
+            totalCost: (window.analyticsManager.getUserCostAnalysis().totalRevenue / 100).toFixed(2) + '€'
+        };
+        
+        console.log('Analytics summary:', summary);
+        return summary;
     }
 };
 
-console.log('✅ App v4.1 loaded - DUAL PROVIDER (Microsoft + Google) - Compatible Netlify avec gestion d\'erreurs robuste');
+console.log('✅ App v4.3 loaded - DUAL PROVIDER with Analytics Integration');
 console.log('🔧 Fonctions globales disponibles: window.diagnoseApp(), window.testServices(), window.repairMailService(), window.repairScanModule()');
 console.log('🌐 Helpers Netlify: window.netlifyHelpers');
+console.log('📊 Analytics: window.analyticsManager disponible');
