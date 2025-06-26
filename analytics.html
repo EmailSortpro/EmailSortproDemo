@@ -80,114 +80,6 @@
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
         }
 
-        .loading-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 400px;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #f3f4f6;
-            border-top: 4px solid #4F46E5;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            color: #64748b;
-            font-size: 1.125rem;
-            font-weight: 500;
-        }
-
-        .error-container {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #dc2626;
-            padding: 24px;
-            border-radius: 12px;
-            text-align: center;
-            margin: 40px 0;
-        }
-
-        .error-container h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .error-container p {
-            font-size: 1rem;
-            line-height: 1.5;
-            margin-bottom: 16px;
-        }
-
-        .retry-button {
-            background: #dc2626;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-        }
-
-        .retry-button:hover {
-            background: #b91c1c;
-            transform: translateY(-2px);
-        }
-
-        #analyticsContent {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.3s ease;
-        }
-
-        #analyticsContent.loaded {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Styles pour les analytics intégrés */
-        .analytics-page {
-            padding: 0;
-        }
-
-        .analytics-header {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 32px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            border: 1px solid #e2e8f0;
-        }
-
-        .analytics-header h1 {
-            font-size: 1.75rem;
-            margin-bottom: 8px;
-        }
-
-        .analytics-actions {
-            margin-top: 16px;
-        }
-
         .real-time-indicator {
             display: inline-flex;
             align-items: center;
@@ -214,6 +106,56 @@
             50% { opacity: 0.5; }
         }
 
+        /* Tabs Navigation */
+        .tabs-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 32px;
+            overflow: hidden;
+        }
+
+        .tabs-nav {
+            display: flex;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 16px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #64748b;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .tab-button.active {
+            color: #4F46E5;
+            background: #f8fafc;
+            border-bottom: 2px solid #4F46E5;
+        }
+
+        .tab-button:hover:not(.active) {
+            background: #f8fafc;
+            color: #374151;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 24px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Summary Cards */
         .analytics-summary {
             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             border-radius: 12px;
@@ -251,6 +193,7 @@
         .summary-icon.scans { background: #dcfce7; color: #16a34a; }
         .summary-icon.errors { background: #fef2f2; color: #dc2626; }
         .summary-icon.activity { background: #fef3c7; color: #d97706; }
+        .summary-icon.licenses { background: #f3e8ff; color: #7c3aed; }
 
         .summary-number {
             font-size: 2rem;
@@ -265,6 +208,400 @@
             font-weight: 500;
         }
 
+        /* Users Management */
+        .users-controls {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 16px 12px 40px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+        }
+
+        .filter-select {
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+            font-size: 0.875rem;
+            cursor: pointer;
+            min-width: 150px;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .refresh-btn {
+            padding: 12px 20px;
+            background: #4F46E5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+
+        /* Users Table */
+        .users-table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .users-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .users-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4F46E5, #6366F1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .user-details h4 {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 2px;
+        }
+
+        .user-details p {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-badge.active {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .status-badge.inactive {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .status-badge.error {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .license-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .license-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .license-badge.active {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .license-badge.expired {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .license-badge.trial {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .actions-cell {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn.edit {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .action-btn.license {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* User Details Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6b7280;
+            font-size: 1.25rem;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .detail-group {
+            margin-bottom: 24px;
+        }
+
+        .detail-group h4 {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .detail-item {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid #4F46E5;
+        }
+
+        .detail-item label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .detail-item value {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .error-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .error-item {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .error-item .error-time {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .error-item .error-message {
+            color: #dc2626;
+            font-weight: 500;
+        }
+
+        /* Loading & Error States */
+        .loading-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #4F46E5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #64748b;
+            font-size: 1.125rem;
+            font-weight: 500;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 16px;
+            color: #d1d5db;
+        }
+
+        .empty-state h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
         .last-updated {
             text-align: center;
             margin-top: 32px;
@@ -275,28 +612,7 @@
             font-size: 0.875rem;
         }
 
-        .footer-info {
-            text-align: center;
-            margin-top: 48px;
-            padding: 24px;
-            background: white;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .footer-info h3 {
-            color: #1f2937;
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin-bottom: 12px;
-        }
-
-        .footer-info p {
-            color: #64748b;
-            font-size: 0.875rem;
-            line-height: 1.5;
-        }
-
+        /* Responsive */
         @media (max-width: 768px) {
             .analytics-standalone {
                 padding: 20px 16px;
@@ -304,7 +620,6 @@
 
             .page-header {
                 padding: 32px 20px;
-                margin-bottom: 32px;
             }
 
             .page-header h1 {
@@ -313,32 +628,38 @@
                 gap: 12px;
             }
 
-            .page-header p {
-                font-size: 1.125rem;
+            .tabs-nav {
+                flex-direction: column;
             }
 
-            .back-to-app {
-                position: static;
-                margin-bottom: 20px;
-                align-self: flex-start;
+            .tab-button {
+                justify-content: flex-start;
+                padding: 12px 16px;
             }
 
-            .summary-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 16px;
+            .users-controls {
+                flex-direction: column;
+                align-items: stretch;
             }
 
-            .summary-item {
-                padding: 12px;
+            .search-box {
+                min-width: auto;
             }
 
-            .summary-number {
-                font-size: 1.5rem;
+            .users-table-container {
+                overflow-x: auto;
             }
-        }
 
-        @media (max-width: 480px) {
-            .summary-grid {
+            .users-table {
+                min-width: 700px;
+            }
+
+            .modal {
+                width: 95%;
+                margin: 20px;
+            }
+
+            .detail-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -357,7 +678,7 @@
                 Analytics EmailSortPro
             </h1>
             <p>
-                Tableau de bord complet pour analyser l'utilisation de votre application EmailSortPro
+                Tableau de bord complet pour analyser l'utilisation et gérer les utilisateurs
             </p>
             <div class="real-time-indicator">
                 <div class="real-time-dot"></div>
@@ -389,66 +710,463 @@
                     <div class="summary-label">Erreurs détectées</div>
                 </div>
                 <div class="summary-item">
-                    <div class="summary-icon activity">
-                        <i class="fas fa-activity"></i>
+                    <div class="summary-icon licenses">
+                        <i class="fas fa-key"></i>
                     </div>
-                    <div class="summary-number" id="summaryActivity">-</div>
-                    <div class="summary-label">Actions récentes</div>
+                    <div class="summary-number" id="summaryLicenses">-</div>
+                    <div class="summary-label">Licences actives</div>
                 </div>
             </div>
         </div>
 
-        <div id="loadingContainer" class="loading-container">
-            <div class="spinner"></div>
-            <div class="loading-text">Chargement des analytics...</div>
-        </div>
+        <div class="tabs-container">
+            <div class="tabs-nav">
+                <button class="tab-button active" onclick="switchTab('overview')">
+                    <i class="fas fa-chart-bar"></i>
+                    Vue d'ensemble
+                </button>
+                <button class="tab-button" onclick="switchTab('users')">
+                    <i class="fas fa-users"></i>
+                    Gestion utilisateurs
+                </button>
+                <button class="tab-button" onclick="switchTab('licenses')">
+                    <i class="fas fa-key"></i>
+                    Gestion licences
+                </button>
+            </div>
 
-        <div id="errorContainer" class="error-container" style="display: none;">
-            <h3>
-                <i class="fas fa-exclamation-triangle"></i>
-                Erreur de chargement
-            </h3>
-            <p id="errorMessage">Une erreur s'est produite lors du chargement des données analytics.</p>
-            <button class="retry-button" onclick="loadAnalytics()">
-                <i class="fas fa-redo"></i>
-                Réessayer
-            </button>
-        </div>
+            <!-- Overview Tab -->
+            <div class="tab-content active" id="overviewTab">
+                <div id="loadingContainer" class="loading-container">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Chargement des analytics...</div>
+                </div>
+                <div id="analyticsContent"></div>
+            </div>
 
-        <div id="analyticsContent"></div>
+            <!-- Users Tab -->
+            <div class="tab-content" id="usersTab">
+                <div class="users-controls">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Rechercher un utilisateur..." id="userSearch">
+                    </div>
+                    <select class="filter-select" id="statusFilter">
+                        <option value="">Tous les statuts</option>
+                        <option value="active">Actifs</option>
+                        <option value="inactive">Inactifs</option>
+                        <option value="error">Avec erreurs</option>
+                    </select>
+                    <select class="filter-select" id="companyFilter">
+                        <option value="">Toutes les sociétés</option>
+                    </select>
+                    <button class="refresh-btn" onclick="refreshUsers()">
+                        <i class="fas fa-sync-alt"></i>
+                        Actualiser
+                    </button>
+                </div>
+
+                <div class="users-table-container">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>Utilisateur</th>
+                                <th>Société</th>
+                                <th>Statut</th>
+                                <th>Dernière connexion</th>
+                                <th>Scans</th>
+                                <th>Erreurs</th>
+                                <th>Licence</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- Users will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="usersEmptyState" class="empty-state" style="display: none;">
+                    <i class="fas fa-users"></i>
+                    <h3>Aucun utilisateur trouvé</h3>
+                    <p>Essayez de modifier vos filtres de recherche</p>
+                </div>
+            </div>
+
+            <!-- Licenses Tab -->
+            <div class="tab-content" id="licensesTab">
+                <div class="loading-container">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Chargement des licences...</div>
+                </div>
+                <!-- License management will be implemented here -->
+            </div>
+        </div>
 
         <div class="last-updated">
             <i class="fas fa-clock"></i>
             Dernière mise à jour : <span id="lastUpdated">-</span>
         </div>
+    </div>
 
-        <div class="footer-info">
-            <h3>À propos des Analytics</h3>
-            <p>
-                Ces données sont collectées localement dans votre navigateur pour améliorer votre expérience. 
-                Aucune information personnelle n'est transmise à des serveurs externes. 
-                Vous pouvez exporter ou supprimer ces données à tout moment.
-            </p>
+    <!-- User Details Modal -->
+    <div class="modal-overlay" id="userModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Détails utilisateur</h3>
+                <button class="modal-close" onclick="closeUserModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- User details will be loaded here -->
+            </div>
         </div>
     </div>
 
     <script>
-        console.log('[Analytics Page] Loading analytics standalone page...');
-
-        // Configuration pour la page standalone
-        const ANALYTICS_CONFIG = {
-            autoRefresh: true,
-            refreshInterval: 30000, // 30 secondes
-            maxRetries: 3,
-            retryDelay: 2000
-        };
-
+        // Global variables
         let analyticsManager = null;
         let analyticsModule = null;
-        let refreshTimer = null;
-        let retryCount = 0;
+        let currentUsers = [];
+        let filteredUsers = [];
+        let currentTab = 'overview';
 
-        // Fonction pour charger le script analytics dynamiquement
+        // Mock data for demonstration
+        const mockUsers = [
+            {
+                id: 'user1',
+                email: 'john.doe@company1.com',
+                name: 'John Doe',
+                company: 'Company One',
+                status: 'active',
+                lastLogin: new Date(Date.now() - 2 * 60 * 60 * 1000),
+                scansCount: 145,
+                errorsCount: 2,
+                license: { type: 'premium', status: 'active', expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) },
+                errors: [
+                    { timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), message: 'Connexion IMAP échouée' },
+                    { timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000), message: 'Limite de taux atteinte' }
+                ]
+            },
+            {
+                id: 'user2',
+                email: 'jane.smith@company2.com',
+                name: 'Jane Smith',
+                company: 'Company Two',
+                status: 'active',
+                lastLogin: new Date(Date.now() - 30 * 60 * 1000),
+                scansCount: 89,
+                errorsCount: 0,
+                license: { type: 'trial', status: 'active', expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+                errors: []
+            },
+            {
+                id: 'user3',
+                email: 'bob.wilson@company1.com',
+                name: 'Bob Wilson',
+                company: 'Company One',
+                status: 'inactive',
+                lastLogin: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+                scansCount: 234,
+                errorsCount: 5,
+                license: { type: 'basic', status: 'expired', expires: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
+                errors: [
+                    { timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), message: 'Licence expirée' },
+                    { timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), message: 'Accès refusé' }
+                ]
+            }
+        ];
+
+        // Tab management
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+
+            currentTab = tabName;
+
+            // Load content based on tab
+            if (tabName === 'users') {
+                loadUsers();
+            } else if (tabName === 'licenses') {
+                loadLicenses();
+            }
+        }
+
+        // Users management
+        function loadUsers() {
+            currentUsers = mockUsers; // In real app, load from analyticsManager
+            populateCompanyFilter();
+            filterUsers();
+        }
+
+        function populateCompanyFilter() {
+            const companies = [...new Set(currentUsers.map(user => user.company))];
+            const filter = document.getElementById('companyFilter');
+            
+            // Clear existing options except first one
+            filter.innerHTML = '<option value="">Toutes les sociétés</option>';
+            
+            companies.forEach(company => {
+                const option = document.createElement('option');
+                option.value = company;
+                option.textContent = company;
+                filter.appendChild(option);
+            });
+        }
+
+        function filterUsers() {
+            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const companyFilter = document.getElementById('companyFilter').value;
+
+            filteredUsers = currentUsers.filter(user => {
+                const matchesSearch = user.name.toLowerCase().includes(searchTerm) || 
+                                    user.email.toLowerCase().includes(searchTerm) ||
+                                    user.company.toLowerCase().includes(searchTerm);
+                
+                const matchesStatus = !statusFilter || user.status === statusFilter;
+                const matchesCompany = !companyFilter || user.company === companyFilter;
+
+                return matchesSearch && matchesStatus && matchesCompany;
+            });
+
+            renderUsersTable();
+        }
+
+        function renderUsersTable() {
+            const tbody = document.getElementById('usersTableBody');
+            const emptyState = document.getElementById('usersEmptyState');
+
+            if (filteredUsers.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            tbody.innerHTML = filteredUsers.map(user => {
+                const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+                const statusClass = user.status === 'active' ? 'active' : 
+                                  user.status === 'inactive' ? 'inactive' : 'error';
+                
+                const licenseClass = user.license.status === 'active' ? 'active' : 
+                                   user.license.status === 'expired' ? 'expired' : 'trial';
+
+                return `
+                    <tr>
+                        <td>
+                            <div class="user-info">
+                                <div class="user-avatar">${initials}</div>
+                                <div class="user-details">
+                                    <h4>${user.name}</h4>
+                                    <p>${user.email}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${user.company}</td>
+                        <td><span class="status-badge ${statusClass}">${user.status}</span></td>
+                        <td>${formatLastLogin(user.lastLogin)}</td>
+                        <td>${user.scansCount.toLocaleString()}</td>
+                        <td>
+                            ${user.errorsCount > 0 ? 
+                                `<span style="color: #dc2626; font-weight: 600;">${user.errorsCount}</span>` : 
+                                `<span style="color: #16a34a;">0</span>`
+                            }
+                        </td>
+                        <td>
+                            <div class="license-info">
+                                <span class="license-badge ${licenseClass}">${user.license.type}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="actions-cell">
+                                <button class="action-btn edit" onclick="viewUserDetails('${user.id}')">
+                                    <i class="fas fa-eye"></i> Voir
+                                </button>
+                                <button class="action-btn license" onclick="manageLicense('${user.id}')">
+                                    <i class="fas fa-key"></i> Licence
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function formatLastLogin(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+
+            if (minutes < 60) {
+                return `Il y a ${minutes} min`;
+            } else if (hours < 24) {
+                return `Il y a ${hours}h`;
+            } else if (days < 7) {
+                return `Il y a ${days} jour${days > 1 ? 's' : ''}`;
+            } else {
+                return date.toLocaleDateString('fr-FR');
+            }
+        }
+
+        function viewUserDetails(userId) {
+            const user = currentUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            document.getElementById('modalTitle').textContent = `Détails - ${user.name}`;
+            
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <div class="detail-group">
+                    <h4><i class="fas fa-user"></i> Informations générales</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Nom complet</label>
+                            <value>${user.name}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Email</label>
+                            <value>${user.email}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Société</label>
+                            <value>${user.company}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Statut</label>
+                            <value><span class="status-badge ${user.status}">${user.status}</span></value>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-group">
+                    <h4><i class="fas fa-chart-line"></i> Statistiques d'utilisation</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Dernière connexion</label>
+                            <value>${user.lastLogin.toLocaleString('fr-FR')}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Scans effectués</label>
+                            <value>${user.scansCount.toLocaleString()}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Erreurs rencontrées</label>
+                            <value style="color: ${user.errorsCount > 0 ? '#dc2626' : '#16a34a'}">${user.errorsCount}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Temps d'activité</label>
+                            <value>${calculateActiveTime(user)}</value>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-group">
+                    <h4><i class="fas fa-key"></i> Informations licence</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Type de licence</label>
+                            <value><span class="license-badge ${user.license.status}">${user.license.type}</span></value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Statut</label>
+                            <value><span class="license-badge ${user.license.status}">${user.license.status}</span></value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Date d'expiration</label>
+                            <value>${user.license.expires.toLocaleDateString('fr-FR')}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Jours restants</label>
+                            <value>${calculateDaysRemaining(user.license.expires)}</value>
+                        </div>
+                    </div>
+                </div>
+
+                ${user.errors.length > 0 ? `
+                <div class="detail-group">
+                    <h4><i class="fas fa-exclamation-triangle"></i> Erreurs récentes</h4>
+                    <div class="error-list">
+                        ${user.errors.map(error => `
+                            <div class="error-item">
+                                <div class="error-time">${error.timestamp.toLocaleString('fr-FR')}</div>
+                                <div class="error-message">${error.message}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+            `;
+
+            document.getElementById('userModal').classList.add('active');
+        }
+
+        function calculateActiveTime(user) {
+            // Mock calculation - in real app, calculate from actual data
+            const days = Math.floor((Date.now() - (Date.now() - 30 * 24 * 60 * 60 * 1000)) / (24 * 60 * 60 * 1000));
+            return `${days} jours`;
+        }
+
+        function calculateDaysRemaining(expirationDate) {
+            const now = new Date();
+            const diff = expirationDate - now;
+            const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
+            
+            if (days < 0) {
+                return `Expirée depuis ${Math.abs(days)} jour${Math.abs(days) > 1 ? 's' : ''}`;
+            } else if (days === 0) {
+                return 'Expire aujourd\'hui';
+            } else {
+                return `${days} jour${days > 1 ? 's' : ''}`;
+            }
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').classList.remove('active');
+        }
+
+        function manageLicense(userId) {
+            const user = currentUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            // For now, just show an alert - in real app, open license management modal
+            alert(`Gestion de licence pour ${user.name}\n\nType actuel: ${user.license.type}\nStatut: ${user.license.status}\nExpiration: ${user.license.expires.toLocaleDateString('fr-FR')}\n\nFonctionnalité à implémenter...`);
+        }
+
+        function refreshUsers() {
+            // In real app, reload from server
+            console.log('Refreshing users data...');
+            loadUsers();
+            updateLastUpdated();
+        }
+
+        function loadLicenses() {
+            // Placeholder for license management
+            const licensesTab = document.getElementById('licensesTab');
+            licensesTab.innerHTML = `
+                <div style="text-align: center; padding: 60px 20px; color: #6b7280;">
+                    <i class="fas fa-key" style="font-size: 4rem; margin-bottom: 16px; color: #d1d5db;"></i>
+                    <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 8px;">Gestion des licences</h3>
+                    <p>Module de gestion des licences en cours de développement</p>
+                    <div style="margin-top: 24px;">
+                        <button style="padding: 12px 24px; background: #4F46E5; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                            <i class="fas fa-plus"></i> Ajouter une licence
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Analytics loading (existing functionality)
         async function loadAnalyticsScript() {
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
@@ -465,127 +1183,69 @@
             });
         }
 
-        // Fonction principale de chargement des analytics
         async function loadAnalytics() {
             try {
                 console.log('[Analytics Page] Starting analytics load...');
                 
-                // Afficher le loading
-                showLoading();
-                
-                // Charger le script si nécessaire
                 if (!window.analyticsManager || !window.analyticsModule) {
                     console.log('[Analytics Page] Loading analytics script...');
                     await loadAnalyticsScript();
                     
-                    // Attendre que les objets soient disponibles
                     let attempts = 0;
                     while ((!window.analyticsManager || !window.analyticsModule) && attempts < 10) {
                         await new Promise(resolve => setTimeout(resolve, 100));
                         attempts++;
-                    }
-                    
-                    if (!window.analyticsManager || !window.analyticsModule) {
-                        throw new Error('Analytics objects not available after loading script');
                     }
                 }
 
                 analyticsManager = window.analyticsManager;
                 analyticsModule = window.analyticsModule;
 
-                console.log('[Analytics Page] Analytics objects ready');
-
-                // Vérifier s'il y a des données
-                const data = analyticsManager.getAnalyticsData();
-                console.log('[Analytics Page] Analytics data:', data);
-
-                // Mettre à jour le résumé
+                const data = analyticsManager ? analyticsManager.getAnalyticsData() : {};
                 updateSummary(data);
 
-                // Configurer le container pour le module
                 const analyticsContent = document.getElementById('analyticsContent');
-                
-                // Créer un container pageContent temporaire pour le module
                 const pageContent = document.createElement('div');
                 pageContent.id = 'pageContent';
                 analyticsContent.innerHTML = '';
                 analyticsContent.appendChild(pageContent);
 
-                // Render le module analytics
-                analyticsModule.render();
-
-                // Afficher le contenu
-                showContent();
-
-                // Démarrer l'auto-refresh
-                if (ANALYTICS_CONFIG.autoRefresh) {
-                    startAutoRefresh();
+                if (analyticsModule) {
+                    analyticsModule.render();
                 }
 
-                // Mettre à jour la timestamp
+                document.getElementById('loadingContainer').style.display = 'none';
                 updateLastUpdated();
 
-                retryCount = 0;
                 console.log('[Analytics Page] ✅ Analytics loaded successfully');
 
             } catch (error) {
                 console.error('[Analytics Page] ❌ Error loading analytics:', error);
-                showError(error.message);
-                
-                // Retry logic
-                if (retryCount < ANALYTICS_CONFIG.maxRetries) {
-                    retryCount++;
-                    console.log(`[Analytics Page] Retrying in ${ANALYTICS_CONFIG.retryDelay}ms (attempt ${retryCount}/${ANALYTICS_CONFIG.maxRetries})`);
-                    setTimeout(() => {
-                        loadAnalytics();
-                    }, ANALYTICS_CONFIG.retryDelay);
-                }
+                document.getElementById('loadingContainer').innerHTML = `
+                    <div style="text-align: center; color: #dc2626;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 16px;"></i>
+                        <h3>Erreur de chargement</h3>
+                        <p>Impossible de charger les données analytics</p>
+                    </div>
+                `;
             }
         }
 
-        function updateSummary(data) {
-            // Utilisateurs uniques
-            const userDomains = Object.keys(data.userStats || {});
-            document.getElementById('summaryUsers').textContent = userDomains.length;
-
-            // Scans totaux
-            const totalScans = data.scanStats?.totalScans || 0;
+        function updateSummary(data = {}) {
+            // Users summary
+            document.getElementById('summaryUsers').textContent = mockUsers.filter(u => u.status === 'active').length;
+            
+            // Scans summary
+            const totalScans = mockUsers.reduce((sum, user) => sum + user.scansCount, 0);
             document.getElementById('summaryScans').textContent = totalScans.toLocaleString();
 
-            // Erreurs
-            const errorEvents = (data.events || []).filter(e => e.type === 'error');
-            document.getElementById('summaryErrors').textContent = errorEvents.length;
+            // Errors summary
+            const totalErrors = mockUsers.reduce((sum, user) => sum + user.errorsCount, 0);
+            document.getElementById('summaryErrors').textContent = totalErrors;
 
-            // Activité récente (dernières 24h)
-            const recentEvents = (data.events || [])
-                .filter(e => {
-                    const eventTime = new Date(e.timestamp);
-                    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
-                    return eventTime > cutoff;
-                });
-            document.getElementById('summaryActivity').textContent = recentEvents.length;
-        }
-
-        function showLoading() {
-            document.getElementById('loadingContainer').style.display = 'flex';
-            document.getElementById('errorContainer').style.display = 'none';
-            document.getElementById('analyticsContent').classList.remove('loaded');
-        }
-
-        function showError(message) {
-            document.getElementById('loadingContainer').style.display = 'none';
-            document.getElementById('errorContainer').style.display = 'block';
-            document.getElementById('errorMessage').textContent = message;
-            document.getElementById('analyticsContent').classList.remove('loaded');
-        }
-
-        function showContent() {
-            document.getElementById('loadingContainer').style.display = 'none';
-            document.getElementById('errorContainer').style.display = 'none';
-            
-            setTimeout(() => {
-                document.getElementById('analyticsContent').classList.add('loaded');
-            }, 100);
+            // Licenses summary
+            const activeLicenses = mockUsers.filter(u => u.license.status === 'active').length;
+            document.getElementById('summaryLicenses').textContent = activeLicenses;
         }
 
         function updateLastUpdated() {
@@ -593,80 +1253,44 @@
             document.getElementById('lastUpdated').textContent = now.toLocaleString('fr-FR');
         }
 
-        function startAutoRefresh() {
-            if (refreshTimer) {
-                clearInterval(refreshTimer);
-            }
+        // Event listeners
+        document.getElementById('userSearch').addEventListener('input', filterUsers);
+        document.getElementById('statusFilter').addEventListener('change', filterUsers);
+        document.getElementById('companyFilter').addEventListener('change', filterUsers);
 
-            refreshTimer = setInterval(() => {
-                console.log('[Analytics Page] Auto-refreshing data...');
-                
-                if (analyticsManager && analyticsModule) {
-                    const data = analyticsManager.getAnalyticsData();
-                    updateSummary(data);
-                    analyticsModule.loadAnalyticsData();
-                    updateLastUpdated();
-                }
-            }, ANALYTICS_CONFIG.refreshInterval);
-
-            console.log('[Analytics Page] Auto-refresh started (every 30s)');
-        }
-
-        function stopAutoRefresh() {
-            if (refreshTimer) {
-                clearInterval(refreshTimer);
-                refreshTimer = null;
-                console.log('[Analytics Page] Auto-refresh stopped');
-            }
-        }
-
-        // Gestion de la visibilité de la page
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') {
-                stopAutoRefresh();
-            } else if (document.visibilityState === 'visible' && ANALYTICS_CONFIG.autoRefresh) {
-                startAutoRefresh();
-                // Refresh immédiat
-                loadAnalytics();
+        // Close modal when clicking outside
+        document.getElementById('userModal').addEventListener('click', (e) => {
+            if (e.target.id === 'userModal') {
+                closeUserModal();
             }
         });
 
-        // Cleanup au déchargement de la page
-        window.addEventListener('beforeunload', () => {
-            stopAutoRefresh();
-            if (analyticsModule) {
-                analyticsModule.destroy();
-            }
-        });
-
-        // Démarrer le chargement au load de la page
+        // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('[Analytics Page] DOM loaded, starting analytics load...');
+            console.log('[Analytics Page] DOM loaded, initializing...');
             loadAnalytics();
+            updateLastUpdated();
         });
 
-        // Debug global
+        // Debug function
         window.debugAnalytics = function() {
             console.log('=== ANALYTICS PAGE DEBUG ===');
-            console.log('analyticsManager:', analyticsManager);
-            console.log('analyticsModule:', analyticsModule);
-            console.log('refreshTimer:', refreshTimer);
-            console.log('retryCount:', retryCount);
-            
-            if (analyticsManager) {
-                console.log('Analytics data:', analyticsManager.getAnalyticsData());
-            }
+            console.log('Current tab:', currentTab);
+            console.log('Current users:', currentUsers);
+            console.log('Filtered users:', filteredUsers);
+            console.log('Analytics manager:', analyticsManager);
+            console.log('Analytics module:', analyticsModule);
             
             return {
+                currentTab,
+                usersCount: currentUsers.length,
+                filteredCount: filteredUsers.length,
                 analyticsManager: !!analyticsManager,
-                analyticsModule: !!analyticsModule,
-                autoRefreshActive: !!refreshTimer,
-                retryCount: retryCount,
-                config: ANALYTICS_CONFIG
+                analyticsModule: !!analyticsModule
             };
         };
 
-        console.log('[Analytics Page] ✅ Analytics standalone page initialized');
+        console.log('[Analytics Page] ✅ Enhanced analytics page initialized');
         console.log('[Analytics Page] Use debugAnalytics() for debug information');
     </script>
 </body>
