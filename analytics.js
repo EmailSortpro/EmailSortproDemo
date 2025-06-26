@@ -1,4 +1,5 @@
-// analytics.js - Module Analytics Complet pour EmailSortPro v1.0
+// analytics.js - Module Analytics Complet pour EmailSortPro v2.0
+// Tracking des emails utilisateurs, fréquence et coûts de scan
 
 class AnalyticsManager {
     constructor() {
@@ -8,7 +9,15 @@ class AnalyticsManager {
         this.currentSession = null;
         this.analytics = this.loadAnalytics();
         
-        console.log('[Analytics] Manager initialized');
+        // Configuration des coûts (en centimes d'euros)
+        this.costs = {
+            emailScan: 0.5,        // 0.5 centime par email scanné
+            aiAnalysis: 2,         // 2 centimes par analyse IA
+            taskGeneration: 1,     // 1 centime par tâche générée
+            domainOrganization: 3  // 3 centimes par organisation de domaine
+        };
+        
+        console.log('[Analytics] Manager initialized v2.0');
         this.initializeSession();
     }
 
@@ -28,7 +37,11 @@ class AnalyticsManager {
             errors: [],
             emailStats: null,
             authProvider: null,
-            userInfo: null
+            userInfo: null,
+            costs: {
+                total: 0,
+                breakdown: {}
+            }
         };
 
         // Sauvegarder la session courante
@@ -58,7 +71,8 @@ class AnalyticsManager {
             type: eventType,
             timestamp: new Date().toISOString(),
             data: eventData,
-            sessionId: this.currentSession.sessionId
+            sessionId: this.currentSession.sessionId,
+            userEmail: this.currentSession.userInfo?.email || 'anonymous'
         };
 
         // Ajouter à la session courante
@@ -71,9 +85,9 @@ class AnalyticsManager {
         }
         this.analytics.events.push(event);
 
-        // Maintenir seulement les 1000 derniers événements
-        if (this.analytics.events.length > 1000) {
-            this.analytics.events = this.analytics.events.slice(-1000);
+        // Maintenir seulement les 5000 derniers événements pour plus d'historique
+        if (this.analytics.events.length > 5000) {
+            this.analytics.events = this.analytics.events.slice(-5000);
         }
 
         this.saveAnalytics();
@@ -86,31 +100,39 @@ class AnalyticsManager {
         this.currentSession.userInfo = {
             name: userInfo.name || userInfo.displayName,
             email: userInfo.email || userInfo.mail || userInfo.userPrincipalName,
-            domain: userInfo.email ? userInfo.email.split('@')[1] : 'unknown'
+            domain: userInfo.email ? userInfo.email.split('@')[1] : 'unknown',
+            id: userInfo.id || null
         };
 
         this.trackEvent('auth_success', {
             provider: provider,
+            userEmail: this.currentSession.userInfo.email,
             userDomain: this.currentSession.userInfo.domain,
             userName: this.currentSession.userInfo.name
         });
 
-        // Mettre à jour les stats utilisateurs
-        this.updateUserStats();
+        // Mettre à jour les stats utilisateurs par email
+        this.updateUserStatsByEmail();
     }
 
     trackPageVisit(pageName) {
         this.trackEvent('page_visit', {
             page: pageName,
+            userEmail: this.currentSession.userInfo?.email || 'anonymous',
             timestamp: new Date().toISOString()
         });
     }
 
     trackEmailScan(emailCount, errors = []) {
+        const userEmail = this.currentSession.userInfo?.email || 'anonymous';
+        const scanCost = emailCount * this.costs.emailScan;
+        
         const scanData = {
             emailCount: emailCount,
             errorCount: errors.length,
             domain: window.location.hostname,
+            userEmail: userEmail,
+            cost: scanCost,
             timestamp: new Date().toISOString()
         };
 
@@ -121,16 +143,56 @@ class AnalyticsManager {
 
         this.trackEvent('email_scan', scanData);
         
-        // Mettre à jour les stats de scan
-        this.updateScanStats(emailCount);
+        // Mettre à jour les coûts de la session
+        this.updateSessionCost('emailScan', scanCost);
+        
+        // Mettre à jour les stats de scan par utilisateur
+        this.updateScanStatsByUser(emailCount, scanCost);
+    }
+
+    trackAIAnalysis(analysisType, itemCount) {
+        const userEmail = this.currentSession.userInfo?.email || 'anonymous';
+        const analysisCost = itemCount * this.costs.aiAnalysis;
+        
+        this.trackEvent('ai_analysis', {
+            type: analysisType,
+            itemCount: itemCount,
+            userEmail: userEmail,
+            cost: analysisCost,
+            timestamp: new Date().toISOString()
+        });
+        
+        this.updateSessionCost('aiAnalysis', analysisCost);
     }
 
     trackTaskGeneration(taskCount, categories = []) {
+        const userEmail = this.currentSession.userInfo?.email || 'anonymous';
+        const taskCost = taskCount * this.costs.taskGeneration;
+        
         this.trackEvent('task_generation', {
             taskCount: taskCount,
             categories: categories,
+            userEmail: userEmail,
+            cost: taskCost,
             timestamp: new Date().toISOString()
         });
+        
+        this.updateSessionCost('taskGeneration', taskCost);
+    }
+
+    trackDomainOrganization(domainCount, emailCount) {
+        const userEmail = this.currentSession.userInfo?.email || 'anonymous';
+        const orgCost = domainCount * this.costs.domainOrganization;
+        
+        this.trackEvent('domain_organization', {
+            domainCount: domainCount,
+            emailCount: emailCount,
+            userEmail: userEmail,
+            cost: orgCost,
+            timestamp: new Date().toISOString()
+        });
+        
+        this.updateSessionCost('domainOrganization', orgCost);
     }
 
     trackError(errorType, errorData) {
@@ -140,7 +202,8 @@ class AnalyticsManager {
             stack: errorData.stack,
             timestamp: new Date().toISOString(),
             page: window.location.pathname,
-            userAgent: navigator.userAgent.substring(0, 100)
+            userAgent: navigator.userAgent.substring(0, 100),
+            userEmail: this.currentSession.userInfo?.email || 'anonymous'
         };
 
         if (this.currentSession) {
@@ -152,60 +215,132 @@ class AnalyticsManager {
     }
 
     // === MISE À JOUR DES STATISTIQUES ===
-    updateUserStats() {
-        if (!this.currentSession.userInfo) return;
+    updateUserStatsByEmail() {
+        if (!this.currentSession.userInfo?.email) return;
 
-        const userDomain = this.currentSession.userInfo.domain;
+        const userEmail = this.currentSession.userInfo.email;
         
-        if (!this.analytics.userStats) {
-            this.analytics.userStats = {};
+        if (!this.analytics.userStatsByEmail) {
+            this.analytics.userStatsByEmail = {};
         }
 
-        if (!this.analytics.userStats[userDomain]) {
-            this.analytics.userStats[userDomain] = {
-                count: 0,
+        if (!this.analytics.userStatsByEmail[userEmail]) {
+            this.analytics.userStatsByEmail[userEmail] = {
+                name: this.currentSession.userInfo.name,
+                domain: this.currentSession.userInfo.domain,
+                firstSeen: new Date().toISOString(),
                 lastAccess: null,
                 totalSessions: 0,
-                providers: {}
+                totalScans: 0,
+                totalEmailsScanned: 0,
+                totalCost: 0,
+                providers: {},
+                scanHistory: [],
+                costBreakdown: {
+                    emailScan: 0,
+                    aiAnalysis: 0,
+                    taskGeneration: 0,
+                    domainOrganization: 0
+                }
             };
         }
 
-        this.analytics.userStats[userDomain].count++;
-        this.analytics.userStats[userDomain].lastAccess = new Date().toISOString();
-        this.analytics.userStats[userDomain].totalSessions++;
+        const userStats = this.analytics.userStatsByEmail[userEmail];
+        userStats.lastAccess = new Date().toISOString();
+        userStats.totalSessions++;
         
         const provider = this.currentSession.authProvider;
-        if (!this.analytics.userStats[userDomain].providers[provider]) {
-            this.analytics.userStats[userDomain].providers[provider] = 0;
+        if (!userStats.providers[provider]) {
+            userStats.providers[provider] = 0;
         }
-        this.analytics.userStats[userDomain].providers[provider]++;
+        userStats.providers[provider]++;
 
         this.saveAnalytics();
     }
 
-    updateScanStats(emailCount) {
+    updateScanStatsByUser(emailCount, cost) {
+        if (!this.currentSession.userInfo?.email) return;
+        
+        const userEmail = this.currentSession.userInfo.email;
+        const userStats = this.analytics.userStatsByEmail[userEmail];
+        
+        if (userStats) {
+            userStats.totalScans++;
+            userStats.totalEmailsScanned += emailCount;
+            userStats.totalCost += cost;
+            userStats.costBreakdown.emailScan += cost;
+            
+            // Ajouter à l'historique de scan (garder les 100 derniers)
+            userStats.scanHistory.push({
+                date: new Date().toISOString(),
+                emailCount: emailCount,
+                cost: cost
+            });
+            
+            if (userStats.scanHistory.length > 100) {
+                userStats.scanHistory = userStats.scanHistory.slice(-100);
+            }
+        }
+
+        // Mettre à jour les stats globales de scan
         if (!this.analytics.scanStats) {
             this.analytics.scanStats = {
                 totalScans: 0,
                 totalEmails: 0,
+                totalCost: 0,
                 averageEmailsPerScan: 0,
-                scansByDay: {}
+                scansByDay: {},
+                scansByUser: {}
             };
         }
 
         this.analytics.scanStats.totalScans++;
         this.analytics.scanStats.totalEmails += emailCount;
+        this.analytics.scanStats.totalCost += cost;
         this.analytics.scanStats.averageEmailsPerScan = 
             Math.round(this.analytics.scanStats.totalEmails / this.analytics.scanStats.totalScans);
 
         // Stats par jour
         const today = new Date().toISOString().split('T')[0];
         if (!this.analytics.scanStats.scansByDay[today]) {
-            this.analytics.scanStats.scansByDay[today] = { scans: 0, emails: 0 };
+            this.analytics.scanStats.scansByDay[today] = { 
+                scans: 0, 
+                emails: 0, 
+                cost: 0,
+                users: new Set()
+            };
         }
         this.analytics.scanStats.scansByDay[today].scans++;
         this.analytics.scanStats.scansByDay[today].emails += emailCount;
+        this.analytics.scanStats.scansByDay[today].cost += cost;
+        this.analytics.scanStats.scansByDay[today].users.add(userEmail);
 
+        // Convertir Set en Array pour la sauvegarde
+        this.analytics.scanStats.scansByDay[today].users = 
+            Array.from(this.analytics.scanStats.scansByDay[today].users);
+
+        this.saveAnalytics();
+    }
+
+    updateSessionCost(costType, amount) {
+        if (!this.currentSession.costs.breakdown[costType]) {
+            this.currentSession.costs.breakdown[costType] = 0;
+        }
+        
+        this.currentSession.costs.breakdown[costType] += amount;
+        this.currentSession.costs.total += amount;
+        
+        sessionStorage.setItem(this.sessionKey, JSON.stringify(this.currentSession));
+        
+        // Mettre à jour le coût total de l'utilisateur
+        if (this.currentSession.userInfo?.email) {
+            const userEmail = this.currentSession.userInfo.email;
+            if (this.analytics.userStatsByEmail[userEmail]) {
+                this.analytics.userStatsByEmail[userEmail].totalCost += amount;
+                this.analytics.userStatsByEmail[userEmail].costBreakdown[costType] += amount;
+            }
+        }
+        
         this.saveAnalytics();
     }
 
@@ -222,12 +357,15 @@ class AnalyticsManager {
         
         return {
             events: [],
-            userStats: {},
+            userStats: {}, // Ancienne structure par domaine (legacy)
+            userStatsByEmail: {}, // Nouvelle structure par email
             scanStats: {
                 totalScans: 0,
                 totalEmails: 0,
+                totalCost: 0,
                 averageEmailsPerScan: 0,
-                scansByDay: {}
+                scansByDay: {},
+                scansByUser: {}
             },
             createdAt: new Date().toISOString()
         };
@@ -250,21 +388,85 @@ class AnalyticsManager {
         };
     }
 
-    getUsersByDomain() {
-        const domains = {};
+    getUsersByEmail() {
+        const users = {};
         
-        Object.keys(this.analytics.userStats || {}).forEach(domain => {
-            const stats = this.analytics.userStats[domain];
-            domains[domain] = {
-                userCount: stats.count,
-                totalSessions: stats.totalSessions,
+        Object.keys(this.analytics.userStatsByEmail || {}).forEach(email => {
+            const stats = this.analytics.userStatsByEmail[email];
+            users[email] = {
+                name: stats.name,
+                domain: stats.domain,
+                firstSeen: stats.firstSeen,
                 lastAccess: stats.lastAccess,
+                totalSessions: stats.totalSessions,
+                totalScans: stats.totalScans,
+                totalEmailsScanned: stats.totalEmailsScanned,
+                totalCost: stats.totalCost,
+                averageEmailsPerScan: stats.totalScans > 0 ? 
+                    Math.round(stats.totalEmailsScanned / stats.totalScans) : 0,
                 providers: stats.providers,
-                averageSessionsPerUser: Math.round(stats.totalSessions / stats.count * 100) / 100
+                costBreakdown: stats.costBreakdown,
+                scanHistory: stats.scanHistory
             };
         });
 
-        return domains;
+        return users;
+    }
+
+    getTopUsers(limit = 10) {
+        const users = this.getUsersByEmail();
+        
+        return Object.entries(users)
+            .sort(([,a], [,b]) => b.totalScans - a.totalScans)
+            .slice(0, limit)
+            .map(([email, stats]) => ({
+                email,
+                ...stats
+            }));
+    }
+
+    getUserCostAnalysis() {
+        const users = this.getUsersByEmail();
+        const analysis = {
+            totalRevenue: 0,
+            averageRevenuePerUser: 0,
+            userCount: 0,
+            costBreakdown: {
+                emailScan: 0,
+                aiAnalysis: 0,
+                taskGeneration: 0,
+                domainOrganization: 0
+            },
+            topSpenders: []
+        };
+        
+        const userCosts = [];
+        
+        Object.entries(users).forEach(([email, stats]) => {
+            analysis.totalRevenue += stats.totalCost;
+            analysis.userCount++;
+            
+            Object.keys(stats.costBreakdown).forEach(type => {
+                analysis.costBreakdown[type] += stats.costBreakdown[type];
+            });
+            
+            userCosts.push({
+                email,
+                name: stats.name,
+                totalCost: stats.totalCost,
+                costBreakdown: stats.costBreakdown
+            });
+        });
+        
+        if (analysis.userCount > 0) {
+            analysis.averageRevenuePerUser = analysis.totalRevenue / analysis.userCount;
+        }
+        
+        analysis.topSpenders = userCosts
+            .sort((a, b) => b.totalCost - a.totalCost)
+            .slice(0, 10);
+        
+        return analysis;
     }
 
     getPageUsageStats() {
@@ -275,11 +477,18 @@ class AnalyticsManager {
             .forEach(event => {
                 const page = event.data.page;
                 if (!pages[page]) {
-                    pages[page] = { visits: 0, lastVisit: null };
+                    pages[page] = { visits: 0, lastVisit: null, users: new Set() };
                 }
                 pages[page].visits++;
                 pages[page].lastVisit = event.timestamp;
+                pages[page].users.add(event.userEmail);
             });
+
+        // Convertir les Sets en Arrays et calculer les utilisateurs uniques
+        Object.keys(pages).forEach(page => {
+            pages[page].uniqueUsers = pages[page].users.size;
+            pages[page].users = Array.from(pages[page].users);
+        });
 
         return pages;
     }
@@ -292,15 +501,27 @@ class AnalyticsManager {
             .forEach(event => {
                 const errorType = event.data.type || 'unknown';
                 if (!errors[errorType]) {
-                    errors[errorType] = { count: 0, lastOccurrence: null, messages: [] };
+                    errors[errorType] = { 
+                        count: 0, 
+                        lastOccurrence: null, 
+                        messages: [],
+                        affectedUsers: new Set()
+                    };
                 }
                 errors[errorType].count++;
                 errors[errorType].lastOccurrence = event.timestamp;
+                errors[errorType].affectedUsers.add(event.userEmail);
                 
                 if (event.data.message && !errors[errorType].messages.includes(event.data.message)) {
                     errors[errorType].messages.push(event.data.message);
                 }
             });
+
+        // Convertir les Sets en Arrays
+        Object.keys(errors).forEach(errorType => {
+            errors[errorType].affectedUsersCount = errors[errorType].affectedUsers.size;
+            errors[errorType].affectedUsers = Array.from(errors[errorType].affectedUsers);
+        });
 
         return errors;
     }
@@ -311,6 +532,8 @@ class AnalyticsManager {
             .map(event => ({
                 date: event.timestamp.split('T')[0],
                 emailCount: event.data.emailCount,
+                cost: event.data.cost,
+                userEmail: event.userEmail,
                 timestamp: event.timestamp
             }));
 
@@ -318,10 +541,26 @@ class AnalyticsManager {
         const scansByDate = {};
         scans.forEach(scan => {
             if (!scansByDate[scan.date]) {
-                scansByDate[scan.date] = { count: 0, totalEmails: 0 };
+                scansByDate[scan.date] = { 
+                    count: 0, 
+                    totalEmails: 0, 
+                    totalCost: 0,
+                    users: new Set()
+                };
             }
             scansByDate[scan.date].count++;
             scansByDate[scan.date].totalEmails += scan.emailCount;
+            scansByDate[scan.date].totalCost += scan.cost || 0;
+            scansByDate[scan.date].users.add(scan.userEmail);
+        });
+
+        // Convertir les Sets en Arrays et calculer les moyennes
+        Object.keys(scansByDate).forEach(date => {
+            const stats = scansByDate[date];
+            stats.uniqueUsers = stats.users.size;
+            stats.users = Array.from(stats.users);
+            stats.averageEmailsPerScan = Math.round(stats.totalEmails / stats.count);
+            stats.averageCostPerScan = stats.totalCost / stats.count;
         });
 
         return scansByDate;
@@ -340,7 +579,13 @@ class AnalyticsManager {
         const exportData = {
             ...this.analytics,
             exportedAt: new Date().toISOString(),
-            version: '1.0'
+            version: '2.0',
+            summary: {
+                totalUsers: Object.keys(this.analytics.userStatsByEmail || {}).length,
+                totalScans: this.analytics.scanStats?.totalScans || 0,
+                totalRevenue: this.getUserCostAnalysis().totalRevenue,
+                topUsers: this.getTopUsers(5)
+            }
         };
 
         const blob = new Blob([JSON.stringify(exportData, null, 2)], {
@@ -360,11 +605,14 @@ class AnalyticsManager {
         this.analytics = {
             events: [],
             userStats: {},
+            userStatsByEmail: {},
             scanStats: {
                 totalScans: 0,
                 totalEmails: 0,
+                totalCost: 0,
                 averageEmailsPerScan: 0,
-                scansByDay: {}
+                scansByDay: {},
+                scansByUser: {}
             },
             createdAt: new Date().toISOString()
         };
@@ -383,7 +631,7 @@ class AnalyticsManager {
         this.trackPageVisit(pageName);
     }
 
-    // À appeler depuis AuthService.js
+    // À appeler depuis AuthService.js et GoogleAuthService.js
     onAuthSuccess(provider, userInfo) {
         this.trackAuthentication(provider, userInfo);
     }
@@ -391,6 +639,11 @@ class AnalyticsManager {
     // À appeler depuis EmailScanner.js
     onEmailScanComplete(emailCount, errors = []) {
         this.trackEmailScan(emailCount, errors);
+    }
+
+    // À appeler depuis AITaskAnalyzer.js
+    onAIAnalysis(analysisType, itemCount) {
+        this.trackAIAnalysis(analysisType, itemCount);
     }
 
     // À appeler depuis TaskManager.js
@@ -405,11 +658,7 @@ class AnalyticsManager {
 
     // À appeler depuis DomainOrganizer.js
     onDomainOrganization(domainCount, emailCount) {
-        this.trackEvent('domain_organization', {
-            domainCount: domainCount,
-            emailCount: emailCount,
-            timestamp: new Date().toISOString()
-        });
+        this.trackDomainOrganization(domainCount, emailCount);
     }
 }
 
@@ -473,8 +722,8 @@ class AnalyticsModule {
                         <h3><i class="fas fa-tachometer-alt"></i> Vue d'ensemble</h3>
                         <div class="stats-grid">
                             <div class="stat-item">
-                                <div class="stat-number" id="totalSessions">-</div>
-                                <div class="stat-label">Sessions totales</div>
+                                <div class="stat-number" id="totalUsers">-</div>
+                                <div class="stat-label">Utilisateurs</div>
                             </div>
                             <div class="stat-item">
                                 <div class="stat-number" id="totalScans">-</div>
@@ -484,25 +733,25 @@ class AnalyticsModule {
                                 <div class="stat-number" id="totalEmails">-</div>
                                 <div class="stat-label">Emails analysés</div>
                             </div>
-                            <div class="stat-item">
-                                <div class="stat-number" id="totalErrors">-</div>
-                                <div class="stat-label">Erreurs détectées</div>
+                            <div class="stat-item highlight">
+                                <div class="stat-number" id="totalRevenue">-</div>
+                                <div class="stat-label">Revenus (€)</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Utilisateurs par domaine -->
+                    <!-- Top utilisateurs -->
                     <div class="analytics-card users-card">
-                        <h3><i class="fas fa-users"></i> Utilisateurs par domaine</h3>
-                        <div id="usersDomainChart" class="chart-container">
+                        <h3><i class="fas fa-users"></i> Top Utilisateurs</h3>
+                        <div id="topUsersChart" class="chart-container">
                             <div class="loading">Chargement...</div>
                         </div>
                     </div>
 
-                    <!-- Utilisation des pages -->
-                    <div class="analytics-card pages-card">
-                        <h3><i class="fas fa-file-alt"></i> Utilisation des pages</h3>
-                        <div id="pagesChart" class="chart-container">
+                    <!-- Analyse des coûts -->
+                    <div class="analytics-card costs-card">
+                        <h3><i class="fas fa-euro-sign"></i> Analyse des Coûts</h3>
+                        <div id="costsChart" class="chart-container">
                             <div class="loading">Chargement...</div>
                         </div>
                     </div>
@@ -515,10 +764,10 @@ class AnalyticsModule {
                         </div>
                     </div>
 
-                    <!-- Erreurs -->
-                    <div class="analytics-card errors-card">
-                        <h3><i class="fas fa-exclamation-triangle"></i> Erreurs détectées</h3>
-                        <div id="errorsChart" class="chart-container">
+                    <!-- Détail par utilisateur -->
+                    <div class="analytics-card user-details-card">
+                        <h3><i class="fas fa-user-chart"></i> Détail par Utilisateur</h3>
+                        <div id="userDetailsTable" class="table-container">
                             <div class="loading">Chargement...</div>
                         </div>
                     </div>
@@ -625,6 +874,10 @@ class AnalyticsModule {
                     grid-column: 1 / -1;
                 }
 
+                .user-details-card {
+                    grid-column: 1 / -1;
+                }
+
                 .stats-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -638,11 +891,24 @@ class AnalyticsModule {
                     border-radius: 8px;
                 }
 
+                .stat-item.highlight {
+                    background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+                    color: white;
+                }
+
+                .stat-item.highlight .stat-label {
+                    color: rgba(255, 255, 255, 0.9);
+                }
+
                 .stat-number {
                     font-size: 2rem;
                     font-weight: 700;
                     color: #4F46E5;
                     margin-bottom: 8px;
+                }
+
+                .stat-item.highlight .stat-number {
+                    color: white;
                 }
 
                 .stat-label {
@@ -656,6 +922,34 @@ class AnalyticsModule {
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                }
+
+                .table-container {
+                    overflow-x: auto;
+                }
+
+                .user-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 0.875rem;
+                }
+
+                .user-table th {
+                    background: #f8fafc;
+                    padding: 12px;
+                    text-align: left;
+                    font-weight: 600;
+                    color: #475569;
+                    border-bottom: 2px solid #e2e8f0;
+                }
+
+                .user-table td {
+                    padding: 12px;
+                    border-bottom: 1px solid #f1f5f9;
+                }
+
+                .user-table tr:hover {
+                    background: #f8fafc;
                 }
 
                 .loading {
@@ -745,18 +1039,46 @@ class AnalyticsModule {
                 }
 
                 .chart-label {
-                    min-width: 120px;
+                    min-width: 200px;
                     font-size: 0.875rem;
                     color: #1f2937;
                     font-weight: 500;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
                 }
 
                 .chart-value {
-                    min-width: 40px;
+                    min-width: 60px;
                     text-align: right;
                     font-size: 0.875rem;
                     color: #64748b;
                     font-weight: 500;
+                }
+
+                .cost-breakdown {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                    margin-top: 16px;
+                }
+
+                .cost-item {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 8px 12px;
+                    background: #f8fafc;
+                    border-radius: 6px;
+                }
+
+                .cost-label {
+                    font-weight: 500;
+                    color: #475569;
+                }
+
+                .cost-value {
+                    font-weight: 600;
+                    color: #1f2937;
                 }
 
                 @media (max-width: 768px) {
@@ -776,6 +1098,20 @@ class AnalyticsModule {
                     
                     .stats-grid {
                         grid-template-columns: repeat(2, 1fr);
+                    }
+                    
+                    .chart-label {
+                        min-width: 120px;
+                        font-size: 0.75rem;
+                    }
+                    
+                    .user-table {
+                        font-size: 0.75rem;
+                    }
+                    
+                    .user-table th,
+                    .user-table td {
+                        padding: 8px;
                     }
                 }
             </style>
@@ -819,88 +1155,96 @@ class AnalyticsModule {
         // Statistiques générales
         this.updateOverviewStats(data);
         
-        // Utilisateurs par domaine
-        this.updateUsersDomainChart(data);
+        // Top utilisateurs
+        this.updateTopUsersChart(data);
         
-        // Utilisation des pages
-        this.updatePagesChart(data);
+        // Analyse des coûts
+        this.updateCostsChart(data);
         
         // Fréquence des scans
         this.updateScansChart(data);
         
-        // Erreurs
-        this.updateErrorsChart(data);
+        // Détail par utilisateur
+        this.updateUserDetailsTable(data);
         
         // Activité récente
         this.updateRecentActivity(data);
     }
 
     updateOverviewStats(data) {
-        const totalSessions = Object.values(data.userStats || {})
-            .reduce((sum, stats) => sum + stats.totalSessions, 0);
+        const users = Object.keys(data.userStatsByEmail || {});
+        const costAnalysis = this.analytics.getUserCostAnalysis();
         
-        document.getElementById('totalSessions').textContent = totalSessions.toLocaleString();
+        document.getElementById('totalUsers').textContent = users.length.toLocaleString();
         document.getElementById('totalScans').textContent = (data.scanStats?.totalScans || 0).toLocaleString();
         document.getElementById('totalEmails').textContent = (data.scanStats?.totalEmails || 0).toLocaleString();
-        
-        const errorEvents = (data.events || []).filter(e => e.type === 'error');
-        document.getElementById('totalErrors').textContent = errorEvents.length.toLocaleString();
+        document.getElementById('totalRevenue').textContent = 
+            (costAnalysis.totalRevenue / 100).toFixed(2) + ' €';
     }
 
-    updateUsersDomainChart(data) {
-        const container = document.getElementById('usersDomainChart');
-        const usersByDomain = this.analytics.getUsersByDomain();
+    updateTopUsersChart(data) {
+        const container = document.getElementById('topUsersChart');
+        const topUsers = this.analytics.getTopUsers(5);
         
-        if (Object.keys(usersByDomain).length === 0) {
+        if (topUsers.length === 0) {
             container.innerHTML = '<div class="loading">Aucune donnée utilisateur</div>';
             return;
         }
 
-        const sortedDomains = Object.entries(usersByDomain)
-            .sort(([,a], [,b]) => b.userCount - a.userCount);
-        
-        const maxCount = Math.max(...sortedDomains.map(([,stats]) => stats.userCount));
+        const maxScans = Math.max(...topUsers.map(user => user.totalScans));
         
         container.innerHTML = `
             <div class="chart-simple">
-                ${sortedDomains.map(([domain, stats]) => `
+                ${topUsers.map(user => `
                     <div class="chart-item">
-                        <div class="chart-label">${domain}</div>
+                        <div class="chart-label" title="${user.email}">${user.email}</div>
                         <div class="chart-bar">
-                            <div class="chart-fill" style="width: ${(stats.userCount / maxCount) * 100}%"></div>
+                            <div class="chart-fill" style="width: ${(user.totalScans / maxScans) * 100}%"></div>
                         </div>
-                        <div class="chart-value">${stats.userCount}</div>
+                        <div class="chart-value">${user.totalScans} scans</div>
                     </div>
                 `).join('')}
             </div>
         `;
     }
 
-    updatePagesChart(data) {
-        const container = document.getElementById('pagesChart');
-        const pageStats = this.analytics.getPageUsageStats();
+    updateCostsChart(data) {
+        const container = document.getElementById('costsChart');
+        const costAnalysis = this.analytics.getUserCostAnalysis();
         
-        if (Object.keys(pageStats).length === 0) {
-            container.innerHTML = '<div class="loading">Aucune donnée de navigation</div>';
+        if (costAnalysis.userCount === 0) {
+            container.innerHTML = '<div class="loading">Aucune donnée de coût</div>';
             return;
         }
 
-        const sortedPages = Object.entries(pageStats)
-            .sort(([,a], [,b]) => b.visits - a.visits);
-        
-        const maxVisits = Math.max(...sortedPages.map(([,stats]) => stats.visits));
+        const costBreakdown = costAnalysis.costBreakdown;
+        const total = Object.values(costBreakdown).reduce((sum, val) => sum + val, 0);
         
         container.innerHTML = `
-            <div class="chart-simple">
-                ${sortedPages.map(([page, stats]) => `
-                    <div class="chart-item">
-                        <div class="chart-label">${page}</div>
-                        <div class="chart-bar">
-                            <div class="chart-fill" style="width: ${(stats.visits / maxVisits) * 100}%"></div>
-                        </div>
-                        <div class="chart-value">${stats.visits}</div>
-                    </div>
-                `).join('')}
+            <div class="cost-breakdown">
+                <div class="cost-item">
+                    <span class="cost-label">Scan d'emails</span>
+                    <span class="cost-value">${(costBreakdown.emailScan / 100).toFixed(2)} €</span>
+                </div>
+                <div class="cost-item">
+                    <span class="cost-label">Analyse IA</span>
+                    <span class="cost-value">${(costBreakdown.aiAnalysis / 100).toFixed(2)} €</span>
+                </div>
+                <div class="cost-item">
+                    <span class="cost-label">Génération de tâches</span>
+                    <span class="cost-value">${(costBreakdown.taskGeneration / 100).toFixed(2)} €</span>
+                </div>
+                <div class="cost-item">
+                    <span class="cost-label">Organisation par domaine</span>
+                    <span class="cost-value">${(costBreakdown.domainOrganization / 100).toFixed(2)} €</span>
+                </div>
+                <div class="cost-item" style="background: #4F46E5; color: white; margin-top: 8px;">
+                    <span class="cost-label">Total</span>
+                    <span class="cost-value">${(total / 100).toFixed(2)} €</span>
+                </div>
+            </div>
+            <div style="margin-top: 16px; text-align: center; color: #64748b; font-size: 0.875rem;">
+                Revenu moyen par utilisateur: ${(costAnalysis.averageRevenuePerUser / 100).toFixed(2)} €
             </div>
         `;
     }
@@ -928,39 +1272,56 @@ class AnalyticsModule {
                         <div class="chart-bar">
                             <div class="chart-fill" style="width: ${(stats.count / maxScans) * 100}%"></div>
                         </div>
-                        <div class="chart-value">${stats.count}</div>
+                        <div class="chart-value">${stats.count} (${(stats.totalCost / 100).toFixed(2)}€)</div>
                     </div>
                 `).join('')}
             </div>
         `;
     }
 
-    updateErrorsChart(data) {
-        const container = document.getElementById('errorsChart');
-        const errorStats = this.analytics.getErrorStats();
+    updateUserDetailsTable(data) {
+        const container = document.getElementById('userDetailsTable');
+        const users = this.analytics.getUsersByEmail();
         
-        if (Object.keys(errorStats).length === 0) {
-            container.innerHTML = '<div class="loading">Aucune erreur détectée</div>';
+        if (Object.keys(users).length === 0) {
+            container.innerHTML = '<div class="loading">Aucune donnée utilisateur</div>';
             return;
         }
 
-        const sortedErrors = Object.entries(errorStats)
-            .sort(([,a], [,b]) => b.count - a.count);
-        
-        const maxCount = Math.max(...sortedErrors.map(([,stats]) => stats.count));
+        const sortedUsers = Object.entries(users)
+            .sort(([,a], [,b]) => b.totalCost - a.totalCost);
         
         container.innerHTML = `
-            <div class="chart-simple">
-                ${sortedErrors.map(([errorType, stats]) => `
-                    <div class="chart-item">
-                        <div class="chart-label">${errorType}</div>
-                        <div class="chart-bar">
-                            <div class="chart-fill" style="width: ${(stats.count / maxCount) * 100}%"></div>
-                        </div>
-                        <div class="chart-value">${stats.count}</div>
-                    </div>
-                `).join('')}
-            </div>
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Nom</th>
+                        <th>Sessions</th>
+                        <th>Scans</th>
+                        <th>Emails</th>
+                        <th>Moy./Scan</th>
+                        <th>Coût Total</th>
+                        <th>Dernière Activité</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${sortedUsers.map(([email, stats]) => `
+                        <tr>
+                            <td>${email}</td>
+                            <td>${stats.name || '-'}</td>
+                            <td>${stats.totalSessions}</td>
+                            <td>${stats.totalScans}</td>
+                            <td>${stats.totalEmailsScanned}</td>
+                            <td>${stats.averageEmailsPerScan}</td>
+                            <td style="font-weight: 600; color: #4F46E5;">
+                                ${(stats.totalCost / 100).toFixed(2)} €
+                            </td>
+                            <td>${new Date(stats.lastAccess).toLocaleDateString()}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
         `;
     }
 
@@ -986,15 +1347,16 @@ class AnalyticsModule {
         const getActivityTitle = (event) => {
             switch (event.type) {
                 case 'session_start': return 'Nouvelle session';
-                case 'email_scan': return `Scan de ${event.data.emailCount} emails`;
+                case 'email_scan': return `Scan de ${event.data.emailCount} emails (${(event.data.cost / 100).toFixed(2)}€)`;
                 case 'error': return `Erreur: ${event.data.type}`;
                 case 'page_visit': return `Visite page: ${event.data.page}`;
+                case 'auth_success': return `Connexion ${event.data.provider}`;
                 default: return event.type;
             }
         };
 
         container.innerHTML = `
-            ${recentEvents.slice(0, 10).map(event => {
+            ${recentEvents.slice(0, 20).map(event => {
                 const icon = getActivityIcon(event.type);
                 const title = getActivityTitle(event);
                 const time = new Date(event.timestamp).toLocaleString();
@@ -1006,7 +1368,10 @@ class AnalyticsModule {
                         </div>
                         <div class="activity-content">
                             <div class="activity-title">${title}</div>
-                            <div class="activity-details">${JSON.stringify(event.data).substring(0, 100)}...</div>
+                            <div class="activity-details">
+                                ${event.userEmail || 'Anonyme'} - 
+                                ${event.data.userEmail || event.data.userName || ''}
+                            </div>
                         </div>
                         <div class="activity-time">${time}</div>
                     </div>
@@ -1046,10 +1411,10 @@ class AnalyticsModule {
 // Créer l'instance globale de l'analytics manager
 if (!window.analyticsManager) {
     window.analyticsManager = new AnalyticsManager();
-    console.log('[Analytics] Global AnalyticsManager created');
+    console.log('[Analytics] Global AnalyticsManager created v2.0');
 }
 
 // Créer le module analytics global
 window.analyticsModule = new AnalyticsModule();
 
-console.log('[Analytics] ✅ Analytics module loaded successfully v1.0');
+console.log('[Analytics] ✅ Analytics module loaded successfully v2.0 - Email tracking & Cost analysis');
