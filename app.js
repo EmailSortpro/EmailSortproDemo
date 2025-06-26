@@ -1,4 +1,5 @@
-// app.js - Application EmailSortPro avec intégration Analytics complète v4.3
+// app.js - Application EmailSortPro avec intégration Analytics complète v4.2
+// Tracking des emails en clair et filtrage par domaine
 
 class App {
     constructor() {
@@ -13,30 +14,45 @@ class App {
         this.netlifyDomain = 'coruscating-dodol-f30e8d.netlify.app';
         this.isNetlifyEnv = window.location.hostname.includes('netlify.app');
         
-        console.log('[App] Constructor - EmailSortPro v4.3 with Analytics integration...');
+        console.log('[App] Constructor - EmailSortPro v4.2 with analytics email tracking...');
         console.log('[App] Environment:', this.isNetlifyEnv ? 'Netlify' : 'Local');
         console.log('[App] Domain:', window.location.hostname);
         
-        // Initialiser Analytics dès le début
+        // Initialiser Analytics Manager immédiatement
         this.initializeAnalytics();
     }
 
+    // =====================================
+    // INITIALISATION ANALYTICS AVEC CAPTURE D'EMAIL
+    // =====================================
     initializeAnalytics() {
-        // Vérifier que le manager analytics est disponible
-        if (!window.analyticsManager) {
-            console.warn('[App] Analytics manager not available yet, waiting...');
-            setTimeout(() => this.initializeAnalytics(), 500);
-            return;
+        console.log('[App] Initializing analytics with email tracking...');
+        
+        try {
+            // Vérifier si l'analytics manager est disponible
+            if (window.analyticsManager) {
+                console.log('[App] ✅ Analytics manager ready');
+                
+                // Track page load event
+                window.analyticsManager.onPageLoad('index');
+                
+                console.log('[App] ✅ Analytics initialized successfully');
+            } else {
+                console.warn('[App] Analytics manager not available yet, will retry...');
+                
+                // Retry après un délai
+                setTimeout(() => {
+                    if (window.analyticsManager) {
+                        console.log('[App] ✅ Analytics manager now available');
+                        window.analyticsManager.onPageLoad('index');
+                    } else {
+                        console.warn('[App] Analytics manager still not available');
+                    }
+                }, 1000);
+            }
+        } catch (error) {
+            console.warn('[App] Error initializing analytics:', error);
         }
-        
-        console.log('[App] ✅ Analytics manager ready');
-        
-        // Tracker le démarrage de l'application
-        window.analyticsManager.trackEvent('app_start', {
-            environment: this.isNetlifyEnv ? 'netlify' : 'local',
-            domain: window.location.hostname,
-            userAgent: navigator.userAgent
-        });
     }
 
     async init() {
@@ -152,9 +168,168 @@ class App {
         console.log('[App] Critical modules initialized');
     }
 
+    // [Le reste des méthodes reste identique jusqu'à checkAuthenticationStatus]
+
     // =====================================
-    // VERIFICATION MAILSERVICE AVEC FALLBACK ROBUSTE
+    // VÉRIFICATION DE L'AUTHENTIFICATION AVEC ANALYTICS
     // =====================================
+    async checkAuthenticationStatus() {
+        console.log('[App] Checking authentication status for both providers...');
+        
+        // Vérifier d'abord s'il y a un callback Google à traiter
+        const googleCallbackHandled = await this.handleGoogleCallback();
+        if (googleCallbackHandled) {
+            this.showAppWithTransition();
+            return;
+        }
+        
+        // Vérifier Microsoft d'abord
+        if (window.authService && window.authService.isAuthenticated()) {
+            const account = window.authService.getAccount();
+            if (account) {
+                console.log('[App] Microsoft authentication found, getting user info...');
+                try {
+                    this.user = await window.authService.getUserInfo();
+                    this.user.provider = 'microsoft';
+                    this.isAuthenticated = true;
+                    this.activeProvider = 'microsoft';
+                    
+                    // ANALYTICS: Track authentication avec email en clair
+                    this.trackUserAuthentication(this.user);
+                    
+                    console.log('[App] ✅ Microsoft user authenticated:', this.user.displayName || this.user.mail);
+                    this.showAppWithTransition();
+                    return;
+                } catch (userInfoError) {
+                    console.error('[App] Error getting Microsoft user info:', userInfoError);
+                    if (userInfoError.message.includes('401') || userInfoError.message.includes('403')) {
+                        console.log('[App] Microsoft token seems invalid, clearing auth');
+                        await window.authService.reset();
+                    }
+                }
+            }
+        }
+        
+        // Vérifier Google ensuite
+        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+            const account = window.googleAuthService.getAccount();
+            if (account) {
+                console.log('[App] Google authentication found, getting user info...');
+                try {
+                    this.user = await window.googleAuthService.getUserInfo();
+                    this.user.provider = 'google';
+                    this.isAuthenticated = true;
+                    this.activeProvider = 'google';
+                    
+                    // ANALYTICS: Track authentication avec email en clair
+                    this.trackUserAuthentication(this.user);
+                    
+                    console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
+                    this.showAppWithTransition();
+                    return;
+                } catch (userInfoError) {
+                    console.error('[App] Error getting Google user info:', userInfoError);
+                    await window.googleAuthService.reset();
+                }
+            }
+        }
+        
+        // Aucune authentification trouvée
+        console.log('[App] No valid authentication found');
+        this.showLogin();
+    }
+
+    // =====================================
+    // TRACKING ANALYTICS AVEC EMAIL EN CLAIR
+    // =====================================
+    trackUserAuthentication(user) {
+        console.log('[App] Tracking user authentication for analytics...');
+        
+        if (!window.analyticsManager || typeof window.analyticsManager.trackAuthentication !== 'function') {
+            console.warn('[App] Analytics manager not available for authentication tracking');
+            return;
+        }
+        
+        try {
+            // Préparer les données utilisateur avec email en clair
+            const userInfo = {
+                displayName: user.displayName || user.name || 'Utilisateur',
+                mail: user.mail || user.email || user.userPrincipalName,
+                userPrincipalName: user.userPrincipalName || user.email,
+                email: user.email || user.mail || user.userPrincipalName, // Email explicite
+                provider: user.provider || 'unknown',
+                // Données supplémentaires si disponibles
+                homeAccountId: user.homeAccountId,
+                localAccountId: user.localAccountId,
+                tenantId: user.tenantId
+            };
+            
+            console.log('[App] ✅ Tracking authentication with email:', {
+                email: userInfo.email,
+                name: userInfo.displayName,
+                provider: userInfo.provider
+            });
+            
+            // Appeler la méthode de tracking
+            window.analyticsManager.trackAuthentication(userInfo.provider, userInfo);
+            
+            console.log('[App] ✅ Authentication tracked successfully in analytics');
+            
+        } catch (error) {
+            console.warn('[App] Error tracking authentication:', error);
+        }
+    }
+
+    // =====================================
+    // TRACKING D'ÉVÉNEMENTS ANALYTICS
+    // =====================================
+    trackEvent(eventType, eventData = {}) {
+        if (!window.analyticsManager || typeof window.analyticsManager.trackEvent !== 'function') {
+            return;
+        }
+        
+        try {
+            // Ajouter automatiquement les infos utilisateur si disponibles
+            const enrichedData = {
+                ...eventData,
+                userEmail: this.user?.email || this.user?.mail || 'anonymous',
+                userName: this.user?.displayName || this.user?.name || 'Anonymous',
+                provider: this.activeProvider || 'unknown'
+            };
+            
+            window.analyticsManager.trackEvent(eventType, enrichedData);
+            console.log('[App] ✅ Event tracked:', eventType, enrichedData);
+        } catch (error) {
+            console.warn('[App] Error tracking event:', error);
+        }
+    }
+
+    trackPageChange(pageName) {
+        this.trackEvent('page_change', {
+            page: pageName,
+            previousPage: this.currentPage
+        });
+    }
+
+    trackError(errorType, errorData) {
+        if (!window.analyticsManager || typeof window.analyticsManager.onError !== 'function') {
+            return;
+        }
+        
+        try {
+            window.analyticsManager.onError(errorType, {
+                ...errorData,
+                userEmail: this.user?.email || this.user?.mail || 'anonymous',
+                provider: this.activeProvider || 'unknown'
+            });
+            console.log('[App] ✅ Error tracked:', errorType, errorData);
+        } catch (error) {
+            console.warn('[App] Error tracking error:', error);
+        }
+    }
+
+    // [Les autres méthodes restent identiques...]
+
     async ensureMailServiceReady() {
         console.log('[App] Ensuring MailService is ready...');
         
@@ -240,9 +415,116 @@ class App {
         console.log('[App] ✅ MailService fallback created');
     }
 
-    // =====================================
-    // VERIFICATION DES MODULES DE SCAN
-    // =====================================
+    // [Méthodes de vérification des modules identiques...]
+
+    async ensureTaskManagerReady() {
+        console.log('[App] Ensuring TaskManager is ready...');
+        
+        if (window.taskManager && window.taskManager.initialized) {
+            console.log('[App] ✅ TaskManager already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        while ((!window.taskManager || !window.taskManager.initialized) && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.taskManager || !window.taskManager.initialized) {
+            console.error('[App] TaskManager not ready after 5 seconds');
+            return false;
+        }
+        
+        const essentialMethods = ['createTaskFromEmail', 'createTask', 'updateTask', 'deleteTask', 'getStats'];
+        for (const method of essentialMethods) {
+            if (typeof window.taskManager[method] !== 'function') {
+                console.error(`[App] TaskManager missing essential method: ${method}`);
+                return false;
+            }
+        }
+        
+        console.log('[App] ✅ TaskManager ready with', window.taskManager.getAllTasks().length, 'tasks');
+        return true;
+    }
+
+    async ensurePageManagerReady() {
+        console.log('[App] Ensuring PageManager is ready...');
+        
+        if (window.pageManager) {
+            console.log('[App] ✅ PageManager already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while (!window.pageManager && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.pageManager) {
+            console.error('[App] PageManager not ready after 3 seconds');
+            return false;
+        }
+        
+        console.log('[App] ✅ PageManager ready');
+        return true;
+    }
+
+    async ensureTasksViewReady() {
+        console.log('[App] Ensuring TasksView is ready...');
+        
+        if (window.tasksView) {
+            console.log('[App] ✅ TasksView already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while (!window.tasksView && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.tasksView) {
+            console.warn('[App] TasksView not ready after 3 seconds - will work without it');
+            return false;
+        }
+        
+        console.log('[App] ✅ TasksView ready');
+        return true;
+    }
+
+    async ensureDashboardModuleReady() {
+        console.log('[App] Ensuring DashboardModule is ready...');
+        
+        if (window.dashboardModule) {
+            console.log('[App] ✅ DashboardModule already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while (!window.dashboardModule && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.dashboardModule) {
+            console.error('[App] DashboardModule not ready after 3 seconds');
+            return false;
+        }
+        
+        console.log('[App] ✅ DashboardModule ready');
+        return true;
+    }
+
     async ensureScanModulesReady() {
         console.log('[App] Ensuring scan modules are ready...');
         
@@ -417,7 +699,7 @@ class App {
             }, 150);
         };
 
-        // Fonction pour définir le mode de page
+        // Fonction pour définir le mode de page avec analytics
         window.setPageMode = (pageName) => {
             if (!pageName || this.currentPage === pageName) {
                 return;
@@ -425,16 +707,14 @@ class App {
             
             const body = document.body;
             
-            // Mettre à jour la page actuelle
+            // Mettre à jour la page actuelle et tracker le changement
             const previousPage = this.currentPage;
             this.currentPage = pageName;
             
-            console.log(`[App] Page mode changed: ${previousPage} → ${pageName}`);
-            
             // ANALYTICS: Track page change
-            if (window.analyticsManager && typeof window.analyticsManager.onPageLoad === 'function') {
-                window.analyticsManager.onPageLoad(pageName);
-            }
+            this.trackPageChange(pageName);
+            
+            console.log(`[App] Page mode changed: ${previousPage} → ${pageName}`);
             
             // Nettoyer les anciennes classes de page
             body.classList.remove(
@@ -566,114 +846,6 @@ class App {
         console.log('[App] ✅ Scroll manager initialized');
     }
 
-    async ensureTaskManagerReady() {
-        console.log('[App] Ensuring TaskManager is ready...');
-        
-        if (window.taskManager && window.taskManager.initialized) {
-            console.log('[App] ✅ TaskManager already ready');
-            return true;
-        }
-        
-        let attempts = 0;
-        const maxAttempts = 50;
-        
-        while ((!window.taskManager || !window.taskManager.initialized) && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.taskManager || !window.taskManager.initialized) {
-            console.error('[App] TaskManager not ready after 5 seconds');
-            return false;
-        }
-        
-        const essentialMethods = ['createTaskFromEmail', 'createTask', 'updateTask', 'deleteTask', 'getStats'];
-        for (const method of essentialMethods) {
-            if (typeof window.taskManager[method] !== 'function') {
-                console.error(`[App] TaskManager missing essential method: ${method}`);
-                return false;
-            }
-        }
-        
-        console.log('[App] ✅ TaskManager ready with', window.taskManager.getAllTasks().length, 'tasks');
-        return true;
-    }
-
-    async ensurePageManagerReady() {
-        console.log('[App] Ensuring PageManager is ready...');
-        
-        if (window.pageManager) {
-            console.log('[App] ✅ PageManager already ready');
-            return true;
-        }
-        
-        let attempts = 0;
-        const maxAttempts = 30;
-        
-        while (!window.pageManager && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.pageManager) {
-            console.error('[App] PageManager not ready after 3 seconds');
-            return false;
-        }
-        
-        console.log('[App] ✅ PageManager ready');
-        return true;
-    }
-
-    async ensureTasksViewReady() {
-        console.log('[App] Ensuring TasksView is ready...');
-        
-        if (window.tasksView) {
-            console.log('[App] ✅ TasksView already ready');
-            return true;
-        }
-        
-        let attempts = 0;
-        const maxAttempts = 30;
-        
-        while (!window.tasksView && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.tasksView) {
-            console.warn('[App] TasksView not ready after 3 seconds - will work without it');
-            return false;
-        }
-        
-        console.log('[App] ✅ TasksView ready');
-        return true;
-    }
-
-    async ensureDashboardModuleReady() {
-        console.log('[App] Ensuring DashboardModule is ready...');
-        
-        if (window.dashboardModule) {
-            console.log('[App] ✅ DashboardModule already ready');
-            return true;
-        }
-        
-        let attempts = 0;
-        const maxAttempts = 30;
-        
-        while (!window.dashboardModule && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.dashboardModule) {
-            console.error('[App] DashboardModule not ready after 3 seconds');
-            return false;
-        }
-        
-        console.log('[App] ✅ DashboardModule ready');
-        return true;
-    }
-
     bindModuleMethods() {
         // Bind TaskManager methods
         if (window.taskManager) {
@@ -739,79 +911,6 @@ class App {
     }
 
     // =====================================
-    // VÉRIFICATION DE L'AUTHENTIFICATION DUAL PROVIDER
-    // =====================================
-    async checkAuthenticationStatus() {
-        console.log('[App] Checking authentication status for both providers...');
-        
-        // Vérifier d'abord s'il y a un callback Google à traiter
-        const googleCallbackHandled = await this.handleGoogleCallback();
-        if (googleCallbackHandled) {
-            this.showAppWithTransition();
-            return;
-        }
-        
-        // Vérifier Microsoft d'abord
-        if (window.authService && window.authService.isAuthenticated()) {
-            const account = window.authService.getAccount();
-            if (account) {
-                console.log('[App] Microsoft authentication found, getting user info...');
-                try {
-                    this.user = await window.authService.getUserInfo();
-                    this.user.provider = 'microsoft';
-                    this.isAuthenticated = true;
-                    this.activeProvider = 'microsoft';
-                    console.log('[App] ✅ Microsoft user authenticated:', this.user.displayName || this.user.mail);
-                    
-                    // ANALYTICS: Track Microsoft auth restoration
-                    if (window.analyticsManager && typeof window.analyticsManager.onAuthSuccess === 'function') {
-                        window.analyticsManager.onAuthSuccess('microsoft', this.user);
-                    }
-                    
-                    this.showAppWithTransition();
-                    return;
-                } catch (userInfoError) {
-                    console.error('[App] Error getting Microsoft user info:', userInfoError);
-                    if (userInfoError.message.includes('401') || userInfoError.message.includes('403')) {
-                        console.log('[App] Microsoft token seems invalid, clearing auth');
-                        await window.authService.reset();
-                    }
-                }
-            }
-        }
-        
-        // Vérifier Google ensuite
-        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
-            const account = window.googleAuthService.getAccount();
-            if (account) {
-                console.log('[App] Google authentication found, getting user info...');
-                try {
-                    this.user = await window.googleAuthService.getUserInfo();
-                    this.user.provider = 'google';
-                    this.isAuthenticated = true;
-                    this.activeProvider = 'google';
-                    console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
-                    
-                    // ANALYTICS: Track Google auth restoration
-                    if (window.analyticsManager && typeof window.analyticsManager.onAuthSuccess === 'function') {
-                        window.analyticsManager.onAuthSuccess('google', this.user);
-                    }
-                    
-                    this.showAppWithTransition();
-                    return;
-                } catch (userInfoError) {
-                    console.error('[App] Error getting Google user info:', userInfoError);
-                    await window.googleAuthService.reset();
-                }
-            }
-        }
-        
-        // Aucune authentification trouvée
-        console.log('[App] No valid authentication found');
-        this.showLogin();
-    }
-
-    // =====================================
     // GESTION DU CALLBACK GOOGLE OAuth2
     // =====================================
     async handleGoogleCallback() {
@@ -847,6 +946,9 @@ class App {
                 this.isAuthenticated = true;
                 this.activeProvider = 'google';
                 
+                // ANALYTICS: Track authentication
+                this.trackUserAuthentication(this.user);
+                
                 console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
                 return true;
             } else {
@@ -855,6 +957,11 @@ class App {
             
         } catch (error) {
             console.error('[App] ❌ Error handling Google callback:', error);
+            
+            // ANALYTICS: Track error
+            this.trackError('google_callback_error', {
+                message: error.message
+            });
             
             if (window.uiManager) {
                 window.uiManager.showToast(
@@ -872,12 +979,10 @@ class App {
         console.error('[App] Initialization error:', error);
         
         // ANALYTICS: Track initialization error
-        if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
-            window.analyticsManager.onError('app_init_error', {
-                message: error.message,
-                environment: this.isNetlifyEnv ? 'netlify' : 'local'
-            });
-        }
+        this.trackError('app_init_error', {
+            message: error.message,
+            attempt: this.initializationAttempts
+        });
         
         if (error.message.includes('unauthorized_client')) {
             this.showConfigurationError([
@@ -908,7 +1013,7 @@ class App {
     setupEventListeners() {
         console.log('[App] Setting up event listeners...');
         
-        // NAVIGATION CORRIGÉE AVEC GESTION D'ERREURS
+        // NAVIGATION CORRIGÉE AVEC ANALYTICS
         document.querySelectorAll('.nav-item').forEach(item => {
             const newItem = item.cloneNode(true);
             item.parentNode.replaceChild(newItem, item);
@@ -937,12 +1042,10 @@ class App {
                     console.error('[App] Navigation error:', error);
                     
                     // ANALYTICS: Track navigation error
-                    if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
-                        window.analyticsManager.onError('navigation_error', {
-                            message: error.message,
-                            page: e.currentTarget.dataset.page
-                        });
-                    }
+                    this.trackError('navigation_error', {
+                        message: error.message,
+                        targetPage: e.currentTarget.dataset.page
+                    });
                     
                     if (window.uiManager) {
                         window.uiManager.showToast('Erreur de navigation: ' + error.message, 'error');
@@ -951,19 +1054,16 @@ class App {
             });
         });
 
-        // Gestion globale des erreurs avec informations détaillées
+        // Gestion globale des erreurs avec analytics
         window.addEventListener('error', (event) => {
             console.error('[App] Global error:', event.error);
             
-            // ANALYTICS: Track global errors
-            if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
-                window.analyticsManager.onError('global_error', {
-                    message: event.error?.message || 'Unknown error',
-                    stack: event.error?.stack,
-                    filename: event.filename,
-                    lineno: event.lineno
-                });
-            }
+            // ANALYTICS: Track global error
+            this.trackError('global_error', {
+                message: event.error?.message || 'Unknown error',
+                filename: event.filename,
+                lineno: event.lineno
+            });
             
             if (event.error && event.error.message) {
                 const message = event.error.message;
@@ -1005,13 +1105,10 @@ class App {
         window.addEventListener('unhandledrejection', (event) => {
             console.error('[App] Unhandled promise rejection:', event.reason);
             
-            // ANALYTICS: Track unhandled rejections
-            if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
-                window.analyticsManager.onError('promise_rejection', {
-                    reason: event.reason?.message || event.reason || 'Unknown rejection',
-                    stack: event.reason?.stack
-                });
-            }
+            // ANALYTICS: Track promise rejection
+            this.trackError('promise_rejection', {
+                reason: event.reason?.message || event.reason || 'Unknown rejection'
+            });
             
             if (event.reason && event.reason.message) {
                 const message = event.reason.message;
@@ -1054,11 +1151,11 @@ class App {
             }
         });
 
-        console.log('[App] ✅ Event listeners set up with error handling');
+        console.log('[App] ✅ Event listeners set up with error handling and analytics');
     }
 
     // =====================================
-    // MÉTHODES DE CONNEXION DUAL PROVIDER
+    // MÉTHODES DE CONNEXION AVEC ANALYTICS
     // =====================================
 
     // Méthode de connexion unifiée (backward compatibility)
@@ -1067,9 +1164,12 @@ class App {
         return this.loginMicrosoft();
     }
 
-    // Connexion Microsoft spécifique
+    // Connexion Microsoft spécifique avec analytics
     async loginMicrosoft() {
         console.log('[App] Microsoft login attempted...');
+        
+        // ANALYTICS: Track login attempt
+        this.trackEvent('login_attempt', { provider: 'microsoft' });
         
         try {
             this.showModernLoading('Connexion à Outlook...');
@@ -1087,6 +1187,12 @@ class App {
             
         } catch (error) {
             console.error('[App] Microsoft login error:', error);
+            
+            // ANALYTICS: Track login error
+            this.trackError('microsoft_login_error', {
+                message: error.message,
+                errorCode: error.errorCode
+            });
             
             this.hideModernLoading();
             
@@ -1128,59 +1234,11 @@ class App {
         }
     }
 
-    // Connexion Google spécifique - SANS IFRAME
-    async loginGoogle() {
-        console.log('[App] Google login attempted...');
-        
-        try {
-            this.showModernLoading('Connexion à Gmail...');
-            
-            if (!window.googleAuthService) {
-                throw new Error('Google AuthService not available');
-            }
-            
-            if (!window.googleAuthService.isInitialized) {
-                console.log('[App] Google AuthService not initialized, initializing...');
-                await window.googleAuthService.initialize();
-            }
-            
-            // Le service Google redirige automatiquement, pas besoin d'attendre
-            await window.googleAuthService.login();
-            
-            // Cette ligne ne sera jamais atteinte car login() redirige
-            console.log('[App] This should not be reached due to redirect');
-            
-        } catch (error) {
-            console.error('[App] Google login error:', error);
-            
-            this.hideModernLoading();
-            
-            let errorMessage = 'Échec de la connexion Gmail. Veuillez réessayer.';
-            
-            if (error.message) {
-                if (error.message.includes('cookies')) {
-                    errorMessage = 'Cookies tiers bloqués. Autorisez les cookies pour accounts.google.com et réessayez.';
-                } else if (error.message.includes('domain') || error.message.includes('origin')) {
-                    errorMessage = 'Erreur de domaine Gmail. Vérifiez la configuration Google Console.';
-                } else if (error.message.includes('client')) {
-                    errorMessage = 'Configuration Google incorrecte. Vérifiez votre Client ID.';
-                } else if (error.message.includes('not available')) {
-                    errorMessage = 'Service Google temporairement indisponible.';
-                } else {
-                    errorMessage = `Erreur Gmail: ${error.message}`;
-                }
-            }
-            
-            if (window.uiManager) {
-                window.uiManager.showToast(errorMessage, 'error', 8000);
-            }
-            
-            throw error;
-        }
-    }
-
     async logout() {
         console.log('[App] Logout attempted...');
+        
+        // ANALYTICS: Track logout attempt
+        this.trackEvent('logout_attempt', { provider: this.activeProvider });
         
         try {
             const confirmed = confirm('Êtes-vous sûr de vouloir vous déconnecter ?');
@@ -1188,7 +1246,7 @@ class App {
             
             this.showModernLoading('Déconnexion...');
             
-            // Déconnecter du service actuel
+            // Déconnexion selon le provider actif
             if (this.activeProvider === 'microsoft' && window.authService) {
                 await window.authService.logout();
             } else if (this.activeProvider === 'google' && window.googleAuthService) {
@@ -1210,6 +1268,13 @@ class App {
             
         } catch (error) {
             console.error('[App] Logout error:', error);
+            
+            // ANALYTICS: Track logout error
+            this.trackError('logout_error', {
+                message: error.message,
+                provider: this.activeProvider
+            });
+            
             this.hideModernLoading();
             if (window.uiManager) {
                 window.uiManager.showToast('Erreur de déconnexion. Nettoyage forcé...', 'warning');
@@ -1220,6 +1285,9 @@ class App {
 
     forceCleanup() {
         console.log('[App] Force cleanup dual provider...');
+        
+        // ANALYTICS: Track cleanup
+        this.trackEvent('force_cleanup', { provider: this.activeProvider });
         
         this.user = null;
         this.isAuthenticated = false;
@@ -1238,7 +1306,7 @@ class App {
         }
         
         // Nettoyer le localStorage sélectivement
-        const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id', 'emailsortpro_analytics'];
+        const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
         const allKeys = Object.keys(localStorage);
         
         allKeys.forEach(key => {
@@ -1287,6 +1355,12 @@ class App {
 
     showAppWithTransition() {
         console.log('[App] Showing application with transition - Provider:', this.activeProvider);
+        
+        // ANALYTICS: Track app display
+        this.trackEvent('app_displayed', {
+            provider: this.activeProvider,
+            userEmail: this.user?.email || this.user?.mail
+        });
         
         this.hideModernLoading();
         
@@ -1386,6 +1460,10 @@ class App {
         
         // Forcer l'affichage avec CSS
         this.forceAppDisplay();
+        
+        setTimeout(() => {
+            window.checkScrollNeeded();
+        }, 1000);
         
         console.log(`[App] ✅ Application fully displayed with ${this.activeProvider} provider`);
     }
@@ -1553,6 +1631,9 @@ class App {
     showError(message) {
         console.error('[App] Showing error:', message);
         
+        // ANALYTICS: Track error display
+        this.trackError('app_error_display', { message: message });
+        
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.innerHTML = `
@@ -1600,6 +1681,9 @@ class App {
 
     showConfigurationError(issues) {
         console.error('[App] Configuration error:', issues);
+        
+        // ANALYTICS: Track configuration error
+        this.trackError('config_error', { issues: issues });
         
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
@@ -1655,7 +1739,7 @@ class App {
     }
 
     // =====================================
-    // DIAGNOSTIC ET INFORMATIONS DUAL PROVIDER
+    // DIAGNOSTIC ET INFORMATIONS AVEC ANALYTICS
     // =====================================
     getDiagnosticInfo() {
         return {
@@ -1677,6 +1761,11 @@ class App {
                 email: this.user.mail || this.user.email,
                 provider: this.user.provider
             } : null,
+            analytics: {
+                available: !!window.analyticsManager,
+                tracking: !!window.analyticsManager && typeof window.analyticsManager.trackEvent === 'function',
+                lastSession: window.analyticsManager ? window.analyticsManager.currentSession : null
+            },
             services: {
                 microsoftAuth: window.authService ? {
                     available: true,
@@ -1719,7 +1808,9 @@ class App {
                 } : { available: false },
                 analyticsManager: window.analyticsManager ? {
                     available: true,
-                    hasData: !!window.analyticsManager.getAnalyticsData
+                    hasTrackEvent: typeof window.analyticsManager.trackEvent === 'function',
+                    hasTrackAuth: typeof window.analyticsManager.trackAuthentication === 'function',
+                    hasOnError: typeof window.analyticsManager.onError === 'function'
                 } : { available: false }
             },
             dom: {
@@ -1742,9 +1833,9 @@ class App {
         };
     }
 
-    // Méthode de test pour vérifier les services critiques
+    // Méthode de test pour vérifier les services critiques avec analytics
     testCriticalServices() {
-        console.group('🧪 Test des services critiques');
+        console.group('🧪 Test des services critiques avec analytics');
         
         const tests = [];
         
@@ -1802,15 +1893,15 @@ class App {
             tests.push({ service: 'Google Auth', status: '❌ ERROR', details: error.message });
         }
         
-        // Test Analytics
+        // Test Analytics Manager
         try {
-            if (window.analyticsManager) {
-                tests.push({ service: 'Analytics', status: '✅ OK', details: 'Manager disponible' });
+            if (window.analyticsManager && typeof window.analyticsManager.trackEvent === 'function') {
+                tests.push({ service: 'Analytics Manager', status: '✅ OK', details: 'Tracking disponible' });
             } else {
-                tests.push({ service: 'Analytics', status: '❌ ERROR', details: 'Manager non disponible' });
+                tests.push({ service: 'Analytics Manager', status: '⚠️ WARNING', details: 'Non disponible' });
             }
         } catch (error) {
-            tests.push({ service: 'Analytics', status: '❌ ERROR', details: error.message });
+            tests.push({ service: 'Analytics Manager', status: '❌ ERROR', details: error.message });
         }
         
         tests.forEach(test => {
@@ -1823,11 +1914,16 @@ class App {
 }
 
 // =====================================
-// FONCTIONS GLOBALES D'URGENCE DUAL PROVIDER
+// FONCTIONS GLOBALES D'URGENCE AVEC ANALYTICS
 // =====================================
 
 window.emergencyReset = function() {
     console.log('[App] Emergency reset triggered for dual provider');
+    
+    // ANALYTICS: Track emergency reset
+    if (window.app && window.app.trackEvent) {
+        window.app.trackEvent('emergency_reset', { trigger: 'manual' });
+    }
     
     const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id', 'emailsortpro_analytics'];
     const allKeys = Object.keys(localStorage);
@@ -1911,7 +2007,7 @@ window.repairScanModule = function() {
 };
 
 // =====================================
-// VÉRIFICATION DES SERVICES DUAL PROVIDER AVEC GESTION D'ERREURS
+// VÉRIFICATION DES SERVICES AVEC ANALYTICS
 // =====================================
 function checkServicesReady() {
     const requiredServices = ['uiManager'];
@@ -1943,6 +2039,7 @@ function checkServicesReady() {
         }
         
         console.log('[App] Available auth services:', availableAuthServices);
+        console.log('[App] Analytics available:', !!window.analyticsManager);
         return true;
     } catch (error) {
         console.error('[App] Error checking services:', error);
@@ -1954,7 +2051,8 @@ window.checkServices = function() {
     const services = {
         required: ['uiManager', 'AppConfig'],
         auth: ['authService', 'googleAuthService'],
-        optional: ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule', 'pageManager', 'taskManager', 'analyticsManager']
+        optional: ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule', 'pageManager', 'taskManager'],
+        analytics: ['analyticsManager']
     };
     
     const result = {
@@ -1997,7 +2095,7 @@ window.checkServices = function() {
 };
 
 // =====================================
-// GESTION DES ERREURS GLOBALES AMÉLIORÉE
+// GESTION DES ERREURS GLOBALES AVEC ANALYTICS
 // =====================================
 window.addEventListener('error', (event) => {
     window.lastGlobalError = {
@@ -2007,6 +2105,11 @@ window.addEventListener('error', (event) => {
         lineno: event.lineno,
         timestamp: new Date().toISOString()
     };
+    
+    // Track dans analytics si disponible
+    if (window.app && window.app.trackError) {
+        window.app.trackError('global_window_error', window.lastGlobalError);
+    }
 });
 
 window.addEventListener('unhandledrejection', (event) => {
@@ -2015,49 +2118,37 @@ window.addEventListener('unhandledrejection', (event) => {
         stack: event.reason?.stack || 'No stack trace',
         timestamp: new Date().toISOString()
     };
+    
+    // Track dans analytics si disponible
+    if (window.app && window.app.trackError) {
+        window.app.trackError('unhandled_promise_rejection', window.lastPromiseRejection);
+    }
 });
 
 // =====================================
-// INITIALISATION PRINCIPALE DUAL PROVIDER AVEC GESTION D'ERREURS ROBUSTE
+// INITIALISATION PRINCIPALE AVEC ANALYTICS
 // =====================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[App] DOM loaded, creating dual provider app instance...');
+    console.log('[App] DOM loaded, creating dual provider app instance with analytics...');
     
     try {
         document.body.classList.add('login-mode');
         
         window.app = new App();
         
-        // ANALYTICS: Track app start
-        if (window.analyticsManager && typeof window.analyticsManager.trackEvent === 'function') {
-            window.analyticsManager.trackEvent('dom_loaded', {
-                environment: window.location.hostname.includes('netlify.app') ? 'netlify' : 'local',
-                userAgent: navigator.userAgent
-            });
-        }
-        
         const waitForServices = (attempts = 0) => {
             const maxAttempts = 50;
             
             try {
                 if (checkServicesReady()) {
-                    console.log('[App] All required services ready, initializing dual provider app...');
+                    console.log('[App] All required services ready, initializing dual provider app with analytics...');
                     
                     setTimeout(() => {
                         try {
                             window.app.init();
                         } catch (initError) {
                             console.error('[App] Error during app initialization:', initError);
-                            
-                            // ANALYTICS: Track init error
-                            if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
-                                window.analyticsManager.onError('app_init_error', {
-                                    message: initError.message,
-                                    stack: initError.stack
-                                });
-                            }
-                            
                             if (window.app) {
                                 window.app.showError('Erreur lors de l\'initialisation: ' + initError.message);
                             }
@@ -2090,12 +2181,16 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (domError) {
         console.error('[App] Critical error during DOM initialization:', domError);
         
-        // ANALYTICS: Track critical error
-        if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
-            window.analyticsManager.onError('critical_dom_error', {
-                message: domError.message,
-                stack: domError.stack
-            });
+        // Track error si analytics disponible
+        if (window.analyticsManager && window.analyticsManager.onError) {
+            try {
+                window.analyticsManager.onError('dom_init_error', {
+                    message: domError.message,
+                    stack: domError.stack
+                });
+            } catch (analyticsError) {
+                console.warn('[App] Analytics error during DOM error tracking:', analyticsError);
+            }
         }
         
         // Affichage d'erreur d'urgence
@@ -2133,15 +2228,22 @@ window.addEventListener('load', () => {
             }
         } catch (loadError) {
             console.error('[App] Error during load event:', loadError);
+            
+            // Track error si analytics disponible
+            if (window.app && window.app.trackError) {
+                window.app.trackError('load_event_error', {
+                    message: loadError.message
+                });
+            }
         }
     }, 5000);
 });
 
 // =====================================
-// DIAGNOSTIC GLOBAL DUAL PROVIDER AMÉLIORÉ AVEC ANALYTICS
+// DIAGNOSTIC GLOBAL AVEC ANALYTICS
 // =====================================
 window.diagnoseApp = function() {
-    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER - EmailSortPro v4.3');
+    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER + ANALYTICS - EmailSortPro v4.2');
     
     try {
         if (window.app) {
@@ -2150,6 +2252,7 @@ window.diagnoseApp = function() {
             console.log('🌐 Environment:', appDiag.environment);
             console.log('📱 App Status:', appDiag.app);
             console.log('👤 User:', appDiag.user);
+            console.log('📊 Analytics:', appDiag.analytics);
             console.log('🛠️ Services:', appDiag.services);
             console.log('🏗️ DOM Elements:', appDiag.dom);
             console.log('💾 Session Data:', appDiag.sessionData);
@@ -2158,22 +2261,16 @@ window.diagnoseApp = function() {
                 console.log('❌ Recent Errors:', appDiag.errors);
             }
             
-            // Analytics diagnostic
-            if (window.analyticsManager) {
-                const analyticsData = window.analyticsManager.getAnalyticsData();
-                console.log('📊 Analytics Status:', {
-                    initialized: window.analyticsManager.initialized,
-                    sessionId: window.analyticsManager.currentSession?.sessionId,
-                    totalEvents: analyticsData.events?.length || 0,
-                    totalUsers: Object.keys(analyticsData.userStatsByEmail || {}).length,
-                    totalScans: analyticsData.scanStats?.totalScans || 0,
-                    totalRevenue: window.analyticsManager.getUserCostAnalysis().totalRevenue
-                });
-            }
-            
             // Test des services critiques
             const serviceTests = window.app.testCriticalServices();
             console.log('🧪 Service Tests:', serviceTests);
+            
+            // Diagnostic analytics spécifique
+            if (window.analyticsManager) {
+                console.log('📈 Analytics Data:', window.analyticsManager.getGlobalStats());
+                console.log('👥 User Stats:', window.analyticsManager.getAllUsers().length + ' utilisateurs');
+                console.log('🏢 Company Stats:', window.analyticsManager.getAllCompanies().length + ' sociétés');
+            }
             
             return appDiag;
         } else {
@@ -2183,6 +2280,10 @@ window.diagnoseApp = function() {
             const basicDiag = {
                 error: 'App instance not available',
                 services: window.checkServices ? window.checkServices() : 'checkServices not available',
+                analytics: {
+                    available: !!window.analyticsManager,
+                    hasData: window.analyticsManager ? !!window.analyticsManager.getGlobalStats : false
+                },
                 dom: {
                     loginPage: !!document.getElementById('loginPage'),
                     pageContent: !!document.getElementById('pageContent')
@@ -2191,8 +2292,7 @@ window.diagnoseApp = function() {
                     isNetlify: window.location.hostname.includes('netlify.app'),
                     domain: window.location.hostname,
                     userAgent: navigator.userAgent.substring(0, 100)
-                },
-                analytics: window.analyticsManager ? 'Available' : 'Not available'
+                }
             };
             
             console.log('📊 Basic Diagnostic:', basicDiag);
@@ -2207,7 +2307,7 @@ window.diagnoseApp = function() {
 };
 
 // =====================================
-// FONCTIONS D'AIDE POUR NETLIFY
+// FONCTIONS D'AIDE POUR NETLIFY AVEC ANALYTICS
 // =====================================
 window.netlifyHelpers = {
     checkDomain: () => {
@@ -2259,27 +2359,160 @@ window.netlifyHelpers = {
         return results;
     },
     
-    checkAnalytics: () => {
-        if (!window.analyticsManager) {
-            console.error('Analytics not available');
-            return null;
-        }
-        
-        const data = window.analyticsManager.getAnalyticsData();
-        const summary = {
-            totalEvents: data.events?.length || 0,
-            totalUsers: Object.keys(data.userStatsByEmail || {}).length,
-            totalScans: data.scanStats?.totalScans || 0,
-            totalEmails: data.scanStats?.totalEmails || 0,
-            totalCost: (window.analyticsManager.getUserCostAnalysis().totalRevenue / 100).toFixed(2) + '€'
+    testAnalytics: () => {
+        const results = {
+            available: !!window.analyticsManager,
+            methods: {}
         };
         
-        console.log('Analytics summary:', summary);
-        return summary;
+        if (window.analyticsManager) {
+            const methods = ['trackEvent', 'trackAuthentication', 'onError', 'getGlobalStats', 'getAllUsers', 'getAllCompanies'];
+            methods.forEach(method => {
+                results.methods[method] = typeof window.analyticsManager[method] === 'function';
+            });
+            
+            try {
+                results.stats = window.analyticsManager.getGlobalStats();
+                results.users = window.analyticsManager.getAllUsers().length;
+                results.companies = window.analyticsManager.getAllCompanies().length;
+            } catch (error) {
+                results.error = error.message;
+            }
+        }
+        
+        console.log('Analytics test results:', results);
+        return results;
     }
 };
 
-console.log('✅ App v4.3 loaded - DUAL PROVIDER with Analytics Integration');
+// =====================================
+// FONCTIONS ANALYTICS GLOBALES
+// =====================================
+window.analyticsHelpers = {
+    // Fonction pour accéder aux analytics depuis analytics.html
+    getAnalyticsData: () => {
+        if (!window.analyticsManager) {
+            console.warn('[Analytics] Analytics manager not available');
+            return null;
+        }
+        
+        try {
+            return window.analyticsManager.getAnalyticsData();
+        } catch (error) {
+            console.error('[Analytics] Error getting analytics data:', error);
+            return null;
+        }
+    },
+    
+    // Fonction pour filtrer les utilisateurs par domaine
+    getUsersByDomain: (domain) => {
+        if (!window.analyticsManager) {
+            console.warn('[Analytics] Analytics manager not available');
+            return [];
+        }
+        
+        try {
+            const allUsers = window.analyticsManager.getAllUsers();
+            return allUsers.filter(user => {
+                const userDomain = user.email ? user.email.split('@')[1] : '';
+                return userDomain.toLowerCase().includes(domain.toLowerCase());
+            });
+        } catch (error) {
+            console.error('[Analytics] Error filtering users by domain:', error);
+            return [];
+        }
+    },
+    
+    // Fonction pour filtrer les utilisateurs par email
+    getUserByEmail: (email) => {
+        if (!window.analyticsManager) {
+            console.warn('[Analytics] Analytics manager not available');
+            return null;
+        }
+        
+        try {
+            const allUsers = window.analyticsManager.getAllUsers();
+            return allUsers.find(user => 
+                user.email && user.email.toLowerCase() === email.toLowerCase()
+            );
+        } catch (error) {
+            console.error('[Analytics] Error finding user by email:', error);
+            return null;
+        }
+    },
+    
+    // Fonction pour obtenir les statistiques par société
+    getCompanyStats: (companyName) => {
+        if (!window.analyticsManager) {
+            console.warn('[Analytics] Analytics manager not available');
+            return null;
+        }
+        
+        try {
+            const companies = window.analyticsManager.getAllCompanies();
+            return companies.find(company => 
+                company.name && company.name.toLowerCase() === companyName.toLowerCase()
+            );
+        } catch (error) {
+            console.error('[Analytics] Error getting company stats:', error);
+            return null;
+        }
+    },
+    
+    // Fonction pour exporter les données filtrées
+    exportFilteredData: (filter = {}) => {
+        if (!window.analyticsManager) {
+            console.warn('[Analytics] Analytics manager not available');
+            return;
+        }
+        
+        try {
+            let data = window.analyticsManager.getAnalyticsData();
+            
+            // Appliquer les filtres
+            if (filter.domain) {
+                const filteredUsers = {};
+                Object.keys(data.users).forEach(email => {
+                    const userDomain = email.split('@')[1];
+                    if (userDomain && userDomain.toLowerCase().includes(filter.domain.toLowerCase())) {
+                        filteredUsers[email] = data.users[email];
+                    }
+                });
+                data.users = filteredUsers;
+            }
+            
+            if (filter.company) {
+                const filteredCompanies = {};
+                Object.keys(data.companies).forEach(companyName => {
+                    if (companyName.toLowerCase().includes(filter.company.toLowerCase())) {
+                        filteredCompanies[companyName] = data.companies[companyName];
+                    }
+                });
+                data.companies = filteredCompanies;
+            }
+            
+            // Exporter
+            const blob = new Blob([JSON.stringify(data, null, 2)], {
+                type: 'application/json'
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `emailsortpro-analytics-filtered-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            
+            URL.revokeObjectURL(url);
+            
+            console.log('[Analytics] Filtered data exported successfully');
+        } catch (error) {
+            console.error('[Analytics] Error exporting filtered data:', error);
+        }
+    }
+};
+
+console.log('✅ App v4.2 loaded - DUAL PROVIDER (Microsoft + Google) + ANALYTICS INTEGRATION');
 console.log('🔧 Fonctions globales disponibles: window.diagnoseApp(), window.testServices(), window.repairMailService(), window.repairScanModule()');
 console.log('🌐 Helpers Netlify: window.netlifyHelpers');
-console.log('📊 Analytics: window.analyticsManager disponible');
+console.log('📊 Helpers Analytics: window.analyticsHelpers');
+console.log('📈 Analytics tracking: Email en clair, filtrage par domaine et par société');
