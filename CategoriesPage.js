@@ -1015,7 +1015,6 @@ class CategoriesPageAdvanced {
     addFilter(type) {
         const inputMap = {
             'includeDomains': 'include-domain',
-            'includeEmails': 'include-email',
             'excludeDomains': 'exclude-domain',
             'excludeEmails': 'exclude-email'
         };
@@ -1051,7 +1050,7 @@ class CategoriesPageAdvanced {
         const isExclude = type.includes('exclude');
         const icon = type.includes('Domain') ? 
             (isExclude ? 'shield-alt' : 'globe') : 
-            (isExclude ? 'user-slash' : 'at');
+            'user-slash';
         
         container.insertAdjacentHTML('beforeend', `
             <span class="tag ${isExclude ? 'exclude-tag' : 'filter-tag'}" data-value="${value}">
@@ -1131,7 +1130,6 @@ class CategoriesPageAdvanced {
         
         return {
             includeDomains: getItems('includeDomains-items'),
-            includeEmails: getItems('includeEmails-items'),
             excludeDomains: getItems('excludeDomains-items'),
             excludeEmails: getItems('excludeEmails-items')
         };
@@ -1482,29 +1480,6 @@ class CategoriesPageAdvanced {
                             `).join('')}
                         </div>
                     </div>
-                    
-                    <div class="filter-box">
-                        <h4><i class="fas fa-at"></i> Emails autorisés</h4>
-                        <p class="filter-hint">Emails provenant de ces adresses spécifiques seront inclus</p>
-                        <div class="input-modern">
-                            <input type="text" id="include-email" placeholder="contact@exemple.com" 
-                                   onkeypress="if(event.key === 'Enter') window.categoriesPage.addFilter('includeEmails')">
-                            <button onclick="window.categoriesPage.addFilter('includeEmails')" style="background: #10B981;">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="tags" id="includeEmails-items">
-                            ${filters.includeEmails.map(e => `
-                                <span class="tag filter-tag">
-                                    <i class="fas fa-at"></i>
-                                    ${e}
-                                    <button onclick="window.categoriesPage.removeFilter('includeEmails', '${e}')">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </span>
-                            `).join('')}
-                        </div>
-                    </div>
                 </div>
                 
                 <div class="filter-section">
@@ -1564,18 +1539,20 @@ class CategoriesPageAdvanced {
                         <div class="info-card">
                             <h4>🎯 Comment ça fonctionne ?</h4>
                             <ul>
-                                <li><strong>Inclusion :</strong> Si des filtres d'inclusion sont définis, seuls les emails correspondants seront considérés</li>
-                                <li><strong>Exclusion :</strong> Les filtres d'exclusion s'appliquent après l'inclusion et retirent définitivement les emails</li>
-                                <li><strong>Priorité :</strong> Exclusion > Inclusion > Mots-clés</li>
+                                <li><strong>Domaines autorisés :</strong> Si définis, seuls les emails de ces domaines seront considérés pour cette catégorie</li>
+                                <li><strong>Exclusions :</strong> Les filtres d'exclusion s'appliquent après et retirent définitivement les emails</li>
+                                <li><strong>Priorité :</strong> Exclusion > Inclusion domaine > Mots-clés</li>
+                                <li><strong>Par défaut :</strong> Tous les emails sont autorisés (aucun filtre d'inclusion = tous autorisés)</li>
                             </ul>
                         </div>
                         
                         <div class="info-card">
                             <h4>💡 Exemples d'usage</h4>
                             <ul>
-                                <li><strong>Newsletter :</strong> Inclure "newsletter.com" mais exclure "noreply@"</li>
-                                <li><strong>Support :</strong> Inclure "support@" mais exclure "auto-reply@"</li>
-                                <li><strong>Finance :</strong> Inclure "billing.com" et "facture@" mais exclure "marketing@"</li>
+                                <li><strong>Newsletter :</strong> Autoriser "newsletter.com" mais exclure "noreply@spam.com"</li>
+                                <li><strong>Support :</strong> Autoriser "support.entreprise.com" mais exclure "auto-reply@"</li>
+                                <li><strong>Finance :</strong> Autoriser "billing.com" mais exclure "marketing@billing.com"</li>
+                                <li><strong>Spam :</strong> Exclure "publicite.com" et "promo@" sans restriction d'inclusion</li>
                             </ul>
                         </div>
                     </div>
