@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - EmailSortPro</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f8fafc;
+            line-height: 1.6;
+        }
+
+        .analytics-standalone {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 48px;
+            padding: 40px 0;
+            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+            color: white;
+            border-radius: 16px;
+            margin: 0 0 48px 0;
+        }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .page-header p {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        .back-to-app {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: white;
+            color: #4F46E5;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            z-index: 1000;
+        }
+
+        .back-to-app:hover {
+            background: #f8fafc;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .loading-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #4F46E5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #64748b;
+            font-size: 1.125rem;
+            font-weight: 500;
+        }
+
+        .error-container {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .error-container h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .error-container p {
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .retry-button {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .retry-button:hover {
+            background: #b91c1c;
+            transform: translateY(-2px);
+        }
+
+        #analyticsContent {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        #analyticsContent.loaded {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Styles pour les analytics intégrés */
+        .analytics-page {
+            padding: 0;
+        }
+
+        .analytics-header {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .analytics-header h1 {
+            font-size: 1.75rem;
+            margin-bottom: 8px;
+        }
+
+        .analytics-actions {
+            margin-top: 16px;
+        }
+
+        .real-time-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #dcfce7;
+            color: #16a34a;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-left: 16px;
+        }
+
+        .real-time-dot {
+            width: 8px;
+            height: 8px;
+            background: #16a34a;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .analytics-summary {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .summary-item {
+            text-align: center;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .summary-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 1.25rem;
+        }
+
+        .summary-icon.users { background: #dbeafe; color: #1d4ed8; }
+        .summary-icon.scans { background: #dcfce7; color: #16a34a; }
+        .summary-icon.errors { background: #fef2f2; color: #dc2626; }
+        .summary-icon.activity { background: #fef3c7; color: #d97706; }
+
+        .summary-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .summary-label {
+            font-size: 0.875rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .last-updated {
+            text-align: center;
+            margin-top: 32px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+
+        .footer-info {
+            text-align: center;
+            margin-top: 48px;
+            padding: 24px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .footer-info h3 {
+            color: #1f2937;
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .footer-info p {
+            color: #64748b;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .analytics-standalone {
+                padding: 20px 16px;
+            }
+
+            .page-header {
+                padding: 32px 20px;
+                margin-bottom: 32px;
+            }
+
+            .page-header h1 {
+                font-size: 2rem;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .page-header p {
+                font-size: 1.125rem;
+            }
+
+            .back-to-app {
+                position: static;
+                margin-bottom: 20px;
+                align-self: flex-start;
+            }
+
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+            }
+
+            .summary-item {
+                padding: 12px;
+            }
+
+            .summary-number {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="analytics-standalone">
+        <a href="../index.html" class="back-to-app">
+            <i class="fas fa-arrow-left"></i>
+            Retour à l'application
+        </a>
+
+        <div class="page-header">
+            <h1>
+                <i class="fas fa-chart-line"></i>
+                Analytics EmailSortPro
+            </h1>
+            <p>
+                Tableau de bord complet pour analyser l'utilisation de votre application EmailSortPro
+            </p>
+            <div class="real-time-indicator">
+                <div class="real-time-dot"></div>
+                Données en temps réel
+            </div>
+        </div>
+
+        <div class="analytics-summary">
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-icon users">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="summary-number" id="summaryUsers">-</div>
+                    <div class="summary-label">Utilisateurs actifs</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-icon scans">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="summary-number" id="summaryScans">-</div>
+                    <div class="summary-label">Scans effectués</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-icon errors">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="summary-number" id="summaryErrors">-</div>
+                    <div class="summary-label">Erreurs détectées</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-icon activity">
+                        <i class="fas fa-activity"></i>
+                    </div>
+                    <div class="summary-number" id="summaryActivity">-</div>
+                    <div class="summary-label">Actions récentes</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loadingContainer" class="loading-container">
+            <div class="spinner"></div>
+            <div class="loading-text">Chargement des analytics...</div>
+        </div>
+
+        <div id="errorContainer" class="error-container" style="display: none;">
+            <h3>
+                <i class="fas fa-exclamation-triangle"></i>
+                Erreur de chargement
+            </h3>
+            <p id="errorMessage">Une erreur s'est produite lors du chargement des données analytics.</p>
+            <button class="retry-button" onclick="loadAnalytics()">
+                <i class="fas fa-redo"></i>
+                Réessayer
+            </button>
+        </div>
+
+        <div id="analyticsContent"></div>
+
+        <div class="last-updated">
+            <i class="fas fa-clock"></i>
+            Dernière mise à jour : <span id="lastUpdated">-</span>
+        </div>
+
+        <div class="footer-info">
+            <h3>À propos des Analytics</h3>
+            <p>
+                Ces données sont collectées localement dans votre navigateur pour améliorer votre expérience. 
+                Aucune information personnelle n'est transmise à des serveurs externes. 
+                Vous pouvez exporter ou supprimer ces données à tout moment.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        console.log('[Analytics Page] Loading analytics standalone page...');
+
+        // Configuration pour la page standalone
+        const ANALYTICS_CONFIG = {
+            autoRefresh: true,
+            refreshInterval: 30000, // 30 secondes
+            maxRetries: 3,
+            retryDelay: 2000
+        };
+
+        let analyticsManager = null;
+        let analyticsModule = null;
+        let refreshTimer = null;
+        let retryCount = 0;
+
+        // Fonction pour charger le script analytics dynamiquement
+        async function loadAnalyticsScript() {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = './analytics.js';
+                script.onload = () => {
+                    console.log('[Analytics Page] Analytics script loaded successfully');
+                    resolve();
+                };
+                script.onerror = () => {
+                    console.error('[Analytics Page] Failed to load analytics script');
+                    reject(new Error('Failed to load analytics.js'));
+                };
+                document.head.appendChild(script);
+            });
+        }
+
+        // Fonction principale de chargement des analytics
+        async function loadAnalytics() {
+            try {
+                console.log('[Analytics Page] Starting analytics load...');
+                
+                // Afficher le loading
+                showLoading();
+                
+                // Charger le script si nécessaire
+                if (!window.analyticsManager || !window.analyticsModule) {
+                    console.log('[Analytics Page] Loading analytics script...');
+                    await loadAnalyticsScript();
+                    
+                    // Attendre que les objets soient disponibles
+                    let attempts = 0;
+                    while ((!window.analyticsManager || !window.analyticsModule) && attempts < 10) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        attempts++;
+                    }
+                    
+                    if (!window.analyticsManager || !window.analyticsModule) {
+                        throw new Error('Analytics objects not available after loading script');
+                    }
+                }
+
+                analyticsManager = window.analyticsManager;
+                analyticsModule = window.analyticsModule;
+
+                console.log('[Analytics Page] Analytics objects ready');
+
+                // Vérifier s'il y a des données
+                const data = analyticsManager.getAnalyticsData();
+                console.log('[Analytics Page] Analytics data:', data);
+
+                // Mettre à jour le résumé
+                updateSummary(data);
+
+                // Configurer le container pour le module
+                const analyticsContent = document.getElementById('analyticsContent');
+                
+                // Créer un container pageContent temporaire pour le module
+                const pageContent = document.createElement('div');
+                pageContent.id = 'pageContent';
+                analyticsContent.innerHTML = '';
+                analyticsContent.appendChild(pageContent);
+
+                // Render le module analytics
+                analyticsModule.render();
+
+                // Afficher le contenu
+                showContent();
+
+                // Démarrer l'auto-refresh
+                if (ANALYTICS_CONFIG.autoRefresh) {
+                    startAutoRefresh();
+                }
+
+                // Mettre à jour la timestamp
+                updateLastUpdated();
+
+                retryCount = 0;
+                console.log('[Analytics Page] ✅ Analytics loaded successfully');
+
+            } catch (error) {
+                console.error('[Analytics Page] ❌ Error loading analytics:', error);
+                showError(error.message);
+                
+                // Retry logic
+                if (retryCount < ANALYTICS_CONFIG.maxRetries) {
+                    retryCount++;
+                    console.log(`[Analytics Page] Retrying in ${ANALYTICS_CONFIG.retryDelay}ms (attempt ${retryCount}/${ANALYTICS_CONFIG.maxRetries})`);
+                    setTimeout(() => {
+                        loadAnalytics();
+                    }, ANALYTICS_CONFIG.retryDelay);
+                }
+            }
+        }
+
+        function updateSummary(data) {
+            // Utilisateurs uniques
+            const userDomains = Object.keys(data.userStats || {});
+            document.getElementById('summaryUsers').textContent = userDomains.length;
+
+            // Scans totaux
+            const totalScans = data.scanStats?.totalScans || 0;
+            document.getElementById('summaryScans').textContent = totalScans.toLocaleString();
+
+            // Erreurs
+            const errorEvents = (data.events || []).filter(e => e.type === 'error');
+            document.getElementById('summaryErrors').textContent = errorEvents.length;
+
+            // Activité récente (dernières 24h)
+            const recentEvents = (data.events || [])
+                .filter(e => {
+                    const eventTime = new Date(e.timestamp);
+                    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                    return eventTime > cutoff;
+                });
+            document.getElementById('summaryActivity').textContent = recentEvents.length;
+        }
+
+        function showLoading() {
+            document.getElementById('loadingContainer').style.display = 'flex';
+            document.getElementById('errorContainer').style.display = 'none';
+            document.getElementById('analyticsContent').classList.remove('loaded');
+        }
+
+        function showError(message) {
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('errorContainer').style.display = 'block';
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('analyticsContent').classList.remove('loaded');
+        }
+
+        function showContent() {
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('errorContainer').style.display = 'none';
+            
+            setTimeout(() => {
+                document.getElementById('analyticsContent').classList.add('loaded');
+            }, 100);
+        }
+
+        function updateLastUpdated() {
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = now.toLocaleString('fr-FR');
+        }
+
+        function startAutoRefresh() {
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+            }
+
+            refreshTimer = setInterval(() => {
+                console.log('[Analytics Page] Auto-refreshing data...');
+                
+                if (analyticsManager && analyticsModule) {
+                    const data = analyticsManager.getAnalyticsData();
+                    updateSummary(data);
+                    analyticsModule.loadAnalyticsData();
+                    updateLastUpdated();
+                }
+            }, ANALYTICS_CONFIG.refreshInterval);
+
+            console.log('[Analytics Page] Auto-refresh started (every 30s)');
+        }
+
+        function stopAutoRefresh() {
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+                refreshTimer = null;
+                console.log('[Analytics Page] Auto-refresh stopped');
+            }
+        }
+
+        // Gestion de la visibilité de la page
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                stopAutoRefresh();
+            } else if (document.visibilityState === 'visible' && ANALYTICS_CONFIG.autoRefresh) {
+                startAutoRefresh();
+                // Refresh immédiat
+                loadAnalytics();
+            }
+        });
+
+        // Cleanup au déchargement de la page
+        window.addEventListener('beforeunload', () => {
+            stopAutoRefresh();
+            if (analyticsModule) {
+                analyticsModule.destroy();
+            }
+        });
+
+        // Démarrer le chargement au load de la page
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('[Analytics Page] DOM loaded, starting analytics load...');
+            loadAnalytics();
+        });
+
+        // Debug global
+        window.debugAnalytics = function() {
+            console.log('=== ANALYTICS PAGE DEBUG ===');
+            console.log('analyticsManager:', analyticsManager);
+            console.log('analyticsModule:', analyticsModule);
+            console.log('refreshTimer:', refreshTimer);
+            console.log('retryCount:', retryCount);
+            
+            if (analyticsManager) {
+                console.log('Analytics data:', analyticsManager.getAnalyticsData());
+            }
+            
+            return {
+                analyticsManager: !!analyticsManager,
+                analyticsModule: !!analyticsModule,
+                autoRefreshActive: !!refreshTimer,
+                retryCount: retryCount,
+                config: ANALYTICS_CONFIG
+            };
+        };
+
+        console.log('[Analytics Page] ✅ Analytics standalone page initialized');
+        console.log('[Analytics Page] Use debugAnalytics() for debug information');
+    </script>
+</body>
+</html>
