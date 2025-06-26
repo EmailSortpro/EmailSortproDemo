@@ -2,6 +2,8 @@
 config.js
 *.config.js
 config-*.js
+config-supabase.js
+supabase-config.js
 
 # Environment variables
 .env
