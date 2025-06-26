@@ -3,215 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EmailSortProAI - Scanner d'Emails Intelligent avec IA</title>
-    
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="Organisez vos emails Outlook et Gmail intelligemment avec l'IA. Catégorisation automatique et organisation par domaine.">
-    <meta name="keywords" content="email, outlook, gmail, microsoft, google, gestion, ia, productivité, organisation">
-    <meta name="author" content="VH - Vianney Hastings">
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="">
-    <meta property="og:title" content="EmailSortProAI - Scanner d'Emails Intelligent">
-    <meta property="og:description" content="Organisez vos emails Outlook et Gmail intelligemment avec l'IA.">
-    
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="">
-    <meta property="twitter:title" content="EmailSortProAI - Scanner d'Emails Intelligent">
-    <meta property="twitter:description" content="Organisez vos emails Outlook et Gmail intelligemment avec l'IA.">
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📧</text></svg>">
-    
-    <!-- MSAL Library -->
-    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    <title>EmailSortPro - Organisateur d'emails intelligent</title>
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Styles principaux -->
-    <link rel="stylesheet" href="styles.css">
+    <!-- Configuration et scripts de base -->
+    <script src="./config-supabase.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- CONFIGURATION NETLIFY DYNAMIQUE -->
-    <script>
-        console.log('[INDEX] 🚀 Loading dynamic Netlify configuration...');
-        
-        // Détection automatique du domaine actuel
-        const currentDomain = window.location.hostname;
-        const currentOrigin = window.location.origin;
-        
-        console.log('[INDEX] 🌐 Domaine détecté:', currentDomain);
-        console.log('[INDEX] 🌐 Origin détecté:', currentOrigin);
-        
-        // Client ID fonctionnel pour tous les domaines Netlify
-        window.NETLIFY_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
-        
-        console.log('[INDEX] ✅ Client ID configuré pour domaine Netlify');
-        
-        // Détection de l'environnement - VERSION CORRIGÉE
-        (function() {
-            const hostname = window.location.hostname;
-            const isNetlify = hostname.includes('netlify.app') || hostname.includes('netlifyapp.com');
-            const isGitHubPages = hostname.includes('github.io');
-            const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-            
-            console.log('[INDEX] Environment detection:', {
-                hostname,
-                isNetlify,
-                isGitHubPages,
-                isLocalhost,
-                origin: window.location.origin
-            });
-            
-            // Fonction pour obtenir le Client ID - SIMPLIFIÉE
-            function getClientIdForEnvironment() {
-                // Toujours utiliser le client ID Netlify pour les domaines netlify.app
-                if (isNetlify) {
-                    console.log('[INDEX] ✅ Using Netlify client ID');
-                    return window.NETLIFY_CLIENT_ID;
-                }
-                
-                try {
-                    const savedClientId = localStorage.getItem('emailsortpro_client_id');
-                    if (savedClientId && savedClientId !== 'VOTRE_CLIENT_ID_ICI' && savedClientId !== 'CONFIGURATION_REQUIRED') {
-                        console.log('[INDEX] ✅ Using saved client ID from localStorage');
-                        return savedClientId;
-                    }
-                } catch (e) {
-                    console.warn('[INDEX] Cannot access localStorage:', e);
-                }
-                
-                if (isLocalhost) {
-                    console.log('[INDEX] Using localhost development client ID');
-                    return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
-                }
-                
-                console.log('[INDEX] ✅ Using default client ID');
-                return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
-            }
-            
-            // Fonction pour créer la configuration - DYNAMIQUE
-            function createConfig(clientId) {
-                // URLs dynamiques basées sur le domaine actuel
-                const redirectUri = currentOrigin + '/auth-callback.html';
-                const postLogoutRedirectUri = currentOrigin + '/';
-                
-                console.log('[INDEX] Creating dynamic config:', {
-                    redirectUri,
-                    postLogoutRedirectUri,
-                    clientId: clientId.substring(0, 8) + '...',
-                    currentDomain: hostname
-                });
-                
-                window.AppConfig = {
-                    msal: {
-                        clientId: clientId,
-                        authority: 'https://login.microsoftonline.com/common',
-                        redirectUri: redirectUri,
-                        postLogoutRedirectUri: postLogoutRedirectUri,
-                        cache: {
-                            cacheLocation: 'localStorage',
-                            storeAuthStateInCookie: true
-                        },
-                        system: {
-                            loggerOptions: {
-                                loggerCallback: (level, message, containsPii) => {
-                                    if (window.debugMode || isLocalhost) {
-                                        console.log(`[MSAL ${level}] ${message}`);
-                                    }
-                                },
-                                piiLoggingEnabled: false,
-                                logLevel: isLocalhost ? 'Verbose' : 'Warning'
-                            },
-                            allowNativeBroker: false
-                        }
-                    },
-                    scopes: {
-                        login: [
-                            'https://graph.microsoft.com/User.Read',
-                            'https://graph.microsoft.com/Mail.Read',
-                            'https://graph.microsoft.com/Mail.ReadWrite'
-                        ],
-                        silent: [
-                            'https://graph.microsoft.com/User.Read',
-                            'https://graph.microsoft.com/Mail.Read',
-                            'https://graph.microsoft.com/Mail.ReadWrite'
-                        ]
-                    },
-                    app: {
-                        name: 'EmailSortProAI',
-                        version: '3.0.2',
-                        debug: isLocalhost,
-                        environment: isNetlify ? 'netlify' : isGitHubPages ? 'github' : isLocalhost ? 'localhost' : 'other',
-                        domain: hostname, // Domaine dynamique
-                        currentUrl: currentOrigin
-                    },
-                    email: {
-                        defaultFolder: 'inbox',
-                        defaultDays: 30,
-                        pageSize: 100,
-                        maxEmails: 10000
-                    },
-                    errors: {
-                        'unauthorized_client': 'Configuration Azure incorrecte. Vérifiez votre Client ID.',
-                        'invalid_client': 'Application non autorisée. Contactez l\'administrateur.',
-                        'consent_required': 'Autorisation requise. Veuillez accepter les permissions.',
-                        'interaction_required': 'Reconnexion requise.',
-                        'login_required': 'Connexion requise.',
-                        'network_error': 'Erreur réseau. Vérifiez votre connexion.',
-                        'token_expired': 'Session expirée. Reconnexion nécessaire.',
-                        'invalid_request': 'URI de redirection invalide. Configuration Azure requise.'
-                    },
-                    validate() {
-                        const issues = [];
-                        if (!this.msal.clientId || this.msal.clientId === 'VOTRE_CLIENT_ID_ICI' || this.msal.clientId === 'CONFIGURATION_REQUIRED') {
-                            issues.push('Client ID non configuré');
-                        }
-                        
-                        return { 
-                            valid: issues.length === 0, 
-                            issues: issues 
-                        };
-                    },
-                    forceValidate() {
-                        return this.validate();
-                    },
-                    getDebugInfo() {
-                        return {
-                            hostname: window.location.hostname,
-                            origin: window.location.origin,
-                            environment: this.app.environment,
-                            domain: this.app.domain,
-                            configValid: this.validate().valid,
-                            clientId: this.msal.clientId.substring(0, 8) + '...',
-                            redirectUri: this.msal.redirectUri,
-                            postLogoutRedirectUri: this.msal.postLogoutRedirectUri,
-                            timestamp: new Date().toISOString()
-                        };
-                    }
-                };
-                
-                console.log('[INDEX] ✅ Configuration créée pour:', {
-                    environment: window.AppConfig.app.environment,
-                    domain: window.AppConfig.app.domain,
-                    clientId: clientId.substring(0, 8) + '...',
-                    redirectUri: window.AppConfig.msal.redirectUri
-                });
-            }
-            
-            // Créer la configuration
-            const clientId = getClientIdForEnvironment();
-            createConfig(clientId);
-            
-            console.log('[INDEX] ✅ Configuration terminée pour:', hostname);
-        })();
-    </script>
-
-    <!-- Styles intégrés pour l'application sobre -->
     <style>
-        /* Reset et styles de base */
         * {
             margin: 0;
             padding: 0;
@@ -220,710 +21,284 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f8fafc;
-            overflow-x: hidden;
-            overflow-y: auto;
-            transition: all 0.15s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.6;
         }
 
-        /* Mode login initial */
-        body.login-mode {
-            overflow: hidden !important;
-        }
-
-        /* === STYLES POUR LA PAGE DE LOGIN SOBRE === */
-        .login-page-styles {
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 10000;
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
             padding: 20px;
         }
 
-        .login-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 16px;
-            padding: 40px 32px;
+        .header {
             text-align: center;
-            max-width: 440px;
-            width: 100%;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .login-header {
-            margin-bottom: 32px;
-        }
-
-        .login-logo {
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
             color: white;
-            width: 64px;
-            height: 64px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.75rem;
-            margin: 0 auto 20px;
-            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3);
+            margin-bottom: 2rem;
         }
 
-        .login-title {
+        .header h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .main-content {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .auth-section {
+            padding: 3rem 2rem;
+            text-align: center;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+
+        .auth-section h2 {
             font-size: 2rem;
-            font-weight: 600;
+            margin-bottom: 1rem;
             color: #1f2937;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
 
-        .login-subtitle {
-            font-size: 1rem;
+        .auth-section p {
+            font-size: 1.1rem;
             color: #6b7280;
-            margin-bottom: 32px;
-            line-height: 1.5;
+            margin-bottom: 2rem;
         }
 
-        .login-button {
+        .btn {
+            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
             color: white;
-            padding: 14px 28px;
             border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 500;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.15s ease;
             display: inline-flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            transition: all 0.3s ease;
             text-decoration: none;
-            margin-bottom: 12px;
-            width: 100%;
-            justify-content: center;
         }
 
-        .login-button.microsoft {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(79, 70, 229, 0.4);
         }
 
-        .login-button.microsoft:hover {
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        .btn:active {
+            transform: translateY(-1px);
         }
 
-        .login-button.google {
-            background: linear-gradient(135deg, #ea4335 0%, #d33b2c 100%);
-            box-shadow: 0 4px 16px rgba(234, 67, 53, 0.3);
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
         }
 
-        .login-button.google:hover {
-            box-shadow: 0 6px 20px rgba(234, 67, 53, 0.4);
-            background: linear-gradient(135deg, #d33b2c 0%, #b52d1e 100%);
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
         }
 
-        .login-button:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .login-security {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            color: #6b7280;
-            font-size: 0.875rem;
-            margin-bottom: 32px;
-        }
-
-        /* Section Comment ça marche sobre */
-        .how-it-works {
-            margin-top: 24px;
-            text-align: left;
-        }
-
-        .how-it-works-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .steps-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .step {
-            text-align: center;
-        }
-
-        .step-number {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 0.875rem;
-            margin: 0 auto 10px;
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-        }
-
-        .step-icon {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-            color: #4F46E5;
-        }
-
-        .step-title {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 6px;
-        }
-
-        .step-description {
-            font-size: 0.75rem;
-            color: #6b7280;
-            line-height: 1.4;
-        }
-
-        /* Section sécurité sobre */
-        .security-section {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            padding: 16px;
-            border-radius: 8px;
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .security-title {
-            font-size: 0.875rem;
-            font-weight: 600;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .security-description {
-            font-size: 0.75rem;
-            opacity: 0.9;
-            line-height: 1.4;
-        }
-
-        /* FOOTER CONFORMITÉ GOOGLE */
-        .google-compliance-footer {
-            margin-top: 24px;
-            padding: 16px;
-            background: rgba(59, 130, 246, 0.1);
-            border-radius: 8px;
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            text-align: center;
-        }
-
-        .compliance-links {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            margin-top: 12px;
-            flex-wrap: wrap;
-        }
-
-        .compliance-link {
-            color: #4F46E5;
-            text-decoration: none;
-            font-size: 0.875rem;
-            font-weight: 500;
-            padding: 8px 12px;
-            border: 1px solid rgba(79, 70, 229, 0.3);
-            border-radius: 6px;
-            transition: all 0.2s ease;
-        }
-
-        .compliance-link:hover {
-            background: rgba(79, 70, 229, 0.1);
-            border-color: #4F46E5;
-        }
-
-        /* === STYLES POUR L'APPLICATION SOBRE === */
-        /* Header Application */
-        .app-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-            color: white;
-            z-index: 1000;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        .app-content {
             display: none;
+            padding: 3rem 2rem;
         }
 
-        .header-content {
-            display: flex;
-            justify-content: space-between;
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .welcome-section h2 {
+            font-size: 2.5rem;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+
+        .welcome-section .user-info {
+            display: inline-flex;
             align-items: center;
-            padding: 0 20px;
-            height: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 600;
-            font-size: 16px;
-            color: white;
-        }
-
-        .ai-badge {
-            background: rgba(255,255,255,0.2);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 500;
-        }
-
-        .auth-status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: white !important;
-            font-size: 14px;
-        }
-
-        .user-info .user-name {
-            color: white !important;
-            font-weight: 600 !important;
-            font-size: 14px !important;
-            margin: 0 !important;
-            line-height: 1.2 !important;
-        }
-
-        .user-info .user-email {
-            color: white !important;
-            font-size: 12px !important;
-            opacity: 0.9 !important;
-            margin: 0 !important;
-            line-height: 1.2 !important;
-        }
-
-        .user-info .user-details {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            color: white !important;
+            gap: 16px;
+            background: #f3f4f6;
+            padding: 16px 24px;
+            border-radius: 12px;
+            margin-bottom: 2rem;
         }
 
         .user-avatar {
-            width: 32px;
-            height: 32px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.2) !important;
-            color: white !important;
+            background: linear-gradient(135deg, #4F46E5, #6366F1);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 500;
-            font-size: 13px;
-        }
-
-        .logout-button {
-            background: rgba(255, 255, 255, 0.15);
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
-            margin-left: 12px;
-            transition: all 0.15s ease;
+            font-weight: 700;
+            font-size: 1.25rem;
         }
 
-        .logout-button:hover {
-            background: rgba(255, 255, 255, 0.25);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        /* Forcer le texte blanc pour tous les éléments dans auth-status */
-        .auth-status * {
-            color: white !important;
-        }
-
-        .auth-status .text-muted {
-            color: rgba(255,255,255,0.8) !important;
-        }
-
-        /* Navigation sobre */
-        .app-nav {
-            position: fixed;
-            top: 60px;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: white;
-            border-bottom: 1px solid #e2e8f0;
-            z-index: 999;
-            overflow-x: auto;
-            overflow-y: hidden;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            display: none;
-        }
-
-        .app-nav::-webkit-scrollbar {
-            display: none !important;
-        }
-
-        #mainNav {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 2px;
-            padding: 0 20px;
-            height: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
-            overflow-x: auto;
-            overflow-y: hidden;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            white-space: nowrap;
-        }
-
-        #mainNav::-webkit-scrollbar {
-            display: none !important;
-        }
-
-        /* BOUTONS DE NAVIGATION SOBRES */
-        .nav-item {
-            background: transparent;
-            border: none;
-            min-width: 100px;
-            max-width: 140px;
-            height: 40px;
-            padding: 8px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            color: #64748b;
-            cursor: pointer;
-            border-radius: 6px;
-            transition: all 0.15s ease;
-            white-space: nowrap;
-            flex-shrink: 0;
-            text-decoration: none;
-        }
-
-        .nav-item i {
-            font-size: 16px !important;
-            width: 16px;
-            height: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: inherit;
-            flex-shrink: 0;
-        }
-
-        .nav-item span {
-            font-size: 14px;
-            font-weight: 500;
-            color: inherit;
-            flex-shrink: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            max-width: 90px;
-        }
-
-        .nav-item:hover {
-            background: #f1f5f9;
-            color: #475569;
-        }
-
-        .nav-item.active {
-            background: #E0E7FF;
-            color: #3730A3;
-            font-weight: 600;
-        }
-
-        .nav-item.active:hover {
-            background: #E0E7FF;
-            color: #3730A3;
-        }
-
-        .nav-item:focus {
-            outline: 2px solid #4F46E5;
-            outline-offset: 2px;
-        }
-
-        /* Contenu principal */
-        .app-main {
-            margin-top: 0;
-            min-height: 100vh;
-            padding: 0;
-            overflow-y: visible;
-        }
-
-        #pageContent {
-            display: none;
-            opacity: 0;
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px 20px 20px;
-            min-height: auto;
-        }
-
-        /* Classes pour l'état actif de l'app */
-        body.app-active {
-            background: #f8fafc;
-        }
-
-        body.app-active #loginPage {
-            display: none !important;
-        }
-
-        body.app-active .app-header {
-            display: block !important;
-        }
-
-        body.app-active .app-nav {
-            display: block !important;
-        }
-
-        body.app-active .app-main {
-            margin-top: 120px !important;
-            padding-top: 0 !important;
-            padding-left: 0;
-            padding-right: 0;
-            padding-bottom: 0;
-        }
-
-        body.app-active #pageContent {
-            display: block !important;
-            opacity: 1 !important;
-            padding-top: 0 !important;
-            margin-top: 0 !important;
-        }
-
-        /* === DASHBOARD SOBRE === */
-        .dashboard-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 48px 20px 20px 20px;
-        }
-
-        .dashboard-header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-
-        .quick-guide {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            border: 1px solid #e2e8f0;
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
-        .guide-intro {
-            font-size: 16px;
-            color: #0f172a;
-            margin-bottom: 12px;
-            text-align: center;
-        }
-
-        .guide-steps {
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .guide-step {
-            background: #f1f5f9;
-            color: #475569;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 500;
-            flex: 1;
-            text-align: center;
-            min-width: 120px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .dashboard-actions {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .action-card {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            border: 1px solid #e2e8f0;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            min-height: 140px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .action-card:hover {
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            border-color: var(--color);
-        }
-
-        .action-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 6px;
-            background: var(--color);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            margin: 0 auto 12px;
-        }
-
-        .action-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #0f172a;
-            margin-bottom: 8px;
-            line-height: 1.2;
-        }
-
-        .action-description {
-            font-size: 14px;
-            color: #64748b;
-            line-height: 1.4;
-        }
-
-        .action-description small {
-            display: block;
-            margin-top: 8px;
-            font-size: 12px;
-            color: #94a3b8;
-            background: #f8fafc;
-            padding: 6px 8px;
-            border-radius: 4px;
-            border-left: 3px solid var(--color);
-        }
-
-        .scan-card {
-            --color: #3b82f6;
-        }
-
-        .organize-card {
-            --color: #10b981;
-        }
-
-        .tasks-card {
-            --color: #f59e0b;
-        }
-
-        .settings-card {
-            --color: #4F46E5;
-        }
-
-        .dashboard-stats {
-            display: flex;
-            justify-content: center;
-            gap: 32px;
-            text-align: center;
-        }
-
-        .stat {
-            min-width: 100px;
-        }
-
-        .stat-number {
-            font-size: 24px;
-            font-weight: 600;
-            color: #4F46E5;
+        .user-details h3 {
+            color: #1f2937;
             margin-bottom: 4px;
         }
 
-        .stat-label {
-            font-size: 12px;
-            color: #94a3b8;
+        .user-details p {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 3rem;
+        }
+
+        .feature-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .feature-card:hover {
+            border-color: #4F46E5;
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .feature-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .feature-icon.scanner { background: linear-gradient(135deg, #10b981, #34d399); }
+        .feature-icon.analytics { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+        .feature-icon.ai { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
+        .feature-icon.organizer { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .feature-card p {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .status-bar {
+            background: #f8f9fa;
+            border-top: 1px solid #e5e7eb;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+
+        .status-indicator.warning { background: #f59e0b; }
+        .status-indicator.error { background: #ef4444; }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            gap: 12px;
             font-weight: 500;
         }
 
-        /* Loading overlay sobre */
-        .login-loading-overlay {
+        .toast.error {
+            background: #ef4444;
+        }
+
+        .toast.warning {
+            background: #f59e0b;
+        }
+
+        .loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(0,0,0,0.5);
             display: none;
             align-items: center;
             justify-content: center;
             z-index: 9999;
-            flex-direction: column;
-            gap: 20px;
+            backdrop-filter: blur(4px);
         }
 
-        .login-loading-overlay.active {
-            display: flex;
+        .loading-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 300px;
         }
 
-        .login-spinner {
+        .spinner {
             width: 40px;
             height: 40px;
-            border: 3px solid rgba(79, 70, 229, 0.2);
-            border-top: 3px solid #4F46E5;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #4F46E5;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
         }
 
         @keyframes spin {
@@ -931,961 +306,651 @@
             100% { transform: rotate(360deg); }
         }
 
-        .login-loading-text {
-            color: #1f2937;
-            font-size: 16px;
-            font-weight: 500;
-            text-align: center;
+        .debug-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+            z-index: 1000;
+            max-width: 250px;
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
-        /* Responsive sobre */
+        .debug-panel .debug-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .debug-panel .debug-value {
+            font-weight: bold;
+        }
+
+        .debug-panel .debug-value.success { color: #10b981; }
+        .debug-panel .debug-value.warning { color: #f59e0b; }
+        .debug-panel .debug-value.error { color: #ef4444; }
+
+        /* Responsive */
         @media (max-width: 768px) {
-            .login-container {
-                padding: 28px 20px;
-                margin: 16px;
-            }
-
-            .login-title {
-                font-size: 1.75rem;
-            }
-
-            .login-subtitle {
-                font-size: 0.875rem;
-            }
-
-            .steps-container {
-                grid-template-columns: 1fr;
-                gap: 16px;
-            }
-
-            .step {
-                display: flex;
-                align-items: center;
-                text-align: left;
-                gap: 12px;
-            }
-
-            .step-number {
-                margin: 0;
-                flex-shrink: 0;
-            }
-
-            .compliance-links {
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .compliance-link {
-                font-size: 0.8rem;
-                padding: 6px 10px;
-            }
-
-            .app-nav {
-                height: 60px;
-                padding: 0 10px;
-            }
-            
-            #mainNav {
-                gap: 1px;
-                justify-content: flex-start;
-                padding: 0 10px;
-            }
-
-            .nav-item {
-                min-width: 90px;
-                max-width: 120px;
-                height: 36px;
-                padding: 6px 12px;
-                font-size: 13px;
-                gap: 4px;
-            }
-
-            .nav-item i {
-                font-size: 14px !important;
-                width: 14px;
-                height: 14px;
-            }
-
-            .nav-item span {
-                font-size: 12px;
-                max-width: 80px;
-            }
-            
-            body.app-active .app-main {
-                margin-top: 120px !important;
-                padding-top: 0 !important;
-            }
-            
-            #pageContent {
-                padding-left: 15px;
-                padding-right: 15px;
-                padding-bottom: 15px;
-                padding-top: 0 !important;
-            }
-
-            .dashboard-container {
-                padding: 48px 15px 15px 15px;
-            }
-
-            .dashboard-actions {
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }
-
-            .action-card {
-                min-height: 120px;
+            .container {
                 padding: 16px;
             }
 
-            .action-title {
-                font-size: 15px;
+            .header h1 {
+                font-size: 2.5rem;
             }
 
-            .action-description {
-                font-size: 13px;
+            .auth-section, .app-content {
+                padding: 2rem 1.5rem;
             }
 
-            .action-description small {
-                font-size: 11px;
-                padding: 4px 6px;
+            .features-grid {
+                grid-template-columns: 1fr;
             }
 
-            .dashboard-stats {
+            .action-buttons {
                 flex-direction: column;
-                gap: 20px;
+                align-items: center;
             }
 
-            .guide-steps {
+            .btn {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+
+            .status-bar {
                 flex-direction: column;
-                gap: 6px;
-            }
-
-            .guide-step {
-                min-width: auto;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .app-nav {
-                height: 56px;
-            }
-            
-            #mainNav {
-                gap: 0;
-                padding: 0 8px;
-            }
-            
-            .nav-item {
-                min-width: 75px;
-                max-width: 95px;
-                height: 32px;
-                padding: 4px 8px;
-                font-size: 12px;
-                gap: 3px;
-            }
-            
-            .nav-item i {
-                font-size: 12px !important;
-                width: 12px;
-                height: 12px;
-            }
-            
-            .nav-item span {
-                font-size: 11px;
-                max-width: 65px;
-            }
-            
-            body.app-active .app-main {
-                margin-top: 116px !important;
-            }
-            
-            #pageContent {
-                padding-left: 10px;
-                padding-right: 10px;
-                padding-bottom: 10px;
-            }
-
-            .dashboard-container {
-                padding: 48px 10px 10px 10px;
+                gap: 8px;
+                text-align: center;
             }
         }
     </style>
-
 </head>
 <body>
-    <!-- Vérification du domaine - SUPPRIMÉE -->
-
-    <div id="app">
-        <!-- Header Application -->
-        <header class="app-header">
-            <div class="header-content">
-                <div class="logo">
-                    <i class="fas fa-envelope-open-text"></i>
-                    <span>EmailSortProAI</span>
-                    <span class="ai-badge">AI</span>
-                </div>
-                <div id="authStatus" class="auth-status">
-                    <span class="text-muted">Initialisation...</span>
-                </div>
-            </div>
-        </header>
-
-        <!-- Navigation sobre -->
-        <nav class="app-nav">
-            <div id="mainNav">
-                <button class="nav-item active" data-page="dashboard" type="button">
-                    <i class="fas fa-th-large"></i>
-                    <span>Dashboard</span>
-                </button>
-                <button class="nav-item" data-page="scanner" type="button">
-                    <i class="fas fa-search"></i>
-                    <span>Scanner</span>
-                </button>
-                <button class="nav-item" data-page="emails" type="button">
-                    <i class="fas fa-inbox"></i>
-                    <span>Emails</span>
-                </button>
-                <button class="nav-item" data-page="tasks" type="button">
-                    <i class="fas fa-tasks"></i>
-                    <span>Tâches</span>
-                </button>
-                <button class="nav-item" data-page="ranger" type="button">
-                    <i class="fas fa-folder-tree"></i>
-                    <span>Ranger</span>
-                </button>
-                <button class="nav-item" data-page="settings" type="button">
-                    <i class="fas fa-cog"></i>
-                    <span>Paramètres</span>
-                </button>
-            </div>
-        </nav>
-
-        <!-- Contenu Principal -->
-        <main class="app-main">
-            <!-- Page de Connexion sobre -->
-            <div id="loginPage" class="login-page-styles">
-                <div class="login-container">
-                    <div class="login-header">
-                        <div class="login-logo">
-                            <i class="fas fa-envelope-open-text"></i>
-                        </div>
-                        
-                        <h1 class="login-title">EmailSortPro</h1>
-                        
-                        <p class="login-subtitle">
-                            Assistant IA pour vos emails : analysez et organisez automatiquement Outlook et Gmail
-                        </p>
-
-                        <button id="loginBtn" class="login-button microsoft">
-                            <i class="fab fa-microsoft"></i>
-                            Se connecter à Outlook
-                        </button>
-
-                        <button id="googleLoginBtn" class="login-button google">
-                            <i class="fab fa-google"></i>
-                            Se connecter à Gmail
-                        </button>
-
-                        <div class="login-security">
-                            <i class="fas fa-shield-alt"></i>
-                            Connexion sécurisée Microsoft & Google
-                        </div>
-                    </div>
-
-                    <div class="how-it-works">
-                        <h2 class="how-it-works-title">Comment ça marche</h2>
-                        
-                        <div class="steps-container">
-                            <div class="step">
-                                <div class="step-number">1</div>
-                                <div class="step-content">
-                                    <div class="step-icon">
-                                        <i class="fas fa-plug"></i>
-                                    </div>
-                                    <div class="step-title">Connexion</div>
-                                    <div class="step-description">Connectez-vous à Outlook ou Gmail</div>
-                                </div>
-                            </div>
-                            
-                            <div class="step">
-                                <div class="step-number">2</div>
-                                <div class="step-content">
-                                    <div class="step-icon">
-                                        <i class="fas fa-brain"></i>
-                                    </div>
-                                    <div class="step-title">Analyse IA</div>
-                                    <div class="step-description">L'IA analyse vos emails</div>
-                                </div>
-                            </div>
-                            
-                            <div class="step">
-                                <div class="step-number">3</div>
-                                <div class="step-content">
-                                    <div class="step-icon">
-                                        <i class="fas fa-list"></i>
-                                    </div>
-                                    <div class="step-title">Organisation</div>
-                                    <div class="step-description">Création de tâches et tri</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="security-section">
-                            <div class="security-title">
-                                <i class="fas fa-shield-alt"></i>
-                                100% RGPD & Sécurisé
-                            </div>
-                            <div class="security-description">
-                                Vos emails ne sont jamais stockés. Traitement entièrement local.
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- FOOTER CONFORMITÉ GOOGLE -->
-                    <div class="google-compliance-footer">
-                        <p style="font-size: 0.875rem; color: #4b5563; margin-bottom: 8px;">
-                            EmailSortProAI respecte votre vie privée et se conforme aux politiques Google.
-                        </p>
-                        <div class="compliance-links">
-                            <a href="./privacy-policy.html" class="compliance-link">
-                                <i class="fas fa-shield-alt"></i>
-                                Politique de Confidentialité
-                            </a>
-                            <a href="./terms.html" class="compliance-link">
-                                <i class="fas fa-file-contract"></i>
-                                Conditions d'Utilisation
-                            </a>
-                            <a href="mailto:vianneyhastings@emailsortpro.fr" class="compliance-link">
-                                <i class="fas fa-envelope"></i>
-                                Support
-                            </a>
-                        </div>
-                        <p style="font-size: 0.75rem; color: #6b7280; margin-top: 8px;">
-                            Développé par Vianney Hastings • vianneyhastings@emailsortpro.fr
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Contenu Dynamique des Pages -->
-            <div id="pageContent">
-                <!-- Le dashboard sera généré par dashboard.js -->
-            </div>
-        </main>
-
-        <!-- Overlay de Chargement sobre -->
-        <div id="loadingOverlay" class="login-loading-overlay">
-            <div class="login-spinner"></div>
-            <div class="login-loading-text">
-                <div>Connexion en cours...</div>
-                <div style="font-size: 14px; opacity: 0.8; margin-top: 8px;">Authentification en cours</div>
-            </div>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h3>Initialisation...</h3>
+            <p id="loadingMessage">Chargement de l'application</p>
         </div>
-
-        <!-- Notifications Toast -->
-        <div id="toastContainer" class="toast-container"></div>
     </div>
 
-    <!-- Scripts - Ordre CORRIGÉ pour éviter le délai de 10 secondes -->
-    
-<script src="./UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-envelope-open-text"></i> EmailSortPro</h1>
+            <p>Organisez vos emails intelligemment avec l'IA et l'analyse avancée</p>
+        </div>
 
-<!-- 2. Configuration Supabase (NE PAS COMMITER) -->
-<script src="./config-supabase.js" onerror="console.warn('config-supabase.js manquant - les licences ne fonctionneront pas')"></script>
+        <div class="main-content">
+            <!-- Section d'authentification -->
+            <div id="authSection" class="auth-section">
+                <h2><i class="fas fa-shield-alt"></i> Connexion sécurisée</h2>
+                <p>Connectez-vous avec votre compte Microsoft pour accéder à EmailSortPro</p>
+                <button id="loginBtn" class="btn">
+                    <i class="fab fa-microsoft"></i>
+                    Se connecter avec Microsoft
+                </button>
+                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
+                    <p style="font-size: 0.9rem; color: #9ca3af;">
+                        <i class="fas fa-lock"></i> Connexion sécurisée via Azure AD
+                    </p>
+                </div>
+            </div>
 
-<!-- 3. Service de gestion des licences -->
-<script src="./LicenseService.js" onerror="console.error('LicenseService.js manquant')"></script>
-
-<!-- 4. Services Core -->
-<script src="./AuthService.js" onerror="console.error('AuthService.js manquant')"></script>
-<script src="./GoogleAuthService.js" onerror="console.error('GoogleAuthService.js manquant')"></script>
-<script src="./MailService.js" onerror="console.error('MailService.js manquant')"></script>
-
-<!-- 5. CategoryManager -->
-<script src="./CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
-
-<!-- 6. TaskManager AVANT PageManager -->
-<script src="./TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
-
-<!-- 7. Autres Managers -->
-<script src="./EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
-<script src="./EmailDeduplicationManager.js" onerror="console.error('EmailDeduplicationManager.js manquant')"></script>
-<script src="./AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
-
-<!-- 8. DASHBOARD MODULE -->
-<script src="./dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
-
-<!-- 9. Page Manager APRÈS Dashboard et TaskManager -->
-<script src="./PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
-
-<!-- 10. Modules de pages -->
-<script src="./startscan.js" onerror="console.error('startscan.js manquant - utilisation de StartScan.js à la place')"></script>
-<script src="./StartScan.js" onerror="console.error('StartScan.js manquant')"></script>
-<script src="./DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
-<script src="./CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
-
-<!-- 11. Modules Optionnels -->
-<script src="./Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
-
-<!-- 12. Analytics -->
-<script src="./analytics.js" onerror="console.error('analytics.js manquant')"></script>
-
-<!-- 13. Application Principal EN DERNIER -->
-<script src="./app.js" onerror="console.error('app.js manquant')"></script>
- 
-    <!-- Scripts de gestion des événements -->
-    <script>
-        // Variable pour éviter les vérifications multiples
-        let authCheckInProgress = false;
-        let appAlreadyShown = false;
-
-        // Vérification précoce IMMÉDIATE de l'authentification
-        const earlyAuthCheck = () => {
-            try {
-                const msalAccount = localStorage.getItem('msal.account.keys');
-                const msalToken = localStorage.getItem('msal.token.keys');
-                const googleToken = localStorage.getItem('google_token_emailsortpro');
-                
-                if ((msalAccount && msalToken) || googleToken) {
-                    console.log('[EARLY_AUTH] App mode activated immediately');
-                    return true;
-                }
-            } catch (error) {
-                console.warn('[EARLY_AUTH] Error checking localStorage:', error);
-            }
-            
-            return false;
-        };
-
-        // Exécuter la vérification précoce TOUT DE SUITE
-        earlyAuthCheck();
-
-        // Fonction pour forcer l'affichage de l'app
-        window.forceShowApp = function() {
-            console.log('[FORCE] Forcing app display...');
-            
-            if (appAlreadyShown || document.body.classList.contains('app-active')) {
-                console.log('[FORCE] App already displayed, skipping force display');
-                return;
-            }
-            
-            document.body.classList.add('app-active');
-            
-            const loginPage = document.getElementById('loginPage');
-            if (loginPage) {
-                loginPage.style.display = 'none';
-            }
-            
-            appAlreadyShown = true;
-            console.log('[FORCE] App display activated');
-        };
-
-        // Fonction pour masquer le loading et afficher l'app
-        window.showApp = function() {
-            console.log('[SHOW_APP] Switching to app interface...');
-            
-            if (appAlreadyShown) {
-                console.log('[SHOW_APP] App already shown, skipping...');
-                return;
-            }
-            
-            document.body.classList.remove('login-mode');
-            
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            if (loadingOverlay) {
-                loadingOverlay.classList.remove('active');
-            }
-            
-            document.body.classList.add('app-active');
-            
-            const loginPage = document.getElementById('loginPage');
-            if (loginPage) {
-                loginPage.style.display = 'none';
-            }
-            
-            // UTILISER LE NOUVEAU MODULE DASHBOARD
-            window.setPageMode('dashboard');
-            
-            // Charger le dashboard via le module
-            if (window.dashboardModule) {
-                console.log('[SHOW_APP] Loading dashboard via dashboardModule...');
-                window.dashboardModule.render();
-            } else {
-                console.warn('[SHOW_APP] Dashboard module not ready, will retry...');
-                setTimeout(() => {
-                    if (window.dashboardModule) {
-                        window.dashboardModule.render();
-                    }
-                }, 500);
-            }
-            
-            setTimeout(() => {
-                window.checkScrollNeeded();
-            }, 1000);
-            
-            appAlreadyShown = true;
-            console.log('[SHOW_APP] App interface activated with dashboard module');
-        };
-
-        // Fonction pour vérifier si le scroll est nécessaire - OPTIMISÉE ET SILENCIEUSE
-        window.checkScrollNeeded = function() {
-            // Si l'app est active, laisser app.js gérer le scroll
-            if (document.body.classList.contains('app-active') && window.app) {
-                return;
-            }
-            
-            // Éviter les appels multiples
-            if (window.scrollCheckInProgress) return;
-            window.scrollCheckInProgress = true;
-            
-            setTimeout(() => {
-                const body = document.body;
-                const contentHeight = document.documentElement.scrollHeight;
-                const viewportHeight = window.innerHeight;
-                
-                if (contentHeight <= viewportHeight) {
-                    body.classList.add('page-short-content');
-                    body.style.overflow = 'hidden';
-                    body.style.overflowY = 'hidden';
-                } else {
-                    body.classList.remove('page-short-content');
-                    body.style.overflow = '';
-                    body.style.overflowY = '';
-                }
-                
-                window.scrollCheckInProgress = false;
-            }, 50);
-        };
-
-        // Ajouter une classe pour le mode login initial
-        document.body.classList.add('login-mode');
-
-        // Vérifier à chaque redimensionnement de fenêtre - OPTIMISÉ
-        let resizeTimeout;
-        window.addEventListener('resize', () => {
-            // Si l'app est active, laisser app.js gérer le resize
-            if (document.body.classList.contains('app-active') && window.app) {
-                return;
-            }
-            
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(window.checkScrollNeeded, 150);
-        });
-
-        // Gestion des modes d'affichage pour les pages - SILENCIEUX
-        window.setPageMode = function(pageName) {
-            // Si l'app est active, laisser app.js gérer le scroll
-            if (document.body.classList.contains('app-active') && window.app) {
-                return;
-            }
-            
-            const appMain = document.querySelector('.app-main');
-            const pageContent = document.getElementById('pageContent');
-            const body = document.body;
-            
-            // Nettoyer les anciennes classes de page
-            body.classList.remove('page-dashboard', 'page-scanner', 'page-emails', 'page-tasks', 'page-ranger', 'page-settings', 'page-short-content', 'login-mode');
-            
-            if (pageName === 'dashboard') {
-                appMain.classList.remove('page-mode');
-                appMain.classList.add('dashboard-mode');
-                pageContent.classList.remove('non-dashboard');
-                body.classList.add('page-dashboard');
-            } else {
-                appMain.classList.remove('dashboard-mode');
-                appMain.classList.add('page-mode');
-                pageContent.classList.add('non-dashboard');
-                body.classList.add(`page-${pageName}`);
-            }
-            
-            // Gestion du scroll UNIQUEMENT si l'app n'est pas encore active
-            if (!document.body.classList.contains('app-active')) {
-                clearTimeout(window.scrollCheckTimeout);
-                window.scrollCheckTimeout = setTimeout(() => {
-                    const contentHeight = document.documentElement.scrollHeight;
-                    const viewportHeight = window.innerHeight;
-                    const bodyHeight = document.body.scrollHeight;
+            <!-- Section application principale -->
+            <div id="appContent" class="app-content">
+                <div class="welcome-section">
+                    <h2>Bienvenue dans EmailSortPro !</h2>
                     
-                    if (bodyHeight <= viewportHeight || contentHeight <= viewportHeight) {
-                        body.classList.add('page-short-content');
-                        body.style.overflow = 'hidden';
-                        body.style.overflowY = 'hidden';
-                    } else {
-                        body.classList.remove('page-short-content');
-                        body.style.overflow = '';
-                        body.style.overflowY = '';
-                    }
-                }, 100);
-            }
-        };
-
-        // Intercepter la méthode loadPage du PageManager pour le dashboard
-        window.interceptDashboardLoad = function() {
-            if (window.pageManager && window.pageManager.loadPage) {
-                const originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
-                
-                window.pageManager.loadPage = function(pageName, ...args) {
-                    // Appliquer le mode d'affichage approprié pour TOUTES les pages
-                    window.setPageMode(pageName);
-                    
-                    if (pageName === 'dashboard') {
-                        // Mettre à jour la navigation pour marquer dashboard comme actif
-                        const navItems = document.querySelectorAll('.nav-item');
-                        navItems.forEach(item => {
-                            item.classList.remove('active');
-                            if (item.dataset.page === 'dashboard') {
-                                item.classList.add('active');
-                            }
-                        });
-                        
-                        // UTILISER LE MODULE DASHBOARD
-                        if (window.dashboardModule) {
-                            const pageContent = document.getElementById('pageContent');
-                            if (pageContent) {
-                                pageContent.style.display = 'block';
-                                pageContent.style.opacity = '1';
-                            }
-                            
-                            // Render dashboard via module
-                            window.dashboardModule.render();
-                        } else {
-                            return originalLoadPage(pageName, ...args);
-                        }
-                        
-                        // Vérifier le scroll après affichage du dashboard
-                        setTimeout(() => {
-                            if (window.app && window.app.checkScrollNeeded) {
-                                window.app.checkScrollNeeded();
-                            } else {
-                                window.checkScrollNeeded();
-                            }
-                        }, 300);
-                        
-                        return Promise.resolve();
-                    } else {
-                        // Pour toutes les autres pages, masquer le dashboard et utiliser la méthode originale
-                        const pageContent = document.getElementById('pageContent');
-                        if (pageContent && window.dashboardModule) {
-                            window.dashboardModule.hide();
-                        }
-                        
-                        return originalLoadPage(pageName, ...args);
-                    }
-                };
-            } else {
-                setTimeout(window.interceptDashboardLoad, 500);
-            }
-        };
-
-        // Lancer l'interception du dashboard
-        setTimeout(window.interceptDashboardLoad, 1000);
-
-        // Fonction pour gérer la déconnexion
-        window.handleLogout = async function() {
-            console.log('[LOGOUT] Starting logout process...');
-            
-            try {
-                // Déconnecter du service actuel
-                if (window.authService && window.authService.isAuthenticated()) {
-                    console.log('[LOGOUT] Logging out from Microsoft...');
-                    await window.authService.logout();
-                } else if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
-                    console.log('[LOGOUT] Logging out from Google...');
-                    await window.googleAuthService.logout();
-                }
-                
-                // Reset tous les services
-                if (window.mailService) {
-                    window.mailService.reset();
-                }
-                
-                // Nettoyer l'état de l'app
-                document.body.classList.remove('app-active');
-                document.body.classList.add('login-mode');
-                
-                // Afficher la page de login
-                const loginPage = document.getElementById('loginPage');
-                if (loginPage) {
-                    loginPage.style.display = 'flex';
-                }
-                
-                // Masquer le header et la nav
-                const appHeader = document.querySelector('.app-header');
-                const appNav = document.querySelector('.app-nav');
-                if (appHeader) appHeader.style.display = 'none';
-                if (appNav) appNav.style.display = 'none';
-                
-                // Reset les variables d'état
-                appAlreadyShown = false;
-                authCheckInProgress = false;
-                
-                console.log('[LOGOUT] ✅ Logout complete');
-                
-            } catch (error) {
-                console.error('[LOGOUT] ❌ Error during logout:', error);
-                
-                // Force cleanup en cas d'erreur
-                if (window.authService && window.authService.forceCleanup) {
-                    window.authService.forceCleanup();
-                }
-                if (window.googleAuthService && window.googleAuthService.forceCleanup) {
-                    window.googleAuthService.forceCleanup();
-                }
-                
-                // Rediriger vers la page de login même en cas d'erreur
-                window.location.reload();
-            }
-        };
-
-        // Gestion du bouton de connexion
-        document.addEventListener('DOMContentLoaded', function() {
-            if (appAlreadyShown) {
-                return;
-            }
-            
-            // Fonction de vérification d'authentification sécurisée
-            const safeAuthCheck = () => {
-                if (authCheckInProgress || appAlreadyShown) {
-                    return false;
-                }
-                
-                if (document.body.classList.contains('app-active')) {
-                    appAlreadyShown = true;
-                    return true;
-                }
-                
-                try {
-                    // Vérifier Microsoft
-                    if (window.authService && typeof window.authService.isAuthenticated === 'function') {
-                        if (window.authService.isAuthenticated()) {
-                            window.showApp();
-                            return true;
-                        }
-                    }
-                    
-                    // Vérifier Google
-                    if (window.googleAuthService && typeof window.googleAuthService.isAuthenticated === 'function') {
-                        if (window.googleAuthService.isAuthenticated()) {
-                            window.showApp();
-                            return true;
-                        }
-                    }
-                } catch (error) {
-                    // Silencieux
-                }
-                return false;
-            };
-            
-            // Vérification avec délai
-            setTimeout(() => {
-                if (document.body.classList.contains('app-active')) {
-                    appAlreadyShown = true;
-                    return;
-                }
-                
-                if (!safeAuthCheck()) {
-                    setTimeout(() => {
-                        if (!document.body.classList.contains('app-active')) {
-                            safeAuthCheck();
-                        }
-                    }, 600);
-                }
-            }, 200);
-            
-            // Bouton Microsoft
-            const loginBtn = document.getElementById('loginBtn');
-            if (loginBtn) {
-                loginBtn.addEventListener('click', function() {
-                    if (authCheckInProgress) {
-                        return;
-                    }
-                    
-                    authCheckInProgress = true;
-                    
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion Outlook...';
-                    this.disabled = true;
-                    
-                    const loadingOverlay = document.getElementById('loadingOverlay');
-                    if (loadingOverlay) {
-                        loadingOverlay.classList.add('active');
-                    }
-                    
-                    if (window.app && window.app.login) {
-                        window.app.login().then(() => {
-                            window.showApp();
-                            authCheckInProgress = false;
-                        }).catch((error) => {
-                            authCheckInProgress = false;
-                            this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
-                            this.disabled = false;
-                            if (loadingOverlay) {
-                                loadingOverlay.classList.remove('active');
-                            }
-                        });
-                    } else {
-                        authCheckInProgress = false;
-                        this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
-                        this.disabled = false;
-                        if (loadingOverlay) {
-                            loadingOverlay.classList.remove('active');
-                        }
-                    }
-                });
-            }
-
-            // Bouton Google
-            const googleLoginBtn = document.getElementById('googleLoginBtn');
-            if (googleLoginBtn) {
-                googleLoginBtn.addEventListener('click', async function() {
-                    if (authCheckInProgress) {
-                        return;
-                    }
-                    
-                    authCheckInProgress = true;
-                    
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion Gmail...';
-                    this.disabled = true;
-                    
-                    const loadingOverlay = document.getElementById('loadingOverlay');
-                    if (loadingOverlay) {
-                        loadingOverlay.classList.add('active');
-                    }
-                    
-                    try {
-                        if (window.googleAuthService) {
-                            await window.googleAuthService.initialize();
-                            await window.googleAuthService.login();
-                            // La redirection va se produire, pas besoin de showApp() ici
-                        } else {
-                            throw new Error('GoogleAuthService not available');
-                        }
-                    } catch (error) {
-                        console.error('[GOOGLE_LOGIN] Error:', error);
-                        authCheckInProgress = false;
-                        this.innerHTML = '<i class="fab fa-google"></i> Se connecter à Gmail';
-                        this.disabled = false;
-                        if (loadingOverlay) {
-                            loadingOverlay.classList.remove('active');
-                        }
-                        
-                        if (window.uiManager) {
-                            window.uiManager.showToast('Erreur de connexion Gmail: ' + error.message, 'error', 8000);
-                        }
-                    }
-                });
-            }
-            
-            // Ajouter un gestionnaire d'événements direct pour le bouton Dashboard
-            const dashboardBtn = document.querySelector('.nav-item[data-page="dashboard"]');
-            if (dashboardBtn) {
-                dashboardBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    
-                    // Forcer le retour au dashboard
-                    if (window.pageManager && window.pageManager.loadPage) {
-                        window.pageManager.loadPage('dashboard');
-                    } else {
-                        // Fallback: utiliser le module dashboard directement
-                        const navItems = document.querySelectorAll('.nav-item');
-                        navItems.forEach(item => item.classList.remove('active'));
-                        this.classList.add('active');
-                        
-                        if (window.dashboardModule) {
-                            window.dashboardModule.render();
-                        }
-                        
-                        window.setPageMode('dashboard');
-                    }
-                });
-            }
-        });
-        
-        // Fonction globale pour basculer vers l'app après connexion
-        window.onAuthSuccess = function() {
-            if (!appAlreadyShown && !document.body.classList.contains('app-active')) {
-                window.showApp();
-            }
-        };
-
-        // Fonction pour mettre à jour l'affichage utilisateur dans le header
-        window.updateUserDisplay = function(user) {
-            const authStatus = document.getElementById('authStatus');
-            if (authStatus && user) {
-                // Utiliser le nom et email spécifiés ou ceux du profil
-                const userName = user.displayName || user.name || 'Utilisateur';
-                const userEmail = user.mail || user.userPrincipalName || user.email || 'Non spécifié';
-                const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
-                
-                // Détecter le provider
-                const provider = user.provider || 'unknown';
-                const providerIcon = provider === 'google' ? 'fab fa-google' : 'fab fa-microsoft';
-                const providerText = provider === 'google' ? 'Gmail' : 'Outlook';
-                
-                authStatus.innerHTML = `
-                    <div class="user-info">
+                    <div id="userInfo" class="user-info">
+                        <div class="user-avatar" id="userAvatar">U</div>
                         <div class="user-details">
-                            <div class="user-name">${userName}</div>
-                            <div class="user-email">${userEmail} (${providerText})</div>
+                            <h3 id="userName">Utilisateur</h3>
+                            <p id="userEmail">email@example.com</p>
                         </div>
-                        <div class="user-avatar">${initials}</div>
-                        <button class="logout-button" onclick="window.handleLogout()">
-                            <i class="fas fa-sign-out-alt"></i> Déconnexion
-                        </button>
                     </div>
-                `;
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card" onclick="window.open('./scanner.html', '_blank')">
+                        <div class="feature-icon scanner">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h3>Scanner d'emails</h3>
+                        <p>Analysez et organisez vos emails automatiquement</p>
+                    </div>
+
+                    <div class="feature-card" onclick="window.location.href='./analytics.html'">
+                        <div class="feature-icon analytics">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3>Analytics avancées</h3>
+                        <p>Visualisez vos données et gérez les utilisateurs</p>
+                    </div>
+
+                    <div class="feature-card" onclick="window.open('./ai-analyzer.html', '_blank')">
+                        <div class="feature-icon ai">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h3>Analyse IA</h3>
+                        <p>Génération automatique de tâches et insights</p>
+                    </div>
+
+                    <div class="feature-card" onclick="window.open('./organizer.html', '_blank')">
+                        <div class="feature-icon organizer">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <h3>Organisateur</h3>
+                        <p>Triez par domaines et catégories intelligentes</p>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <a href="./analytics.html" class="btn btn-success">
+                        <i class="fas fa-chart-bar"></i>
+                        Tableau de bord Analytics
+                    </a>
+                    
+                    <button id="testConnectionBtn" class="btn btn-secondary">
+                        <i class="fas fa-database"></i>
+                        Tester la connexion BDD
+                    </button>
+                    
+                    <button id="logoutBtn" class="btn btn-secondary">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Déconnexion
+                    </button>
+                </div>
+            </div>
+
+            <!-- Barre de statut -->
+            <div class="status-bar">
+                <div class="status-item">
+                    <div class="status-indicator" id="authStatus"></div>
+                    <span id="authStatusText">Vérification...</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator" id="dbStatus"></div>
+                    <span id="dbStatusText">Base de données</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator" id="licenseStatus"></div>
+                    <span id="licenseStatusText">Licence</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast pour les notifications -->
+    <div id="toast" class="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">Message</span>
+    </div>
+
+    <!-- Panel de debug -->
+    <div class="debug-panel" id="debugPanel">
+        <div style="font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 4px;">
+            EmailSortPro Debug
+        </div>
+        <div class="debug-item">
+            <span>Status:</span>
+            <span class="debug-value" id="debugStatus">Init...</span>
+        </div>
+        <div class="debug-item">
+            <span>Auth:</span>
+            <span class="debug-value" id="debugAuth">-</span>
+        </div>
+        <div class="debug-item">
+            <span>DB:</span>
+            <span class="debug-value" id="debugDB">-</span>
+        </div>
+        <div class="debug-item">
+            <span>License:</span>
+            <span class="debug-value" id="debugLicense">-</span>
+        </div>
+        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); font-size: 10px;">
+            F12 → debugApp() pour plus d'infos
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <!-- MSAL pour Microsoft Authentication -->
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    
+    <!-- Services EmailSortPro -->
+    <script src="./AuthService.js"></script>
+    <script src="./LicenseService.js"></script>
+    <script src="./analytics.js"></script>
+
+    <!-- Script principal -->
+    <script>
+        // Variables globales
+        let currentUser = null;
+        let isAuthenticated = false;
+        let licenseInfo = null;
+
+        // Interface utilisateur
+        const UI = {
+            showLoading(message = 'Chargement...') {
+                document.getElementById('loadingMessage').textContent = message;
+                document.getElementById('loadingOverlay').style.display = 'flex';
+            },
+
+            hideLoading() {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            },
+
+            showToast(message, type = 'success', icon = 'check-circle') {
+                const toast = document.getElementById('toast');
+                const iconElement = toast.querySelector('i');
+                const messageElement = document.getElementById('toastMessage');
+                
+                iconElement.className = `fas fa-${icon}`;
+                messageElement.textContent = message;
+                toast.className = `toast ${type}`;
+                toast.style.display = 'flex';
+                
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 4000);
+            },
+
+            updateStatus(auth, db, license) {
+                // Statut d'authentification
+                const authIndicator = document.getElementById('authStatus');
+                const authText = document.getElementById('authStatusText');
+                if (auth.status === 'success') {
+                    authIndicator.className = 'status-indicator';
+                    authText.textContent = auth.message;
+                } else if (auth.status === 'warning') {
+                    authIndicator.className = 'status-indicator warning';
+                    authText.textContent = auth.message;
+                } else {
+                    authIndicator.className = 'status-indicator error';
+                    authText.textContent = auth.message;
+                }
+
+                // Statut base de données
+                const dbIndicator = document.getElementById('dbStatus');
+                const dbText = document.getElementById('dbStatusText');
+                if (db.status === 'success') {
+                    dbIndicator.className = 'status-indicator';
+                    dbText.textContent = db.message;
+                } else if (db.status === 'warning') {
+                    dbIndicator.className = 'status-indicator warning';
+                    dbText.textContent = db.message;
+                } else {
+                    dbIndicator.className = 'status-indicator error';
+                    dbText.textContent = db.message;
+                }
+
+                // Statut licence
+                const licenseIndicator = document.getElementById('licenseStatus');
+                const licenseText = document.getElementById('licenseStatusText');
+                if (license.status === 'success') {
+                    licenseIndicator.className = 'status-indicator';
+                    licenseText.textContent = license.message;
+                } else if (license.status === 'warning') {
+                    licenseIndicator.className = 'status-indicator warning';
+                    licenseText.textContent = license.message;
+                } else {
+                    licenseIndicator.className = 'status-indicator error';
+                    licenseText.textContent = license.message;
+                }
+            },
+
+            updateDebugPanel(status, auth, db, license) {
+                document.getElementById('debugStatus').textContent = status;
+                document.getElementById('debugStatus').className = `debug-value ${status.includes('✅') ? 'success' : status.includes('⚠️') ? 'warning' : status.includes('❌') ? 'error' : ''}`;
+                
+                document.getElementById('debugAuth').textContent = auth;
+                document.getElementById('debugAuth').className = `debug-value ${auth.includes('✅') ? 'success' : auth.includes('⚠️') ? 'warning' : auth.includes('❌') ? 'error' : ''}`;
+                
+                document.getElementById('debugDB').textContent = db;
+                document.getElementById('debugDB').className = `debug-value ${db.includes('✅') ? 'success' : db.includes('⚠️') ? 'warning' : db.includes('❌') ? 'error' : ''}`;
+                
+                document.getElementById('debugLicense').textContent = license;
+                document.getElementById('debugLicense').className = `debug-value ${license.includes('✅') ? 'success' : license.includes('⚠️') ? 'warning' : license.includes('❌') ? 'error' : ''}`;
+            },
+
+            showAuthSection() {
+                document.getElementById('authSection').style.display = 'block';
+                document.getElementById('appContent').style.display = 'none';
+            },
+
+            showAppContent(user) {
+                document.getElementById('authSection').style.display = 'none';
+                document.getElementById('appContent').style.display = 'block';
+                
+                // Mettre à jour les infos utilisateur
+                const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : user.username.substring(0, 2).toUpperCase();
+                document.getElementById('userAvatar').textContent = initials;
+                document.getElementById('userName').textContent = user.name || user.username;
+                document.getElementById('userEmail').textContent = user.username;
             }
         };
 
-        // Fonction de diagnostic accessible globalement (silencieuse par défaut)
-        window.checkServices = function() {
-            return {
-                AppConfig: window.AppConfig ? 'OK' : 'MANQUANT',
-                authService: window.authService ? 'OK' : 'MANQUANT',
-                googleAuthService: window.googleAuthService ? 'OK' : 'MANQUANT',
-                mailService: window.mailService ? 'OK' : 'MANQUANT',
-                uiManager: window.uiManager ? 'OK' : 'MANQUANT',
-                taskManager: window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT',
-                tasksView: window.tasksView ? 'OK' : 'MANQUANT',
-                pageManager: window.pageManager ? 'OK' : 'MANQUANT',
-                categoryManager: window.categoryManager ? 'OK' : 'MANQUANT',
-                dashboardModule: window.dashboardModule ? 'OK' : 'MANQUANT',
-                hostname: window.location.hostname,
-                currentDomain: window.location.hostname,
-                authenticationStatus: {
-                    microsoft: window.authService ? window.authService.isAuthenticated() : false,
-                    google: window.googleAuthService ? window.googleAuthService.isAuthenticated() : false
-                }
-            };
-        };
+        // Initialisation de l'application
+        async function initializeApp() {
+            try {
+                console.log('[App] 🚀 Starting EmailSortPro initialization...');
+                UI.showLoading('Initialisation des services...');
+                UI.updateDebugPanel('Init...', 'Init...', 'Init...', 'Init...');
 
-        // Fonction pour vérifier les callbacks Google au chargement de la page
-        window.checkGoogleCallback = function() {
-            // Vérifier si nous revenons d'un callback Google OAuth2
-            const fragment = window.location.hash;
-            const search = window.location.search;
-            
-            if (fragment && fragment.includes('access_token')) {
-                console.log('[GOOGLE_CALLBACK] OAuth2 implicit flow callback detected');
+                // 1. Vérifier la configuration Supabase
+                UI.showLoading('Vérification de la configuration...');
+                await waitForSupabase();
                 
-                // Traiter le callback immédiatement
-                if (window.googleAuthService && window.googleAuthService.handleOAuthCallback) {
-                    window.googleAuthService.handleOAuthCallback(fragment).then(() => {
-                        console.log('[GOOGLE_CALLBACK] ✅ Google authentication successful');
-                        window.showApp();
-                    }).catch((error) => {
-                        console.error('[GOOGLE_CALLBACK] ❌ Error processing Google callback:', error);
+                const supabaseValidation = window.supabaseConfig.validate();
+                if (!supabaseValidation.valid) {
+                    throw new Error('Configuration Supabase invalide: ' + supabaseValidation.issues.join(', '));
+                }
+
+                console.log('[App] ✅ Supabase config validated');
+
+                // 2. Tester la connexion Supabase
+                UI.showLoading('Test de connexion à la base de données...');
+                const dbTest = await window.supabaseConfig.testConnection();
+                console.log('[App] Database test result:', dbTest);
+
+                // 3. Initialiser les services
+                UI.showLoading('Initialisation des services...');
+                await initializeServices();
+
+                // 4. Vérifier l'authentification existante
+                UI.showLoading('Vérification de l\'authentification...');
+                await checkExistingAuth();
+
+                // 5. Mettre à jour l'interface
+                UI.updateStatus(
+                    { 
+                        status: isAuthenticated ? 'success' : 'warning', 
+                        message: isAuthenticated ? 'Connecté' : 'Non connecté' 
+                    },
+                    { 
+                        status: dbTest.success ? 'success' : 'warning', 
+                        message: dbTest.success ? 'Connectée' : 'Avertissement' 
+                    },
+                    { 
+                        status: licenseInfo?.valid ? 'success' : 'warning', 
+                        message: licenseInfo?.valid ? licenseInfo.status : 'Vérification requise' 
+                    }
+                );
+
+                UI.updateDebugPanel(
+                    '✅ Ready',
+                    isAuthenticated ? '✅ Auth' : '⚠️ No Auth',
+                    dbTest.success ? '✅ DB' : '⚠️ DB',
+                    licenseInfo?.valid ? '✅ License' : '⚠️ License'
+                );
+
+                UI.hideLoading();
+                console.log('[App] ✅ Initialization complete');
+
+            } catch (error) {
+                console.error('[App] ❌ Initialization failed:', error);
+                UI.hideLoading();
+                UI.updateDebugPanel('❌ Error', '❌ Failed', '❌ Failed', '❌ Failed');
+                UI.showToast('Erreur d\'initialisation: ' + error.message, 'error', 'exclamation-triangle');
+                
+                // Afficher quand même la section d'authentification
+                UI.showAuthSection();
+            }
+        }
+
+        // Attendre que Supabase soit chargé
+        async function waitForSupabase() {
+            let attempts = 0;
+            while (!window.supabaseConfig && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!window.supabaseConfig) {
+                throw new Error('Configuration Supabase non disponible');
+            }
+        }
+
+        // Initialiser les services
+        async function initializeServices() {
+            console.log('[App] Initializing services...');
+
+            // AuthService
+            if (window.authService) {
+                await window.authService.initialize();
+                console.log('[App] ✅ AuthService initialized');
+            } else {
+                console.warn('[App] ⚠️ AuthService not available');
+            }
+
+            // LicenseService
+            if (window.licenseService) {
+                await window.licenseService.initialize();
+                console.log('[App] ✅ LicenseService initialized');
+            } else {
+                console.warn('[App] ⚠️ LicenseService not available');
+            }
+
+            // Analytics
+            if (window.analyticsManager) {
+                window.analyticsManager.onPageLoad('index');
+                console.log('[App] ✅ Analytics tracking started');
+            } else {
+                console.warn('[App] ⚠️ Analytics not available');
+            }
+        }
+
+        // Vérifier l'authentification existante
+        async function checkExistingAuth() {
+            if (window.authService && window.authService.isAuthenticated()) {
+                const account = window.authService.getAccount();
+                if (account) {
+                    await handleSuccessfulAuth(account);
+                } else {
+                    UI.showAuthSection();
+                }
+            } else {
+                UI.showAuthSection();
+            }
+        }
+
+        // Gérer l'authentification réussie
+        async function handleSuccessfulAuth(account) {
+            try {
+                console.log('[App] Handling successful authentication for:', account.username);
+                currentUser = account;
+                isAuthenticated = true;
+
+                // Vérifier/créer l'utilisateur dans la BDD
+                if (window.licenseService) {
+                    console.log('[App] Checking user license...');
+                    licenseInfo = await window.licenseService.checkUserLicense(account.username);
+                    console.log('[App] License check result:', licenseInfo);
+                    
+                    if (!licenseInfo.valid) {
+                        UI.showToast(`Licence: ${licenseInfo.message}`, 'warning', 'exclamation-triangle');
+                    } else {
+                        UI.showToast(`Licence ${licenseInfo.status} - ${licenseInfo.daysRemaining || 0} jours restants`, 'success', 'check-circle');
+                    }
+                }
+
+                // Analytics
+                if (window.analyticsManager) {
+                    window.analyticsManager.onAuthSuccess('microsoft', {
+                        name: account.name,
+                        email: account.username,
+                        id: account.homeAccountId
                     });
                 }
-            } else if (search && search.includes('code') && search.includes('state') && search.includes('google')) {
-                console.log('[GOOGLE_CALLBACK] OAuth2 code flow callback detected');
-                // Le callback sera traité par auth-callback.html
+
+                UI.showAppContent(account);
+                UI.showToast(`Bienvenue ${account.name || account.username} !`, 'success', 'user-check');
+
+            } catch (error) {
+                console.error('[App] Error handling auth:', error);
+                UI.showToast('Erreur lors de la connexion: ' + error.message, 'error', 'exclamation-triangle');
+            }
+        }
+
+        // Test de connexion à la base de données
+        async function testDatabaseConnection() {
+            try {
+                UI.showLoading('Test de connexion à la base de données...');
+                
+                if (!window.supabaseConfig) {
+                    throw new Error('Configuration Supabase non disponible');
+                }
+
+                const result = await window.supabaseConfig.testConnection();
+                
+                if (result.success) {
+                    UI.showToast('Connexion à la base de données réussie !', 'success', 'database');
+                } else {
+                    UI.showToast('Problème de connexion BDD: ' + result.message, 'warning', 'exclamation-triangle');
+                }
+
+                UI.hideLoading();
+                console.log('[App] Database test completed:', result);
+
+            } catch (error) {
+                UI.hideLoading();
+                console.error('[App] Database test failed:', error);
+                UI.showToast('Erreur de test BDD: ' + error.message, 'error', 'exclamation-triangle');
+            }
+        }
+
+        // Gestionnaires d'événements
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            try {
+                if (!window.authService) {
+                    throw new Error('Service d\'authentification non disponible');
+                }
+
+                UI.showLoading('Connexion en cours...');
+                await window.authService.login();
+                // La redirection va se produire, pas de code après
+                
+            } catch (error) {
+                UI.hideLoading();
+                console.error('[App] Login error:', error);
+                UI.showToast('Erreur de connexion: ' + error.message, 'error', 'exclamation-triangle');
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            try {
+                UI.showLoading('Déconnexion...');
+                
+                if (window.authService) {
+                    await window.authService.logout();
+                    // La redirection va se produire
+                } else {
+                    // Fallback
+                    currentUser = null;
+                    isAuthenticated = false;
+                    licenseInfo = null;
+                    UI.hideLoading();
+                    UI.showAuthSection();
+                    UI.showToast('Déconnecté', 'success', 'sign-out-alt');
+                }
+            } catch (error) {
+                UI.hideLoading();
+                console.error('[App] Logout error:', error);
+                UI.showToast('Erreur de déconnexion: ' + error.message, 'error', 'exclamation-triangle');
+            }
+        });
+
+        document.getElementById('testConnectionBtn').addEventListener('click', testDatabaseConnection);
+
+        // Fonctions de debug globales
+        window.debugApp = function() {
+            console.group('=== EMAILSORTPRO DEBUG ===');
+            console.log('Current user:', currentUser);
+            console.log('Is authenticated:', isAuthenticated);
+            console.log('License info:', licenseInfo);
+            console.log('Auth service:', window.authService?.getDiagnosticInfo());
+            console.log('License service:', window.licenseService?.getCurrentUser());
+            console.log('Supabase config:', window.supabaseConfig?.validate());
+            console.log('Analytics manager:', !!window.analyticsManager);
+            console.groupEnd();
+            
+            return {
+                user: currentUser,
+                authenticated: isAuthenticated,
+                license: licenseInfo,
+                services: {
+                    auth: !!window.authService,
+                    license: !!window.licenseService,
+                    analytics: !!window.analyticsManager,
+                    supabase: !!window.supabaseConfig
+                },
+                validation: window.supabaseConfig?.validate()
+            };
+        };
+
+        window.testSupabase = async function() {
+            if (window.supabaseConfig) {
+                const result = await window.supabaseConfig.testConnection();
+                console.log('Supabase test result:', result);
+                return result;
+            } else {
+                console.error('Supabase config not available');
+                return { success: false, message: 'Config not available' };
             }
         };
 
-        // Vérifier les callbacks au chargement
-        setTimeout(() => {
-            window.checkGoogleCallback();
-        }, 500);
+        window.diagnoseAll = function() {
+            console.group('=== DIAGNOSTIC COMPLET ===');
+            
+            // Diagnostic Supabase
+            if (window.diagnoseSupabase) {
+                window.diagnoseSupabase();
+            }
+            
+            // Diagnostic Auth
+            if (window.authService && window.authService.getDiagnosticInfo) {
+                console.log('AuthService diagnostic:', window.authService.getDiagnosticInfo());
+            }
+            
+            // Diagnostic App
+            const appDebug = window.debugApp();
+            console.log('App state:', appDebug);
+            
+            console.groupEnd();
+            
+            return {
+                supabase: window.supabaseConfig?.validate(),
+                auth: window.authService?.getDiagnosticInfo(),
+                app: appDebug
+            };
+        };
+
+        // Initialisation au chargement de la page
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('[App] 🎯 DOM loaded, starting EmailSortPro...');
+            initializeApp();
+        });
+
+        // Gestion des erreurs globales
+        window.addEventListener('error', (event) => {
+            console.error('[App] Global error:', event.error);
+            UI.showToast('Erreur système: ' + event.error?.message, 'error', 'exclamation-triangle');
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('[App] Unhandled promise rejection:', event.reason);
+            UI.showToast('Erreur Promise: ' + event.reason?.message, 'error', 'exclamation-triangle');
+        });
+
+        console.log('[App] ✅ EmailSortPro main script loaded');
+        console.log('[App] 🔧 Use debugApp() or diagnoseAll() for debug info');
     </script>
 </body>
 </html>
