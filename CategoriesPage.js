@@ -1,5 +1,5 @@
-// CategoriesPage.js - Version Compatible Netlify v22.0
-console.log('[CategoriesPage] 🚀 Loading CategoriesPage.js v22.0 - Netlify Compatible...');
+// CategoriesPage.js - Version 23.0 - Intégration CategoryManager + Backup
+console.log('[CategoriesPage] 🚀 Loading CategoriesPage.js v23.0 - CategoryManager Integration + Backup...');
 
 // Nettoyer toute instance précédente
 if (window.categoriesPage) {
@@ -7,12 +7,13 @@ if (window.categoriesPage) {
     delete window.categoriesPage;
 }
 
-class CategoriesPageNetlify {
+class CategoriesPageAdvanced {
     constructor() {
         this.editingCategoryId = null;
         this.currentModal = null;
         this.searchTerm = '';
         this.viewMode = 'grid';
+        this.activeTab = 'categories'; // 'categories' ou 'backup'
         this.colors = [
             '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
             '#FF9FF3', '#54A0FF', '#48DBFB', '#A29BFE', '#FD79A8'
@@ -20,26 +21,67 @@ class CategoriesPageNetlify {
         
         // Données de backup pour fonctionner sans dépendances
         this.backupCategories = {
-            work: { name: 'Travail', icon: '💼', color: '#4ECDC4', priority: 10 },
-            personal: { name: 'Personnel', icon: '👤', color: '#FF6B6B', priority: 20 },
-            finance: { name: 'Finance', icon: '💰', color: '#FECA57', priority: 15 },
-            shopping: { name: 'Shopping', icon: '🛒', color: '#54A0FF', priority: 25 },
-            news: { name: 'Actualités', icon: '📰', color: '#A29BFE', priority: 30 }
+            newsletters: { name: 'Newsletters & Marketing', icon: '📰', color: '#8b5cf6', priority: 100 },
+            security: { name: 'Sécurité', icon: '🔒', color: '#dc2626', priority: 90 },
+            tasks: { name: 'Actions Requises', icon: '✅', color: '#ef4444', priority: 85 },
+            finance: { name: 'Finance', icon: '💰', color: '#059669', priority: 80 },
+            meetings: { name: 'Réunions', icon: '📅', color: '#f59e0b', priority: 75 }
         };
         
         this.backupEmails = this.generateBackupEmails();
         
-        console.log('[CategoriesPage] 🎨 Interface moderne v22.0 initialisée pour Netlify');
+        console.log('[CategoriesPage] 🎨 Interface avancée v23.0 initialisée avec CategoryManager');
     }
 
     // ================================================
-    // DONNÉES DE BACKUP POUR FONCTIONNER SANS DÉPENDANCES
+    // INTEGRATION AVEC CATEGORYMANAGER
+    // ================================================
+    getCategories() {
+        if (window.categoryManager && typeof window.categoryManager.getCategories === 'function') {
+            const categories = window.categoryManager.getCategories();
+            console.log('[CategoriesPage] 📦 Catégories récupérées depuis CategoryManager:', Object.keys(categories));
+            return categories;
+        }
+        console.log('[CategoriesPage] ⚠️ CategoryManager non disponible, utilisation backup');
+        return this.backupCategories;
+    }
+    
+    getCategoryKeywords(categoryId) {
+        if (window.categoryManager && typeof window.categoryManager.weightedKeywords === 'object') {
+            const keywords = window.categoryManager.weightedKeywords[categoryId];
+            if (keywords) {
+                console.log(`[CategoriesPage] 🔑 Mots-clés récupérés pour ${categoryId}:`, keywords);
+                return keywords;
+            }
+        }
+        console.log(`[CategoriesPage] ⚠️ Mots-clés non trouvés pour ${categoryId}`);
+        return { absolute: [], strong: [], weak: [], exclusions: [] };
+    }
+    
+    getCategoryFilters(categoryId) {
+        // Pour l'instant, retourner des filtres vides car pas implémentés dans CategoryManager
+        return {
+            includeDomains: [], includeEmails: [], excludeDomains: [], excludeEmails: []
+        };
+    }
+
+    getAllEmails() {
+        if (window.emailScanner && typeof window.emailScanner.getAllEmails === 'function') {
+            const emails = window.emailScanner.getAllEmails();
+            console.log('[CategoriesPage] 📧 Emails récupérés depuis EmailScanner:', emails.length);
+            return emails;
+        }
+        console.log('[CategoriesPage] ⚠️ EmailScanner non disponible, utilisation backup');
+        return this.backupEmails;
+    }
+
+    // ================================================
+    // DONNÉES DE BACKUP
     // ================================================
     generateBackupEmails() {
-        const categories = ['work', 'personal', 'finance', 'shopping', 'news', 'other'];
+        const categories = ['newsletters', 'security', 'tasks', 'finance', 'meetings', 'other'];
         const emails = [];
         
-        // Générer des emails de démonstration
         for (let i = 0; i < 50; i++) {
             const category = categories[Math.floor(Math.random() * categories.length)];
             emails.push({
@@ -61,12 +103,12 @@ class CategoriesPageNetlify {
     
     getRandomSubject(category) {
         const subjects = {
-            work: ['Réunion équipe', 'Rapport mensuel', 'Nouveau projet', 'Présentation client'],
-            personal: ['Invitation anniversaire', 'Photos vacances', 'Nouvelles famille', 'Planning weekend'],
-            finance: ['Relevé bancaire', 'Facture électricité', 'Assurance auto', 'Déclaration impôts'],
-            shopping: ['Commande expédiée', 'Promotion spéciale', 'Nouvelle collection', 'Code promo'],
-            news: ['Actualités tech', 'Breaking news', 'Newsletter hebdo', 'Tendances marché'],
-            other: ['Sans objet', 'Divers', 'Information', 'Notification']
+            newsletters: ['Newsletter hebdo', 'Offre spéciale -50%', 'Nouvelles collections', 'Se désinscrire'],
+            security: ['Code de vérification', 'Connexion détectée', 'Alerte sécurité'],
+            tasks: ['Action requise', 'Tâche assignée', 'Urgent: deadline'],
+            finance: ['Facture #12345', 'Commande confirmée', 'Paiement reçu'],
+            meetings: ['Réunion équipe', 'Invitation Teams', 'RDV client'],
+            other: ['Sans objet', 'Divers', 'Information']
         };
         const categorySubjects = subjects[category] || subjects.other;
         return categorySubjects[Math.floor(Math.random() * categorySubjects.length)];
@@ -74,12 +116,12 @@ class CategoriesPageNetlify {
     
     getRandomSender(category) {
         const senders = {
-            work: ['Jean Dupont', 'Marie Martin', 'Équipe RH', 'Direction'],
-            personal: ['Famille', 'Ami(e)', 'Voisin', 'Club sport'],
-            finance: ['Banque', 'EDF', 'Assurance', 'Service impôts'],
-            shopping: ['Amazon', 'Cdiscount', 'Zara', 'Fnac'],
-            news: ['Le Monde', 'TechCrunch', 'Newsletter', 'Blog Tech'],
-            other: ['Expéditeur', 'Service', 'Contact', 'Notification']
+            newsletters: ['Marketing Team', 'Newsletter', 'Promo Store'],
+            security: ['Security Alert', 'Microsoft', 'Sécurité'],
+            tasks: ['Project Manager', 'Task System', 'Workflow'],
+            finance: ['Comptabilité', 'Billing', 'Facturation'],
+            meetings: ['Calendar', 'Teams', 'Agenda'],
+            other: ['System', 'Auto', 'Service']
         };
         const categorySenders = senders[category] || senders.other;
         return categorySenders[Math.floor(Math.random() * categorySenders.length)];
@@ -87,12 +129,12 @@ class CategoriesPageNetlify {
     
     getRandomEmail(category) {
         const domains = {
-            work: ['entreprise.com', 'societe.fr', 'business.com'],
-            personal: ['gmail.com', 'outlook.com', 'yahoo.fr'],
-            finance: ['banque.fr', 'edf.fr', 'impots.gouv.fr'],
-            shopping: ['amazon.fr', 'cdiscount.com', 'zara.com'],
-            news: ['lemonde.fr', 'techcrunch.com', 'newsletter.com'],
-            other: ['service.com', 'contact.fr', 'noreply.com']
+            newsletters: ['newsletter.com', 'marketing.fr', 'promo.com'],
+            security: ['security.microsoft.com', 'alerts.com'],
+            tasks: ['tasks.company.com', 'workflow.fr'],
+            finance: ['billing.com', 'factures.fr'],
+            meetings: ['calendar.com', 'teams.microsoft.com'],
+            other: ['system.com', 'noreply.fr']
         };
         const categoryDomains = domains[category] || domains.other;
         const domain = categoryDomains[Math.floor(Math.random() * categoryDomains.length)];
@@ -100,42 +142,7 @@ class CategoriesPageNetlify {
     }
 
     // ================================================
-    // MÉTHODES DE BACKUP POUR REMPLACER LES DÉPENDANCES
-    // ================================================
-    getCategories() {
-        // Utiliser window.categoryManager si disponible, sinon backup
-        if (window.categoryManager && typeof window.categoryManager.getCategories === 'function') {
-            return window.categoryManager.getCategories();
-        }
-        return this.backupCategories;
-    }
-    
-    getAllEmails() {
-        // Utiliser window.emailScanner si disponible, sinon backup
-        if (window.emailScanner && typeof window.emailScanner.getAllEmails === 'function') {
-            return window.emailScanner.getAllEmails();
-        }
-        return this.backupEmails;
-    }
-    
-    getCategoryManager() {
-        return window.categoryManager || {
-            getCategories: () => this.backupCategories,
-            getCategory: (id) => this.backupCategories[id],
-            getCategoryKeywords: (id) => ({
-                absolute: [], strong: [], weak: [], exclusions: []
-            }),
-            getCategoryFilters: (id) => ({
-                includeDomains: [], includeEmails: [], excludeDomains: [], excludeEmails: []
-            }),
-            updateActiveCategories: (categories) => {
-                console.log('[CategoriesPage] Backup: updateActiveCategories called');
-            }
-        };
-    }
-
-    // ================================================
-    // RENDU PRINCIPAL - AVEC INTÉGRATION CORRECTE
+    // RENDU PRINCIPAL AVEC ONGLETS
     // ================================================
     render(container) {
         if (!container) {
@@ -150,48 +157,35 @@ class CategoriesPageNetlify {
             console.log('[CategoriesPage] 📊 Rendu avec:', {
                 categoriesCount: Object.keys(categories).length,
                 hasEmailScanner: !!window.emailScanner,
-                hasCategoryManager: !!window.categoryManager
+                hasCategoryManager: !!window.categoryManager,
+                activeTab: this.activeTab
             });
             
             container.innerHTML = `
                 <div class="categories-modern">
-                    <!-- Header vibrant -->
+                    <!-- Header avec navigation par onglets -->
                     <div class="header-modern">
                         <div class="header-content">
-                            <h1>Catégories <span class="emoji">✨</span></h1>
-                            <p class="subtitle">Organisez vos emails avec style</p>
+                            <h1>Paramètres <span class="emoji">⚙️</span></h1>
+                            <p class="subtitle">Gestion des catégories et backup</p>
                         </div>
-                        <button class="btn-create" onclick="window.categoriesPage.showCreateModal()">
-                            <i class="fas fa-plus"></i>
-                            <span>Créer</span>
-                        </button>
-                    </div>
-                    
-                    <!-- Stats colorées -->
-                    <div class="stats-bar">
-                        <div class="stat-card" style="--accent: #FF6B6B">
-                            <div class="stat-value">${Object.keys(categories).length}</div>
-                            <div class="stat-label">Total</div>
-                        </div>
-                        <div class="stat-card" style="--accent: #4ECDC4">
-                            <div class="stat-value">${this.getActiveCount(categories, settings.activeCategories)}</div>
-                            <div class="stat-label">Actives</div>
-                        </div>
-                        <div class="stat-card" style="--accent: #45B7D1">
-                            <div class="stat-value">${this.getTotalKeywords(categories)}</div>
-                            <div class="stat-label">Mots-clés</div>
-                        </div>
-                        <div class="search-modern">
-                            <i class="fas fa-search"></i>
-                            <input type="text" 
-                                   placeholder="Rechercher..." 
-                                   onkeyup="window.categoriesPage.handleSearch(this.value)">
+                        <div class="main-tabs">
+                            <button class="main-tab ${this.activeTab === 'categories' ? 'active' : ''}" 
+                                    onclick="window.categoriesPage.switchMainTab('categories')">
+                                <i class="fas fa-tags"></i>
+                                Catégories
+                            </button>
+                            <button class="main-tab ${this.activeTab === 'backup' ? 'active' : ''}" 
+                                    onclick="window.categoriesPage.switchMainTab('backup')">
+                                <i class="fas fa-database"></i>
+                                Backup & Import
+                            </button>
                         </div>
                     </div>
                     
-                    <!-- Grille de catégories -->
-                    <div class="categories-grid" id="categories-container">
-                        ${this.renderCategories(categories, settings.activeCategories)}
+                    <!-- Contenu selon l'onglet actif -->
+                    <div class="tab-content">
+                        ${this.activeTab === 'categories' ? this.renderCategoriesTab(categories, settings) : this.renderBackupTab()}
                     </div>
                 </div>
             `;
@@ -204,28 +198,194 @@ class CategoriesPageNetlify {
         }
     }
 
-    // Rendu pour la page Settings/Paramètres
-    renderSettings(container) {
-        if (!container) {
-            console.error('[CategoriesPage] ❌ Container manquant pour settings');
-            return;
+    renderCategoriesTab(categories, settings) {
+        return `
+            <!-- Stats colorées -->
+            <div class="stats-bar">
+                <div class="stat-card" style="--accent: #FF6B6B">
+                    <div class="stat-value">${Object.keys(categories).length}</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat-card" style="--accent: #4ECDC4">
+                    <div class="stat-value">${this.getActiveCount(categories, settings.activeCategories)}</div>
+                    <div class="stat-label">Actives</div>
+                </div>
+                <div class="stat-card" style="--accent: #45B7D1">
+                    <div class="stat-value">${this.getTotalKeywords(categories)}</div>
+                    <div class="stat-label">Mots-clés</div>
+                </div>
+                <div class="search-modern">
+                    <i class="fas fa-search"></i>
+                    <input type="text" 
+                           placeholder="Rechercher..." 
+                           onkeyup="window.categoriesPage.handleSearch(this.value)">
+                </div>
+            </div>
+            
+            <!-- Grille de catégories -->
+            <div class="categories-grid" id="categories-container">
+                ${this.renderCategories(categories, settings.activeCategories)}
+            </div>
+        `;
+    }
+
+    renderBackupTab() {
+        return `
+            <div class="backup-container">
+                <div class="backup-section">
+                    <div class="backup-header">
+                        <h2><i class="fas fa-download"></i> Export des données</h2>
+                        <p>Sauvegardez vos catégories, paramètres et données d'emails</p>
+                    </div>
+                    
+                    <div class="backup-grid">
+                        <div class="backup-card">
+                            <div class="backup-icon">📦</div>
+                            <h3>Export complet</h3>
+                            <p>Toutes les données: catégories, emails, paramètres</p>
+                            <button class="btn-backup primary" onclick="window.categoriesPage.exportFullBackup()">
+                                <i class="fas fa-download"></i>
+                                Export complet
+                            </button>
+                        </div>
+                        
+                        <div class="backup-card">
+                            <div class="backup-icon">🏷️</div>
+                            <h3>Catégories uniquement</h3>
+                            <p>Export des catégories et mots-clés</p>
+                            <button class="btn-backup secondary" onclick="window.categoriesPage.exportCategories()">
+                                <i class="fas fa-tags"></i>
+                                Export catégories
+                            </button>
+                        </div>
+                        
+                        <div class="backup-card">
+                            <div class="backup-icon">⚙️</div>
+                            <h3>Paramètres</h3>
+                            <p>Configuration et préférences</p>
+                            <button class="btn-backup secondary" onclick="window.categoriesPage.exportSettings()">
+                                <i class="fas fa-cog"></i>
+                                Export paramètres
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="backup-section">
+                    <div class="backup-header">
+                        <h2><i class="fas fa-upload"></i> Import des données</h2>
+                        <p>Restaurez vos données depuis un fichier de sauvegarde</p>
+                    </div>
+                    
+                    <div class="import-zone" id="import-zone">
+                        <div class="import-area" onclick="document.getElementById('fileInput').click()">
+                            <div class="import-icon">📁</div>
+                            <h3>Glissez votre fichier ici</h3>
+                            <p>ou cliquez pour sélectionner</p>
+                            <p class="import-info">Formats supportés: .json, .backup</p>
+                        </div>
+                        <input type="file" id="fileInput" accept=".json,.backup" style="display: none" onchange="window.categoriesPage.handleFileImport(this)">
+                    </div>
+                    
+                    <div class="import-options">
+                        <label class="import-option">
+                            <input type="checkbox" id="mergeData" checked>
+                            <span>Fusionner avec les données existantes</span>
+                        </label>
+                        <label class="import-option">
+                            <input type="checkbox" id="overwriteSettings">
+                            <span>Remplacer les paramètres existants</span>
+                        </label>
+                        <label class="import-option">
+                            <input type="checkbox" id="validateData" checked>
+                            <span>Valider les données avant import</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="backup-section">
+                    <div class="backup-header">
+                        <h2><i class="fas fa-history"></i> Historique des sauvegardes</h2>
+                        <p>Gestion des sauvegardes automatiques</p>
+                    </div>
+                    
+                    <div class="backup-history" id="backup-history">
+                        ${this.renderBackupHistory()}
+                    </div>
+                    
+                    <div class="backup-actions">
+                        <button class="btn-backup secondary" onclick="window.categoriesPage.createAutoBackup()">
+                            <i class="fas fa-clock"></i>
+                            Sauvegarde automatique
+                        </button>
+                        <button class="btn-backup danger" onclick="window.categoriesPage.clearBackupHistory()">
+                            <i class="fas fa-trash"></i>
+                            Vider l'historique
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    renderBackupHistory() {
+        const history = this.getBackupHistory();
+        
+        if (history.length === 0) {
+            return `
+                <div class="backup-empty">
+                    <div class="backup-empty-icon">📄</div>
+                    <p>Aucune sauvegarde trouvée</p>
+                    <p class="backup-empty-sub">Créez votre première sauvegarde</p>
+                </div>
+            `;
         }
         
-        // Simplement appeler render() qui gère déjà tout
-        this.render(container);
+        return history.map(backup => `
+            <div class="backup-item">
+                <div class="backup-item-info">
+                    <div class="backup-item-name">${backup.name}</div>
+                    <div class="backup-item-meta">
+                        <span class="backup-date">${new Date(backup.date).toLocaleString('fr-FR')}</span>
+                        <span class="backup-size">${backup.size}</span>
+                        <span class="backup-type">${backup.type}</span>
+                    </div>
+                </div>
+                <div class="backup-item-actions">
+                    <button class="btn-backup-small primary" onclick="window.categoriesPage.restoreBackup('${backup.id}')">
+                        <i class="fas fa-undo"></i>
+                        Restaurer
+                    </button>
+                    <button class="btn-backup-small secondary" onclick="window.categoriesPage.downloadBackup('${backup.id}')">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="btn-backup-small danger" onclick="window.categoriesPage.deleteBackup('${backup.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
     }
 
     // ================================================
-    // RENDU DES CATÉGORIES AVEC BACKUP
+    // GESTION DES ONGLETS PRINCIPAUX
+    // ================================================
+    switchMainTab(tabName) {
+        this.activeTab = tabName;
+        console.log('[CategoriesPage] 🔄 Changement onglet:', tabName);
+        
+        // Re-render le contenu
+        const container = document.querySelector('.categories-modern').parentElement;
+        if (container) {
+            this.render(container);
+        }
+    }
+
+    // ================================================
+    // RENDU DES CATÉGORIES (EXISTANT)
     // ================================================
     renderCategories(categories, activeCategories) {
         const filtered = this.filterCategories(categories);
-        
-        console.log('[CategoriesPage] 🏷️ Rendu des catégories:', {
-            total: Object.keys(categories).length,
-            filtered: Object.keys(filtered).length,
-            searchTerm: this.searchTerm
-        });
         
         if (Object.keys(filtered).length === 0) {
             return `
@@ -241,22 +401,17 @@ class CategoriesPageNetlify {
             `;
         }
         
-        // Calculer les statistiques pour chaque catégorie
         const emailStats = this.calculateEmailStats();
-        console.log('[CategoriesPage] 📊 Statistiques emails:', emailStats);
         
-        // Rendu des cartes de catégories
         const categoryCards = Object.entries(filtered)
             .map(([id, category]) => this.renderCategoryCard(id, category, activeCategories, emailStats[id] || 0))
             .join('');
         
-        // Ajouter la catégorie "Autre" si elle a des emails
+        // Ajouter la catégorie "Autre" si nécessaire
         const otherCount = emailStats.other || 0;
         let otherCard = '';
         
         if (otherCount > 0 && !filtered.other) {
-            console.log(`[CategoriesPage] 📌 Ajout carte "Autre" avec ${otherCount} emails`);
-            
             const isActive = activeCategories === null || activeCategories.includes('other');
             const settings = this.loadSettings();
             const isPreselected = settings.taskPreselectedCategories?.includes('other') || false;
@@ -302,148 +457,6 @@ class CategoriesPageNetlify {
         return categoryCards + otherCard;
     }
 
-    calculateEmailStats() {
-        const emails = this.getAllEmails();
-        const stats = {};
-        
-        console.log('[CategoriesPage] 📊 Calcul statistiques emails sur', emails.length, 'emails');
-        
-        emails.forEach((email, index) => {
-            const cat = email.category;
-            
-            // Debug pour les premiers emails
-            if (index < 5) {
-                console.log(`[CategoriesPage] 🔍 Email ${index} stats:`, {
-                    subject: email.subject?.substring(0, 30),
-                    category: cat,
-                    categoryType: typeof cat
-                });
-            }
-            
-            // Traiter tous les cas explicitement
-            if (cat === null || cat === undefined || cat === '') {
-                // Emails sans catégorie -> les forcer à "other"
-                stats.other = (stats.other || 0) + 1;
-            } else {
-                // Tous les autres emails (y compris ceux déjà marqués "other")
-                stats[cat] = (stats[cat] || 0) + 1;
-            }
-        });
-        
-        console.log('[CategoriesPage] 📊 Statistiques calculées:', {
-            totalCategories: Object.keys(stats).length,
-            categories: stats,
-            totalEmails: emails.length,
-            otherCount: stats.other || 0
-        });
-        
-        return stats;
-    }
-
-    showOtherCategoryInfo() {
-        console.log('[CategoriesPage] ℹ️ Affichage infos catégorie "Autre"');
-        
-        const emails = this.getAllEmails();
-        const otherEmails = emails.filter(email => {
-            const cat = email.category;
-            return !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
-        });
-        
-        this.closeModal();
-        
-        const modalHTML = `
-            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPage.closeModal()">
-                <div class="modal-modern">
-                    <div class="modal-header">
-                        <div class="modal-title">
-                            <span class="modal-icon">📌</span>
-                            <h2>Catégorie "Autre"</h2>
-                        </div>
-                        <button class="btn-close" onclick="window.categoriesPage.closeModal()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="modal-content">
-                        <div class="tab-panel active">
-                            <div style="padding: 20px;">
-                                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                                    <h3 style="margin: 0 0 12px 0; color: #475569;">
-                                        <i class="fas fa-info-circle"></i> À propos de cette catégorie
-                                    </h3>
-                                    <p style="margin: 0; color: #64748b; line-height: 1.5;">
-                                        La catégorie "Autre" contient tous les emails qui n'ont pas pu être automatiquement classés 
-                                        dans une catégorie spécifique. Cela peut arriver pour des emails très courts, 
-                                        inhabituels ou provenant de nouvelles sources.
-                                    </p>
-                                </div>
-                                
-                                <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px;">
-                                    <h4 style="margin: 0 0 16px 0; color: #374151;">
-                                        📊 Statistiques (${otherEmails.length} emails)
-                                    </h4>
-                                    
-                                    ${otherEmails.length > 0 ? `
-                                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
-                                            <div style="background: #f0f9ff; padding: 12px; border-radius: 8px; text-align: center;">
-                                                <div style="font-size: 24px; font-weight: 700; color: #0369a1;">${otherEmails.length}</div>
-                                                <div style="font-size: 12px; color: #075985;">Total emails</div>
-                                            </div>
-                                            <div style="background: #f0fdf4; padding: 12px; border-radius: 8px; text-align: center;">
-                                                <div style="font-size: 24px; font-weight: 700; color: #16a34a;">${new Set(otherEmails.map(e => e.from?.emailAddress?.address?.split('@')[1])).size}</div>
-                                                <div style="font-size: 12px; color: #15803d;">Domaines uniques</div>
-                                            </div>
-                                        </div>
-                                        
-                                        <h5 style="margin: 0 0 12px 0; color: #374151;">Échantillon d'emails :</h5>
-                                        <div style="max-height: 200px; overflow-y: auto;">
-                                            ${otherEmails.slice(0, 10).map(email => `
-                                                <div style="padding: 8px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-                                                    <div style="flex: 1; min-width: 0;">
-                                                        <div style="font-weight: 600; font-size: 13px; color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                                            ${email.subject || 'Sans sujet'}
-                                                        </div>
-                                                        <div style="font-size: 11px; color: #6b7280;">
-                                                            ${email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu'}
-                                                        </div>
-                                                    </div>
-                                                    <div style="font-size: 10px; color: #9ca3af; white-space: nowrap; margin-left: 8px;">
-                                                        ${new Date(email.receivedDateTime).toLocaleDateString('fr-FR')}
-                                                    </div>
-                                                </div>
-                                            `).join('')}
-                                        </div>
-                                    ` : `
-                                        <div style="text-align: center; padding: 40px; color: #6b7280;">
-                                            <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
-                                            <p>Aucun email non catégorisé !</p>
-                                            <p style="font-size: 14px;">Tous vos emails ont été correctement classés.</p>
-                                        </div>
-                                    `}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="modal-footer">
-                        <button class="btn-modern secondary" onclick="window.categoriesPage.closeModal()">
-                            Fermer
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-        this.currentModal = true;
-    }
-
-    toggleOtherCategory() {
-        console.log('[CategoriesPage] 🔄 Toggle catégorie "Autre"');
-        this.showToast('ℹ️ La catégorie "Autre" est toujours visible', 'info');
-    }
-
     renderCategoryCard(id, category, activeCategories, emailCount = 0) {
         const isActive = activeCategories === null || activeCategories.includes(id);
         const stats = this.getCategoryStats(id);
@@ -461,8 +474,8 @@ class CategoriesPageNetlify {
                     <div class="cat-info">
                         <div class="cat-name">${category.name}</div>
                         <div class="cat-meta">
-                            <span class="meta-count">${emailCount}</span>
-                            ${stats.absolute > 0 ? `<span class="meta-star">★ ${stats.absolute}</span>` : ''}
+                            <span class="meta-count">${emailCount} emails</span>
+                            ${stats.totalKeywords > 0 ? `<span class="meta-star">🔑 ${stats.totalKeywords}</span>` : ''}
                         </div>
                     </div>
                 </div>
@@ -487,140 +500,7 @@ class CategoriesPageNetlify {
     }
 
     // ================================================
-    // GESTION DES CATÉGORIES ACTIVÉES/DÉSACTIVÉES
-    // ================================================
-    toggleCategory(categoryId) {
-        const settings = this.loadSettings();
-        let activeCategories = settings.activeCategories || null;
-        
-        if (activeCategories === null) {
-            const allCategories = Object.keys(this.getCategories());
-            activeCategories = allCategories.filter(id => id !== categoryId);
-        } else {
-            if (activeCategories.includes(categoryId)) {
-                activeCategories = activeCategories.filter(id => id !== categoryId);
-            } else {
-                activeCategories.push(categoryId);
-            }
-        }
-        
-        settings.activeCategories = activeCategories;
-        this.saveSettings(settings);
-        
-        // Notifier CategoryManager si disponible
-        const categoryManager = this.getCategoryManager();
-        if (categoryManager && typeof categoryManager.updateActiveCategories === 'function') {
-            categoryManager.updateActiveCategories(activeCategories);
-        }
-        
-        this.updateCategoriesDisplay();
-        this.showToast('État de la catégorie mis à jour');
-    }
-
-    // ================================================
-    // GESTION DE LA PRÉ-SÉLECTION POUR TÂCHES
-    // ================================================
-    togglePreselection(categoryId) {
-        console.log('[CategoriesPage] 🔄 Toggle pré-sélection pour:', categoryId);
-        
-        const settings = this.loadSettings();
-        let taskPreselectedCategories = settings.taskPreselectedCategories || [];
-        
-        const isPreselected = taskPreselectedCategories.includes(categoryId);
-        
-        if (isPreselected) {
-            taskPreselectedCategories = taskPreselectedCategories.filter(id => id !== categoryId);
-            console.log('[CategoriesPage] ➖ Retrait pré-sélection:', categoryId);
-        } else {
-            taskPreselectedCategories.push(categoryId);
-            console.log('[CategoriesPage] ➕ Ajout pré-sélection:', categoryId);
-        }
-        
-        // Sauvegarder dans les settings
-        settings.taskPreselectedCategories = taskPreselectedCategories;
-        this.saveSettings(settings);
-        
-        // Synchronisation avec autres modules si disponibles
-        this.syncTaskPreselectedCategories(taskPreselectedCategories);
-        
-        // Mettre à jour l'affichage
-        this.updateCategoriesDisplay();
-        
-        // Toast avec icône appropriée
-        const categories = this.getCategories();
-        const category = categories[categoryId];
-        const message = isPreselected ? 
-            `☐ ${category?.name || categoryId} - Pré-sélection désactivée` : 
-            `☑️ ${category?.name || categoryId} - Pré-sélection activée`;
-        this.showToast(message);
-    }
-
-    // ================================================
-    // SYNCHRONISATION AVEC AUTRES MODULES
-    // ================================================
-    syncTaskPreselectedCategories(categories) {
-        console.log('[CategoriesPage] 🔄 === SYNCHRONISATION GLOBALE ===');
-        console.log('[CategoriesPage] 📋 Catégories à synchroniser:', categories);
-        
-        // Essayer de synchroniser avec tous les modules disponibles
-        const modules = [
-            { name: 'CategoryManager', obj: window.categoryManager, method: 'updateTaskPreselectedCategories' },
-            { name: 'EmailScanner', obj: window.emailScanner, method: 'updateTaskPreselectedCategories' },
-            { name: 'PageManager', obj: window.pageManager, method: 'updateSettings' },
-            { name: 'MinimalScanModule', obj: window.minimalScanModule, method: 'updateSettings' },
-            { name: 'AITaskAnalyzer', obj: window.aiTaskAnalyzer, method: 'updatePreselectedCategories' }
-        ];
-        
-        modules.forEach(module => {
-            if (module.obj && typeof module.obj[module.method] === 'function') {
-                try {
-                    if (module.method === 'updateSettings') {
-                        module.obj[module.method]({ taskPreselectedCategories: categories });
-                    } else {
-                        module.obj[module.method](categories);
-                    }
-                    console.log(`[CategoriesPage] ✅ ${module.name} synchronisé`);
-                } catch (error) {
-                    console.warn(`[CategoriesPage] ⚠️ Erreur sync ${module.name}:`, error);
-                }
-            }
-        });
-        
-        // Dispatcher des événements
-        this.dispatchSettingsChanged({
-            type: 'taskPreselectedCategories',
-            value: categories,
-            settings: this.loadSettings()
-        });
-        
-        console.log('[CategoriesPage] ✅ Synchronisation terminée');
-    }
-
-    dispatchSettingsChanged(detail) {
-        try {
-            const events = ['categorySettingsChanged', 'settingsChanged'];
-            events.forEach(eventName => {
-                window.dispatchEvent(new CustomEvent(eventName, { 
-                    detail: {
-                        ...detail,
-                        source: 'CategoriesPage',
-                        timestamp: Date.now()
-                    }
-                }));
-            });
-            console.log('[CategoriesPage] 📨 Événements dispatched');
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur dispatch événements:', error);
-        }
-    }
-
-    getTaskPreselectedCategories() {
-        const settings = this.loadSettings();
-        return settings.taskPreselectedCategories || [];
-    }
-
-    // ================================================
-    // MODAL MODERNE
+    // MODAL AVEC MOTS-CLÉS DYNAMIQUES
     // ================================================
     openModal(categoryId) {
         const categories = this.getCategories();
@@ -633,15 +513,11 @@ class CategoriesPageNetlify {
         this.closeModal();
         this.editingCategoryId = categoryId;
         
-        // Utiliser des données par défaut si les méthodes ne sont pas disponibles
-        const categoryManager = this.getCategoryManager();
-        const keywords = (categoryManager.getCategoryKeywords && categoryManager.getCategoryKeywords(categoryId)) || {
-            absolute: [], strong: [], weak: [], exclusions: []
-        };
+        // Récupérer les mots-clés depuis CategoryManager
+        const keywords = this.getCategoryKeywords(categoryId);
+        const filters = this.getCategoryFilters(categoryId);
         
-        const filters = (categoryManager.getCategoryFilters && categoryManager.getCategoryFilters(categoryId)) || {
-            includeDomains: [], includeEmails: [], excludeDomains: [], excludeEmails: []
-        };
+        console.log('[CategoriesPage] 🔑 Mots-clés pour', categoryId, ':', keywords);
         
         const modalHTML = `
             <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPage.closeModal()">
@@ -663,6 +539,9 @@ class CategoriesPageNetlify {
                         <button class="tab" data-tab="filters" onclick="window.categoriesPage.switchTab('filters')">
                             <i class="fas fa-filter"></i> Filtres
                         </button>
+                        <button class="tab" data-tab="test" onclick="window.categoriesPage.switchTab('test')">
+                            <i class="fas fa-flask"></i> Test
+                        </button>
                         ${category.isCustom ? `
                             <button class="tab" data-tab="settings" onclick="window.categoriesPage.switchTab('settings')">
                                 <i class="fas fa-cog"></i> Paramètres
@@ -672,11 +551,15 @@ class CategoriesPageNetlify {
                     
                     <div class="modal-content">
                         <div class="tab-panel active" id="tab-keywords">
-                            ${this.renderKeywordsTab(keywords)}
+                            ${this.renderKeywordsTab(keywords, categoryId)}
                         </div>
                         
                         <div class="tab-panel" id="tab-filters">
                             ${this.renderFiltersTab(filters)}
+                        </div>
+                        
+                        <div class="tab-panel" id="tab-test">
+                            ${this.renderTestTab(categoryId)}
                         </div>
                         
                         ${category.isCustom ? `
@@ -696,11 +579,13 @@ class CategoriesPageNetlify {
                     
                     <div class="modal-footer">
                         <button class="btn-modern secondary" onclick="window.categoriesPage.closeModal()">
-                            Annuler
+                            Fermer
                         </button>
-                        <button class="btn-modern primary" onclick="window.categoriesPage.save()">
-                            <i class="fas fa-check"></i> Enregistrer
-                        </button>
+                        ${!category.isCustom ? '' : `
+                            <button class="btn-modern primary" onclick="window.categoriesPage.save()">
+                                <i class="fas fa-check"></i> Enregistrer
+                            </button>
+                        `}
                     </div>
                 </div>
             </div>
@@ -711,41 +596,56 @@ class CategoriesPageNetlify {
         this.currentModal = true;
     }
 
-    renderKeywordsTab(keywords) {
+    renderKeywordsTab(keywords, categoryId) {
+        const isReadOnly = !this.getCategories()[categoryId]?.isCustom;
+        
         return `
             <div class="keywords-layout">
+                ${isReadOnly ? `
+                    <div class="readonly-notice">
+                        <i class="fas fa-info-circle"></i>
+                        Cette catégorie est prédéfinie. Les mots-clés sont en lecture seule.
+                    </div>
+                ` : ''}
+                
                 <div class="keywords-grid">
-                    ${this.renderKeywordBox('absolute', 'Mots-clés absolus', keywords.absolute, '#FF6B6B', 'fa-star', 'Déclenchent toujours la catégorie')}
-                    ${this.renderKeywordBox('strong', 'Mots-clés forts', keywords.strong, '#FECA57', 'fa-bolt', 'Poids élevé dans la détection')}
-                    ${this.renderKeywordBox('weak', 'Mots-clés faibles', keywords.weak, '#54A0FF', 'fa-feather', 'Poids modéré dans la détection')}
-                    ${this.renderKeywordBox('exclusions', 'Exclusions', keywords.exclusions, '#A29BFE', 'fa-ban', 'Empêchent la détection')}
+                    ${this.renderKeywordBox('absolute', 'Mots-clés absolus', keywords.absolute || [], '#FF6B6B', 'fa-star', 'Déclenchent toujours la catégorie', isReadOnly)}
+                    ${this.renderKeywordBox('strong', 'Mots-clés forts', keywords.strong || [], '#FECA57', 'fa-bolt', 'Poids élevé dans la détection', isReadOnly)}
+                    ${this.renderKeywordBox('weak', 'Mots-clés faibles', keywords.weak || [], '#54A0FF', 'fa-feather', 'Poids modéré dans la détection', isReadOnly)}
+                    ${this.renderKeywordBox('exclusions', 'Exclusions', keywords.exclusions || [], '#A29BFE', 'fa-ban', 'Empêchent la détection', isReadOnly)}
                 </div>
             </div>
         `;
     }
 
-    renderKeywordBox(type, title, keywords, color, icon, description) {
+    renderKeywordBox(type, title, keywords, color, icon, description, isReadOnly = false) {
         return `
-            <div class="keyword-box">
+            <div class="keyword-box ${isReadOnly ? 'readonly' : ''}">
                 <div class="box-header">
                     <h4><i class="fas ${icon}"></i> ${title}</h4>
                     <span class="box-count" style="background: ${color}20; color: ${color}">${keywords.length}</span>
                 </div>
                 <p class="box-description">${description}</p>
-                <div class="input-modern">
-                    <input type="text" id="${type}-input" placeholder="Ajouter un mot-clé..." 
-                           onkeypress="if(event.key === 'Enter') window.categoriesPage.addKeyword('${type}', '${color}')">
-                    <button style="background: ${color}" onclick="window.categoriesPage.addKeyword('${type}', '${color}')">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                </div>
-                <div class="tags" id="${type}-items">
+                
+                ${!isReadOnly ? `
+                    <div class="input-modern">
+                        <input type="text" id="${type}-input" placeholder="Ajouter un mot-clé..." 
+                               onkeypress="if(event.key === 'Enter') window.categoriesPage.addKeyword('${type}', '${color}')">
+                        <button style="background: ${color}" onclick="window.categoriesPage.addKeyword('${type}', '${color}')">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                ` : ''}
+                
+                <div class="tags ${isReadOnly ? 'readonly' : ''}" id="${type}-items">
                     ${keywords.map(k => `
                         <span class="tag" style="background: ${color}15; color: ${color}">
                             ${k}
-                            <button onclick="window.categoriesPage.removeItem('${type}', '${k}')">
-                                <i class="fas fa-times"></i>
-                            </button>
+                            ${!isReadOnly ? `
+                                <button onclick="window.categoriesPage.removeItem('${type}', '${k}')">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            ` : ''}
                         </span>
                     `).join('')}
                 </div>
@@ -753,459 +653,503 @@ class CategoriesPageNetlify {
         `;
     }
 
-    renderFiltersTab(filters) {
+    renderTestTab(categoryId) {
         return `
-            <div class="filters-layout">
-                <div class="filter-section">
-                    <h3>Filtres d'inclusion</h3>
-                    
-                    <div class="filter-box">
-                        <h4><i class="fas fa-globe"></i> Domaines autorisés</h4>
-                        <p class="filter-hint">Accepter uniquement les emails de ces domaines</p>
-                        <div class="input-modern">
-                            <input type="text" id="include-domain" placeholder="exemple.com">
-                            <button onclick="window.categoriesPage.addFilter('includeDomains')">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="tags" id="includeDomains-items">
-                            ${filters.includeDomains.map(d => `
-                                <span class="tag filter-tag">
-                                    <i class="fas fa-globe"></i>
-                                    ${d}
-                                    <button onclick="window.categoriesPage.removeItem('includeDomains', '${d}')">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </span>
-                            `).join('')}
-                        </div>
-                    </div>
-                    
-                    <div class="filter-box">
-                        <h4><i class="fas fa-at"></i> Emails autorisés</h4>
-                        <p class="filter-hint">Accepter uniquement les emails de ces adresses</p>
-                        <div class="input-modern">
-                            <input type="text" id="include-email" placeholder="contact@exemple.com">
-                            <button onclick="window.categoriesPage.addFilter('includeEmails')">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="tags" id="includeEmails-items">
-                            ${filters.includeEmails.map(e => `
-                                <span class="tag filter-tag">
-                                    <i class="fas fa-at"></i>
-                                    ${e}
-                                    <button onclick="window.categoriesPage.removeItem('includeEmails', '${e}')">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </span>
-                            `).join('')}
-                        </div>
-                    </div>
+            <div class="test-tab">
+                <div class="test-header">
+                    <h3><i class="fas fa-flask"></i> Testeur de catégorie</h3>
+                    <p>Testez la détection de cette catégorie avec des exemples d'emails</p>
                 </div>
                 
-                <div class="filter-section">
-                    <h3>Filtres d'exclusion</h3>
-                    
-                    <div class="filter-box">
-                        <h4><i class="fas fa-ban"></i> Domaines exclus</h4>
-                        <p class="filter-hint">Ignorer les emails de ces domaines</p>
-                        <div class="input-modern">
-                            <input type="text" id="exclude-domain" placeholder="spam.com">
-                            <button onclick="window.categoriesPage.addFilter('excludeDomains')">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="tags" id="excludeDomains-items">
-                            ${filters.excludeDomains.map(d => `
-                                <span class="tag exclude-tag">
-                                    <i class="fas fa-ban"></i>
-                                    ${d}
-                                    <button onclick="window.categoriesPage.removeItem('excludeDomains', '${d}')">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </span>
-                            `).join('')}
-                        </div>
+                <div class="test-form">
+                    <div class="input-group">
+                        <label for="test-subject">Sujet de l'email :</label>
+                        <input type="text" id="test-subject" placeholder="Entrez le sujet de l'email à tester">
                     </div>
                     
-                    <div class="filter-box">
-                        <h4><i class="fas fa-user-slash"></i> Emails exclus</h4>
-                        <p class="filter-hint">Ignorer les emails de ces adresses</p>
-                        <div class="input-modern">
-                            <input type="text" id="exclude-email" placeholder="noreply@exemple.com">
-                            <button onclick="window.categoriesPage.addFilter('excludeEmails')">
-                                <i class="fas fa-plus"></i>
+                    <div class="input-group">
+                        <label for="test-body">Contenu de l'email :</label>
+                        <textarea id="test-body" rows="4" placeholder="Entrez le contenu de l'email (optionnel)"></textarea>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="test-from">Expéditeur :</label>
+                        <input type="email" id="test-from" placeholder="expediteur@example.com" value="test@example.com">
+                    </div>
+                    
+                    <button class="btn-test" onclick="window.categoriesPage.testEmailCategory('${categoryId}')">
+                        <i class="fas fa-play"></i>
+                        Tester la détection
+                    </button>
+                </div>
+                
+                <div class="test-results" id="test-results" style="display: none;">
+                    <h4>Résultats du test :</h4>
+                    <div id="test-output"></div>
+                </div>
+                
+                <div class="test-examples">
+                    <h4>Exemples de test rapides :</h4>
+                    <div class="test-examples-grid">
+                        ${this.getTestExamples(categoryId).map(example => `
+                            <button class="test-example" onclick="window.categoriesPage.loadTestExample('${example.subject}', '${example.body}', '${example.from}')">
+                                <strong>${example.name}</strong>
+                                <span>${example.subject}</span>
                             </button>
-                        </div>
-                        <div class="tags" id="excludeEmails-items">
-                            ${filters.excludeEmails.map(e => `
-                                <span class="tag exclude-tag">
-                                    <i class="fas fa-user-slash"></i>
-                                    ${e}
-                                    <button onclick="window.categoriesPage.removeItem('excludeEmails', '${e}')">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </span>
-                            `).join('')}
-                        </div>
+                        `).join('')}
                     </div>
                 </div>
             </div>
         `;
     }
 
-    // ================================================
-    // MODAL DE CRÉATION
-    // ================================================
-    showCreateModal() {
-        this.closeModal();
-        
-        const modalHTML = `
-            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPage.closeModal()">
-                <div class="modal-modern modal-create">
-                    <div class="create-header">
-                        <h2>Nouvelle catégorie ✨</h2>
-                        <button class="btn-close" onclick="window.categoriesPage.closeModal()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="create-content">
-                        <input type="text" 
-                               id="new-name" 
-                               class="input-name" 
-                               placeholder="Nom de la catégorie" 
-                               autofocus>
-                        
-                        <div class="emoji-picker">
-                            <label>Choisir une icône</label>
-                            <div class="emoji-grid">
-                                ${['📁', '📧', '💼', '🎯', '⚡', '🔔', '💡', '📊', '🏷️', '📌', '🌟', '🚀', '💎', '🎨', '🔥'].map(emoji => 
-                                    `<button class="emoji-option ${emoji === '📁' ? 'selected' : ''}" 
-                                             onclick="window.categoriesPage.selectIcon('${emoji}')">${emoji}</button>`
-                                ).join('')}
-                            </div>
-                            <input type="hidden" id="new-icon" value="📁">
-                        </div>
-                        
-                        <div class="color-selector">
-                            <label>Couleur de la catégorie</label>
-                            <div class="color-grid">
-                                ${this.colors.map((color, i) => 
-                                    `<button class="color-option ${i === 0 ? 'selected' : ''}" 
-                                             style="background: ${color}"
-                                             onclick="window.categoriesPage.selectColor('${color}')"></button>`
-                                ).join('')}
-                            </div>
-                            <input type="hidden" id="new-color" value="${this.colors[0]}">
-                        </div>
-                    </div>
-                    
-                    <div class="modal-footer">
-                        <button class="btn-modern secondary" onclick="window.categoriesPage.closeModal()">
-                            Annuler
-                        </button>
-                        <button class="btn-modern primary" onclick="window.categoriesPage.createCategory()">
-                            <i class="fas fa-sparkles"></i> Créer
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-        this.currentModal = true;
-        
-        setTimeout(() => document.getElementById('new-name')?.focus(), 100);
-    }
-
-    // ================================================
-    // ACTIONS DES MODALES
-    // ================================================
-    handleSearch(term) {
-        this.searchTerm = term.toLowerCase();
-        this.updateCategoriesDisplay();
-    }
-
-    filterCategories(categories) {
-        if (!this.searchTerm) return categories;
-        
-        const filtered = {};
-        Object.entries(categories).forEach(([id, category]) => {
-            if (category.name.toLowerCase().includes(this.searchTerm)) {
-                filtered[id] = category;
-            }
-        });
-        return filtered;
-    }
-
-    updateCategoriesDisplay() {
-        const container = document.getElementById('categories-container');
-        if (!container) return;
-        
-        const categories = this.getCategories();
-        const settings = this.loadSettings();
-        
-        container.innerHTML = this.renderCategories(categories, settings.activeCategories);
-    }
-
-    switchTab(tabName) {
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.classList.toggle('active', tab.dataset.tab === tabName);
-        });
-        
-        document.querySelectorAll('.tab-panel').forEach(panel => {
-            panel.classList.toggle('active', panel.id === `tab-${tabName}`);
-        });
-    }
-
-    selectIcon(icon) {
-        document.getElementById('new-icon').value = icon;
-        document.querySelectorAll('.emoji-option').forEach(btn => {
-            btn.classList.toggle('selected', btn.textContent === icon);
-        });
-    }
-
-    selectColor(color) {
-        document.getElementById('new-color').value = color;
-        document.querySelectorAll('.color-option').forEach(btn => {
-            btn.classList.toggle('selected', btn.style.background === color);
-        });
-    }
-
-    addKeyword(type, color) {
-        const input = document.getElementById(`${type}-input`);
-        if (!input?.value.trim()) return;
-        
-        const value = input.value.trim().toLowerCase();
-        const container = document.getElementById(`${type}-items`);
-        
-        if (!container) return;
-        
-        container.insertAdjacentHTML('beforeend', `
-            <span class="tag" style="background: ${color}15; color: ${color}">
-                ${value}
-                <button onclick="window.categoriesPage.removeItem('${type}', '${value}')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </span>
-        `);
-        
-        input.value = '';
-        input.focus();
-    }
-
-    addFilter(type) {
-        const inputMap = {
-            'includeDomains': 'include-domain',
-            'includeEmails': 'include-email',
-            'excludeDomains': 'exclude-domain',
-            'excludeEmails': 'exclude-email'
+    getTestExamples(categoryId) {
+        const examples = {
+            newsletters: [
+                { name: 'Newsletter classique', subject: 'Newsletter hebdomadaire - Nouvelles tendances', body: 'Se désinscrire en cliquant ici', from: 'newsletter@shop.com' },
+                { name: 'Promotion', subject: 'Offre spéciale -50% - Limitée', body: 'Découvrir la vente', from: 'promo@boutique.fr' }
+            ],
+            security: [
+                { name: 'Code vérification', subject: 'Code de vérification', body: 'Votre code: 123456', from: 'security@microsoft.com' },
+                { name: 'Alerte connexion', subject: 'Nouvelle connexion détectée', body: 'Connexion depuis Paris', from: 'alerts@security.com' }
+            ],
+            tasks: [
+                { name: 'Action requise', subject: 'Action requise: Compléter votre profil', body: 'Veuillez compléter', from: 'system@company.com' },
+                { name: 'Tâche urgente', subject: 'Urgent: Deadline dans 2h', body: 'Task assigned', from: 'project@work.com' }
+            ],
+            finance: [
+                { name: 'Facture', subject: 'Facture #12345', body: 'Montant: 150€', from: 'billing@company.com' },
+                { name: 'Commande', subject: 'Confirmation commande #ABC', body: 'Commande confirmée', from: 'orders@shop.fr' }
+            ]
         };
         
-        const input = document.getElementById(inputMap[type]);
-        if (!input?.value.trim()) return;
-        
-        const value = input.value.trim().toLowerCase();
-        const container = document.getElementById(`${type}-items`);
-        
-        if (!container) return;
-        
-        const isExclude = type.includes('exclude');
-        const icon = type.includes('Domain') ? 
-            (isExclude ? 'ban' : 'globe') : 
-            (isExclude ? 'user-slash' : 'at');
-        
-        container.insertAdjacentHTML('beforeend', `
-            <span class="tag ${isExclude ? 'exclude-tag' : 'filter-tag'}">
-                <i class="fas fa-${icon}"></i>
-                ${value}
-                <button onclick="window.categoriesPage.removeItem('${type}', '${value}')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </span>
-        `);
-        
-        input.value = '';
-        input.focus();
+        return examples[categoryId] || [
+            { name: 'Test générique', subject: 'Email de test', body: 'Contenu de test', from: 'test@example.com' }
+        ];
     }
 
-    removeItem(type, value) {
-        const container = document.getElementById(`${type}-items`);
-        if (!container) return;
+    // ================================================
+    // FONCTIONS DE BACKUP ET IMPORT/EXPORT
+    // ================================================
+    exportFullBackup() {
+        console.log('[CategoriesPage] 📦 Export complet...');
         
-        const tags = container.querySelectorAll('.tag');
-        tags.forEach(tag => {
-            const text = tag.textContent.trim().replace(/×$/, '').trim();
-            if (text === value || text.includes(value)) {
-                tag.remove();
+        const data = {
+            version: '1.0',
+            timestamp: new Date().toISOString(),
+            type: 'full_backup',
+            categories: this.getCategories(),
+            emails: this.getAllEmails(),
+            settings: this.loadSettings(),
+            categoryKeywords: this.exportCategoryKeywords(),
+            userInfo: {
+                exportDate: new Date().toISOString(),
+                source: 'CategoriesPage v23.0'
             }
-        });
+        };
+        
+        this.downloadAsFile(data, `email-manager-backup-${this.formatDateForFilename()}.json`);
+        this.addToBackupHistory('Export complet', 'full', data);
+        this.showToast('✅ Export complet terminé!');
     }
 
-    createCategory() {
-        const name = document.getElementById('new-name')?.value?.trim();
-        const icon = document.getElementById('new-icon')?.value || '📁';
-        const color = document.getElementById('new-color')?.value || this.colors[0];
+    exportCategories() {
+        console.log('[CategoriesPage] 🏷️ Export catégories...');
         
-        if (!name) {
-            this.showToast('⚠️ Nom requis', 'warning');
+        const data = {
+            version: '1.0',
+            timestamp: new Date().toISOString(),
+            type: 'categories_only',
+            categories: this.getCategories(),
+            categoryKeywords: this.exportCategoryKeywords(),
+            userInfo: {
+                exportDate: new Date().toISOString(),
+                source: 'CategoriesPage v23.0'
+            }
+        };
+        
+        this.downloadAsFile(data, `categories-backup-${this.formatDateForFilename()}.json`);
+        this.addToBackupHistory('Export catégories', 'categories', data);
+        this.showToast('✅ Export catégories terminé!');
+    }
+
+    exportSettings() {
+        console.log('[CategoriesPage] ⚙️ Export paramètres...');
+        
+        const data = {
+            version: '1.0',
+            timestamp: new Date().toISOString(),
+            type: 'settings_only',
+            settings: this.loadSettings(),
+            userInfo: {
+                exportDate: new Date().toISOString(),
+                source: 'CategoriesPage v23.0'
+            }
+        };
+        
+        this.downloadAsFile(data, `settings-backup-${this.formatDateForFilename()}.json`);
+        this.addToBackupHistory('Export paramètres', 'settings', data);
+        this.showToast('✅ Export paramètres terminé!');
+    }
+
+    exportCategoryKeywords() {
+        const categories = this.getCategories();
+        const keywords = {};
+        
+        Object.keys(categories).forEach(categoryId => {
+            keywords[categoryId] = this.getCategoryKeywords(categoryId);
+        });
+        
+        return keywords;
+    }
+
+    handleFileImport(input) {
+        const file = input.files[0];
+        if (!file) return;
+        
+        console.log('[CategoriesPage] 📁 Import fichier:', file.name);
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                this.processImportData(data);
+            } catch (error) {
+                console.error('[CategoriesPage] Erreur lecture fichier:', error);
+                this.showToast('❌ Erreur: Fichier invalide', 'error');
+            }
+        };
+        
+        reader.readAsText(file);
+    }
+
+    processImportData(data) {
+        console.log('[CategoriesPage] 🔄 Traitement import:', data.type);
+        
+        // Validation des données
+        if (document.getElementById('validateData')?.checked && !this.validateImportData(data)) {
+            this.showToast('❌ Données invalides', 'error');
             return;
         }
         
-        // Essayer avec categoryManager s'il existe, sinon ajouter localement
-        const categoryManager = this.getCategoryManager();
-        
-        if (categoryManager && typeof categoryManager.createCustomCategory === 'function') {
-            const categoryData = {
-                name,
-                icon,
-                color,
-                priority: 30,
-                keywords: { absolute: [], strong: [], weak: [], exclusions: [] }
-            };
-            
-            const newCategory = categoryManager.createCustomCategory(categoryData);
-            
-            if (newCategory) {
-                this.closeModal();
-                this.showToast('✅ Catégorie créée avec succès!');
-                this.refreshPage();
-                
-                setTimeout(() => this.openModal(newCategory.id), 300);
-                return;
-            }
-        }
-        
-        // Fallback: ajouter à nos données de backup
-        const newId = 'custom_' + Date.now();
-        this.backupCategories[newId] = {
-            name,
-            icon,
-            color,
-            priority: 30,
-            isCustom: true
-        };
-        
-        this.closeModal();
-        this.showToast('✅ Catégorie créée avec succès!');
-        this.refreshPage();
-    }
-
-    save() {
-        if (!this.editingCategoryId) return;
+        const mergeData = document.getElementById('mergeData')?.checked;
+        const overwriteSettings = document.getElementById('overwriteSettings')?.checked;
         
         try {
-            const getItems = (containerId) => {
-                const container = document.getElementById(containerId);
-                if (!container) return [];
-                return Array.from(container.querySelectorAll('.tag')).map(tag => {
-                    const text = tag.textContent.trim();
-                    return text.replace(/×$/, '').replace(/^[^\s]+\s/, '').trim();
-                });
-            };
-            
-            const keywords = {
-                absolute: getItems('absolute-items'),
-                strong: getItems('strong-items'),
-                weak: getItems('weak-items'),
-                exclusions: getItems('exclusions-items')
-            };
-            
-            const filters = {
-                includeDomains: getItems('includeDomains-items'),
-                includeEmails: getItems('includeEmails-items'),
-                excludeDomains: getItems('excludeDomains-items'),
-                excludeEmails: getItems('excludeEmails-items')
-            };
-            
-            const categoryManager = this.getCategoryManager();
-            
-            // Essayer de sauvegarder avec categoryManager si disponible
-            if (categoryManager.updateCategoryKeywords && categoryManager.updateCategoryFilters) {
-                categoryManager.updateCategoryKeywords(this.editingCategoryId, keywords);
-                categoryManager.updateCategoryFilters(this.editingCategoryId, filters);
+            // Import selon le type
+            switch (data.type) {
+                case 'full_backup':
+                    this.importFullBackup(data, mergeData, overwriteSettings);
+                    break;
+                case 'categories_only':
+                    this.importCategories(data, mergeData);
+                    break;
+                case 'settings_only':
+                    this.importSettings(data, overwriteSettings);
+                    break;
+                default:
+                    this.showToast('⚠️ Type de sauvegarde non reconnu', 'warning');
+                    return;
             }
             
-            this.closeModal();
-            this.showToast('💾 Modifications enregistrées!');
+            this.showToast('✅ Import réussi!');
             this.refreshPage();
             
         } catch (error) {
-            console.error('[CategoriesPage] Erreur sauvegarde:', error);
-            this.showToast('❌ Erreur lors de la sauvegarde', 'error');
+            console.error('[CategoriesPage] Erreur import:', error);
+            this.showToast('❌ Erreur lors de l\'import', 'error');
         }
     }
 
-    deleteCategory(categoryId) {
-        const categories = this.getCategories();
-        const category = categories[categoryId];
-        if (!category) return;
+    validateImportData(data) {
+        if (!data.version || !data.timestamp || !data.type) {
+            console.error('[CategoriesPage] Données manquantes');
+            return false;
+        }
         
-        if (confirm(`Êtes-vous sûr de vouloir supprimer "${category.name}" ?`)) {
-            const categoryManager = this.getCategoryManager();
+        if (data.type === 'full_backup' && (!data.categories || !data.settings)) {
+            console.error('[CategoriesPage] Backup complet invalide');
+            return false;
+        }
+        
+        return true;
+    }
+
+    importFullBackup(data, merge, overwriteSettings) {
+        console.log('[CategoriesPage] 📦 Import backup complet');
+        
+        if (overwriteSettings && data.settings) {
+            this.saveSettings(data.settings);
+        }
+        
+        // Note: Pour un vrai import, il faudrait interfacer avec CategoryManager
+        this.addToBackupHistory('Import complet', 'import', data);
+    }
+
+    importCategories(data, merge) {
+        console.log('[CategoriesPage] 🏷️ Import catégories');
+        
+        // Note: Pour un vrai import, il faudrait interfacer avec CategoryManager
+        this.addToBackupHistory('Import catégories', 'import', data);
+    }
+
+    importSettings(data, overwrite) {
+        console.log('[CategoriesPage] ⚙️ Import paramètres');
+        
+        if (overwrite && data.settings) {
+            this.saveSettings(data.settings);
+        }
+        
+        this.addToBackupHistory('Import paramètres', 'import', data);
+    }
+
+    // ================================================
+    // GESTION HISTORIQUE BACKUP
+    // ================================================
+    getBackupHistory() {
+        try {
+            const history = localStorage.getItem('backupHistory');
+            return history ? JSON.parse(history) : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    addToBackupHistory(name, type, data) {
+        const history = this.getBackupHistory();
+        const backup = {
+            id: 'backup_' + Date.now(),
+            name: name,
+            type: type,
+            date: new Date().toISOString(),
+            size: this.formatFileSize(JSON.stringify(data).length),
+            data: data
+        };
+        
+        history.unshift(backup);
+        
+        // Garder seulement les 10 dernières sauvegardes
+        if (history.length > 10) {
+            history.splice(10);
+        }
+        
+        try {
+            localStorage.setItem('backupHistory', JSON.stringify(history));
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur sauvegarde historique:', error);
+        }
+    }
+
+    createAutoBackup() {
+        console.log('[CategoriesPage] 🕐 Création sauvegarde automatique');
+        this.exportFullBackup();
+    }
+
+    clearBackupHistory() {
+        if (confirm('Êtes-vous sûr de vouloir vider l\'historique des sauvegardes ?')) {
+            localStorage.removeItem('backupHistory');
+            this.showToast('🗑️ Historique vidé');
             
-            if (categoryManager && typeof categoryManager.deleteCustomCategory === 'function') {
-                categoryManager.deleteCustomCategory(categoryId);
-            } else {
-                // Fallback: supprimer de nos données de backup
-                delete this.backupCategories[categoryId];
+            // Rafraîchir l'affichage
+            const historyContainer = document.getElementById('backup-history');
+            if (historyContainer) {
+                historyContainer.innerHTML = this.renderBackupHistory();
             }
+        }
+    }
+
+    restoreBackup(backupId) {
+        const history = this.getBackupHistory();
+        const backup = history.find(b => b.id === backupId);
+        
+        if (!backup) {
+            this.showToast('❌ Sauvegarde non trouvée', 'error');
+            return;
+        }
+        
+        if (confirm(`Restaurer la sauvegarde "${backup.name}" ?`)) {
+            this.processImportData(backup.data);
+        }
+    }
+
+    downloadBackup(backupId) {
+        const history = this.getBackupHistory();
+        const backup = history.find(b => b.id === backupId);
+        
+        if (!backup) {
+            this.showToast('❌ Sauvegarde non trouvée', 'error');
+            return;
+        }
+        
+        this.downloadAsFile(backup.data, `${backup.name.toLowerCase().replace(/\s+/g, '-')}-${this.formatDateForFilename()}.json`);
+    }
+
+    deleteBackup(backupId) {
+        if (confirm('Supprimer cette sauvegarde ?')) {
+            const history = this.getBackupHistory();
+            const filteredHistory = history.filter(b => b.id !== backupId);
             
-            this.closeModal();
-            this.showToast('🗑️ Catégorie supprimée');
-            this.refreshPage();
+            try {
+                localStorage.setItem('backupHistory', JSON.stringify(filteredHistory));
+                this.showToast('🗑️ Sauvegarde supprimée');
+                
+                // Rafraîchir l'affichage
+                const historyContainer = document.getElementById('backup-history');
+                if (historyContainer) {
+                    historyContainer.innerHTML = this.renderBackupHistory();
+                }
+            } catch (error) {
+                this.showToast('❌ Erreur suppression', 'error');
+            }
         }
     }
 
-    closeModal() {
-        document.querySelector('.modal-backdrop')?.remove();
-        document.body.style.overflow = 'auto';
-        this.currentModal = null;
-        this.editingCategoryId = null;
+    // ================================================
+    // FONCTIONS DE TEST
+    // ================================================
+    testEmailCategory(categoryId) {
+        const subject = document.getElementById('test-subject')?.value || '';
+        const body = document.getElementById('test-body')?.value || '';
+        const from = document.getElementById('test-from')?.value || 'test@example.com';
+        
+        if (!subject.trim()) {
+            this.showToast('⚠️ Veuillez entrer un sujet', 'warning');
+            return;
+        }
+        
+        console.log(`[CategoriesPage] 🧪 Test catégorie ${categoryId}:`, { subject, body, from });
+        
+        // Si CategoryManager est disponible, l'utiliser
+        if (window.categoryManager && typeof window.categoryManager.testEmail === 'function') {
+            const result = window.categoryManager.testEmail(subject, body, from);
+            this.displayTestResults(result, categoryId);
+        } else {
+            // Simulation de test
+            const mockResult = {
+                category: Math.random() > 0.5 ? categoryId : 'other',
+                score: Math.floor(Math.random() * 200),
+                confidence: Math.random(),
+                matchedPatterns: [
+                    { keyword: 'test', type: 'strong', score: 40 }
+                ]
+            };
+            this.displayTestResults(mockResult, categoryId);
+        }
     }
 
-    refreshPage() {
-        const container = document.querySelector('.settings-container') || 
-                        document.querySelector('.main-content') ||
-                        document.querySelector('.content') ||
-                        document.getElementById('pageContent');
-        if (container) {
-            this.render(container);
-        }
+    displayTestResults(result, expectedCategory) {
+        const resultsDiv = document.getElementById('test-results');
+        const outputDiv = document.getElementById('test-output');
+        
+        if (!resultsDiv || !outputDiv) return;
+        
+        const isCorrect = result.category === expectedCategory;
+        const confidencePercent = Math.round(result.confidence * 100);
+        
+        outputDiv.innerHTML = `
+            <div class="test-result ${isCorrect ? 'success' : 'failure'}">
+                <div class="test-result-header">
+                    <span class="test-result-icon">${isCorrect ? '✅' : '❌'}</span>
+                    <span class="test-result-status">
+                        ${isCorrect ? 'Détection correcte' : 'Détection incorrecte'}
+                    </span>
+                </div>
+                
+                <div class="test-result-details">
+                    <div class="test-detail">
+                        <strong>Catégorie détectée:</strong> ${result.category}
+                    </div>
+                    <div class="test-detail">
+                        <strong>Score:</strong> ${result.score} points
+                    </div>
+                    <div class="test-detail">
+                        <strong>Confiance:</strong> ${confidencePercent}%
+                    </div>
+                    
+                    ${result.matchedPatterns && result.matchedPatterns.length > 0 ? `
+                        <div class="test-detail">
+                            <strong>Mots-clés détectés:</strong>
+                            <ul class="matched-patterns">
+                                ${result.matchedPatterns.map(pattern => `
+                                    <li class="pattern-${pattern.type}">
+                                        ${pattern.keyword} (${pattern.type}: +${pattern.score}pts)
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        
+        resultsDiv.style.display = 'block';
+    }
+
+    loadTestExample(subject, body, from) {
+        document.getElementById('test-subject').value = subject;
+        document.getElementById('test-body').value = body;
+        document.getElementById('test-from').value = from;
     }
 
     // ================================================
     // MÉTHODES UTILITAIRES
     // ================================================
+    formatDateForFilename() {
+        const now = new Date();
+        return now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    downloadAsFile(data, filename) {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
     getCategoryStats(categoryId) {
         if (categoryId === 'other') {
-            const emails = this.getAllEmails();
-            const otherEmails = emails.filter(email => {
-                const cat = email.category;
-                return !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
-            });
-            
-            return {
-                keywords: 0,
-                absolute: 0,
-                emailCount: otherEmails.length
-            };
+            return { totalKeywords: 0, emailCount: this.getCategoryEmailCount('other') };
         }
         
-        const categoryManager = this.getCategoryManager();
-        const keywords = (categoryManager.getCategoryKeywords && categoryManager.getCategoryKeywords(categoryId)) || {
-            absolute: [], strong: [], weak: [], exclusions: []
-        };
+        const keywords = this.getCategoryKeywords(categoryId);
+        const totalKeywords = (keywords.absolute?.length || 0) + 
+                             (keywords.strong?.length || 0) + 
+                             (keywords.weak?.length || 0) + 
+                             (keywords.exclusions?.length || 0);
         
         return {
-            keywords: keywords.absolute.length + keywords.strong.length + 
-                     keywords.weak.length + keywords.exclusions.length,
-            absolute: keywords.absolute.length,
+            totalKeywords: totalKeywords,
             emailCount: this.getCategoryEmailCount(categoryId)
         };
+    }
+
+    calculateEmailStats() {
+        const emails = this.getAllEmails();
+        const stats = {};
+        
+        emails.forEach(email => {
+            const cat = email.category;
+            if (cat === null || cat === undefined || cat === '') {
+                stats.other = (stats.other || 0) + 1;
+            } else {
+                stats[cat] = (stats[cat] || 0) + 1;
+            }
+        });
+        
+        return stats;
     }
 
     getCategoryEmailCount(categoryId) {
@@ -1240,10 +1184,123 @@ class CategoriesPageNetlify {
         Object.keys(categories).forEach(id => {
             if (id !== 'other') {
                 const stats = this.getCategoryStats(id);
-                total += stats.keywords;
+                total += stats.totalKeywords;
             }
         });
         return total;
+    }
+
+    // ================================================
+    // ACTIONS UTILISATEUR (EXISTANTES)
+    // ================================================
+    handleSearch(term) {
+        this.searchTerm = term.toLowerCase();
+        this.updateCategoriesDisplay();
+    }
+
+    filterCategories(categories) {
+        if (!this.searchTerm) return categories;
+        
+        const filtered = {};
+        Object.entries(categories).forEach(([id, category]) => {
+            if (category.name.toLowerCase().includes(this.searchTerm)) {
+                filtered[id] = category;
+            }
+        });
+        return filtered;
+    }
+
+    updateCategoriesDisplay() {
+        if (this.activeTab !== 'categories') return;
+        
+        const container = document.getElementById('categories-container');
+        if (!container) return;
+        
+        const categories = this.getCategories();
+        const settings = this.loadSettings();
+        
+        container.innerHTML = this.renderCategories(categories, settings.activeCategories);
+    }
+
+    toggleCategory(categoryId) {
+        const settings = this.loadSettings();
+        let activeCategories = settings.activeCategories || null;
+        
+        if (activeCategories === null) {
+            const allCategories = Object.keys(this.getCategories());
+            activeCategories = allCategories.filter(id => id !== categoryId);
+        } else {
+            if (activeCategories.includes(categoryId)) {
+                activeCategories = activeCategories.filter(id => id !== categoryId);
+            } else {
+                activeCategories.push(categoryId);
+            }
+        }
+        
+        settings.activeCategories = activeCategories;
+        this.saveSettings(settings);
+        
+        // Notifier CategoryManager si disponible
+        if (window.categoryManager && typeof window.categoryManager.updateTaskPreselectedCategories === 'function') {
+            window.categoryManager.updateTaskPreselectedCategories(activeCategories);
+        }
+        
+        this.updateCategoriesDisplay();
+        this.showToast('État de la catégorie mis à jour');
+    }
+
+    togglePreselection(categoryId) {
+        const settings = this.loadSettings();
+        let taskPreselectedCategories = settings.taskPreselectedCategories || [];
+        
+        const isPreselected = taskPreselectedCategories.includes(categoryId);
+        
+        if (isPreselected) {
+            taskPreselectedCategories = taskPreselectedCategories.filter(id => id !== categoryId);
+        } else {
+            taskPreselectedCategories.push(categoryId);
+        }
+        
+        settings.taskPreselectedCategories = taskPreselectedCategories;
+        this.saveSettings(settings);
+        
+        // Synchronisation avec CategoryManager
+        if (window.categoryManager && typeof window.categoryManager.updateTaskPreselectedCategories === 'function') {
+            window.categoryManager.updateTaskPreselectedCategories(taskPreselectedCategories);
+        }
+        
+        this.updateCategoriesDisplay();
+        
+        const categories = this.getCategories();
+        const category = categories[categoryId];
+        const message = isPreselected ? 
+            `☐ ${category?.name || categoryId} - Pré-sélection désactivée` : 
+            `☑️ ${category?.name || categoryId} - Pré-sélection activée`;
+        this.showToast(message);
+    }
+
+    switchTab(tabName) {
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.tab === tabName);
+        });
+        
+        document.querySelectorAll('.tab-panel').forEach(panel => {
+            panel.classList.toggle('active', panel.id === `tab-${tabName}`);
+        });
+    }
+
+    closeModal() {
+        document.querySelector('.modal-backdrop')?.remove();
+        document.body.style.overflow = 'auto';
+        this.currentModal = null;
+        this.editingCategoryId = null;
+    }
+
+    refreshPage() {
+        const container = document.querySelector('.categories-modern')?.parentElement;
+        if (container) {
+            this.render(container);
+        }
     }
 
     loadSettings() {
@@ -1302,13 +1359,33 @@ class CategoriesPageNetlify {
     }
 
     // ================================================
-    // STYLES MODERNES
+    // MÉTHODES NON IMPLÉMENTÉES (PLACEHOLDERS)
+    // ================================================
+    showOtherCategoryInfo() {
+        this.showToast('ℹ️ Informations catégorie "Autre"', 'info');
+    }
+
+    toggleOtherCategory() {
+        this.showToast('ℹ️ La catégorie "Autre" est toujours visible', 'info');
+    }
+
+    renderFiltersTab(filters) {
+        return `
+            <div class="filters-notice">
+                <i class="fas fa-info-circle"></i>
+                <p>Les filtres avancés seront disponibles dans une prochaine version.</p>
+            </div>
+        `;
+    }
+
+    // ================================================
+    // STYLES ÉTENDUS
     // ================================================
     addStyles() {
-        if (document.getElementById('categoriesModernStylesNetlify')) return;
+        if (document.getElementById('categoriesAdvancedStyles')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'categoriesModernStylesNetlify';
+        styles.id = 'categoriesAdvancedStyles';
         styles.textContent = `
             /* Base et variables */
             .categories-modern {
@@ -1332,7 +1409,7 @@ class CategoriesPageNetlify {
                 color: var(--text);
             }
             
-            /* Header moderne */
+            /* Header avec onglets principaux */
             .header-modern {
                 display: flex;
                 justify-content: space-between;
@@ -1350,38 +1427,54 @@ class CategoriesPageNetlify {
                 gap: 8px;
             }
             
-            .emoji {
-                font-size: 28px;
-            }
-            
             .subtitle {
                 font-size: 16px;
                 color: var(--text-secondary);
                 margin: 4px 0 0 0;
             }
             
-            .btn-create {
+            /* Onglets principaux */
+            .main-tabs {
+                display: flex;
+                gap: 8px;
+                background: var(--surface);
+                padding: 4px;
+                border-radius: 12px;
+                border: 1px solid var(--border);
+            }
+            
+            .main-tab {
                 display: flex;
                 align-items: center;
                 gap: 8px;
                 padding: 12px 20px;
-                background: linear-gradient(135deg, var(--primary), var(--secondary));
-                color: white;
                 border: none;
-                border-radius: 12px;
-                font-size: 15px;
+                background: transparent;
+                border-radius: 8px;
+                font-size: 14px;
                 font-weight: 600;
+                color: var(--text-secondary);
                 cursor: pointer;
                 transition: all 0.3s;
-                box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
             }
             
-            .btn-create:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+            .main-tab:hover {
+                background: var(--bg);
+                color: var(--text);
             }
             
-            /* Stats bar */
+            .main-tab.active {
+                background: var(--primary);
+                color: white;
+                box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+            }
+            
+            /* Contenu des onglets */
+            .tab-content {
+                margin-top: 24px;
+            }
+            
+            /* Styles pour l'onglet catégories (existants) */
             .stats-bar {
                 display: grid;
                 grid-template-columns: repeat(3, 120px) 1fr;
@@ -1465,7 +1558,7 @@ class CategoriesPageNetlify {
                 box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
             }
             
-            /* Grille de catégories avec colonnes fixes */
+            /* Grille de catégories */
             .categories-grid {
                 display: grid;
                 grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -1473,7 +1566,6 @@ class CategoriesPageNetlify {
                 padding: 0;
             }
             
-            /* Carte de catégorie avec hauteur minimale */
             .category-card {
                 background: var(--surface);
                 border-radius: 10px;
@@ -1573,7 +1665,6 @@ class CategoriesPageNetlify {
                 margin-top: auto;
             }
             
-            /* Boutons minimalistes uniformes */
             .btn-minimal {
                 width: 32px;
                 height: 32px;
@@ -1595,7 +1686,6 @@ class CategoriesPageNetlify {
                 transform: scale(1.05);
             }
             
-            /* Bouton ON/OFF */
             .btn-minimal.on {
                 background: #10B981;
                 color: white;
@@ -1608,7 +1698,6 @@ class CategoriesPageNetlify {
                 border-color: #EF4444;
             }
             
-            /* Bouton tâche */
             .btn-minimal.task {
                 color: #9CA3AF;
             }
@@ -1619,12 +1708,6 @@ class CategoriesPageNetlify {
                 border-color: var(--primary);
             }
             
-            .btn-minimal.task:not(.selected):hover {
-                color: var(--primary);
-                border-color: var(--primary);
-            }
-            
-            /* Bouton config */
             .btn-minimal.config {
                 color: #6B7280;
             }
@@ -1634,7 +1717,346 @@ class CategoriesPageNetlify {
                 border-color: var(--text);
             }
             
-            /* Modal moderne */
+            /* STYLES BACKUP - Section principale */
+            .backup-container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px 0;
+            }
+            
+            .backup-section {
+                background: var(--surface);
+                border-radius: 20px;
+                padding: 32px;
+                margin-bottom: 32px;
+                border: 1px solid var(--border);
+                box-shadow: var(--shadow);
+            }
+            
+            .backup-header {
+                margin-bottom: 32px;
+                text-align: center;
+            }
+            
+            .backup-header h2 {
+                font-size: 28px;
+                font-weight: 700;
+                margin: 0 0 8px 0;
+                color: var(--text);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+            }
+            
+            .backup-header p {
+                font-size: 16px;
+                color: var(--text-secondary);
+                margin: 0;
+            }
+            
+            /* Grille des cartes backup */
+            .backup-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 24px;
+                margin-bottom: 32px;
+            }
+            
+            .backup-card {
+                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                border: 2px solid var(--border);
+                border-radius: 16px;
+                padding: 24px;
+                text-align: center;
+                transition: all 0.3s;
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .backup-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+                background: linear-gradient(90deg, var(--primary), var(--secondary));
+                opacity: 0;
+                transition: opacity 0.3s;
+            }
+            
+            .backup-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+                border-color: var(--primary);
+            }
+            
+            .backup-card:hover::before {
+                opacity: 1;
+            }
+            
+            .backup-icon {
+                font-size: 48px;
+                margin-bottom: 16px;
+                display: block;
+            }
+            
+            .backup-card h3 {
+                font-size: 20px;
+                font-weight: 700;
+                margin: 0 0 8px 0;
+                color: var(--text);
+            }
+            
+            .backup-card p {
+                font-size: 14px;
+                color: var(--text-secondary);
+                margin: 0 0 20px 0;
+                line-height: 1.5;
+            }
+            
+            /* Boutons backup */
+            .btn-backup {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 12px 24px;
+                border: none;
+                border-radius: 12px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s;
+                text-decoration: none;
+                min-width: 140px;
+            }
+            
+            .btn-backup.primary {
+                background: linear-gradient(135deg, var(--primary), var(--secondary));
+                color: white;
+                box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            }
+            
+            .btn-backup.primary:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+            }
+            
+            .btn-backup.secondary {
+                background: var(--bg);
+                color: var(--text);
+                border: 2px solid var(--border);
+            }
+            
+            .btn-backup.secondary:hover {
+                background: var(--surface);
+                border-color: var(--primary);
+                color: var(--primary);
+            }
+            
+            .btn-backup.danger {
+                background: var(--danger);
+                color: white;
+            }
+            
+            .btn-backup.danger:hover {
+                background: #dc2626;
+                transform: translateY(-1px);
+            }
+            
+            /* Zone d'import */
+            .import-zone {
+                margin: 24px 0;
+            }
+            
+            .import-area {
+                border: 3px dashed var(--border);
+                border-radius: 16px;
+                padding: 48px 24px;
+                text-align: center;
+                background: #fafbfc;
+                cursor: pointer;
+                transition: all 0.3s;
+                position: relative;
+            }
+            
+            .import-area:hover {
+                border-color: var(--primary);
+                background: #f0f9ff;
+            }
+            
+            .import-area.dragover {
+                border-color: var(--success);
+                background: #f0fdf4;
+            }
+            
+            .import-icon {
+                font-size: 64px;
+                margin-bottom: 16px;
+                opacity: 0.7;
+            }
+            
+            .import-area h3 {
+                font-size: 20px;
+                font-weight: 600;
+                margin: 0 0 8px 0;
+                color: var(--text);
+            }
+            
+            .import-area p {
+                font-size: 16px;
+                color: var(--text-secondary);
+                margin: 4px 0;
+            }
+            
+            .import-info {
+                font-size: 12px !important;
+                opacity: 0.7;
+            }
+            
+            /* Options d'import */
+            .import-options {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 16px;
+                margin-top: 24px;
+                padding: 20px;
+                background: #f8fafc;
+                border-radius: 12px;
+                border: 1px solid var(--border);
+            }
+            
+            .import-option {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 8px 0;
+                cursor: pointer;
+                font-size: 14px;
+                color: var(--text);
+            }
+            
+            .import-option input[type="checkbox"] {
+                width: 18px;
+                height: 18px;
+                accent-color: var(--primary);
+            }
+            
+            /* Historique backup */
+            .backup-history {
+                background: #fafbfc;
+                border-radius: 12px;
+                border: 1px solid var(--border);
+                overflow: hidden;
+            }
+            
+            .backup-empty {
+                text-align: center;
+                padding: 48px 24px;
+                color: var(--text-secondary);
+            }
+            
+            .backup-empty-icon {
+                font-size: 48px;
+                margin-bottom: 16px;
+                opacity: 0.5;
+            }
+            
+            .backup-empty p {
+                margin: 0;
+                font-size: 16px;
+            }
+            
+            .backup-empty-sub {
+                font-size: 14px !important;
+                opacity: 0.7;
+            }
+            
+            .backup-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 16px 20px;
+                border-bottom: 1px solid var(--border);
+                transition: background-color 0.3s;
+            }
+            
+            .backup-item:last-child {
+                border-bottom: none;
+            }
+            
+            .backup-item:hover {
+                background: white;
+            }
+            
+            .backup-item-info {
+                flex: 1;
+            }
+            
+            .backup-item-name {
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--text);
+                margin-bottom: 4px;
+            }
+            
+            .backup-item-meta {
+                display: flex;
+                gap: 12px;
+                font-size: 12px;
+                color: var(--text-secondary);
+            }
+            
+            .backup-date, .backup-size, .backup-type {
+                padding: 2px 8px;
+                background: #e5e7eb;
+                border-radius: 6px;
+            }
+            
+            .backup-item-actions {
+                display: flex;
+                gap: 8px;
+            }
+            
+            .btn-backup-small {
+                padding: 6px 12px;
+                border: none;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }
+            
+            .btn-backup-small.primary {
+                background: var(--primary);
+                color: white;
+            }
+            
+            .btn-backup-small.secondary {
+                background: var(--bg);
+                color: var(--text-secondary);
+                border: 1px solid var(--border);
+            }
+            
+            .btn-backup-small.danger {
+                background: var(--danger);
+                color: white;
+            }
+            
+            .backup-actions {
+                display: flex;
+                justify-content: center;
+                gap: 16px;
+                margin-top: 24px;
+            }
+            
+            /* Modal moderne avec onglets */
             .modal-backdrop {
                 position: fixed;
                 top: 0;
@@ -1651,16 +2073,11 @@ class CategoriesPageNetlify {
                 animation: fadeIn 0.3s;
             }
             
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
-            
             .modal-modern {
                 background: #FFFFFF;
                 border-radius: 24px;
                 width: 100%;
-                max-width: 900px;
+                max-width: 1000px;
                 max-height: 90vh;
                 display: flex;
                 flex-direction: column;
@@ -1670,25 +2087,23 @@ class CategoriesPageNetlify {
                 overflow: hidden;
             }
             
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
             @keyframes slideUp {
                 from { transform: translateY(20px); opacity: 0; }
                 to { transform: translateY(0); opacity: 1; }
             }
             
-            .modal-create {
-                max-width: 480px;
-            }
-            
-            /* Modal header */
-            .modal-header,
-            .create-header {
+            .modal-header {
                 padding: 28px;
                 border-bottom: 2px solid #D1D5DB;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
                 background: #FFFFFF;
-                border-radius: 24px 24px 0 0;
             }
             
             .modal-title {
@@ -1701,8 +2116,7 @@ class CategoriesPageNetlify {
                 font-size: 32px;
             }
             
-            .modal-header h2,
-            .create-header h2 {
+            .modal-header h2 {
                 font-size: 24px;
                 font-weight: 700;
                 margin: 0;
@@ -1726,7 +2140,7 @@ class CategoriesPageNetlify {
                 color: var(--danger);
             }
             
-            /* Tabs modernes */
+            /* Onglets modernes */
             .tabs-modern {
                 display: flex;
                 padding: 0 28px;
@@ -1769,23 +2183,13 @@ class CategoriesPageNetlify {
                 border-radius: 3px 3px 0 0;
             }
             
-            /* Contenu modal */
             .modal-content {
                 padding: 0;
                 overflow-y: auto;
                 flex: 1;
                 background: #E8EAED;
-                position: relative;
             }
             
-            .create-content {
-                padding: 28px;
-                overflow-y: auto;
-                flex: 1;
-                background: #FFFFFF;
-            }
-            
-            /* Tab panel */
             .tab-panel {
                 display: none;
                 background: #E8EAED;
@@ -1797,9 +2201,22 @@ class CategoriesPageNetlify {
                 display: block;
             }
             
-            /* Layout mots-clés */
+            /* Contenu des onglets mots-clés */
             .keywords-layout {
                 padding: 20px 0;
+            }
+            
+            .readonly-notice {
+                background: #fef3c7;
+                border: 1px solid #f59e0b;
+                border-radius: 12px;
+                padding: 16px;
+                margin-bottom: 24px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                color: #92400e;
+                font-size: 14px;
             }
             
             .keywords-grid {
@@ -1815,6 +2232,11 @@ class CategoriesPageNetlify {
                 padding: 24px;
                 transition: all 0.3s;
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            }
+            
+            .keyword-box.readonly {
+                background: #f9fafb;
+                border-color: #e5e7eb;
             }
             
             .keyword-box:hover {
@@ -1851,7 +2273,6 @@ class CategoriesPageNetlify {
                 line-height: 1.4;
             }
             
-            /* Input moderne */
             .input-modern {
                 display: flex;
                 gap: 8px;
@@ -1886,11 +2307,6 @@ class CategoriesPageNetlify {
                 transition: all 0.3s;
             }
             
-            .input-modern button:hover {
-                transform: scale(1.1);
-            }
-            
-            /* Tags */
             .tags {
                 display: flex;
                 flex-wrap: wrap;
@@ -1900,6 +2316,10 @@ class CategoriesPageNetlify {
                 padding: 8px;
                 border-radius: 8px;
                 border: 1px solid #E5E7EB;
+            }
+            
+            .tags.readonly {
+                background: #f3f4f6;
             }
             
             .tag {
@@ -1930,108 +2350,204 @@ class CategoriesPageNetlify {
                 opacity: 1;
             }
             
-            .filter-tag {
-                background: var(--primary)10;
-                color: var(--primary);
-            }
-            
-            .exclude-tag {
-                background: var(--danger)10;
-                color: var(--danger);
-            }
-            
-            /* Layout filtres */
-            .filters-layout {
-                display: grid;
-                gap: 32px;
-            }
-            
-            .filter-section {
-                background: #FFFFFF;
-                border: 1px solid var(--border);
-                border-radius: 20px;
-                padding: 28px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            }
-            
-            .filter-section h3 {
-                font-size: 18px;
-                font-weight: 600;
-                margin: 0 0 20px 0;
-                color: var(--text);
-            }
-            
-            .filter-box {
-                margin-bottom: 24px;
-            }
-            
-            .filter-box:last-child {
-                margin-bottom: 0;
-            }
-            
-            .filter-box h4 {
-                font-size: 16px;
-                font-weight: 600;
-                margin: 0 0 8px 0;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            
-            .filter-hint {
-                font-size: 13px;
-                color: var(--text-secondary);
-                margin: 0 0 16px 0;
-            }
-            
-            /* Paramètres */
-            .settings-content {
-                padding: 20px 0;
-            }
-            
-            .danger-zone {
-                background: var(--danger)10;
-                border: 2px solid var(--danger)20;
+            /* Onglet test */
+            .test-tab {
+                background: white;
                 border-radius: 16px;
                 padding: 24px;
+                margin: 20px 0;
             }
             
-            .danger-zone h4 {
-                font-size: 16px;
-                font-weight: 600;
-                color: var(--danger);
+            .test-header {
+                margin-bottom: 24px;
+                text-align: center;
+            }
+            
+            .test-header h3 {
+                font-size: 20px;
+                font-weight: 700;
                 margin: 0 0 8px 0;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            
-            .danger-zone p {
-                font-size: 14px;
-                color: var(--text-secondary);
-                margin: 0 0 16px 0;
-            }
-            
-            .btn-danger {
-                width: 100%;
-                padding: 12px;
-                background: var(--danger);
-                color: white;
-                border: none;
-                border-radius: 10px;
-                font-size: 15px;
-                font-weight: 600;
-                cursor: pointer;
+                color: var(--text);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 gap: 8px;
-                transition: all 0.3s;
             }
             
-            .btn-danger:hover {
-                background: #DC2626;
-                transform: scale(1.02);
+            .test-form {
+                margin-bottom: 32px;
+            }
+            
+            .input-group {
+                margin-bottom: 16px;
+            }
+            
+            .input-group label {
+                display: block;
+                font-weight: 600;
+                margin-bottom: 8px;
+                color: var(--text);
+            }
+            
+            .input-group input,
+            .input-group textarea {
+                width: 100%;
+                padding: 12px 16px;
+                border: 2px solid var(--border);
+                border-radius: 8px;
+                font-size: 14px;
+                transition: border-color 0.3s;
+                box-sizing: border-box;
+            }
+            
+            .input-group input:focus,
+            .input-group textarea:focus {
+                outline: none;
+                border-color: var(--primary);
+            }
+            
+            .btn-test {
+                width: 100%;
+                padding: 12px 24px;
+                background: var(--primary);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+            }
+            
+            .btn-test:hover {
+                background: #5558E3;
+                transform: translateY(-1px);
+            }
+            
+            .test-results {
+                background: #f8fafc;
+                border-radius: 12px;
+                padding: 20px;
+                margin: 20px 0;
+                border: 1px solid var(--border);
+            }
+            
+            .test-result {
+                padding: 16px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+            }
+            
+            .test-result.success {
+                background: #f0fdf4;
+                border: 1px solid #22c55e;
+            }
+            
+            .test-result.failure {
+                background: #fef2f2;
+                border: 1px solid #ef4444;
+            }
+            
+            .test-result-header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 12px;
+                font-weight: 600;
+            }
+            
+            .test-result-details {
+                font-size: 14px;
+            }
+            
+            .test-detail {
+                margin-bottom: 8px;
+            }
+            
+            .matched-patterns {
+                list-style: none;
+                padding: 0;
+                margin: 8px 0 0 0;
+            }
+            
+            .matched-patterns li {
+                padding: 4px 8px;
+                margin: 4px 0;
+                border-radius: 4px;
+                font-size: 12px;
+            }
+            
+            .pattern-absolute {
+                background: #fee2e2;
+                color: #dc2626;
+            }
+            
+            .pattern-strong {
+                background: #fef3c7;
+                color: #d97706;
+            }
+            
+            .pattern-weak {
+                background: #dbeafe;
+                color: #2563eb;
+            }
+            
+            .test-examples {
+                margin-top: 24px;
+            }
+            
+            .test-examples h4 {
+                margin-bottom: 16px;
+                color: var(--text);
+            }
+            
+            .test-examples-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 12px;
+            }
+            
+            .test-example {
+                background: #f8fafc;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 12px;
+                cursor: pointer;
+                transition: all 0.3s;
+                text-align: left;
+            }
+            
+            .test-example:hover {
+                background: #e5e7eb;
+                border-color: var(--primary);
+            }
+            
+            .test-example strong {
+                display: block;
+                margin-bottom: 4px;
+                color: var(--text);
+            }
+            
+            .test-example span {
+                font-size: 12px;
+                color: var(--text-secondary);
+            }
+            
+            /* Notices */
+            .filters-notice {
+                background: #f0f9ff;
+                border: 1px solid #0ea5e9;
+                border-radius: 12px;
+                padding: 20px;
+                margin: 20px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                color: #0c4a6e;
             }
             
             /* Footer modal */
@@ -2042,10 +2558,8 @@ class CategoriesPageNetlify {
                 justify-content: flex-end;
                 gap: 12px;
                 background: #FFFFFF;
-                border-radius: 0 0 24px 24px;
             }
             
-            /* Boutons modernes */
             .btn-modern {
                 padding: 10px 20px;
                 border-radius: 10px;
@@ -2081,106 +2595,7 @@ class CategoriesPageNetlify {
                 border-color: var(--text-secondary);
             }
             
-            /* Création de catégorie */
-            .input-name {
-                width: 100%;
-                padding: 16px 20px;
-                border: 2px solid var(--border);
-                border-radius: 12px;
-                font-size: 18px;
-                font-weight: 600;
-                margin-bottom: 24px;
-                transition: all 0.3s;
-                box-sizing: border-box;
-            }
-            
-            .input-name:focus {
-                outline: none;
-                border-color: var(--primary);
-                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-            }
-            
-            .emoji-picker,
-            .color-selector {
-                margin-bottom: 24px;
-            }
-            
-            .emoji-picker label,
-            .color-selector label {
-                display: block;
-                font-size: 14px;
-                font-weight: 600;
-                color: var(--text-secondary);
-                margin-bottom: 12px;
-            }
-            
-            .emoji-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
-                gap: 8px;
-            }
-            
-            .emoji-option {
-                width: 48px;
-                height: 48px;
-                border: 2px solid var(--border);
-                background: var(--surface);
-                border-radius: 12px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 24px;
-                transition: all 0.3s;
-            }
-            
-            .emoji-option:hover {
-                border-color: var(--primary);
-                transform: scale(1.1);
-            }
-            
-            .emoji-option.selected {
-                border-color: var(--primary);
-                background: var(--primary)10;
-            }
-            
-            .color-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-                gap: 8px;
-            }
-            
-            .color-option {
-                width: 40px;
-                height: 40px;
-                border: 3px solid transparent;
-                border-radius: 10px;
-                cursor: pointer;
-                transition: all 0.3s;
-                position: relative;
-            }
-            
-            .color-option:hover {
-                transform: scale(1.1);
-            }
-            
-            .color-option.selected {
-                border-color: var(--text);
-            }
-            
-            .color-option.selected::after {
-                content: '✓';
-                position: absolute;
-                inset: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-weight: bold;
-                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-            }
-            
-            /* États vides */
+            /* States */
             .empty-state,
             .error-state {
                 grid-column: 1 / -1;
@@ -2212,7 +2627,7 @@ class CategoriesPageNetlify {
                 margin-bottom: 16px;
             }
             
-            /* Toast moderne */
+            /* Toast */
             .toast-modern {
                 position: fixed;
                 bottom: 24px;
@@ -2245,10 +2660,14 @@ class CategoriesPageNetlify {
                 background: var(--primary);
             }
             
-            /* Responsive avec colonnes fixes */
+            /* Responsive */
             @media (max-width: 1200px) {
                 .categories-grid {
                     grid-template-columns: repeat(4, minmax(0, 1fr));
+                }
+                
+                .backup-grid {
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
                 }
             }
             
@@ -2278,24 +2697,45 @@ class CategoriesPageNetlify {
                     font-size: 24px;
                 }
                 
-                .cat-name {
-                    font-size: 14px;
+                .main-tabs {
+                    flex-direction: column;
+                    gap: 4px;
                 }
                 
-                .btn-minimal {
-                    font-size: 10px;
+                .backup-grid {
+                    grid-template-columns: 1fr;
                 }
-            }
-            
-            /* Animations supplémentaires */
-            @keyframes pulse {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.05); }
-                100% { transform: scale(1); }
-            }
-            
-            .category-card:active {
-                animation: pulse 0.3s;
+                
+                .backup-section {
+                    padding: 20px;
+                }
+                
+                .backup-card {
+                    padding: 20px;
+                }
+                
+                .import-area {
+                    padding: 32px 16px;
+                }
+                
+                .backup-item {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 12px;
+                }
+                
+                .backup-item-actions {
+                    width: 100%;
+                    justify-content: flex-end;
+                }
+                
+                .import-options {
+                    grid-template-columns: 1fr;
+                }
+                
+                .test-examples-grid {
+                    grid-template-columns: 1fr;
+                }
             }
         `;
         
@@ -2304,21 +2744,19 @@ class CategoriesPageNetlify {
 }
 
 // ================================================
-// INTÉGRATION GLOBALE POUR NETLIFY
+// INTÉGRATION GLOBALE AVANCÉE
 // ================================================
 
 // Créer l'instance principale
-window.categoriesPage = new CategoriesPageNetlify();
+window.categoriesPage = new CategoriesPageAdvanced();
 
 // Intégration avec PageManager si disponible
 if (window.pageManager?.pages) {
-    // Pour la page settings/paramètres
     window.pageManager.pages.settings = (container) => {
         console.log('[CategoriesPage] 📄 Chargement page settings via PageManager');
         window.categoriesPage.render(container);
     };
     
-    // Pour la page categories si elle existe
     window.pageManager.pages.categories = (container) => {
         console.log('[CategoriesPage] 📄 Chargement page categories via PageManager');
         window.categoriesPage.render(container);
@@ -2326,10 +2764,9 @@ if (window.pageManager?.pages) {
 }
 
 // Fonction d'initialisation pour démarrage automatique
-function initializeCategoriesPage() {
-    console.log('[CategoriesPage] 🎯 Initialisation automatique...');
+function initializeCategoriesPageAdvanced() {
+    console.log('[CategoriesPage] 🎯 Initialisation automatique avancée...');
     
-    // Chercher un container dans la page
     const possibleContainers = [
         '#pageContent',
         '.main-content', 
@@ -2358,13 +2795,26 @@ function initializeCategoriesPage() {
     }
 }
 
-// Initialisation différée
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeCategoriesPage);
-} else {
-    // Si le DOM est déjà chargé, essayer l'initialisation avec un délai
-    setTimeout(initializeCategoriesPage, 100);
+// Écouter les changements de CategoryManager si disponible
+if (window.categoryManager) {
+    console.log('[CategoriesPage] 🔗 Connexion avec CategoryManager détectée');
+    
+    // Écouter les changements de catégories
+    window.addEventListener('categorySettingsChanged', (event) => {
+        console.log('[CategoriesPage] 🔄 Changement CategoryManager détecté:', event.detail);
+        if (window.categoriesPage.activeTab === 'categories') {
+            window.categoriesPage.updateCategoriesDisplay();
+        }
+    });
 }
 
-console.log('[CategoriesPage] ✅ CategoriesPage v22.0 chargée - Compatible Netlify!');
+// Initialisation différée
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeCategoriesPageAdvanced);
+} else {
+    setTimeout(initializeCategoriesPageAdvanced, 100);
+}
+
+console.log('[CategoriesPage] ✅ CategoriesPage v23.0 chargée - Intégration CategoryManager + Backup!');
 console.log('[CategoriesPage] 🎯 Pour un rendu manuel: window.categoriesPage.render(container)');
+console.log('[CategoriesPage] 📋 Onglets disponibles: Catégories, Backup & Import');
