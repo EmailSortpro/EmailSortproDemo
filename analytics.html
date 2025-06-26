@@ -143,7 +143,7 @@
 
         .tab-button:hover:not(.active) {
             background: #f8fafc;
-            color: #374151;
+            color: #475569;
         }
 
         .tab-content {
@@ -554,6 +554,218 @@
             font-weight: 500;
         }
 
+        /* License Management */
+        .license-management {
+            padding: 24px;
+        }
+
+        .license-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .license-header h2 {
+            font-size: 1.5rem;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .add-user-form {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .add-user-form input {
+            flex: 1;
+            padding: 10px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .add-user-form button {
+            padding: 10px 20px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .add-user-form button:hover {
+            background: #059669;
+        }
+
+        .license-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .license-stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .license-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4F46E5;
+            margin-bottom: 4px;
+        }
+
+        .license-stat-label {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .license-users-table {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .license-users-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .license-users-table th {
+            background: #f8fafc;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.875rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .license-users-table td {
+            padding: 16px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .license-users-table tr:hover {
+            background: #f8fafc;
+        }
+
+        .user-email {
+            font-weight: 500;
+            color: #1f2937;
+        }
+
+        .license-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .license-status.active {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .license-status.trial {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .license-status.expired {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .license-status.blocked {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .license-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .license-action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .license-action-btn.activate {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .license-action-btn.block {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .license-action-btn.extend {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .license-action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .company-info {
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            border-left: 4px solid #4F46E5;
+        }
+
+        .company-info h3 {
+            font-size: 1.125rem;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .company-info p {
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+
+        .no-permissions {
+            text-align: center;
+            padding: 60px;
+            color: #64748b;
+        }
+
+        .no-permissions i {
+            font-size: 4rem;
+            color: #d1d5db;
+            margin-bottom: 16px;
+        }
+
         /* Loading & Error States */
         .loading-container {
             display: flex;
@@ -667,7 +879,7 @@
 </head>
 <body>
     <div class="analytics-standalone">
-        <a href="../index.html" class="back-to-app">
+        <a href="./index.html" class="back-to-app">
             <i class="fas fa-arrow-left"></i>
             Retour à l'application
         </a>
@@ -795,11 +1007,9 @@
 
             <!-- Licenses Tab -->
             <div class="tab-content" id="licensesTab">
-                <div class="loading-container">
-                    <div class="spinner"></div>
-                    <div class="loading-text">Chargement des licences...</div>
+                <div id="licenseManagement" class="license-management">
+                    <!-- Le contenu sera généré dynamiquement -->
                 </div>
-                <!-- License management will be implemented here -->
             </div>
         </div>
 
@@ -828,11 +1038,12 @@
         // Global variables
         let analyticsManager = null;
         let analyticsModule = null;
+        let licenseService = null;
         let currentUsers = [];
         let filteredUsers = [];
         let currentTab = 'overview';
 
-        // Mock data for demonstration
+        // Mock data for demonstration (will be replaced by real data)
         const mockUsers = [
             {
                 id: 'user1',
@@ -894,7 +1105,7 @@
             if (tabName === 'users') {
                 loadUsers();
             } else if (tabName === 'licenses') {
-                loadLicenses();
+                loadLicenseManagement();
             }
         }
 
@@ -1138,8 +1349,8 @@
             const user = currentUsers.find(u => u.id === userId);
             if (!user) return;
 
-            // For now, just show an alert - in real app, open license management modal
-            alert(`Gestion de licence pour ${user.name}\n\nType actuel: ${user.license.type}\nStatut: ${user.license.status}\nExpiration: ${user.license.expires.toLocaleDateString('fr-FR')}\n\nFonctionnalité à implémenter...`);
+            // Pour l'instant, basculer vers l'onglet licences
+            switchTab('licenses');
         }
 
         function refreshUsers() {
@@ -1149,21 +1360,192 @@
             updateLastUpdated();
         }
 
-        function loadLicenses() {
-            // Placeholder for license management
-            const licensesTab = document.getElementById('licensesTab');
-            licensesTab.innerHTML = `
-                <div style="text-align: center; padding: 60px 20px; color: #6b7280;">
-                    <i class="fas fa-key" style="font-size: 4rem; margin-bottom: 16px; color: #d1d5db;"></i>
-                    <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 8px;">Gestion des licences</h3>
-                    <p>Module de gestion des licences en cours de développement</p>
-                    <div style="margin-top: 24px;">
-                        <button style="padding: 12px 24px; background: #4F46E5; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
-                            <i class="fas fa-plus"></i> Ajouter une licence
-                        </button>
+        // License Management Functions
+        async function loadLicenseManagement() {
+            const container = document.getElementById('licenseManagement');
+            
+            if (!window.licenseService) {
+                container.innerHTML = `
+                    <div class="no-permissions">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Service de licence non disponible</h3>
+                        <p>Veuillez recharger la page</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Vérifier si l'utilisateur est admin
+            if (!window.licenseService.isAdmin()) {
+                container.innerHTML = `
+                    <div class="no-permissions">
+                        <i class="fas fa-lock"></i>
+                        <h3>Accès refusé</h3>
+                        <p>Vous n'avez pas les droits d'administration</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const currentUser = window.licenseService.getCurrentUser();
+            const companyUsers = await window.licenseService.getCompanyUsers();
+
+            // Calculer les statistiques
+            const stats = {
+                total: companyUsers.length,
+                active: companyUsers.filter(u => u.license_status === 'active').length,
+                trial: companyUsers.filter(u => u.license_status === 'trial').length,
+                expired: companyUsers.filter(u => u.license_status === 'expired').length
+            };
+
+            container.innerHTML = `
+                <div class="license-header">
+                    <h2>
+                        <i class="fas fa-key"></i>
+                        Gestion des licences
+                    </h2>
+                    <button class="refresh-btn" onclick="loadLicenseManagement()">
+                        <i class="fas fa-sync-alt"></i> Actualiser
+                    </button>
+                </div>
+
+                ${currentUser.company ? `
+                    <div class="company-info">
+                        <h3>${currentUser.company.name}</h3>
+                        <p>Administrateur : ${currentUser.name || currentUser.email}</p>
+                    </div>
+                ` : ''}
+
+                <div class="license-stats">
+                    <div class="license-stat-card">
+                        <div class="license-stat-value">${stats.total}</div>
+                        <div class="license-stat-label">Utilisateurs total</div>
+                    </div>
+                    <div class="license-stat-card">
+                        <div class="license-stat-value">${stats.active}</div>
+                        <div class="license-stat-label">Licences actives</div>
+                    </div>
+                    <div class="license-stat-card">
+                        <div class="license-stat-value">${stats.trial}</div>
+                        <div class="license-stat-label">Essais gratuits</div>
+                    </div>
+                    <div class="license-stat-card">
+                        <div class="license-stat-value">${stats.expired}</div>
+                        <div class="license-stat-label">Licences expirées</div>
                     </div>
                 </div>
+
+                <div class="add-user-form">
+                    <input type="email" id="newUserEmail" placeholder="Email du nouvel utilisateur">
+                    <button onclick="addNewUser()">
+                        <i class="fas fa-user-plus"></i> Ajouter un utilisateur
+                    </button>
+                </div>
+
+                <div class="license-users-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Utilisateur</th>
+                                <th>Email</th>
+                                <th>Statut</th>
+                                <th>Expiration</th>
+                                <th>Dernière connexion</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${companyUsers.map(user => `
+                                <tr>
+                                    <td>${user.name || 'Non défini'}</td>
+                                    <td class="user-email">${user.email}</td>
+                                    <td>
+                                        <span class="license-status ${user.license_status}">
+                                            ${user.license_status}
+                                        </span>
+                                    </td>
+                                    <td>${new Date(user.license_expires_at).toLocaleDateString('fr-FR')}</td>
+                                    <td>${user.last_login_at ? new Date(user.last_login_at).toLocaleDateString('fr-FR') : 'Jamais'}</td>
+                                    <td>
+                                        <div class="license-actions">
+                                            ${user.license_status !== 'active' ? `
+                                                <button class="license-action-btn activate" 
+                                                        onclick="updateUserStatus('${user.id}', 'active')">
+                                                    Activer
+                                                </button>
+                                            ` : ''}
+                                            ${user.license_status === 'active' ? `
+                                                <button class="license-action-btn block" 
+                                                        onclick="updateUserStatus('${user.id}', 'blocked')">
+                                                    Bloquer
+                                                </button>
+                                            ` : ''}
+                                            <button class="license-action-btn extend" 
+                                                    onclick="extendLicense('${user.id}')">
+                                                +30 jours
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
             `;
+        }
+
+        // Fonction pour ajouter un utilisateur
+        async function addNewUser() {
+            const emailInput = document.getElementById('newUserEmail');
+            const email = emailInput.value.trim();
+
+            if (!email || !email.includes('@')) {
+                alert('Veuillez entrer une adresse email valide');
+                return;
+            }
+
+            const result = await window.licenseService.addUserToCompany(email);
+            
+            if (result.success) {
+                emailInput.value = '';
+                await loadLicenseManagement();
+                if (window.uiManager) {
+                    window.uiManager.showToast('Utilisateur ajouté avec succès', 'success');
+                }
+            } else {
+                alert('Erreur : ' + result.error);
+            }
+        }
+
+        // Fonction pour mettre à jour le statut
+        async function updateUserStatus(userId, newStatus) {
+            const result = await window.licenseService.updateUserLicense(userId, newStatus);
+            
+            if (result.success) {
+                await loadLicenseManagement();
+                if (window.uiManager) {
+                    window.uiManager.showToast('Statut mis à jour', 'success');
+                }
+            } else {
+                alert('Erreur : ' + result.error);
+            }
+        }
+
+        // Fonction pour étendre la licence
+        async function extendLicense(userId) {
+            const newExpiry = new Date();
+            newExpiry.setDate(newExpiry.getDate() + 30);
+            
+            const result = await window.licenseService.updateUserLicense(userId, 'active', newExpiry);
+            
+            if (result.success) {
+                await loadLicenseManagement();
+                if (window.uiManager) {
+                    window.uiManager.showToast('Licence étendue de 30 jours', 'success');
+                }
+            } else {
+                alert('Erreur : ' + result.error);
+            }
         }
 
         // Analytics loading (existing functionality)
@@ -1266,8 +1648,26 @@
         });
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             console.log('[Analytics Page] DOM loaded, initializing...');
+            
+            // Charger le service de licence
+            const licenseScript = document.createElement('script');
+            licenseScript.src = './LicenseService.js';
+            licenseScript.onload = async () => {
+                console.log('[Analytics] LicenseService loaded');
+                licenseService = window.licenseService;
+                
+                // Charger la configuration Supabase
+                const configScript = document.createElement('script');
+                configScript.src = './config-supabase.js';
+                configScript.onload = () => {
+                    console.log('[Analytics] Supabase config loaded');
+                };
+                document.head.appendChild(configScript);
+            };
+            document.head.appendChild(licenseScript);
+            
             loadAnalytics();
             updateLastUpdated();
         });
@@ -1280,17 +1680,19 @@
             console.log('Filtered users:', filteredUsers);
             console.log('Analytics manager:', analyticsManager);
             console.log('Analytics module:', analyticsModule);
+            console.log('License service:', licenseService);
             
             return {
                 currentTab,
                 usersCount: currentUsers.length,
                 filteredCount: filteredUsers.length,
                 analyticsManager: !!analyticsManager,
-                analyticsModule: !!analyticsModule
+                analyticsModule: !!analyticsModule,
+                licenseService: !!licenseService
             };
         };
 
-        console.log('[Analytics Page] ✅ Enhanced analytics page initialized');
+        console.log('[Analytics Page] ✅ Enhanced analytics page initialized with license management');
         console.log('[Analytics Page] Use debugAnalytics() for debug information');
     </script>
 </body>
