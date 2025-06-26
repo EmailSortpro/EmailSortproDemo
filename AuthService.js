@@ -1,4 +1,5 @@
-// AuthService.js - Service d'authentification Microsoft Graph CORRIGÉ avec Analytics v4.2
+// AuthService.js - Service d'authentification Microsoft Graph CORRIGÉ avec Analytics v4.3
+// Amélioration de l'intégration analytics avec capture d'email en clair
 
 class AuthService {
     constructor() {
@@ -221,20 +222,33 @@ class AuthService {
                     this.account = response.account;
                     this.msalInstance.setActiveAccount(this.account);
                     
-                    // ANALYTICS: Track successful authentication from redirect
-                    if (window.analyticsManager && typeof window.analyticsManager.onAuthSuccess === 'function') {
+                    // ANALYTICS: Track successful authentication from redirect avec données complètes
+                    if (window.analyticsManager && typeof window.analyticsManager.trackAuthentication === 'function') {
                         try {
                             const userInfo = {
-                                displayName: response.account.name,
+                                displayName: response.account.name || 'Utilisateur Microsoft',
                                 mail: response.account.username,
                                 userPrincipalName: response.account.username,
-                                provider: 'microsoft'
+                                email: response.account.username, // Ajout explicite de l'email
+                                provider: 'microsoft',
+                                homeAccountId: response.account.homeAccountId,
+                                localAccountId: response.account.localAccountId,
+                                tenantId: response.account.tenantId
                             };
-                            window.analyticsManager.onAuthSuccess('microsoft', userInfo);
+                            
+                            console.log('[AuthService] ✅ Tracking authentication with analytics:', {
+                                email: userInfo.email,
+                                name: userInfo.displayName,
+                                provider: userInfo.provider
+                            });
+                            
+                            window.analyticsManager.trackAuthentication('microsoft', userInfo);
                             console.log('[AuthService] ✅ Analytics: Auth success tracked from redirect');
                         } catch (analyticsError) {
                             console.warn('[AuthService] Analytics error:', analyticsError);
                         }
+                    } else {
+                        console.warn('[AuthService] Analytics manager not available for tracking authentication');
                     }
                 } else {
                     console.log('[AuthService] No redirect response');
@@ -248,14 +262,16 @@ class AuthService {
                         this.msalInstance.setActiveAccount(this.account);
                         console.log('[AuthService] ✅ Account restored from cache:', this.account.username);
                         
-                        // ANALYTICS: Track session restoration
+                        // ANALYTICS: Track session restoration avec email en clair
                         if (window.analyticsManager && typeof window.analyticsManager.trackEvent === 'function') {
                             try {
                                 window.analyticsManager.trackEvent('session_restored', {
                                     provider: 'microsoft',
-                                    username: this.account.username
+                                    username: this.account.username,
+                                    email: this.account.username, // Email en clair
+                                    name: this.account.name || 'Utilisateur Microsoft'
                                 });
-                                console.log('[AuthService] ✅ Analytics: Session restoration tracked');
+                                console.log('[AuthService] ✅ Analytics: Session restoration tracked with email');
                             } catch (analyticsError) {
                                 console.warn('[AuthService] Analytics error:', analyticsError);
                             }
@@ -349,7 +365,8 @@ class AuthService {
             isInitialized: this.isInitialized,
             result: authenticated,
             domain: window.location.hostname,
-            correctDomain: window.location.hostname === this.targetDomain
+            correctDomain: window.location.hostname === this.targetDomain,
+            userEmail: this.account?.username || 'none'
         });
         return authenticated;
     }
@@ -531,15 +548,16 @@ class AuthService {
     async logout() {
         console.log(`[AuthService] Logout initiated for ${this.targetDomain}...`);
         
-        // ANALYTICS: Track logout
+        // ANALYTICS: Track logout avec email en clair
         if (window.analyticsManager && typeof window.analyticsManager.trackEvent === 'function') {
             try {
                 window.analyticsManager.trackEvent('logout', {
                     provider: 'microsoft',
                     domain: this.targetDomain,
-                    userEmail: this.account?.username
+                    userEmail: this.account?.username,
+                    userName: this.account?.name || 'Utilisateur Microsoft'
                 });
-                console.log('[AuthService] ✅ Analytics: Logout tracked');
+                console.log('[AuthService] ✅ Analytics: Logout tracked with user info');
             } catch (analyticsError) {
                 console.warn('[AuthService] Analytics error:', analyticsError);
             }
@@ -658,8 +676,9 @@ class AuthService {
             const userInfo = await response.json();
             console.log(`[AuthService] ✅ User info retrieved for ${this.targetDomain}:`, userInfo.displayName);
             
-            // Ajouter le provider à l'objet userInfo
+            // Ajouter le provider et assurer la présence de l'email
             userInfo.provider = 'microsoft';
+            userInfo.email = userInfo.mail || userInfo.userPrincipalName || this.account?.username;
             
             return userInfo;
 
@@ -870,4 +889,4 @@ setTimeout(() => {
     }
 }, 2000);
 
-console.log(`✅ AuthService loaded with EXCLUSIVE support for coruscating-dodol-f30e8d.netlify.app v4.2 - Enhanced Analytics Integration`);
+console.log(`✅ AuthService loaded with EXCLUSIVE support for coruscating-dodol-f30e8d.netlify.app v4.3 - Enhanced Analytics Integration with Email Tracking`);
