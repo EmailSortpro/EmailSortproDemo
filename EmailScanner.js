@@ -1,4 +1,4 @@
-// EmailScanner.js - Version 10.1 - EMAILS RÉELS SYNCHRONISÉS - Suppression mode simulation
+// EmailScanner.js - Version 10.2 - Détection newsletters améliorée
 
 class EmailScanner {
     constructor() {
@@ -42,7 +42,7 @@ class EmailScanner {
         this.lastSyncTimestamp = null;
         this.realEmailsVerified = false;
         
-        console.log('[EmailScanner] ✅ Version 10.1 - EMAILS RÉELS SYNCHRONISÉS UNIQUEMENT');
+        console.log('[EmailScanner] ✅ Version 10.2 - Détection newsletters améliorée');
         this.initializeRealEmailsMode();
     }
 
@@ -56,7 +56,7 @@ class EmailScanner {
             // 1. Charger les paramètres 
             await this.loadRealEmailSettings();
             
-            // 2. Initialiser les catégories par défaut
+            // 2. Initialiser les catégories par défaut avec détection newsletters améliorée
             this.initializeDefaultCategories();
             
             // 3. S'enregistrer comme listener si CategoryManager disponible
@@ -155,7 +155,7 @@ class EmailScanner {
                         this.emails = [...realEmails];
                         console.log(`[EmailScanner] ✅ ${realEmails.length} emails RÉELS acceptés`);
                         
-                        // Re-catégoriser
+                        // Re-catégoriser avec amélioration newsletters
                         setTimeout(() => {
                             this.processSyncedRealEmails();
                         }, 100);
@@ -260,8 +260,8 @@ class EmailScanner {
             // Réinitialiser les catégories
             this.initializeDefaultCategories();
             
-            // Traiter les emails RÉELS synchronisés
-            await this.categorizeRealEmails();
+            // Traiter les emails RÉELS synchronisés avec détection newsletters améliorée
+            await this.categorizeRealEmailsWithImprovedNewsletterDetection();
             
             // Dispatcher l'événement de re-catégorisation
             setTimeout(() => {
@@ -366,7 +366,7 @@ class EmailScanner {
     }
 
     initializeDefaultCategories() {
-        // Catégories par défaut pour emails réels
+        // Catégories par défaut pour emails réels avec amélioration newsletters
         this.defaultWebCategories = {
             'tasks': { icon: '✅', name: 'Tâches', color: '#10b981', priority: 90 },
             'commercial': { icon: '💼', name: 'Commercial', color: '#3b82f6', priority: 80 },
@@ -383,7 +383,7 @@ class EmailScanner {
             this.categorizedEmails[catId] = [];
         });
         
-        console.log('[EmailScanner] 🎨 Catégories par défaut initialisées');
+        console.log('[EmailScanner] 🎨 Catégories par défaut initialisées avec détection newsletters améliorée');
     }
 
     registerRealEmailChangeListener() {
@@ -589,7 +589,7 @@ class EmailScanner {
                     });
                 }
 
-                await this.categorizeRealEmails(this.taskPreselectedCategories);
+                await this.categorizeRealEmailsWithImprovedNewsletterDetection(this.taskPreselectedCategories);
             }
 
             if (mergedOptions.autoAnalyze) {
@@ -765,16 +765,16 @@ class EmailScanner {
     }
 
     // ================================================
-    // CATÉGORISATION EMAILS RÉELS
+    // CATÉGORISATION EMAILS RÉELS AVEC DÉTECTION NEWSLETTERS AMÉLIORÉE
     // ================================================
-    async categorizeRealEmails(overridePreselectedCategories = null) {
+    async categorizeRealEmailsWithImprovedNewsletterDetection(overridePreselectedCategories = null) {
         const total = this.emails.length;
         let processed = 0;
         let errors = 0;
 
         const taskPreselectedCategories = overridePreselectedCategories || this.taskPreselectedCategories || [];
         
-        console.log('[EmailScanner] 🏷️ === CATÉGORISATION EMAILS RÉELS ===');
+        console.log('[EmailScanner] 📧 === CATÉGORISATION EMAILS RÉELS AVEC DÉTECTION NEWSLETTERS AMÉLIORÉE ===');
         console.log('[EmailScanner] 📊 Total emails:', total);
         console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', taskPreselectedCategories);
         console.log('[EmailScanner] 🔄 StartScan synchronisé:', this.startScanSynced);
@@ -811,7 +811,7 @@ class EmailScanner {
                         continue;
                     }
                     
-                    const analysis = this.analyzeRealEmail(email);
+                    const analysis = this.analyzeRealEmailWithImprovedNewsletterDetection(email);
                     
                     const finalCategory = analysis.category || 'other';
                     
@@ -823,6 +823,8 @@ class EmailScanner {
                     email.isSpam = analysis.isSpam || false;
                     email.isCC = analysis.isCC || false;
                     email.isExcluded = analysis.isExcluded || false;
+                    email.isNewsletter = analysis.isNewsletter || false;
+                    email.newsletterIndicators = analysis.newsletterIndicators || [];
                     
                     // Marquer les emails pré-sélectionnés
                     email.isPreselectedForTasks = taskPreselectedCategories.includes(finalCategory);
@@ -877,29 +879,52 @@ class EmailScanner {
         }
 
         const preselectedCount = this.emails.filter(e => e.isPreselectedForTasks).length;
+        const newslettersCount = this.emails.filter(e => e.isNewsletter).length;
         
         this.scanMetrics.categorizedCount = processed;
         this.scanMetrics.keywordMatches = keywordStats;
         this.scanMetrics.categoryDistribution = categoryStats;
         this.scanMetrics.preselectedCount = preselectedCount;
         this.scanMetrics.preselectedStats = preselectedStats;
+        this.scanMetrics.newslettersDetected = newslettersCount;
         this.scanMetrics.errors = errors;
         
         console.log('[EmailScanner] ✅ === CATÉGORISATION EMAILS RÉELS TERMINÉE ===');
         console.log('[EmailScanner] 📊 Distribution:', categoryStats);
+        console.log('[EmailScanner] 📧 Newsletters détectées:', newslettersCount);
         console.log('[EmailScanner] ⭐ Total pré-sélectionnés:', preselectedCount);
         console.log('[EmailScanner] ⚠️ Erreurs:', errors);
     }
 
-    analyzeRealEmail(email) {
-        // Analyse adaptée pour emails réels
+    analyzeRealEmailWithImprovedNewsletterDetection(email) {
+        // Analyse adaptée pour emails réels avec détection newsletters améliorée
         const subject = (email.subject || '').toLowerCase();
         const from = (email.from?.emailAddress?.address || '').toLowerCase();
         const preview = (email.bodyPreview || '').toLowerCase();
         const domain = from.split('@')[1] || '';
         const senderName = (email.from?.emailAddress?.name || '').toLowerCase();
+        const fullContent = this.getEmailFullContent(email).toLowerCase();
         
-        // Analyse par mots-clés pour emails réels
+        // Vérifier d'abord si c'est une newsletter avec détection améliorée
+        const newsletterAnalysis = this.detectNewsletterWithImprovedAlgorithm(subject, from, preview, domain, senderName, fullContent, email);
+        
+        if (newsletterAnalysis.isNewsletter) {
+            return {
+                category: 'newsletters',
+                score: newsletterAnalysis.score,
+                confidence: newsletterAnalysis.confidence,
+                matchedPatterns: newsletterAnalysis.indicators,
+                hasAbsolute: newsletterAnalysis.score >= 90,
+                isSpam: this.isSpamRealEmail(subject, from, domain),
+                isCC: this.isCCRealEmail(email),
+                isExcluded: false,
+                isNewsletter: true,
+                newsletterIndicators: newsletterAnalysis.indicators,
+                realEmailAnalysis: true
+            };
+        }
+        
+        // Si ce n'est pas une newsletter, analyser normalement
         const categories = this.getRealEmailCategoryAnalysis(subject, from, preview, domain, senderName);
         const topCategory = categories[0] || { category: 'other', score: 10, confidence: 0.3 };
         
@@ -912,10 +937,272 @@ class EmailScanner {
             isSpam: this.isSpamRealEmail(subject, from, domain),
             isCC: this.isCCRealEmail(email),
             isExcluded: false,
+            isNewsletter: false,
+            newsletterIndicators: [],
             realEmailAnalysis: true
         };
     }
 
+    // ================================================
+    // DÉTECTION NEWSLETTERS AMÉLIORÉE
+    // ================================================
+    detectNewsletterWithImprovedAlgorithm(subject, from, preview, domain, senderName, fullContent, email) {
+        console.log(`[EmailScanner] 📧 Analyse newsletter pour: ${subject}`);
+        
+        let score = 0;
+        let indicators = [];
+        
+        // 1. MOTS-CLÉS DE DÉSABONNEMENT ABSOLUS (score élevé)
+        const unsubscribeKeywords = [
+            'unsubscribe', 'se désabonner', 'désabonner', 'désinscription', 'désinscrivez',
+            'stop receiving', 'arrêter de recevoir', 'ne plus recevoir', 'annuler abonnement',
+            'cancel subscription', 'opt out', 'se désinscrire', 'désinscrire',
+            'unsubscribe from', 'cliquez ici pour vous désabonner', 'pour ne plus recevoir',
+            'if you no longer wish to receive', 'si vous ne souhaitez plus recevoir'
+        ];
+        
+        const unsubscribeFound = unsubscribeKeywords.some(keyword => {
+            const found = fullContent.includes(keyword) || preview.includes(keyword) || subject.includes(keyword);
+            if (found) {
+                indicators.push(`unsubscribe_keyword:${keyword}`);
+                console.log(`[EmailScanner] 🔍 Mot-clé désabonnement trouvé: "${keyword}"`);
+            }
+            return found;
+        });
+        
+        if (unsubscribeFound) {
+            score += 60; // Score élevé pour les mots-clés de désabonnement
+        }
+        
+        // 2. LIENS DE DÉSABONNEMENT DANS LE CONTENU
+        const unsubscribeLinks = [
+            'unsubscribe.', 'opt-out', 'optout', 'remove-me', 'removeme',
+            'newsletter-unsubscribe', 'email-preferences', 'emailpreferences',
+            'manage-subscriptions', 'subscriptions/manage', 'communications/unsubscribe'
+        ];
+        
+        const unsubscribeLinkFound = unsubscribeLinks.some(pattern => {
+            const found = fullContent.includes(pattern);
+            if (found) {
+                indicators.push(`unsubscribe_link:${pattern}`);
+                console.log(`[EmailScanner] 🔗 Lien désabonnement trouvé: "${pattern}"`);
+            }
+            return found;
+        });
+        
+        if (unsubscribeLinkFound) {
+            score += 50;
+        }
+        
+        // 3. EXPRESSIONS DE NEWSLETTER CLASSIQUES
+        const newsletterExpressions = [
+            'newsletter', 'bulletin', 'actualités', 'news', 'digest', 'hebdo', 'quotidien',
+            'weekly update', 'monthly newsletter', 'daily digest', 'news bulletin',
+            'lettre d\'information', 'lettre d information', 'info-lettre', 'infolettre',
+            'update from', 'news from', 'latest from', 'this week at', 'monthly update'
+        ];
+        
+        const newsletterExpressionFound = newsletterExpressions.some(expr => {
+            const found = subject.includes(expr) || senderName.includes(expr);
+            if (found) {
+                indicators.push(`newsletter_expression:${expr}`);
+                console.log(`[EmailScanner] 📰 Expression newsletter trouvée: "${expr}"`);
+            }
+            return found;
+        });
+        
+        if (newsletterExpressionFound) {
+            score += 40;
+        }
+        
+        // 4. DOMAINES TYPIQUES DE NEWSLETTERS
+        const newsletterDomains = [
+            'mailchimp.com', 'constantcontact.com', 'campaign-monitor.com', 'sendinblue.com',
+            'mailjet.com', 'sendgrid.net', 'amazonses.com', 'createsend.com',
+            'email.', 'mail.', 'newsletter.', 'news.', 'marketing.', 'noreply.',
+            'no-reply.', 'donotreply.', 'updates.', 'notifications.'
+        ];
+        
+        const isNewsletterDomain = newsletterDomains.some(pattern => {
+            const found = from.includes(pattern) || domain.includes(pattern);
+            if (found) {
+                indicators.push(`newsletter_domain:${pattern}`);
+                console.log(`[EmailScanner] 🌐 Domaine newsletter trouvé: "${pattern}"`);
+            }
+            return found;
+        });
+        
+        if (isNewsletterDomain) {
+            score += 35;
+        }
+        
+        // 5. ADRESSES EMAIL TYPIQUES DE NEWSLETTERS
+        const newsletterSenders = [
+            'newsletter@', 'news@', 'info@', 'marketing@', 'updates@',
+            'noreply@', 'no-reply@', 'donotreply@', 'notification@',
+            'digest@', 'bulletin@', 'actualites@', 'communique@'
+        ];
+        
+        const isNewsletterSender = newsletterSenders.some(pattern => {
+            const found = from.includes(pattern);
+            if (found) {
+                indicators.push(`newsletter_sender:${pattern}`);
+                console.log(`[EmailScanner] 📮 Expéditeur newsletter trouvé: "${pattern}"`);
+            }
+            return found;
+        });
+        
+        if (isNewsletterSender) {
+            score += 30;
+        }
+        
+        // 6. CONTENU TYPIQUE DE NEWSLETTER
+        const newsletterContent = [
+            'view in browser', 'voir dans le navigateur', 'version web',
+            'forward to a friend', 'transférer à un ami', 'partager',
+            'you received this email because', 'vous recevez cet email car',
+            'you are receiving this', 'manage your preferences',
+            'gérer vos préférences', 'update your preferences',
+            'this email was sent to', 'cet email a été envoyé à'
+        ];
+        
+        const hasNewsletterContent = newsletterContent.some(pattern => {
+            const found = fullContent.includes(pattern) || preview.includes(pattern);
+            if (found) {
+                indicators.push(`newsletter_content:${pattern}`);
+                console.log(`[EmailScanner] 📄 Contenu newsletter trouvé: "${pattern}"`);
+            }
+            return found;
+        });
+        
+        if (hasNewsletterContent) {
+            score += 25;
+        }
+        
+        // 7. INDICATEURS DANS LE SUJET
+        const subjectIndicators = [
+            '📧', '📰', '📊', '💌', '🗞️', '📬', '📮',
+            '#', 'vol.', 'volume', 'issue', 'numéro', 'édition',
+            'weekly', 'daily', 'monthly', 'hebdo', 'quotidien', 'mensuel'
+        ];
+        
+        const hasSubjectIndicator = subjectIndicators.some(indicator => {
+            const found = subject.includes(indicator);
+            if (found) {
+                indicators.push(`subject_indicator:${indicator}`);
+                console.log(`[EmailScanner] 📋 Indicateur sujet trouvé: "${indicator}"`);
+            }
+            return found;
+        });
+        
+        if (hasSubjectIndicator) {
+            score += 20;
+        }
+        
+        // 8. PATTERNS DE MARKETING ET PROMOTIONS
+        const marketingPatterns = [
+            'promotion', 'promo', 'soldes', 'réduction', 'discount', 'offer',
+            'limited time', 'temps limité', 'offre spéciale', 'special offer',
+            'exclusive', 'exclusif', 'deal', 'bon plan', 'jusqu\'à -', 'up to',
+            'save', 'économisez', 'free shipping', 'livraison gratuite'
+        ];
+        
+        const hasMarketingPattern = marketingPatterns.some(pattern => {
+            const found = subject.includes(pattern) || preview.includes(pattern);
+            if (found) {
+                indicators.push(`marketing_pattern:${pattern}`);
+                console.log(`[EmailScanner] 💰 Pattern marketing trouvé: "${pattern}"`);
+            }
+            return found;
+        });
+        
+        if (hasMarketingPattern) {
+            score += 15;
+        }
+        
+        // 9. VÉRIFICATION HEADERS EMAIL (si disponibles)
+        if (email.internetHeaders) {
+            const headers = email.internetHeaders.join(' ').toLowerCase();
+            
+            if (headers.includes('list-unsubscribe')) {
+                score += 70; // Header list-unsubscribe est un indicateur très fort
+                indicators.push('list_unsubscribe_header');
+                console.log('[EmailScanner] 📧 Header List-Unsubscribe trouvé');
+            }
+            
+            if (headers.includes('precedence: bulk') || headers.includes('precedence:bulk')) {
+                score += 40;
+                indicators.push('bulk_precedence_header');
+                console.log('[EmailScanner] 📧 Header Precedence: bulk trouvé');
+            }
+        }
+        
+        // 10. ANALYSE DE LA STRUCTURE DU MESSAGE
+        if (email.body?.content) {
+            const htmlContent = email.body.content.toLowerCase();
+            
+            // Recherche de tables de mise en page (typique des newsletters)
+            if (htmlContent.includes('<table') && htmlContent.includes('width=') && htmlContent.includes('cellpadding')) {
+                score += 15;
+                indicators.push('html_table_layout');
+                console.log('[EmailScanner] 🎨 Mise en page table HTML trouvée');
+            }
+            
+            // Recherche d'images de tracking
+            if (htmlContent.includes('pixel') && htmlContent.includes('track')) {
+                score += 10;
+                indicators.push('tracking_pixel');
+                console.log('[EmailScanner] 📊 Pixel de tracking trouvé');
+            }
+        }
+        
+        // Calcul de la confiance
+        let confidence = Math.min(0.95, score / 100);
+        
+        // Bonus pour combinaisons spécifiques
+        if (unsubscribeFound && isNewsletterDomain) {
+            confidence += 0.1;
+            score += 10;
+            indicators.push('high_confidence_combination');
+        }
+        
+        const isNewsletter = score >= 40; // Seuil abaissé mais plus de critères
+        
+        console.log(`[EmailScanner] 📧 Résultat newsletter: score=${score}, confiance=${confidence.toFixed(2)}, newsletter=${isNewsletter}`);
+        console.log(`[EmailScanner] 📧 Indicateurs: ${indicators.join(', ')}`);
+        
+        return {
+            isNewsletter,
+            score: Math.min(100, score),
+            confidence: Math.min(0.95, confidence),
+            indicators
+        };
+    }
+
+    getEmailFullContent(email) {
+        let content = '';
+        
+        // Récupérer le contenu du corps
+        if (email.body?.content) {
+            content += email.body.content;
+        }
+        
+        // Ajouter le preview
+        if (email.bodyPreview) {
+            content += ' ' + email.bodyPreview;
+        }
+        
+        // Ajouter le sujet
+        if (email.subject) {
+            content += ' ' + email.subject;
+        }
+        
+        return content;
+    }
+
+    // ================================================
+    // CATÉGORISATION NORMALE (NON NEWSLETTERS)
+    // ================================================
     getRealEmailCategoryAnalysis(subject, from, preview, domain, senderName) {
         const categories = [];
         
@@ -940,11 +1227,6 @@ class EmailScanner {
                 keywords: ['facture', 'paiement', 'budget', 'comptabilité', 'virement', 'relevé', 'invoice', 'billing'],
                 domains: ['paypal', 'stripe', 'bank', 'accounting'],
                 senders: ['billing', 'finance', 'accounting', 'payment']
-            },
-            newsletters: {
-                keywords: ['newsletter', 'actualités', 'désabonner', 'unsubscribe', 'veille', 'digest'],
-                domains: ['mailchimp', 'constant', 'campaign', 'newsletter'],
-                senders: ['newsletter', 'marketing', 'news', 'digest']
             },
             support: {
                 keywords: ['support', 'ticket', 'assistance', 'maintenance', 'mise à jour', 'help', 'issue'],
@@ -1227,8 +1509,8 @@ class EmailScanner {
             this.categorizedEmails[cat] = [];
         });
 
-        // Re-catégoriser
-        await this.categorizeRealEmails();
+        // Re-catégoriser avec amélioration newsletters
+        await this.categorizeRealEmailsWithImprovedNewsletterDetection();
         
         console.log('[EmailScanner] ✅ Re-catégorisation EMAILS RÉELS terminée');
         
@@ -1253,7 +1535,12 @@ class EmailScanner {
     }
 
     async categorizeEmails(overridePreselectedCategories = null) {
-        return await this.categorizeRealEmails(overridePreselectedCategories);
+        return await this.categorizeRealEmailsWithImprovedNewsletterDetection(overridePreselectedCategories);
+    }
+
+    // Alias pour la méthode normale
+    async categorizeRealEmails(overridePreselectedCategories = null) {
+        return await this.categorizeRealEmailsWithImprovedNewsletterDetection(overridePreselectedCategories);
     }
 
     // ================================================
@@ -1268,6 +1555,7 @@ class EmailScanner {
         let totalPreselected = 0;
         let totalExcluded = 0;
         let totalSpam = 0;
+        let totalNewsletters = 0;
 
         Object.entries(this.categorizedEmails).forEach(([catId, emails]) => {
             breakdown[catId] = emails.length;
@@ -1276,6 +1564,8 @@ class EmailScanner {
                 totalSpam += emails.length;
             } else if (catId === 'excluded') {
                 totalExcluded += emails.length;
+            } else if (catId === 'newsletters') {
+                totalNewsletters += emails.length;
             } else if (catId !== 'other') {
                 totalCategorized += emails.length;
             }
@@ -1314,6 +1604,7 @@ class EmailScanner {
                 absoluteMatches: totalWithAbsolute,
                 taskSuggestions: totalWithTasks,
                 preselectedForTasks: totalPreselected,
+                newslettersDetected: totalNewsletters,
                 averageConfidence: avgConfidence,
                 averageScore: avgScore,
                 categoriesUsed: Object.keys(breakdown).filter(cat => breakdown[cat] > 0).length,
@@ -1421,13 +1712,15 @@ class EmailScanner {
         const preselectedWithTasks = this.emails.filter(e => e.isPreselectedForTasks && e.taskSuggested).length;
         const realEmailsCount = this.emails.filter(e => e.realEmail === true).length;
         const simulatedEmailsCount = this.emails.filter(e => e.webSimulated === true).length;
+        const newslettersCount = this.emails.filter(e => e.isNewsletter).length;
         
         return {
-            version: '10.1',
+            version: '10.2',
             isScanning: this.isScanning,
             totalEmails: this.emails.length,
             realEmailsCount: realEmailsCount,
             simulatedEmailsCount: simulatedEmailsCount,
+            newslettersDetected: newslettersCount,
             realEmailsVerified: this.realEmailsVerified,
             categorizedCount: Object.values(this.categorizedEmails)
                 .reduce((sum, emails) => sum + emails.length, 0),
@@ -1484,6 +1777,7 @@ class EmailScanner {
         console.log(`[EmailScanner] Emails RÉELS: ${this.emails.filter(e => e.realEmail === true).length}`);
         console.log(`[EmailScanner] Emails simulés REJETÉS: ${this.emails.filter(e => e.webSimulated === true).length}`);
         console.log(`[EmailScanner] Catégorisés: ${results.categorized} (${Math.round((results.categorized / results.total) * 100)}%)`);
+        console.log(`[EmailScanner] 📧 NEWSLETTERS DÉTECTÉES: ${results.stats.newslettersDetected}`);
         console.log(`[EmailScanner] ⭐ PRÉ-SÉLECTIONNÉS POUR TÂCHES: ${results.stats.preselectedForTasks}`);
         console.log(`[EmailScanner] Suggestions de tâches: ${results.stats.taskSuggestions}`);
         console.log(`[EmailScanner] Confiance moyenne: ${results.stats.averageConfidence}`);
@@ -1499,7 +1793,8 @@ class EmailScanner {
                 const categoryInfo = this.defaultWebCategories[cat] || { name: cat, icon: '📂' };
                 const isPreselected = this.taskPreselectedCategories.includes(cat);
                 const preselectedMark = isPreselected ? ' ⭐ PRÉ-SÉLECTIONNÉ' : '';
-                console.log(`[EmailScanner]   ${categoryInfo.icon} ${categoryInfo.name}: ${count} emails (${percentage}%)${preselectedMark}`);
+                const newsletterMark = cat === 'newsletters' ? ' 📧 AMÉLIORATION DÉTECTION' : '';
+                console.log(`[EmailScanner]   ${categoryInfo.icon} ${categoryInfo.name}: ${count} emails (${percentage}%)${preselectedMark}${newsletterMark}`);
             }
         });
         
@@ -1514,6 +1809,7 @@ class EmailScanner {
             scanDate: new Date().toISOString(),
             totalEmails: this.emails.length,
             realEmailsCount: this.emails.filter(e => e.realEmail === true).length,
+            newslettersDetected: this.emails.filter(e => e.isNewsletter).length,
             taskPreselectedCategories: [...this.taskPreselectedCategories],
             stats: this.getDetailedRealEmailResults().stats,
             settings: this.settings,
@@ -1529,6 +1825,7 @@ class EmailScanner {
         Object.entries(this.categorizedEmails).forEach(([catId, emails]) => {
             const categoryInfo = this.defaultWebCategories[catId] || { name: catId, icon: '📂' };
             const preselectedInCategory = emails.filter(e => e.isPreselectedForTasks).length;
+            const newslettersInCategory = emails.filter(e => e.isNewsletter).length;
             
             data.categories[catId] = {
                 name: categoryInfo.name,
@@ -1536,6 +1833,7 @@ class EmailScanner {
                 count: emails.length,
                 percentage: Math.round((emails.length / this.emails.length) * 100),
                 preselectedCount: preselectedInCategory,
+                newslettersCount: newslettersInCategory,
                 isPreselectedCategory: this.taskPreselectedCategories.includes(catId)
             };
         });
@@ -1554,6 +1852,8 @@ class EmailScanner {
             score: email.categoryScore,
             taskSuggested: email.taskSuggested,
             isPreselectedForTasks: email.isPreselectedForTasks,
+            isNewsletter: email.isNewsletter,
+            newsletterIndicators: email.newsletterIndicators || [],
             realEmail: email.realEmail,
             webSimulated: email.webSimulated || false
         }));
@@ -1594,7 +1894,7 @@ class EmailScanner {
 
     exportToCSVRealEmails() {
         const rows = [
-            ['Date', 'De', 'Email', 'Sujet', 'Catégorie', 'Confiance', 'Pré-sélectionné', 'Tâche Suggérée', 'Email Réel', 'Simulé']
+            ['Date', 'De', 'Email', 'Sujet', 'Catégorie', 'Confiance', 'Pré-sélectionné', 'Tâche Suggérée', 'Newsletter', 'Email Réel', 'Simulé']
         ];
 
         this.emails.forEach(email => {
@@ -1609,6 +1909,7 @@ class EmailScanner {
                 Math.round((email.categoryConfidence || 0) * 100) + '%',
                 email.isPreselectedForTasks ? 'Oui' : 'Non',
                 email.taskSuggested ? 'Oui' : 'Non',
+                email.isNewsletter ? 'Oui' : 'Non',
                 email.realEmail ? 'Oui' : 'Non',
                 email.webSimulated ? 'Oui' : 'Non'
             ]);
@@ -1850,7 +2151,7 @@ class EmailScanner {
             
             console.log(`[EmailScanner] ✅ ${verifiedEmails.length} emails RÉELS injectés depuis StartScan`);
             
-            // Re-catégoriser
+            // Re-catégoriser avec amélioration newsletters
             setTimeout(() => {
                 this.processSyncedRealEmails();
             }, 100);
@@ -1935,12 +2236,12 @@ if (window.emailScanner) {
     window.emailScanner.destroy?.();
 }
 
-console.log('[EmailScanner] 🚀 Création instance EMAILS RÉELS v10.1...');
+console.log('[EmailScanner] 🚀 Création instance EMAILS RÉELS v10.2...');
 window.emailScanner = new EmailScanner();
 
 // Fonctions utilitaires pour débogage emails réels
 window.testEmailScannerRealEmails = function() {
-    console.group('🧪 TEST EmailScanner EMAILS RÉELS v10.1');
+    console.group('🧪 TEST EmailScanner EMAILS RÉELS v10.2');
     
     const testEmails = [
         {
@@ -1948,6 +2249,7 @@ window.testEmailScannerRealEmails = function() {
             subject: "Action requise: Validation projet urgent",
             from: { emailAddress: { address: "manager@company.com", name: "Project Manager" } },
             bodyPreview: "Veuillez valider le projet avant vendredi",
+            body: { content: "Veuillez valider le projet avant vendredi. Cordialement." },
             receivedDateTime: new Date().toISOString(),
             realEmail: true,
             webSimulated: false,
@@ -1955,9 +2257,10 @@ window.testEmailScannerRealEmails = function() {
         },
         {
             id: 'real-test-2',
-            subject: "Proposition commerciale Q1 2025",
-            from: { emailAddress: { address: "sales@client.fr", name: "Commercial Client" } },
-            bodyPreview: "Nouvelle opportunité commerciale à étudier",
+            subject: "Newsletter hebdo - Actualités tech",
+            from: { emailAddress: { address: "newsletter@techcompany.com", name: "Tech News" } },
+            bodyPreview: "Découvrez les dernières actualités tech cette semaine",
+            body: { content: "Découvrez les dernières actualités tech cette semaine. Pour vous désabonner, cliquez ici: unsubscribe" },
             receivedDateTime: new Date().toISOString(),
             realEmail: true,
             webSimulated: false,
@@ -1966,9 +2269,13 @@ window.testEmailScannerRealEmails = function() {
     ];
     
     testEmails.forEach(email => {
-        const analysis = window.emailScanner.analyzeRealEmail(email);
+        const analysis = window.emailScanner.analyzeRealEmailWithImprovedNewsletterDetection(email);
         console.log('Email RÉEL:', email.subject);
         console.log('Analyse:', analysis);
+        console.log('Newsletter détectée:', analysis.isNewsletter);
+        if (analysis.isNewsletter) {
+            console.log('Indicateurs newsletter:', analysis.newsletterIndicators);
+        }
     });
     
     console.log('Debug Info EMAILS RÉELS:', window.emailScanner.getDebugInfo());
@@ -1982,7 +2289,8 @@ window.testEmailScannerRealEmails = function() {
         testsRun: testEmails.length, 
         realEmailsMode: true, 
         startScanSync: true,
-        simulationRejected: true
+        simulationRejected: true,
+        newsletterDetectionImproved: true
     };
 };
 
@@ -2014,14 +2322,15 @@ window.simulateRealEmailScan = async function() {
 };
 
 window.debugRealEmailCategories = function() {
-    console.group('📊 DEBUG Catégories EMAILS RÉELS v10.1');
-    console.log('Mode:', 'EMAILS RÉELS UNIQUEMENT + STARTSCAN SYNC');
+    console.group('📊 DEBUG Catégories EMAILS RÉELS v10.2');
+    console.log('Mode:', 'EMAILS RÉELS UNIQUEMENT + STARTSCAN SYNC + NEWSLETTERS AMÉLIORÉES');
     console.log('Settings:', window.emailScanner.settings);
     console.log('Catégories par défaut:', window.emailScanner.defaultWebCategories);
     console.log('Task Preselected Categories:', window.emailScanner.taskPreselectedCategories);
     console.log('Emails total:', window.emailScanner.emails.length);
     console.log('Emails RÉELS:', window.emailScanner.emails.filter(e => e.realEmail === true).length);
     console.log('Emails simulés REJETÉS:', window.emailScanner.emails.filter(e => e.webSimulated === true).length);
+    console.log('Newsletters détectées:', window.emailScanner.emails.filter(e => e.isNewsletter).length);
     console.log('Emails pré-sélectionnés:', window.emailScanner.getPreselectedEmails().length);
     console.log('StartScan synchronisé:', window.emailScanner.startScanSynced);
     console.log('Emails RÉELS vérifiés:', window.emailScanner.realEmailsVerified);
@@ -2045,56 +2354,3 @@ window.testStartScanRealEmailSync = function() {
         console.log('StartScan config EMAILS RÉELS:', startScan.scanConfig);
         console.log('EmailScanner catégories:', emailScanner.taskPreselectedCategories);
         console.log('Sync status EMAILS RÉELS:', emailScanner.getStartScanSyncStatus());
-        
-        // Test de synchronisation manuelle emails réels
-        const syncResult = emailScanner.syncWithStartScanRealEmails();
-        console.log('Synchronisation manuelle EMAILS RÉELS:', syncResult);
-    }
-    
-    console.groupEnd();
-    return { 
-        available: { emailScanner: !!emailScanner, startScan: !!startScan },
-        ready: emailScanner?.isReadyForRealEmailSync() || false,
-        synced: emailScanner?.startScanSynced || false,
-        realEmailsMode: true,
-        simulationRejected: true
-    };
-};
-
-window.forceStartScanRealEmailSync = function() {
-    console.log('🔄 Force synchronisation StartScan EMAILS RÉELS...');
-    
-    if (window.emailScanner && window.minimalScanModule) {
-        const result = window.emailScanner.syncWithStartScanRealEmails();
-        console.log('Résultat synchronisation forcée EMAILS RÉELS:', result);
-        return result;
-    } else {
-        console.error('EmailScanner ou StartScan non disponible pour EMAILS RÉELS');
-        return false;
-    }
-};
-
-// Auto-initialisation si DOM prêt
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('[EmailScanner] 📱 DOM prêt - Scanner EMAILS RÉELS avec sync StartScan initialisé');
-        
-        // Notifier StartScan que EmailScanner EMAILS RÉELS est prêt
-        setTimeout(() => {
-            if (window.emailScanner) {
-                window.emailScanner.notifyStartScanRealEmailsReady();
-            }
-        }, 1000);
-    });
-} else {
-    console.log('[EmailScanner] 📱 Scanner EMAILS RÉELS avec sync StartScan prêt');
-    
-    // Notifier immédiatement
-    setTimeout(() => {
-        if (window.emailScanner) {
-            window.emailScanner.notifyStartScanRealEmailsReady();
-        }
-    }, 500);
-}
-
-console.log('✅ EmailScanner v10.1 loaded - EMAILS RÉELS SYNCHRONISÉS avec StartScan - SIMULATION REJETÉE');
