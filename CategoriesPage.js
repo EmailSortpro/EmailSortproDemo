@@ -59,7 +59,21 @@ class CategoriesPageAdvanced {
     }
     
     getCategoryFilters(categoryId) {
-        // Pour l'instant, retourner des filtres vides car pas implémentés dans CategoryManager
+        if (window.categoryManager && typeof window.categoryManager.getCategoryFilters === 'function') {
+            const filters = window.categoryManager.getCategoryFilters(categoryId);
+            if (filters) {
+                console.log(`[CategoriesPage] 🔧 Filtres récupérés pour ${categoryId}:`, filters);
+                return filters;
+            }
+        }
+        
+        // Récupérer depuis localStorage si disponible
+        const savedFilters = this.loadCategoryFilters(categoryId);
+        if (savedFilters) {
+            return savedFilters;
+        }
+        
+        console.log(`[CategoriesPage] ⚠️ Filtres non trouvés pour ${categoryId}, utilisation par défaut`);
         return {
             includeDomains: [], includeEmails: [], excludeDomains: [], excludeEmails: []
         };
@@ -539,9 +553,6 @@ class CategoriesPageAdvanced {
                         <button class="tab" data-tab="filters" onclick="window.categoriesPage.switchTab('filters')">
                             <i class="fas fa-filter"></i> Filtres
                         </button>
-                        <button class="tab" data-tab="test" onclick="window.categoriesPage.switchTab('test')">
-                            <i class="fas fa-flask"></i> Test
-                        </button>
                         ${category.isCustom ? `
                             <button class="tab" data-tab="settings" onclick="window.categoriesPage.switchTab('settings')">
                                 <i class="fas fa-cog"></i> Paramètres
@@ -556,10 +567,6 @@ class CategoriesPageAdvanced {
                         
                         <div class="tab-panel" id="tab-filters">
                             ${this.renderFiltersTab(filters)}
-                        </div>
-                        
-                        <div class="tab-panel" id="tab-test">
-                            ${this.renderTestTab(categoryId)}
                         </div>
                         
                         ${category.isCustom ? `
@@ -581,11 +588,9 @@ class CategoriesPageAdvanced {
                         <button class="btn-modern secondary" onclick="window.categoriesPage.closeModal()">
                             Fermer
                         </button>
-                        ${!category.isCustom ? '' : `
-                            <button class="btn-modern primary" onclick="window.categoriesPage.save()">
-                                <i class="fas fa-check"></i> Enregistrer
-                            </button>
-                        `}
+                        <button class="btn-modern primary" onclick="window.categoriesPage.save()">
+                            <i class="fas fa-check"></i> Enregistrer
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1005,90 +1010,169 @@ class CategoriesPageAdvanced {
     }
 
     // ================================================
-    // FONCTIONS DE TEST
+    // GESTION DES FILTRES FONCTIONNELS
     // ================================================
-    testEmailCategory(categoryId) {
-        const subject = document.getElementById('test-subject')?.value || '';
-        const body = document.getElementById('test-body')?.value || '';
-        const from = document.getElementById('test-from')?.value || 'test@example.com';
+    addFilter(type) {
+        const inputMap = {
+            'includeDomains': 'include-domain',
+            'includeEmails': 'include-email',
+            'excludeDomains': 'exclude-domain',
+            'excludeEmails': 'exclude-email'
+        };
         
-        if (!subject.trim()) {
-            this.showToast('⚠️ Veuillez entrer un sujet', 'warning');
+        const input = document.getElementById(inputMap[type]);
+        if (!input?.value.trim()) {
+            this.showToast('⚠️ Veuillez saisir une valeur', 'warning');
             return;
         }
         
-        console.log(`[CategoriesPage] 🧪 Test catégorie ${categoryId}:`, { subject, body, from });
+        const value = input.value.trim().toLowerCase();
         
-        // Si CategoryManager est disponible, l'utiliser
-        if (window.categoryManager && typeof window.categoryManager.testEmail === 'function') {
-            const result = window.categoryManager.testEmail(subject, body, from);
-            this.displayTestResults(result, categoryId);
-        } else {
-            // Simulation de test
-            const mockResult = {
-                category: Math.random() > 0.5 ? categoryId : 'other',
-                score: Math.floor(Math.random() * 200),
-                confidence: Math.random(),
-                matchedPatterns: [
-                    { keyword: 'test', type: 'strong', score: 40 }
-                ]
-            };
-            this.displayTestResults(mockResult, categoryId);
+        // Validation selon le type
+        if (type.includes('Domain') && !this.isValidDomain(value)) {
+            this.showToast('⚠️ Format de domaine invalide', 'warning');
+            return;
+        }
+        
+        if (type.includes('Email') && !this.isValidEmail(value)) {
+            this.showToast('⚠️ Format d\'email invalide', 'warning');
+            return;
+        }
+        
+        // Vérifier si déjà ajouté
+        if (this.isFilterAlreadyAdded(type, value)) {
+            this.showToast('⚠️ Filtre déjà ajouté', 'warning');
+            return;
+        }
+        
+        const container = document.getElementById(`${type}-items`);
+        if (!container) return;
+        
+        const isExclude = type.includes('exclude');
+        const icon = type.includes('Domain') ? 
+            (isExclude ? 'shield-alt' : 'globe') : 
+            (isExclude ? 'user-slash' : 'at');
+        
+        container.insertAdjacentHTML('beforeend', `
+            <span class="tag ${isExclude ? 'exclude-tag' : 'filter-tag'}" data-value="${value}">
+                <i class="fas fa-${icon}"></i>
+                ${value}
+                <button onclick="window.categoriesPage.removeFilter('${type}', '${value}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </span>
+        `);
+        
+        input.value = '';
+        input.focus();
+        
+        // Sauvegarder automatiquement
+        this.saveCurrentFilters();
+        
+        this.showToast(`✅ Filtre "${value}" ajouté`);
+    }
+    
+    removeFilter(type, value) {
+        const container = document.getElementById(`${type}-items`);
+        if (!container) return;
+        
+        const tags = container.querySelectorAll('.tag');
+        tags.forEach(tag => {
+            if (tag.getAttribute('data-value') === value || 
+                tag.textContent.trim().replace(/×$/, '').includes(value)) {
+                tag.remove();
+            }
+        });
+        
+        // Sauvegarder automatiquement
+        this.saveCurrentFilters();
+        
+        this.showToast(`🗑️ Filtre "${value}" supprimé`);
+    }
+    
+    isValidDomain(domain) {
+        const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+        return domainRegex.test(domain) && domain.length <= 253;
+    }
+    
+    isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+    
+    isFilterAlreadyAdded(type, value) {
+        const container = document.getElementById(`${type}-items`);
+        if (!container) return false;
+        
+        const existingTags = container.querySelectorAll('.tag');
+        return Array.from(existingTags).some(tag => 
+            tag.getAttribute('data-value') === value
+        );
+    }
+    
+    saveCurrentFilters() {
+        if (!this.editingCategoryId) return;
+        
+        const filters = this.getCurrentFiltersFromModal();
+        this.saveCategoryFilters(this.editingCategoryId, filters);
+        
+        console.log('[CategoriesPage] 💾 Filtres sauvegardés pour', this.editingCategoryId, ':', filters);
+    }
+    
+    getCurrentFiltersFromModal() {
+        const getItems = (containerId) => {
+            const container = document.getElementById(containerId);
+            if (!container) return [];
+            return Array.from(container.querySelectorAll('.tag')).map(tag => {
+                return tag.getAttribute('data-value') || 
+                       tag.textContent.trim().replace(/×$/, '').replace(/^[^\s]+\s/, '').trim();
+            });
+        };
+        
+        return {
+            includeDomains: getItems('includeDomains-items'),
+            includeEmails: getItems('includeEmails-items'),
+            excludeDomains: getItems('excludeDomains-items'),
+            excludeEmails: getItems('excludeEmails-items')
+        };
+    }
+    
+    // ================================================
+    // SAUVEGARDE/CHARGEMENT DES FILTRES
+    // ================================================
+    saveCategoryFilters(categoryId, filters) {
+        try {
+            const allFilters = this.loadAllCategoryFilters();
+            allFilters[categoryId] = filters;
+            localStorage.setItem('categoryFilters', JSON.stringify(allFilters));
+            
+            // Notifier CategoryManager si disponible
+            if (window.categoryManager && typeof window.categoryManager.updateCategoryFilters === 'function') {
+                window.categoryManager.updateCategoryFilters(categoryId, filters);
+            }
+            
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur sauvegarde filtres:', error);
         }
     }
-
-    displayTestResults(result, expectedCategory) {
-        const resultsDiv = document.getElementById('test-results');
-        const outputDiv = document.getElementById('test-output');
-        
-        if (!resultsDiv || !outputDiv) return;
-        
-        const isCorrect = result.category === expectedCategory;
-        const confidencePercent = Math.round(result.confidence * 100);
-        
-        outputDiv.innerHTML = `
-            <div class="test-result ${isCorrect ? 'success' : 'failure'}">
-                <div class="test-result-header">
-                    <span class="test-result-icon">${isCorrect ? '✅' : '❌'}</span>
-                    <span class="test-result-status">
-                        ${isCorrect ? 'Détection correcte' : 'Détection incorrecte'}
-                    </span>
-                </div>
-                
-                <div class="test-result-details">
-                    <div class="test-detail">
-                        <strong>Catégorie détectée:</strong> ${result.category}
-                    </div>
-                    <div class="test-detail">
-                        <strong>Score:</strong> ${result.score} points
-                    </div>
-                    <div class="test-detail">
-                        <strong>Confiance:</strong> ${confidencePercent}%
-                    </div>
-                    
-                    ${result.matchedPatterns && result.matchedPatterns.length > 0 ? `
-                        <div class="test-detail">
-                            <strong>Mots-clés détectés:</strong>
-                            <ul class="matched-patterns">
-                                ${result.matchedPatterns.map(pattern => `
-                                    <li class="pattern-${pattern.type}">
-                                        ${pattern.keyword} (${pattern.type}: +${pattern.score}pts)
-                                    </li>
-                                `).join('')}
-                            </ul>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-        `;
-        
-        resultsDiv.style.display = 'block';
+    
+    loadCategoryFilters(categoryId) {
+        try {
+            const allFilters = this.loadAllCategoryFilters();
+            return allFilters[categoryId] || null;
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur chargement filtres:', error);
+            return null;
+        }
     }
-
-    loadTestExample(subject, body, from) {
-        document.getElementById('test-subject').value = subject;
-        document.getElementById('test-body').value = body;
-        document.getElementById('test-from').value = from;
+    
+    loadAllCategoryFilters() {
+        try {
+            const saved = localStorage.getItem('categoryFilters');
+            return saved ? JSON.parse(saved) : {};
+        } catch (error) {
+            return {};
+        }
     }
 
     // ================================================
@@ -1371,9 +1455,131 @@ class CategoriesPageAdvanced {
 
     renderFiltersTab(filters) {
         return `
-            <div class="filters-notice">
-                <i class="fas fa-info-circle"></i>
-                <p>Les filtres avancés seront disponibles dans une prochaine version.</p>
+            <div class="filters-layout">
+                <div class="filter-section">
+                    <h3><i class="fas fa-check-circle"></i> Filtres d'inclusion</h3>
+                    <p class="section-description">Ces filtres permettent d'inclure spécifiquement certains emails dans cette catégorie</p>
+                    
+                    <div class="filter-box">
+                        <h4><i class="fas fa-globe"></i> Domaines autorisés</h4>
+                        <p class="filter-hint">Emails provenant uniquement de ces domaines seront inclus dans cette catégorie</p>
+                        <div class="input-modern">
+                            <input type="text" id="include-domain" placeholder="exemple.com" 
+                                   onkeypress="if(event.key === 'Enter') window.categoriesPage.addFilter('includeDomains')">
+                            <button onclick="window.categoriesPage.addFilter('includeDomains')" style="background: #10B981;">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="tags" id="includeDomains-items">
+                            ${filters.includeDomains.map(d => `
+                                <span class="tag filter-tag">
+                                    <i class="fas fa-globe"></i>
+                                    ${d}
+                                    <button onclick="window.categoriesPage.removeFilter('includeDomains', '${d}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="filter-box">
+                        <h4><i class="fas fa-at"></i> Emails autorisés</h4>
+                        <p class="filter-hint">Emails provenant de ces adresses spécifiques seront inclus</p>
+                        <div class="input-modern">
+                            <input type="text" id="include-email" placeholder="contact@exemple.com" 
+                                   onkeypress="if(event.key === 'Enter') window.categoriesPage.addFilter('includeEmails')">
+                            <button onclick="window.categoriesPage.addFilter('includeEmails')" style="background: #10B981;">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="tags" id="includeEmails-items">
+                            ${filters.includeEmails.map(e => `
+                                <span class="tag filter-tag">
+                                    <i class="fas fa-at"></i>
+                                    ${e}
+                                    <button onclick="window.categoriesPage.removeFilter('includeEmails', '${e}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <h3><i class="fas fa-ban"></i> Filtres d'exclusion</h3>
+                    <p class="section-description">Ces filtres empêchent certains emails d'être classés dans cette catégorie</p>
+                    
+                    <div class="filter-box">
+                        <h4><i class="fas fa-shield-alt"></i> Domaines exclus</h4>
+                        <p class="filter-hint">Emails de ces domaines ne seront jamais classés dans cette catégorie</p>
+                        <div class="input-modern">
+                            <input type="text" id="exclude-domain" placeholder="spam.com" 
+                                   onkeypress="if(event.key === 'Enter') window.categoriesPage.addFilter('excludeDomains')">
+                            <button onclick="window.categoriesPage.addFilter('excludeDomains')" style="background: #EF4444;">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="tags" id="excludeDomains-items">
+                            ${filters.excludeDomains.map(d => `
+                                <span class="tag exclude-tag">
+                                    <i class="fas fa-shield-alt"></i>
+                                    ${d}
+                                    <button onclick="window.categoriesPage.removeFilter('excludeDomains', '${d}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="filter-box">
+                        <h4><i class="fas fa-user-slash"></i> Emails exclus</h4>
+                        <p class="filter-hint">Ces adresses email spécifiques seront toujours exclues</p>
+                        <div class="input-modern">
+                            <input type="text" id="exclude-email" placeholder="noreply@exemple.com" 
+                                   onkeypress="if(event.key === 'Enter') window.categoriesPage.addFilter('excludeEmails')">
+                            <button onclick="window.categoriesPage.addFilter('excludeEmails')" style="background: #EF4444;">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="tags" id="excludeEmails-items">
+                            ${filters.excludeEmails.map(e => `
+                                <span class="tag exclude-tag">
+                                    <i class="fas fa-user-slash"></i>
+                                    ${e}
+                                    <button onclick="window.categoriesPage.removeFilter('excludeEmails', '${e}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <h3><i class="fas fa-info-circle"></i> Informations</h3>
+                    <div class="filter-info">
+                        <div class="info-card">
+                            <h4>🎯 Comment ça fonctionne ?</h4>
+                            <ul>
+                                <li><strong>Inclusion :</strong> Si des filtres d'inclusion sont définis, seuls les emails correspondants seront considérés</li>
+                                <li><strong>Exclusion :</strong> Les filtres d'exclusion s'appliquent après l'inclusion et retirent définitivement les emails</li>
+                                <li><strong>Priorité :</strong> Exclusion > Inclusion > Mots-clés</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="info-card">
+                            <h4>💡 Exemples d'usage</h4>
+                            <ul>
+                                <li><strong>Newsletter :</strong> Inclure "newsletter.com" mais exclure "noreply@"</li>
+                                <li><strong>Support :</strong> Inclure "support@" mais exclure "auto-reply@"</li>
+                                <li><strong>Finance :</strong> Inclure "billing.com" et "facture@" mais exclure "marketing@"</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
     }
