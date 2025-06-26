@@ -1,4 +1,4 @@
-// AuthService.js - Service d'authentification Microsoft Graph CORRIGÉ pour coruscating-dodol-f30e8d.netlify.app v4.1
+// AuthService.js - Service d'authentification Microsoft Graph CORRIGÉ avec Analytics v4.2
 
 class AuthService {
     constructor() {
@@ -220,6 +220,22 @@ class AuthService {
                     });
                     this.account = response.account;
                     this.msalInstance.setActiveAccount(this.account);
+                    
+                    // ANALYTICS: Track successful authentication from redirect
+                    if (window.analyticsManager && typeof window.analyticsManager.onAuthSuccess === 'function') {
+                        try {
+                            const userInfo = {
+                                displayName: response.account.name,
+                                mail: response.account.username,
+                                userPrincipalName: response.account.username,
+                                provider: 'microsoft'
+                            };
+                            window.analyticsManager.onAuthSuccess('microsoft', userInfo);
+                            console.log('[AuthService] ✅ Analytics: Auth success tracked from redirect');
+                        } catch (analyticsError) {
+                            console.warn('[AuthService] Analytics error:', analyticsError);
+                        }
+                    }
                 } else {
                     console.log('[AuthService] No redirect response');
                     
@@ -231,6 +247,19 @@ class AuthService {
                         this.account = accounts[0];
                         this.msalInstance.setActiveAccount(this.account);
                         console.log('[AuthService] ✅ Account restored from cache:', this.account.username);
+                        
+                        // ANALYTICS: Track session restoration
+                        if (window.analyticsManager && typeof window.analyticsManager.trackEvent === 'function') {
+                            try {
+                                window.analyticsManager.trackEvent('session_restored', {
+                                    provider: 'microsoft',
+                                    username: this.account.username
+                                });
+                                console.log('[AuthService] ✅ Analytics: Session restoration tracked');
+                            } catch (analyticsError) {
+                                console.warn('[AuthService] Analytics error:', analyticsError);
+                            }
+                        }
                     } else {
                         console.log('[AuthService] No account in cache');
                     }
@@ -256,6 +285,19 @@ class AuthService {
             console.error(`[AuthService] ❌ Initialization failed for ${this.targetDomain}:`, error);
             this.isInitialized = false;
             this.initializationPromise = null;
+            
+            // ANALYTICS: Track initialization error
+            if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
+                try {
+                    window.analyticsManager.onError('auth_init_error', {
+                        message: error.message,
+                        provider: 'microsoft',
+                        domain: this.targetDomain
+                    });
+                } catch (analyticsError) {
+                    console.warn('[AuthService] Analytics error:', analyticsError);
+                }
+            }
             
             // Gestion d'erreurs spécifiques avec messages détaillés pour le domaine cible
             if (error.message.includes('CRITICAL DOMAIN ERROR')) {
@@ -388,12 +430,39 @@ class AuthService {
                 targetDomain: this.targetDomain
             });
             
+            // ANALYTICS: Track login attempt
+            if (window.analyticsManager && typeof window.analyticsManager.trackEvent === 'function') {
+                try {
+                    window.analyticsManager.trackEvent('login_attempt', {
+                        provider: 'microsoft',
+                        domain: this.targetDomain
+                    });
+                    console.log('[AuthService] ✅ Analytics: Login attempt tracked');
+                } catch (analyticsError) {
+                    console.warn('[AuthService] Analytics error:', analyticsError);
+                }
+            }
+            
             // Utiliser loginRedirect pour éviter les problèmes de popup
             await this.msalInstance.loginRedirect(loginRequest);
             // Note: La redirection va se produire, pas de code après cette ligne
             
         } catch (error) {
             console.error(`[AuthService] ❌ Login error for ${this.targetDomain}:`, error);
+            
+            // ANALYTICS: Track login error
+            if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
+                try {
+                    window.analyticsManager.onError('login_error', {
+                        message: error.message,
+                        errorCode: error.errorCode,
+                        provider: 'microsoft',
+                        domain: this.targetDomain
+                    });
+                } catch (analyticsError) {
+                    console.warn('[AuthService] Analytics error:', analyticsError);
+                }
+            }
             
             // Gestion d'erreurs spécifiques avec logging détaillé
             let userMessage = 'Erreur de connexion';
@@ -462,6 +531,20 @@ class AuthService {
     async logout() {
         console.log(`[AuthService] Logout initiated for ${this.targetDomain}...`);
         
+        // ANALYTICS: Track logout
+        if (window.analyticsManager && typeof window.analyticsManager.trackEvent === 'function') {
+            try {
+                window.analyticsManager.trackEvent('logout', {
+                    provider: 'microsoft',
+                    domain: this.targetDomain,
+                    userEmail: this.account?.username
+                });
+                console.log('[AuthService] ✅ Analytics: Logout tracked');
+            } catch (analyticsError) {
+                console.warn('[AuthService] Analytics error:', analyticsError);
+            }
+        }
+        
         if (!this.isInitialized) {
             console.warn('[AuthService] Not initialized for logout, force cleanup');
             this.forceCleanup();
@@ -480,6 +563,19 @@ class AuthService {
             
         } catch (error) {
             console.error(`[AuthService] Logout error for ${this.targetDomain}:`, error);
+            
+            // ANALYTICS: Track logout error
+            if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
+                try {
+                    window.analyticsManager.onError('logout_error', {
+                        message: error.message,
+                        provider: 'microsoft'
+                    });
+                } catch (analyticsError) {
+                    console.warn('[AuthService] Analytics error:', analyticsError);
+                }
+            }
+            
             // Force cleanup même en cas d'erreur
             this.forceCleanup();
         }
@@ -520,6 +616,19 @@ class AuthService {
                 return null;
             } else {
                 console.error('[AuthService] Token acquisition error:', error);
+                
+                // ANALYTICS: Track token error
+                if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
+                    try {
+                        window.analyticsManager.onError('token_error', {
+                            message: error.message,
+                            provider: 'microsoft'
+                        });
+                    } catch (analyticsError) {
+                        console.warn('[AuthService] Analytics error:', analyticsError);
+                    }
+                }
+                
                 return null;
             }
         }
@@ -548,10 +657,27 @@ class AuthService {
 
             const userInfo = await response.json();
             console.log(`[AuthService] ✅ User info retrieved for ${this.targetDomain}:`, userInfo.displayName);
+            
+            // Ajouter le provider à l'objet userInfo
+            userInfo.provider = 'microsoft';
+            
             return userInfo;
 
         } catch (error) {
             console.error('[AuthService] Error getting user info:', error);
+            
+            // ANALYTICS: Track user info error
+            if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
+                try {
+                    window.analyticsManager.onError('user_info_error', {
+                        message: error.message,
+                        provider: 'microsoft'
+                    });
+                } catch (analyticsError) {
+                    console.warn('[AuthService] Analytics error:', analyticsError);
+                }
+            }
+            
             throw error;
         }
     }
@@ -744,4 +870,4 @@ setTimeout(() => {
     }
 }, 2000);
 
-console.log(`✅ AuthService loaded with EXCLUSIVE support for coruscating-dodol-f30e8d.netlify.app v4.1 - Fixed validate() method`);
+console.log(`✅ AuthService loaded with EXCLUSIVE support for coruscating-dodol-f30e8d.netlify.app v4.2 - Enhanced Analytics Integration`);
