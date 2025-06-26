@@ -1,0 +1,79 @@
+# netlify.toml - Configuration Netlify pour EmailSortPro
+
+[build]
+  publish = "."
+  command = ""
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Redirections importantes
+[[redirects]]
+  from = "/auth-callback.html"
+  to = "/auth-callback.html"
+  status = 200
+
+[[redirects]]
+  from = "/analytics.html"
+  to = "/analytics.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/*"
+  to = "/analytics.html"
+  status = 200
+
+# Headers de sécurité
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    
+    # CSP adapté pour EmailSortPro
+    Content-Security-Policy = """
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' 
+        https://alcdn.msauth.net 
+        https://cdn.jsdelivr.net 
+        https://cdnjs.cloudflare.com
+        https://login.microsoftonline.com;
+      style-src 'self' 'unsafe-inline' 
+        https://cdnjs.cloudflare.com 
+        https://fonts.googleapis.com;
+      font-src 'self' 
+        https://cdnjs.cloudflare.com 
+        https://fonts.gstatic.com;
+      connect-src 'self' 
+        https://login.microsoftonline.com 
+        https://graph.microsoft.com 
+        https://*.supabase.co 
+        wss://*.supabase.co
+        https://outlook.office365.com
+        https://graph.microsoft.com;
+      img-src 'self' data: https:;
+    """
+
+# Cache pour les JS (sauf config)
+[[headers]]
+  for = "*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Pas de cache pour les fichiers de config
+[[headers]]
+  for = "/config*.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Configuration des contextes
+[context.production]
+  environment = { NODE_ENV = "production" }
+
+[context.deploy-preview]
+  environment = { NODE_ENV = "preview" }
+
+[context.branch-deploy]
+  environment = { NODE_ENV = "staging" }
