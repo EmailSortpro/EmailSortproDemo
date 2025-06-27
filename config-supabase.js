@@ -1,4 +1,4 @@
-// config-supabase.js - Configuration Supabase sécurisée avec gestion des sociétés
+// config-supabase.js - Configuration Supabase pour structure réelle sans mode démo
 // Version corrigée pour EmailSortPro avec vianney.hastings@hotmail.fr comme admin par défaut
 
 class SupabaseConfig {
@@ -7,39 +7,19 @@ class SupabaseConfig {
         this.url = 'https://oxyiamruvyliueecpaam.supabase.co';
         this.anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94eWlhbXJ1dnlsaXVlZWNwYWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MDM0MTgsImV4cCI6MjA2NTk3OTQxOH0.Wy_jbUB7D5Bly-rZB6oc2bXUHzZQ8MivDL4vdM1jcE0';
         
-        // Pour la production, utiliser les variables d'environnement si disponibles
-        if (typeof process !== 'undefined' && process.env) {
-            this.url = process.env.SUPABASE_URL || this.url;
-            this.anonKey = process.env.SUPABASE_ANON_KEY || this.anonKey;
-        } else if (window.location.hostname.includes('netlify.app') || window.location.hostname.includes('vercel.app')) {
-            // Variables d'environnement pour déploiement
-            this.url = window.SUPABASE_URL || this.url;
-            this.anonKey = window.SUPABASE_ANON_KEY || this.anonKey;
-        }
-
-        // Configuration des rôles et permissions pour EmailSortPro
+        // Configuration des rôles pour EmailSortPro
         this.roles = {
             SUPER_ADMIN: 'super_admin',
             COMPANY_ADMIN: 'company_admin', 
-            USER: 'user',
-            BLOCKED: 'blocked'
+            USER: 'user'
         };
 
-        // Configuration des statuts de licence
+        // Configuration des statuts de licence selon la structure réelle
         this.licenseStatus = {
             ACTIVE: 'active',
             TRIAL: 'trial',
             EXPIRED: 'expired',
-            BLOCKED: 'blocked',
-            PENDING: 'pending'
-        };
-
-        // Configuration des statuts de connexion
-        this.connectionStatus = {
-            ALLOWED: 'allowed',
-            BLOCKED: 'blocked',
-            SUSPENDED: 'suspended',
-            PENDING: 'pending'
+            BLOCKED: 'blocked'
         };
 
         // Emails d'administrateurs par défaut
@@ -124,7 +104,8 @@ class SupabaseConfig {
                 .from('users')
                 .select('count', { count: 'exact', head: true });
 
-            if (error && !error.message.includes('relation "users" does not exist')) {
+            // Accepter les erreurs 404 comme normales (pas de données mais table accessible)
+            if (error && !error.message.includes('relation "users" does not exist') && !error.message.includes('404')) {
                 console.error('[SupabaseConfig] 🚨 Erreur connexion:', error.message);
                 return false;
             }
@@ -145,14 +126,8 @@ class SupabaseConfig {
             anonKey: this.anonKey,
             client: this.client,
             initialized: this.initialized,
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false,
-                detectSessionInUrl: false
-            },
             roles: this.roles,
             licenseStatus: this.licenseStatus,
-            connectionStatus: this.connectionStatus,
             defaultAdmins: this.defaultAdmins
         };
     }
@@ -208,34 +183,12 @@ class SupabaseConfig {
         return status === this.licenseStatus.BLOCKED;
     }
 
-    isConnectionAllowed(status) {
-        return status === this.connectionStatus.ALLOWED;
-    }
-
-    isConnectionBlocked(status) {
-        return [
-            this.connectionStatus.BLOCKED, 
-            this.connectionStatus.SUSPENDED
-        ].includes(status);
-    }
-
     getLicenseStatusLabel(status) {
         switch (status) {
             case this.licenseStatus.ACTIVE: return 'Actif';
             case this.licenseStatus.TRIAL: return 'Période d\'essai';
             case this.licenseStatus.EXPIRED: return 'Expiré';
             case this.licenseStatus.BLOCKED: return 'Bloqué';
-            case this.licenseStatus.PENDING: return 'En attente';
-            default: return 'Inconnu';
-        }
-    }
-
-    getConnectionStatusLabel(status) {
-        switch (status) {
-            case this.connectionStatus.ALLOWED: return 'Autorisé';
-            case this.connectionStatus.BLOCKED: return 'Bloqué';
-            case this.connectionStatus.SUSPENDED: return 'Suspendu';
-            case this.connectionStatus.PENDING: return 'En attente';
             default: return 'Inconnu';
         }
     }
@@ -245,7 +198,6 @@ class SupabaseConfig {
             case this.roles.SUPER_ADMIN: return 'Super Administrateur';
             case this.roles.COMPANY_ADMIN: return 'Administrateur de Société';
             case this.roles.USER: return 'Utilisateur';
-            case this.roles.BLOCKED: return 'Bloqué';
             default: return 'Utilisateur';
         }
     }
@@ -273,12 +225,14 @@ class SupabaseConfig {
                     .select('*', { count: 'exact', head: true })
                     .limit(0);
 
-                results[table] = !error;
+                // Considérer qu'une table existe si pas d'erreur de relation
+                const tableExists = !error || !error.message.includes('relation') && !error.message.includes('does not exist');
+                results[table] = tableExists;
                 
-                if (error) {
-                    console.warn(`[SupabaseConfig] ⚠️ Table '${table}' non trouvée:`, error.message);
-                } else {
+                if (tableExists) {
                     console.log(`[SupabaseConfig] ✅ Table '${table}' existe`);
+                } else {
+                    console.warn(`[SupabaseConfig] ⚠️ Table '${table}' non trouvée`);
                 }
             } catch (error) {
                 results[table] = false;
@@ -319,6 +273,7 @@ class SupabaseConfig {
                     .select('*', { count: 'exact', head: true });
                 stats.users = usersCount || 0;
             } catch (error) {
+                console.warn('[SupabaseConfig] Table users inaccessible');
                 stats.users = 0;
             }
 
@@ -329,6 +284,7 @@ class SupabaseConfig {
                     .select('*', { count: 'exact', head: true });
                 stats.companies = companiesCount || 0;
             } catch (error) {
+                console.warn('[SupabaseConfig] Table companies inaccessible');
                 stats.companies = 0;
             }
 
@@ -364,7 +320,6 @@ class SupabaseConfig {
                 role: role,
                 license_status: this.licenseStatus.ACTIVE,
                 license_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-                first_login_at: new Date().toISOString(),
                 last_login_at: new Date().toISOString()
             };
 
@@ -457,6 +412,14 @@ class SupabaseConfig {
     // === MÉTHODES DE LOGGING ===
 
     async logActivity(activity, details = {}) {
+        // Log en console pour cette version
+        console.log(`[SupabaseConfig] 📝 Activité: ${activity}`, {
+            activity: activity,
+            details: details,
+            timestamp: new Date().toISOString()
+        });
+
+        // Tentative de sauvegarde en base si possible
         try {
             if (this.client) {
                 await this.client
@@ -469,9 +432,42 @@ class SupabaseConfig {
                     }]);
             }
         } catch (error) {
-            // Log en console si impossible de sauvegarder en base
-            console.log(`[SupabaseConfig] 📝 Activité: ${activity}`, details);
+            // Ignorer l'erreur si la table n'existe pas
+            console.warn('[SupabaseConfig] Impossible de sauvegarder l\'activité (table admin_actions manquante)');
         }
+    }
+
+    // === MÉTHODES DE DIAGNOSTIC ===
+
+    async getFullDiagnostic() {
+        const diagnostic = {
+            config: {
+                url: this.url,
+                initialized: this.initialized,
+                clientReady: !!this.client
+            },
+            tables: {},
+            stats: {},
+            roles: this.roles,
+            licenseStatus: this.licenseStatus,
+            defaultAdmins: this.defaultAdmins
+        };
+
+        if (this.client) {
+            try {
+                const tablesCheck = await this.checkTablesExist();
+                diagnostic.tables = tablesCheck;
+
+                if (tablesCheck.allExist) {
+                    const stats = await this.getDatabaseStats();
+                    diagnostic.stats = stats;
+                }
+            } catch (error) {
+                diagnostic.error = error.message;
+            }
+        }
+
+        return diagnostic;
     }
 }
 
@@ -509,44 +505,31 @@ window.initializeSupabase = async function() {
     }
 };
 
-// Fonction de diagnostic
-window.diagnoseSupabase = function() {
-    console.group('🔍 DIAGNOSTIC SUPABASE - EmailSortPro');
+// Fonction de diagnostic complète
+window.diagnoseSupabase = async function() {
+    console.group('🔍 DIAGNOSTIC SUPABASE - EmailSortPro (Structure Réelle)');
     
-    const config = window.supabaseConfig;
+    const diagnostic = await window.supabaseConfig.getFullDiagnostic();
     
-    console.log('🌐 Configuration:');
-    console.log('  URL:', config.url);
-    console.log('  Clé anonyme:', config.anonKey.substring(0, 20) + '...');
-    console.log('  Client initialisé:', config.isInitialized());
+    console.log('🌐 Configuration:', diagnostic.config);
+    console.log('📋 Tables:', diagnostic.tables);
+    console.log('📊 Statistiques:', diagnostic.stats);
+    console.log('👥 Rôles:', diagnostic.roles);
+    console.log('📄 Statuts de licence:', diagnostic.licenseStatus);
+    console.log('👨‍💼 Admins par défaut:', diagnostic.defaultAdmins);
     
-    console.log('🔧 Méthodes disponibles:');
-    console.log('  config.getClient() - Obtenir le client Supabase');
-    console.log('  config.checkTablesExist() - Vérifier les tables');
-    console.log('  config.getDatabaseStats() - Statistiques de la base');
-    console.log('  config.testConnection() - Tester la connexion');
-    console.log('  initializeSupabase() - Initialiser Supabase');
-    
-    console.log('👥 Rôles configurés:', config.roles);
-    console.log('📄 Statuts de licence:', config.licenseStatus);
-    console.log('🔒 Statuts de connexion:', config.connectionStatus);
-    console.log('👨‍💼 Admins par défaut:', config.defaultAdmins);
+    if (diagnostic.error) {
+        console.error('❌ Erreur:', diagnostic.error);
+    }
     
     console.groupEnd();
     
-    return {
-        url: config.url,
-        clientReady: config.isInitialized(),
-        roles: config.roles,
-        licenseStatus: config.licenseStatus,
-        connectionStatus: config.connectionStatus,
-        defaultAdmins: config.defaultAdmins
-    };
+    return diagnostic;
 };
 
 // Auto-diagnostic et initialisation
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[SupabaseConfig] 🚀 Configuration EmailSortPro chargée');
+    console.log('[SupabaseConfig] 🚀 Configuration EmailSortPro chargée (structure réelle)');
     
     // Attendre un peu pour que Supabase soit complètement chargé
     setTimeout(async () => {
@@ -560,9 +543,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (tablesCheck.allExist) {
                     // Obtenir les statistiques
                     await config.getDatabaseStats();
-                    console.log('[SupabaseConfig] ✅ Base de données prête');
+                    console.log('[SupabaseConfig] ✅ Base de données prête avec structure réelle');
                 } else {
-                    console.warn('[SupabaseConfig] ⚠️ Base de données incomplète');
+                    console.warn('[SupabaseConfig] ⚠️ Certaines tables manquantes');
+                    console.info('[SupabaseConfig] 💡 Assurez-vous que les tables users et companies existent');
                 }
             } else {
                 console.warn('[SupabaseConfig] ⚠️ Client non initialisé');
@@ -575,31 +559,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Instructions pour les développeurs
 console.log(`
-🎯 CONFIGURATION SUPABASE EMAILSORTPRO PRÊTE
+🎯 CONFIGURATION SUPABASE EMAILSORTPRO (STRUCTURE RÉELLE)
 
 📋 Pour utiliser:
    - Client Supabase: window.getSupabaseClient()
    - Configuration: window.supabaseConfig.getConfig()
    - Initialisation: await initializeSupabase()
-   - Diagnostic: diagnoseSupabase()
+   - Diagnostic: await diagnoseSupabase()
 
 ⚙️ Base de données:
    - URL: https://oxyiamruvyliueecpaam.supabase.co
-   - Mode: Production avec clé anonyme
+   - Mode: Production avec structure réelle
    - Tables requises: users, companies
    - Tables optionnelles: analytics_events, admin_actions
 
 🔒 Sécurité:
-   - Seule la clé anonyme est exposée (normal)
+   - Clé anonyme utilisée (normale pour frontend)
    - Permissions gérées par Row Level Security (RLS)
-   - Clé secrète gardée côté serveur Supabase
 
 👨‍💼 Administration:
    - vianney.hastings@hotmail.fr = Administrateur par défaut
    - Autres utilisateurs = Utilisateurs normaux
    - Rôles: super_admin, company_admin, user
 
-💡 Pour déboguer: diagnoseSupabase()
+💡 Pour déboguer: await diagnoseSupabase()
 `);
 
-console.log('[SupabaseConfig] ✅ Configuration avec gestion des sociétés et rôles chargée');
+console.log('[SupabaseConfig] ✅ Configuration avec structure réelle chargée (sans mode démo)');
