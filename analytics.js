@@ -1,5 +1,5 @@
-// AnalyticsManager.js - Gestion des analytics pour structure réelle de base de données
-// Version corrigée pour EmailSortPro sans mode démo
+// AnalyticsManager.js - Gestion des analytics pour EmailSortPro
+// Version complète sans mode démo, avec données réelles uniquement
 
 class AnalyticsManager {
     constructor() {
@@ -82,6 +82,115 @@ class AnalyticsManager {
         if (!this.initialized) await this.initialize();
 
         if (!this.tablesExist) {
+            console.error('[AnalyticsManager] Tables non disponibles - pas de données');
+            this.companies = [];
+            this.users = [];
+            this.analyticsEvents = [];
+            return;
+        }
+        
+        try {
+            // Récupérer l'utilisateur actuel depuis le contexte global
+            if (window.currentUser) {
+                this.currentUser = window.currentUser;
+            }
+
+            const userRole = this.currentUser?.role || 'user';
+            
+            if (userRole === 'super_admin') {
+                // Super admin : accès à toutes les données
+                await this.loadAllCompanies();
+                await this.loadAllUsers();
+                await this.loadAllAnalytics();
+            } else if (userRole === 'company_admin') {
+                // Admin : accès aux données de sa société uniquement
+                const companyId = this.currentUser.company_id;
+                await this.loadCompanyData(companyId);
+            } else {
+                // Utilisateur normal : accès limité
+                await this.loadUserData(this.currentUser?.id);
+            }
+
+            console.log('[AnalyticsManager] ✅ Données chargées avec succès');
+        } catch (error) {
+            console.error('[AnalyticsManager] Erreur lors du chargement des données:', error);
+            // En cas d'erreur, initialiser avec des tableaux vides
+            this.companies = [];
+            this.users = [];
+            this.analyticsEvents = [];
+        }
+    }
+
+    // === CHARGEMENT DEPUIS LA BASE DE DONNÉES ===
+    async loadAllCompanies() {
+        try {
+            const { data, error } = await this.supabase
+                .from('companies')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            this.companies = data || [];
+            console.log('[AnalyticsManager] ✅ Sociétés chargées:', this.companies.length);
+        } catch (error) {
+            console.error('[AnalyticsManager] Erreur chargement sociétés:', error);
+            this.companies = [];
+        }
+    }
+
+    async loadAllUsers() {
+        try {
+            // Charger les utilisateurs avec requête simplifiée
+            const { data: users, error } = await this.supabase
+                .from('users')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            // Charger les sociétés et associer
+            const { data: companies } = await this.supabase
+                .from('companies')
+                .select('*');
+
+            const companiesMap = {};
+            companies?.forEach(company => {
+                companiesMap[company.id] = company;
+            });
+
+            // Associer les sociétés aux utilisateurs
+            users.forEach(user => {
+                if (user.company_id && companiesMap[user.company_id]) {
+                    user.company = companiesMap[user.company_id];
+                }
+            });
+
+            this.users = users || [];
+            console.log('[AnalyticsManager] ✅ Utilisateurs chargés:', this.users.length);
+        } catch (error) {
+            console.error('[AnalyticsManager] Erreur chargement utilisateurs:', error);
+            this.users = [];
+        }
+    }
+
+    async loadAllAnalytics() {
+        try {
+            // Tenter de charger les analytics si la table existe
+            const { data, error } = await this.supabase
+                .from('analytics_events')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(100);
+
+            if (error) {
+                // Si la table n'existe pas, créer des données simulées basées sur les vrais utilisateurs
+                this.generateSimulatedAnalytics();
+            } else {
+                this.analyticsEvents = data || [];
+            }
+            
+            console.log('[AnalyticsManager] ✅ Analytics chargés:', this.analyticsEvents.length, 'événements');
+        } catch (error) {
             console.warn('[AnalyticsManager] Table analytics_events non disponible, génération de données simulées');
             this.generateSimulatedAnalytics();
         }
@@ -249,7 +358,7 @@ class AnalyticsManager {
             companies: this.companies,
             users: this.users,
             events: this.analyticsEvents,
-            dataSource: this.tablesExist ? 'database' : 'simulated'
+            dataSource: this.tablesExist ? 'database' : 'unavailable'
         };
     }
 
@@ -379,7 +488,7 @@ class AnalyticsManager {
                 users: this.users.length,
                 events: this.analyticsEvents.length
             },
-            dataSource: this.tablesExist ? 'database' : 'simulated'
+            dataSource: this.tablesExist ? 'database' : 'unavailable'
         };
     }
 }
@@ -406,7 +515,7 @@ const analyticsModule = {
                 <h3 style="margin-bottom: 16px; color: #1f2937;">
                     📊 Aperçu des Analytics 
                     <span style="font-size: 0.75rem; background: ${data.dataSource === 'database' ? '#dcfce7' : '#fef3c7'}; color: ${data.dataSource === 'database' ? '#16a34a' : '#d97706'}; padding: 4px 8px; border-radius: 12px; margin-left: 8px;">
-                        ${data.dataSource === 'database' ? 'Données réelles' : 'Données simulées'}
+                        ${data.dataSource === 'database' ? 'Données réelles' : 'Base non disponible'}
                     </span>
                 </h3>
                 
@@ -471,15 +580,14 @@ const analyticsModule = {
                     </div>
                 </div>
 
-                ${data.dataSource === 'simulated' ? `
-                    <div style="margin-top: 20px; padding: 12px; background: #fffbeb; border: 1px solid #fbbf24; border-radius: 6px;">
-                        <div style="display: flex; align-items: center; gap: 8px; color: #92400e;">
-                            <i class="fas fa-info-circle"></i>
-                            <strong>Mode simulé</strong>
+                ${data.dataSource === 'unavailable' ? `
+                    <div style="margin-top: 20px; padding: 12px; background: #fee2e2; border: 1px solid #fecaca; border-radius: 6px;">
+                        <div style="display: flex; align-items: center; gap: 8px; color: #991b1b;">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <strong>Base de données non disponible</strong>
                         </div>
-                        <p style="color: #92400e; margin: 4px 0 0 0; font-size: 0.875rem;">
-                            Les données analytics sont simulées car la table analytics_events n'est pas disponible. 
-                            Les utilisateurs et sociétés sont réels.
+                        <p style="color: #991b1b; margin: 4px 0 0 0; font-size: 0.875rem;">
+                            Les tables requises ne sont pas accessibles. Vérifiez votre configuration Supabase.
                         </p>
                     </div>
                 ` : ''}
@@ -516,116 +624,6 @@ window.debugAnalyticsManager = function() {
     return info;
 };
 
-console.log('[Analytics] ✅ AnalyticsManager avec structure réelle chargé (sans mode démo)');
+console.log('[Analytics] ✅ AnalyticsManager chargé (sans mode démo)');
 console.log('[Analytics] 💡 Utilisez window.analyticsManager pour accéder aux données');
 console.log('[Analytics] 🔍 Utilisez debugAnalyticsManager() pour le diagnostic');
-s non disponibles - données vides');
-            this.companies = [];
-            this.users = [];
-            this.analyticsEvents = [];
-            return;
-        }
-        
-        try {
-            // Récupérer l'utilisateur actuel depuis le contexte global
-            if (window.currentUser) {
-                this.currentUser = window.currentUser;
-            }
-
-            const userRole = this.currentUser?.role || 'user';
-            
-            if (userRole === 'super_admin') {
-                // Super admin : accès à toutes les données
-                await this.loadAllCompanies();
-                await this.loadAllUsers();
-                await this.loadAllAnalytics();
-            } else if (userRole === 'company_admin') {
-                // Admin : accès aux données de sa société uniquement
-                const companyId = this.currentUser.company_id;
-                await this.loadCompanyData(companyId);
-            } else {
-                // Utilisateur normal : accès limité
-                await this.loadUserData(this.currentUser?.id);
-            }
-
-            console.log('[AnalyticsManager] ✅ Données chargées avec succès');
-        } catch (error) {
-            console.error('[AnalyticsManager] Erreur lors du chargement des données:', error);
-            // En cas d'erreur, initialiser avec des tableaux vides
-            this.companies = [];
-            this.users = [];
-            this.analyticsEvents = [];
-        }
-    }
-
-    // === CHARGEMENT DEPUIS LA BASE DE DONNÉES ===
-    async loadAllCompanies() {
-        try {
-            const { data, error } = await this.supabase
-                .from('companies')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            this.companies = data || [];
-            console.log('[AnalyticsManager] ✅ Sociétés chargées:', this.companies.length);
-        } catch (error) {
-            console.error('[AnalyticsManager] Erreur chargement sociétés:', error);
-            this.companies = [];
-        }
-    }
-
-    async loadAllUsers() {
-        try {
-            // Charger les utilisateurs avec requête simplifiée
-            const { data: users, error } = await this.supabase
-                .from('users')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-
-            // Charger les sociétés et associer
-            const { data: companies } = await this.supabase
-                .from('companies')
-                .select('*');
-
-            const companiesMap = {};
-            companies?.forEach(company => {
-                companiesMap[company.id] = company;
-            });
-
-            // Associer les sociétés aux utilisateurs
-            users.forEach(user => {
-                if (user.company_id && companiesMap[user.company_id]) {
-                    user.company = companiesMap[user.company_id];
-                }
-            });
-
-            this.users = users || [];
-            console.log('[AnalyticsManager] ✅ Utilisateurs chargés:', this.users.length);
-        } catch (error) {
-            console.error('[AnalyticsManager] Erreur chargement utilisateurs:', error);
-            this.users = [];
-        }
-    }
-
-    async loadAllAnalytics() {
-        try {
-            // Tenter de charger les analytics si la table existe
-            const { data, error } = await this.supabase
-                .from('analytics_events')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(100);
-
-            if (error) {
-                // Si la table n'existe pas, créer des données simulées basées sur les vrais utilisateurs
-                this.generateSimulatedAnalytics();
-            } else {
-                this.analyticsEvents = data || [];
-            }
-            
-            console.log('[AnalyticsManager] ✅ Analytics chargés:', this.analyticsEvents.length, 'événements');
-        } catch (error) {
-            console.warn('[AnalyticsManager] Table
