@@ -1500,29 +1500,369 @@
             }
         });
 
+        // === LICENSESERVICE INTÉGRÉ ===
+        class LicenseService {
+            constructor() {
+                this.supabase = null;
+                this.currentUser = null;
+                this.licenseCache = null;
+                this.initialized = false;
+                this.userCache = new Map();
+                this.companyCache = new Map();
+                this.tablesExist = false;
+            }
+
+            async initialize() {
+                if (this.initialized) return true;
+
+                try {
+                    console.log('[LicenseService] Initialisation...');
+                    
+                    // Attendre que supabaseConfig soit prêt
+                    await this.waitForSupabaseConfig();
+                    
+                    // Obtenir le client Supabase
+                    this.supabase = window.getSupabaseClient();
+                    
+                    if (!this.supabase) {
+                        throw new Error('Client Supabase non disponible');
+                    }
+
+                    // Vérifier si les tables existent
+                    await this.checkTablesExistence();
+                    
+                    this.initialized = true;
+                    console.log('[LicenseService] ✅ Initialisé avec succès');
+                    
+                    return true;
+                } catch (error) {
+                    console.error('[LicenseService] ❌ Erreur initialisation:', error);
+                    console.warn('[LicenseService] 🔄 Mode dégradé - Fonctions admin désactivées');
+                    
+                    // Mode dégradé - service partiellement fonctionnel
+                    this.initialized = true;
+                    this.tablesExist = false;
+                    return false;
+                }
+            }
+
+            async waitForSupabaseConfig(maxAttempts = 20) {
+                let attempts = 0;
+                
+                while (!window.supabaseConfig && attempts < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                if (!window.supabaseConfig) {
+                    throw new Error('Configuration Supabase non disponible');
+                }
+
+                // Attendre que le client soit prêt
+                attempts = 0;
+                while (!window.getSupabaseClient() && attempts < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+            }
+
+            async checkTablesExistence() {
+                try {
+                    const { allExist } = await window.supabaseConfig.checkTablesExist();
+                    this.tablesExist = allExist;
+                    
+                    if (!allExist) {
+                        console.warn('[LicenseService] ⚠️ Tables manquantes - Mode démo activé');
+                        console.info('[LicenseService] 💡 Exécutez le script SQL pour créer les tables');
+                    }
+                } catch (error) {
+                    console.warn('[LicenseService] ⚠️ Impossible de vérifier les tables:', error.message);
+                    this.tablesExist = false;
+                }
+            }
+
+            async getAllUsersGroupedByCompany() {
+                if (!this.isAdmin()) {
+                    console.warn('[LicenseService] Accès admin requis');
+                    return this.getMockData();
+                }
+
+                if (!this.tablesExist) {
+                    console.info('[LicenseService] Mode démo - données fictives');
+                    return this.getMockData();
+                }
+
+                try {
+                    const { data: users, error } = await this.supabase
+                        .from('users')
+                        .select(`
+                            *,
+                            company:companies(id, name, domain, is_blocked),
+                            blocked_by:blocked_by_user_id(email, name)
+                        `)
+                        .order('company_id, last_login_at', { ascending: false });
+
+                    if (error) throw error;
+
+                    // Grouper par société
+                    const groupedUsers = {};
+                    users.forEach(user => {
+                        const companyKey = user.company ? user.company.id : 'no_company';
+                        const companyName = user.company ? user.company.name : 'Sans société';
+                        
+                        if (!groupedUsers[companyKey]) {
+                            groupedUsers[companyKey] = {
+                                company: user.company || { id: null, name: companyName, domain: null },
+                                users: []
+                            };
+                        }
+                        
+                        groupedUsers[companyKey].users.push(user);
+                    });
+
+                    return groupedUsers;
+                } catch (error) {
+                    console.error('[LicenseService] Erreur récupération utilisateurs:', error);
+                    return this.getMockData();
+                }
+            }
+
+            async blockUser(userId, reason = 'Bloqué par un administrateur') {
+                if (!this.canBlockUsers()) {
+                    throw new Error('Droits insuffisants');
+                }
+
+                if (!this.tablesExist) {
+                    console.warn('[LicenseService] Mode démo - simulation du blocage');
+                    return { success: true, message: 'Utilisateur bloqué (mode démo)' };
+                }
+
+                try {
+                    const config = window.supabaseConfig.getConfig();
+                    
+                    const { error } = await this.supabase
+                        .from('users')
+                        .update({
+                            connection_status: config.connectionStatus.BLOCKED,
+                            blocked_at: new Date().toISOString(),
+                            blocked_by_user_id: this.currentUser?.id,
+                            block_reason: reason,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', userId);
+
+                    if (error) throw error;
+
+                    this.invalidateCache();
+                    return { success: true, message: 'Utilisateur bloqué avec succès' };
+                } catch (error) {
+                    console.error('[LicenseService] Erreur blocage utilisateur:', error);
+                    return { success: false, error: error.message };
+                }
+            }
+
+            async unblockUser(userId) {
+                if (!this.canBlockUsers()) {
+                    throw new Error('Droits insuffisants');
+                }
+
+                if (!this.tablesExist) {
+                    console.warn('[LicenseService] Mode démo - simulation du déblocage');
+                    return { success: true, message: 'Utilisateur débloqué (mode démo)' };
+                }
+
+                try {
+                    const config = window.supabaseConfig.getConfig();
+                    
+                    const { error } = await this.supabase
+                        .from('users')
+                        .update({
+                            connection_status: config.connectionStatus.ALLOWED,
+                            blocked_at: null,
+                            blocked_by_user_id: null,
+                            block_reason: null,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', userId);
+
+                    if (error) throw error;
+
+                    this.invalidateCache();
+                    return { success: true, message: 'Utilisateur débloqué avec succès' };
+                } catch (error) {
+                    console.error('[LicenseService] Erreur déblocage utilisateur:', error);
+                    return { success: false, error: error.message };
+                }
+            }
+
+            async blockCompany(companyId, reason = 'Société bloquée par un administrateur') {
+                if (!this.isSuperAdmin()) {
+                    throw new Error('Seuls les super-administrateurs peuvent bloquer des sociétés');
+                }
+
+                if (!this.tablesExist) {
+                    return { success: true, message: 'Société bloquée (mode démo)' };
+                }
+
+                try {
+                    const { error } = await this.supabase
+                        .from('companies')
+                        .update({
+                            is_blocked: true,
+                            blocked_at: new Date().toISOString(),
+                            blocked_by_user_id: this.currentUser?.id,
+                            block_reason: reason,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', companyId);
+
+                    if (error) throw error;
+                    this.invalidateCache();
+                    return { success: true, message: 'Société bloquée avec succès' };
+                } catch (error) {
+                    console.error('[LicenseService] Erreur blocage société:', error);
+                    return { success: false, error: error.message };
+                }
+            }
+
+            async unblockCompany(companyId) {
+                if (!this.isSuperAdmin()) {
+                    throw new Error('Seuls les super-administrateurs peuvent débloquer des sociétés');
+                }
+
+                if (!this.tablesExist) {
+                    return { success: true, message: 'Société débloquée (mode démo)' };
+                }
+
+                try {
+                    const { error } = await this.supabase
+                        .from('companies')
+                        .update({
+                            is_blocked: false,
+                            blocked_at: null,
+                            blocked_by_user_id: null,
+                            block_reason: null,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', companyId);
+
+                    if (error) throw error;
+                    this.invalidateCache();
+                    return { success: true, message: 'Société débloquée avec succès' };
+                } catch (error) {
+                    console.error('[LicenseService] Erreur déblocage société:', error);
+                    return { success: false, error: error.message };
+                }
+            }
+
+            getMockData() {
+                return {
+                    'demo-company-1': {
+                        company: { 
+                            id: 'demo-company-1', 
+                            name: 'TechCorp Solutions (Démo)', 
+                            domain: 'techcorp.com', 
+                            is_blocked: false 
+                        },
+                        users: [
+                            {
+                                id: 'demo-user-1',
+                                email: 'john.doe@techcorp.com',
+                                name: 'John Doe',
+                                connection_status: 'allowed',
+                                license_status: 'active',
+                                role: 'company_admin',
+                                last_login_at: new Date().toISOString(),
+                                login_count: 42
+                            },
+                            {
+                                id: 'demo-user-2',
+                                email: 'jane.smith@techcorp.com',
+                                name: 'Jane Smith',
+                                connection_status: 'allowed',
+                                license_status: 'active',
+                                role: 'user',
+                                last_login_at: new Date(Date.now() - 24*60*60*1000).toISOString(),
+                                login_count: 28
+                            }
+                        ]
+                    },
+                    'demo-company-2': {
+                        company: { 
+                            id: 'demo-company-2', 
+                            name: 'Digital Innovations (Démo)', 
+                            domain: 'digital-innovations.io', 
+                            is_blocked: false 
+                        },
+                        users: [
+                            {
+                                id: 'demo-user-3',
+                                email: 'vianney.hastings@hotmail.fr',
+                                name: 'Vianney Hastings',
+                                connection_status: 'allowed',
+                                license_status: 'trial',
+                                role: 'user',
+                                last_login_at: new Date().toISOString(),
+                                login_count: 12
+                            },
+                            {
+                                id: 'demo-user-4',
+                                email: 'sarah.johnson@digital-innovations.io',
+                                name: 'Sarah Johnson',
+                                connection_status: 'blocked',
+                                license_status: 'trial',
+                                role: 'user',
+                                last_login_at: new Date(Date.now() - 7*24*60*60*1000).toISOString(),
+                                login_count: 5,
+                                blocked_at: new Date(Date.now() - 24*60*60*1000).toISOString(),
+                                block_reason: 'Utilisation excessive des APIs'
+                            }
+                        ]
+                    }
+                };
+            }
+
+            isAdmin() {
+                return true; // Mode démo - accès admin pour tous
+            }
+
+            isSuperAdmin() {
+                return true; // Mode démo - accès super admin
+            }
+
+            canBlockUsers() {
+                return this.isAdmin();
+            }
+
+            canBlockCompanies() {
+                return this.isSuperAdmin();
+            }
+
+            invalidateCache() {
+                this.licenseCache = null;
+                this.userCache.clear();
+                this.companyCache.clear();
+            }
+        }
+
         // === INITIALIZATION ===
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('[Analytics Page] DOM loaded, initializing extended analytics...');
             
-            // Charger les services
+            // Charger la configuration Supabase
             const configScript = document.createElement('script');
             configScript.src = './config-supabase.js';
             configScript.onload = async () => {
                 console.log('[Analytics] Supabase config loaded');
                 
-                const licenseScript = document.createElement('script');
-                licenseScript.src = './LicenseService.js';
-                licenseScript.onload = async () => {
-                    console.log('[Analytics] LicenseService loaded');
-                    licenseService = window.licenseService;
-                    
-                    // Initialiser le service
-                    await licenseService.initialize();
-                    
-                    // Charger les données
-                    updateSummary();
-                };
-                document.head.appendChild(licenseScript);
+                // Créer l'instance LicenseService intégrée
+                licenseService = new LicenseService();
+                
+                // Initialiser le service
+                await licenseService.initialize();
+                
+                // Charger les données
+                updateSummary();
             };
             document.head.appendChild(configScript);
             
