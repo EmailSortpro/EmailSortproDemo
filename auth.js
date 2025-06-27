@@ -8,6 +8,12 @@ class AuthManager {
     // Vérifier si l'utilisateur est connecté
     async checkAuth() {
         try {
+            // S'assurer que Supabase est initialisé
+            if (!window.supabaseClient) {
+                console.error('[AuthManager] Supabase non initialisé');
+                return false;
+            }
+
             const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) return false;
 
