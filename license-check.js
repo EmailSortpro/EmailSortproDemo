@@ -1,11 +1,9 @@
-// Vérification des licences et redirection
-// Version corrigée avec gestion des administrateurs par société
+// license-check.js - Vérification des licences et redirection
+// Version complète sans mode démo pour EmailSortPro
 
 async function checkUserLicense() {
-    // Configuration des modes
-    const TEST_MODE = false; // Mode production - chargement des vraies données
-    const DEMO_MODE = false; // Mode avec auth réelle
-    const AUTH_REQUIRED = true; // Authentification requise
+    // Configuration des modes - PRODUCTION uniquement
+    const AUTH_REQUIRED = true; // Authentification toujours requise
     
     // Attendre que le DOM soit chargé
     if (document.readyState !== 'complete') {
@@ -25,117 +23,56 @@ async function checkUserLicense() {
         // Initialiser le service de licence
         await window.licenseService.initialize();
 
-        // MODE TEST - Accès sans authentification (pour développement)
-        if (TEST_MODE) {
-            console.log('[License Check] 🧪 MODE TEST - Accès sans authentification');
-            
-            // Créer un utilisateur test avec droits admin
-            const testUser = {
-                id: 'test-user-id',
-                email: 'test@example.com',
-                name: 'Utilisateur Test',
-                role: 'company_admin',
-                license_status: 'active',
-                license_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-                company_id: 'test-company-id',
-                company: {
-                    id: 'test-company-id',
-                    name: 'Société de Test',
-                    domain: 'test.com'
-                }
-            };
-            
-            window.currentUser = testUser;
-            
-            if (window.initializePage) {
-                console.log('[License Check] Initialisation de la page en mode test');
-                window.initializePage();
-            }
-            return;
-        }
-
-        // MODE DEMO - Accès avec authentification simplifiée
-        if (DEMO_MODE) {
-            console.log('[License Check] 🔧 MODE DEMO - Authentification simplifiée');
-            
-            const userEmail = await promptForEmail();
-            if (!userEmail) return;
-
-            const licenseResult = await window.licenseService.checkUserLicense(userEmail);
-            
-            if (licenseResult.valid) {
-                console.log('[License Check] ✅ Licence valide en mode démo');
-                
-                if (window.initializePage) {
-                    window.initializePage();
-                }
-            } else {
-                showLicenseError(licenseResult.message || 'Accès refusé');
-            }
-            return;
-        }
-
         // MODE PRODUCTION - Authentification complète
-        if (AUTH_REQUIRED) {
-            console.log('[License Check] 🔐 MODE PRODUCTION - Authentification requise');
-            
-            // Vérifier si l'utilisateur est déjà authentifié
-            let userEmail = getStoredUserEmail();
-            
+        console.log('[License Check] 🔐 MODE PRODUCTION - Authentification requise');
+        
+        // Vérifier si l'utilisateur est déjà authentifié
+        let userEmail = getStoredUserEmail();
+        
+        if (!userEmail) {
+            // Demander l'email utilisateur
+            userEmail = await promptForEmail();
             if (!userEmail) {
-                // Demander l'email utilisateur
-                userEmail = await promptForEmail();
-                if (!userEmail) {
-                    showLicenseError('Email requis pour accéder à l\'application');
-                    return;
-                }
-                storeUserEmail(userEmail);
-            }
-
-            // Vérifier la licence
-            console.log('[License Check] Vérification de la licence pour:', userEmail);
-            const licenseResult = await window.licenseService.checkUserLicense(userEmail);
-            
-            if (!licenseResult.valid) {
-                console.warn('[License Check] ❌ Licence invalide:', licenseResult.message);
-                clearStoredUserEmail();
-                showLicenseError(licenseResult.message || 'Licence invalide');
+                showLicenseError('Email requis pour accéder à l\'application');
                 return;
             }
+            storeUserEmail(userEmail);
+        }
 
-            console.log('[License Check] ✅ Licence valide pour:', userEmail);
-            console.log('[License Check] Rôle utilisateur:', licenseResult.user?.role);
-            
-            // Tracker la connexion
-            if (window.licenseService.trackEvent) {
-                await window.licenseService.trackEvent('user_login', {
-                    email: userEmail,
-                    role: licenseResult.user?.role,
-                    company: licenseResult.user?.company?.name
-                });
-            }
+        // Vérifier la licence
+        console.log('[License Check] Vérification de la licence pour:', userEmail);
+        const licenseResult = await window.licenseService.checkUserLicense(userEmail);
+        
+        if (!licenseResult.valid) {
+            console.warn('[License Check] ❌ Licence invalide:', licenseResult.message);
+            clearStoredUserEmail();
+            showLicenseError(licenseResult.message || 'Licence invalide');
+            return;
+        }
 
-            // Initialiser la page si tout est OK
-            if (window.initializePage) {
-                console.log('[License Check] Initialisation de la page...');
-                window.initializePage();
-            } else {
-                console.warn('[License Check] ⚠️ Fonction initializePage non trouvée');
-            }
+        console.log('[License Check] ✅ Licence valide pour:', userEmail);
+        console.log('[License Check] Rôle utilisateur:', licenseResult.user?.role);
+        
+        // Tracker la connexion
+        if (window.licenseService.trackEvent) {
+            await window.licenseService.trackEvent('user_login', {
+                email: userEmail,
+                role: licenseResult.user?.role,
+                company: licenseResult.user?.company?.name
+            });
+        }
+
+        // Initialiser la page si tout est OK
+        if (window.initializePage) {
+            console.log('[License Check] Initialisation de la page...');
+            window.initializePage();
+        } else {
+            console.warn('[License Check] ⚠️ Fonction initializePage non trouvée');
         }
 
     } catch (error) {
         console.error('[License Check] ❌ Erreur lors de la vérification de licence:', error);
-        
-        if (TEST_MODE || DEMO_MODE) {
-            // En mode test/demo, initialiser quand même
-            console.warn('[License Check] 🔄 Initialisation en mode dégradé');
-            if (window.initializePage) {
-                window.initializePage();
-            }
-        } else {
-            showLicenseError('Erreur de connexion au service de licences');
-        }
+        showLicenseError('Erreur de connexion au service de licences');
     }
 }
 
@@ -541,10 +478,8 @@ console.log(`
    - debugLicenseCheck() - Informations de debug
    - authManager - Gestionnaire d'authentification
 
-⚙️ Modes de fonctionnement:
+⚙️ Mode de fonctionnement:
    - Production: Authentification complète requise
-   - Demo: Authentification simplifiée
-   - Test: Accès sans authentification
 
 🔒 Rôles supportés:
    - super_admin: Accès complet à tout
