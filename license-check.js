@@ -1,5 +1,8 @@
 // Vérification des licences et redirection
 async function checkUserLicense() {
+    // MODE TEST - ACCÈS SANS AUTHENTIFICATION
+    const TEST_MODE = true; // Mettre à false pour activer l'authentification
+    
     // Attendre que le DOM soit chargé
     if (document.readyState !== 'complete') {
         window.addEventListener('load', checkUserLicense);
@@ -7,6 +10,39 @@ async function checkUserLicense() {
     }
 
     try {
+        // Initialiser Supabase d'abord
+        const initialized = await initializeSupabase();
+        if (!initialized) {
+            console.warn('[License Check] Supabase non initialisé - Mode test activé');
+            // En mode test, continuer même sans Supabase
+            if (!TEST_MODE) {
+                showLicenseError('Erreur de connexion au service');
+                return;
+            }
+        }
+
+        if (TEST_MODE) {
+            console.log('[License Check] 🧪 MODE TEST ACTIVÉ - Accès sans authentification');
+            
+            // Créer un utilisateur fictif pour les tests
+            authManager.currentUser = {
+                id: 'test-user-id',
+                email: 'test@example.com',
+                name: 'Utilisateur Test',
+                role: 'super_admin', // Donner tous les droits pour les tests
+                license_status: 'active',
+                license_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // +1 an
+                company_id: 'test-company-id'
+            };
+            
+            // Initialiser la page directement
+            if (window.initializePage) {
+                window.initializePage();
+            }
+            return;
+        }
+
+        // CODE NORMAL (quand TEST_MODE = false)
         // Vérifier l'authentification
         const isAuthenticated = await authManager.checkAuth();
         
@@ -30,7 +66,14 @@ async function checkUserLicense() {
 
     } catch (error) {
         console.error('Erreur lors de la vérification de licence:', error);
-        showLicenseError();
+        if (!TEST_MODE) {
+            showLicenseError();
+        } else {
+            // En mode test, initialiser quand même
+            if (window.initializePage) {
+                window.initializePage();
+            }
+        }
     }
 }
 
