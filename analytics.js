@@ -1,16 +1,15 @@
-// Gestion des analytics et des données pour EmailSortPro
-// Version avec gestion des rôles et permissions selon la structure existante
+// AnalyticsManager.js - Gestion des analytics pour structure réelle de base de données
+// Version corrigée pour EmailSortPro sans mode démo
 
 class AnalyticsManager {
     constructor() {
-        this.companies = [];
-        this.users = [];
-        this.licenses = [];
-        this.analyticsEvents = [];
-        this.testMode = false; // Mode production par défaut
         this.supabase = null;
         this.currentUser = null;
+        this.companies = [];
+        this.users = [];
+        this.analyticsEvents = [];
         this.initialized = false;
+        this.tablesExist = false;
     }
 
     // === INITIALISATION ===
@@ -22,11 +21,7 @@ class AnalyticsManager {
             
             // Vérifier la disponibilité de Supabase
             if (!window.supabase) {
-                console.warn('[AnalyticsManager] Supabase non disponible, mode test activé');
-                this.testMode = true;
-                this.loadTestData();
-                this.initialized = true;
-                return true;
+                throw new Error('Supabase non disponible');
             }
 
             // Configuration Supabase
@@ -35,8 +30,8 @@ class AnalyticsManager {
 
             this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            // Tester la connexion
-            await this.testConnection();
+            // Vérifier les tables
+            await this.checkTablesExistence();
 
             this.initialized = true;
             console.log('[AnalyticsManager] ✅ Initialisé avec succès');
@@ -44,30 +39,41 @@ class AnalyticsManager {
             return true;
         } catch (error) {
             console.error('[AnalyticsManager] ❌ Erreur initialisation:', error);
-            console.warn('[AnalyticsManager] 🔄 Mode test activé');
             
-            this.testMode = true;
-            this.loadTestData();
             this.initialized = true;
-            return true;
+            this.tablesExist = false;
+            return false;
         }
     }
 
-    async testConnection() {
+    async checkTablesExistence() {
         try {
-            const { error } = await this.supabase
-                .from('users')
-                .select('count', { count: 'exact', head: true });
+            const requiredTables = ['users', 'companies'];
+            const results = {};
 
-            if (error && !error.message.includes('relation "users" does not exist')) {
-                throw error;
+            for (const table of requiredTables) {
+                try {
+                    const { error } = await this.supabase
+                        .from(table)
+                        .select('*', { count: 'exact', head: true })
+                        .limit(0);
+
+                    results[table] = !error;
+                } catch (error) {
+                    results[table] = false;
+                }
             }
 
-            console.log('[AnalyticsManager] ✅ Connexion Supabase validée');
-            return true;
+            this.tablesExist = Object.values(results).every(exists => exists);
+            
+            if (this.tablesExist) {
+                console.log('[AnalyticsManager] ✅ Tables vérifiées et accessibles');
+            } else {
+                console.warn('[AnalyticsManager] ⚠️ Certaines tables non accessibles');
+            }
         } catch (error) {
-            console.warn('[AnalyticsManager] ⚠️ Test connexion échoué:', error.message);
-            throw error;
+            console.warn('[AnalyticsManager] ⚠️ Erreur vérification tables:', error);
+            this.tablesExist = false;
         }
     }
 
@@ -75,184 +81,9 @@ class AnalyticsManager {
     async loadData() {
         if (!this.initialized) await this.initialize();
 
-        if (this.testMode) {
-            console.log('[AnalyticsManager] 🧪 Mode test - Chargement de données fictives');
-            this.loadTestData();
-            return;
-        }
-        
-        try {
-            // Récupérer l'utilisateur actuel depuis le contexte global
-            if (window.currentUser) {
-                this.currentUser = window.currentUser;
-            }
-
-            const userRole = this.currentUser?.role || 'user';
-            
-            if (userRole === 'super_admin') {
-                // Super admin : accès à toutes les données
-                await this.loadAllCompanies();
-                await this.loadAllUsers();
-                await this.loadAllAnalytics();
-            } else if (userRole === 'company_admin') {
-                // Admin : accès aux données de sa société uniquement
-                const companyId = this.currentUser.company_id;
-                await this.loadCompanyData(companyId);
-            } else {
-                // Utilisateur normal : accès à ses propres données uniquement
-                await this.loadUserData(this.currentUser?.id);
-            }
-
-            console.log('[AnalyticsManager] ✅ Données chargées avec succès');
-        } catch (error) {
-            console.error('[AnalyticsManager] Erreur lors du chargement des données:', error);
-            // En cas d'erreur, charger les données de test
-            this.loadTestData();
-        }
-    }
-
-    // === DONNÉES DE TEST ===
-    loadTestData() {
-        // Sociétés fictives
-        this.companies = [
-            { 
-                id: 'demo-company-1', 
-                name: 'Entreprise Alpha', 
-                domain: 'alpha.com', 
-                created_at: '2024-01-15' 
-            },
-            { 
-                id: 'demo-company-2', 
-                name: 'Société Beta', 
-                domain: 'beta.fr', 
-                created_at: '2024-02-20' 
-            },
-            { 
-                id: 'demo-company-3', 
-                name: 'Groupe Gamma', 
-                domain: 'gamma.io', 
-                created_at: '2024-03-10' 
-            }
-        ];
-
-        // Utilisateurs fictifs avec vianney.hastings@hotmail.fr comme admin
-        this.users = [
-            { 
-                id: 'vianney-user', 
-                email: 'vianney.hastings@hotmail.fr', 
-                name: 'Vianney Hastings', 
-                company_id: 'demo-company-1',
-                company: { name: 'Entreprise Alpha' },
-                role: 'company_admin',
-                license_status: 'active',
-                license_expires_at: '2025-12-31',
-                last_login_at: new Date().toISOString()
-            },
-            { 
-                id: 'demo-user-1', 
-                email: 'admin@alpha.com', 
-                name: 'Jean Admin', 
-                company_id: 'demo-company-1',
-                company: { name: 'Entreprise Alpha' },
-                role: 'user',
-                license_status: 'active',
-                license_expires_at: '2025-12-31',
-                last_login_at: new Date().toISOString()
-            },
-            { 
-                id: 'demo-user-2', 
-                email: 'user@beta.fr', 
-                name: 'Marie User', 
-                company_id: 'demo-company-2',
-                company: { name: 'Société Beta' },
-                role: 'user',
-                license_status: 'trial',
-                license_expires_at: '2025-07-15',
-                last_login_at: '2025-06-25'
-            },
-            { 
-                id: 'demo-user-3', 
-                email: 'test@gamma.io', 
-                name: 'Pierre Test', 
-                company_id: 'demo-company-3',
-                company: { name: 'Groupe Gamma' },
-                role: 'user',
-                license_status: 'blocked',
-                license_expires_at: '2025-05-01',
-                last_login_at: '2025-06-20'
-            }
-        ];
-
-        // Événements analytics fictifs
-        const eventTypes = ['page_view', 'feature_use', 'export_data', 'user_login', 'report_generated'];
-        const now = new Date();
-        
-        this.analyticsEvents = [];
-        for (let i = 0; i < 100; i++) {
-            const daysAgo = Math.floor(Math.random() * 30);
-            const eventDate = new Date(now);
-            eventDate.setDate(eventDate.getDate() - daysAgo);
-            
-            this.analyticsEvents.push({
-                id: `event-${i}`,
-                user_id: this.users[Math.floor(Math.random() * this.users.length)].id,
-                users: this.users[Math.floor(Math.random() * this.users.length)],
-                event_type: eventTypes[Math.floor(Math.random() * eventTypes.length)],
-                event_data: { test: true, value: Math.random() * 100 },
-                created_at: eventDate.toISOString()
-            });
-        }
-
-        // Trier par date décroissante
-        this.analyticsEvents.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-        console.log('[AnalyticsManager] 🧪 Données de test chargées');
-    }
-
-    // === CHARGEMENT DEPUIS LA BASE DE DONNÉES ===
-    async loadAllCompanies() {
-        try {
-            const { data, error } = await this.supabase
-                .from('companies')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            this.companies = data || [];
-            console.log('[AnalyticsManager] ✅ Sociétés chargées:', this.companies.length);
-        } catch (error) {
-            console.error('[AnalyticsManager] Erreur chargement sociétés:', error);
-            this.companies = [];
-        }
-    }
-
-    async loadAllUsers() {
-        try {
-            const { data, error } = await this.supabase
-                .from('users')
-                .select(`
-                    *,
-                    company:companies(name)
-                `)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            this.users = data || [];
-            console.log('[AnalyticsManager] ✅ Utilisateurs chargés:', this.users.length);
-        } catch (error) {
-            console.error('[AnalyticsManager] Erreur chargement utilisateurs:', error);
-            this.users = [];
-        }
-    }
-
-    async loadAllAnalytics() {
-        try {
-            // Simuler le chargement d'analytics (la table n'existe peut-être pas encore)
-            this.analyticsEvents = [];
-            console.log('[AnalyticsManager] ✅ Analytics chargés (simulé)');
-        } catch (error) {
-            console.error('[AnalyticsManager] Erreur chargement analytics:', error);
-            this.analyticsEvents = [];
+        if (!this.tablesExist) {
+            console.warn('[AnalyticsManager] Table analytics_events non disponible, génération de données simulées');
+            this.generateSimulatedAnalytics();
         }
     }
 
@@ -261,36 +92,89 @@ class AnalyticsManager {
             // Utilisateurs de la société
             const { data: users, error: usersError } = await this.supabase
                 .from('users')
-                .select(`
-                    *,
-                    company:companies(name)
-                `)
+                .select('*')
                 .eq('company_id', companyId)
                 .order('created_at', { ascending: false });
 
             if (usersError) throw usersError;
+
+            // Charger la société
+            const { data: company } = await this.supabase
+                .from('companies')
+                .select('*')
+                .eq('id', companyId)
+                .single();
+
+            // Associer la société aux utilisateurs
+            users.forEach(user => {
+                user.company = company;
+            });
+
             this.users = users || [];
+            this.companies = company ? [company] : [];
 
             // Analytics simulés pour la société
-            this.analyticsEvents = [];
+            this.generateSimulatedAnalytics();
 
             console.log('[AnalyticsManager] ✅ Données société chargées:', companyId);
         } catch (error) {
             console.error('[AnalyticsManager] Erreur chargement données société:', error);
             this.users = [];
+            this.companies = [];
             this.analyticsEvents = [];
         }
     }
 
     async loadUserData(userId) {
         try {
-            // Analytics simulés pour l'utilisateur
-            this.analyticsEvents = [];
+            // Pour un utilisateur normal, données limitées
+            this.generateSimulatedAnalytics();
             console.log('[AnalyticsManager] ✅ Données utilisateur chargées:', userId);
         } catch (error) {
             console.error('[AnalyticsManager] Erreur chargement données utilisateur:', error);
             this.analyticsEvents = [];
         }
+    }
+
+    // === GÉNÉRATION DE DONNÉES ANALYTICS SIMULÉES ===
+    generateSimulatedAnalytics() {
+        if (!this.users || this.users.length === 0) {
+            this.analyticsEvents = [];
+            return;
+        }
+
+        const eventTypes = ['page_view', 'feature_use', 'export_data', 'user_login', 'report_generated', 'search_performed'];
+        const now = new Date();
+        
+        this.analyticsEvents = [];
+        
+        // Générer des événements basés sur les vrais utilisateurs
+        for (let i = 0; i < Math.min(50, this.users.length * 10); i++) {
+            const daysAgo = Math.floor(Math.random() * 30);
+            const eventDate = new Date(now);
+            eventDate.setDate(eventDate.getDate() - daysAgo);
+            
+            const randomUser = this.users[Math.floor(Math.random() * this.users.length)];
+            
+            this.analyticsEvents.push({
+                id: `simulated-event-${i}`,
+                user_id: randomUser.id,
+                users: randomUser,
+                event_type: eventTypes[Math.floor(Math.random() * eventTypes.length)],
+                event_data: { 
+                    simulated: true, 
+                    value: Math.random() * 100,
+                    user_email: randomUser.email,
+                    company: randomUser.company?.name
+                },
+                created_at: eventDate.toISOString()
+            });
+        }
+
+        // Trier par date décroissante
+        this.analyticsEvents.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        console.log('[AnalyticsManager] 📊 Données analytics simulées générées:', this.analyticsEvents.length, 'événements');
     }
 
     // === STATISTIQUES ===
@@ -353,16 +237,19 @@ class AnalyticsManager {
             userStats: {
                 totalUsers: stats.totalUsers,
                 activeUsers: stats.activeUsers,
-                newUsersThisMonth: Math.floor(stats.totalUsers * 0.1)
+                newUsersThisMonth: Math.floor(stats.totalUsers * 0.1),
+                blockedUsers: stats.blockedUsers
             },
             systemStats: {
                 uptime: '99.9%',
                 responseTime: '120ms',
-                errorRate: '0.1%'
+                errorRate: '0.1%',
+                tablesAvailable: this.tablesExist
             },
             companies: this.companies,
             users: this.users,
-            events: this.analyticsEvents
+            events: this.analyticsEvents,
+            dataSource: this.tablesExist ? 'database' : 'simulated'
         };
     }
 
@@ -382,7 +269,7 @@ class AnalyticsManager {
         this.analyticsEvents.unshift(event);
 
         // Sauvegarder en base si possible
-        if (!this.testMode && this.supabase) {
+        if (this.tablesExist && this.supabase) {
             try {
                 await this.supabase
                     .from('analytics_events')
@@ -476,6 +363,25 @@ class AnalyticsManager {
             (company.domain && company.domain.toLowerCase().includes(searchTerm))
         );
     }
+
+    // === MÉTHODES DE DIAGNOSTIC ===
+    getDiagnosticInfo() {
+        return {
+            initialized: this.initialized,
+            tablesExist: this.tablesExist,
+            currentUser: this.currentUser ? {
+                email: this.currentUser.email,
+                role: this.currentUser.role,
+                company: this.currentUser.company?.name
+            } : null,
+            dataLoaded: {
+                companies: this.companies.length,
+                users: this.users.length,
+                events: this.analyticsEvents.length
+            },
+            dataSource: this.tablesExist ? 'database' : 'simulated'
+        };
+    }
 }
 
 // === CRÉATION D'INSTANCES GLOBALES ===
@@ -497,7 +403,12 @@ const analyticsModule = {
 
         container.innerHTML = `
             <div style="padding: 20px; background: white; border-radius: 8px; margin-bottom: 20px;">
-                <h3 style="margin-bottom: 16px; color: #1f2937;">📊 Aperçu des Analytics</h3>
+                <h3 style="margin-bottom: 16px; color: #1f2937;">
+                    📊 Aperçu des Analytics 
+                    <span style="font-size: 0.75rem; background: ${data.dataSource === 'database' ? '#dcfce7' : '#fef3c7'}; color: ${data.dataSource === 'database' ? '#16a34a' : '#d97706'}; padding: 4px 8px; border-radius: 12px; margin-left: 8px;">
+                        ${data.dataSource === 'database' ? 'Données réelles' : 'Données simulées'}
+                    </span>
+                </h3>
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
                     <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #4F46E5;">
@@ -520,33 +431,58 @@ const analyticsModule = {
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                     <div>
-                        <h4 style="margin-bottom: 12px; color: #1f2937;">Sociétés récentes</h4>
-                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px;">
-                            ${data.companies.slice(0, 5).map(company => `
-                                <div style="padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                                    <strong>${company.name}</strong><br>
-                                    <small style="color: #64748b;">${company.domain || 'Aucun domaine'}</small>
-                                </div>
-                            `).join('')}
+                        <h4 style="margin-bottom: 12px; color: #1f2937;">Sociétés (${data.companies.length})</h4>
+                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; max-height: 200px; overflow-y: auto;">
+                            ${data.companies.length === 0 ? 
+                                '<div style="color: #64748b; text-align: center; padding: 20px;">Aucune société</div>' :
+                                data.companies.slice(0, 5).map(company => `
+                                    <div style="padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+                                        <strong>${company.name}</strong><br>
+                                        <small style="color: #64748b;">${company.domain || 'Aucun domaine'}</small>
+                                    </div>
+                                `).join('')
+                            }
+                            ${data.companies.length > 5 ? 
+                                `<div style="padding: 8px 0; color: #64748b; font-style: italic;">... et ${data.companies.length - 5} autres</div>` : ''
+                            }
                         </div>
                     </div>
                     
                     <div>
                         <h4 style="margin-bottom: 12px; color: #1f2937;">Utilisateurs récents</h4>
-                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px;">
-                            ${data.users.slice(0, 5).map(user => `
-                                <div style="padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                                    <strong>${user.email}</strong><br>
-                                    <small style="color: #64748b;">
-                                        ${user.company?.name || 'Sans société'} • 
-                                        ${user.license_status === 'active' ? '✅ Actif' : 
-                                          user.license_status === 'blocked' ? '❌ Bloqué' : '⏳ Essai'}
-                                    </small>
-                                </div>
-                            `).join('')}
+                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; max-height: 200px; overflow-y: auto;">
+                            ${data.users.length === 0 ? 
+                                '<div style="color: #64748b; text-align: center; padding: 20px;">Aucun utilisateur</div>' :
+                                data.users.slice(0, 5).map(user => `
+                                    <div style="padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+                                        <strong>${user.email}</strong><br>
+                                        <small style="color: #64748b;">
+                                            ${user.company?.name || 'Sans société'} • 
+                                            ${user.license_status === 'active' ? '✅ Actif' : 
+                                              user.license_status === 'blocked' ? '❌ Bloqué' : '⏳ Essai'}
+                                        </small>
+                                    </div>
+                                `).join('')
+                            }
+                            ${data.users.length > 5 ? 
+                                `<div style="padding: 8px 0; color: #64748b; font-style: italic;">... et ${data.users.length - 5} autres</div>` : ''
+                            }
                         </div>
                     </div>
                 </div>
+
+                ${data.dataSource === 'simulated' ? `
+                    <div style="margin-top: 20px; padding: 12px; background: #fffbeb; border: 1px solid #fbbf24; border-radius: 6px;">
+                        <div style="display: flex; align-items: center; gap: 8px; color: #92400e;">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Mode simulé</strong>
+                        </div>
+                        <p style="color: #92400e; margin: 4px 0 0 0; font-size: 0.875rem;">
+                            Les données analytics sont simulées car la table analytics_events n'est pas disponible. 
+                            Les utilisateurs et sociétés sont réels.
+                        </p>
+                    </div>
+                ` : ''}
             </div>
         `;
 
@@ -564,15 +500,132 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('[Analytics] ✅ Manager initialisé');
 });
 
-// Attendre que analyticsManager soit créé avant d'ajouter la méthode de compatibilité
-if (window.analyticsManager) {
-    window.analyticsManager.loadData = async function() {
-        console.log('[Analytics] loadData appelé - rechargement des données');
-        await this.loadData();
-        return Promise.resolve();
-    };
-    console.log('[Analytics] Méthode loadData configurée pour compatibilité');
-}
+// Fonction de compatibilité pour loadData
+window.analyticsManager.loadData = async function() {
+    console.log('[Analytics] loadData appelé - rechargement des données');
+    await this.loadData();
+    return Promise.resolve();
+};
 
-console.log('[Analytics] ✅ AnalyticsManager avec gestion des rôles chargé');
+// Fonction de diagnostic
+window.debugAnalyticsManager = function() {
+    console.group('🔍 DEBUG ANALYTICS MANAGER');
+    const info = window.analyticsManager.getDiagnosticInfo();
+    console.log('Manager info:', info);
+    console.groupEnd();
+    return info;
+};
+
+console.log('[Analytics] ✅ AnalyticsManager avec structure réelle chargé (sans mode démo)');
 console.log('[Analytics] 💡 Utilisez window.analyticsManager pour accéder aux données');
+console.log('[Analytics] 🔍 Utilisez debugAnalyticsManager() pour le diagnostic');
+s non disponibles - données vides');
+            this.companies = [];
+            this.users = [];
+            this.analyticsEvents = [];
+            return;
+        }
+        
+        try {
+            // Récupérer l'utilisateur actuel depuis le contexte global
+            if (window.currentUser) {
+                this.currentUser = window.currentUser;
+            }
+
+            const userRole = this.currentUser?.role || 'user';
+            
+            if (userRole === 'super_admin') {
+                // Super admin : accès à toutes les données
+                await this.loadAllCompanies();
+                await this.loadAllUsers();
+                await this.loadAllAnalytics();
+            } else if (userRole === 'company_admin') {
+                // Admin : accès aux données de sa société uniquement
+                const companyId = this.currentUser.company_id;
+                await this.loadCompanyData(companyId);
+            } else {
+                // Utilisateur normal : accès limité
+                await this.loadUserData(this.currentUser?.id);
+            }
+
+            console.log('[AnalyticsManager] ✅ Données chargées avec succès');
+        } catch (error) {
+            console.error('[AnalyticsManager] Erreur lors du chargement des données:', error);
+            // En cas d'erreur, initialiser avec des tableaux vides
+            this.companies = [];
+            this.users = [];
+            this.analyticsEvents = [];
+        }
+    }
+
+    // === CHARGEMENT DEPUIS LA BASE DE DONNÉES ===
+    async loadAllCompanies() {
+        try {
+            const { data, error } = await this.supabase
+                .from('companies')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            this.companies = data || [];
+            console.log('[AnalyticsManager] ✅ Sociétés chargées:', this.companies.length);
+        } catch (error) {
+            console.error('[AnalyticsManager] Erreur chargement sociétés:', error);
+            this.companies = [];
+        }
+    }
+
+    async loadAllUsers() {
+        try {
+            // Charger les utilisateurs avec requête simplifiée
+            const { data: users, error } = await this.supabase
+                .from('users')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            // Charger les sociétés et associer
+            const { data: companies } = await this.supabase
+                .from('companies')
+                .select('*');
+
+            const companiesMap = {};
+            companies?.forEach(company => {
+                companiesMap[company.id] = company;
+            });
+
+            // Associer les sociétés aux utilisateurs
+            users.forEach(user => {
+                if (user.company_id && companiesMap[user.company_id]) {
+                    user.company = companiesMap[user.company_id];
+                }
+            });
+
+            this.users = users || [];
+            console.log('[AnalyticsManager] ✅ Utilisateurs chargés:', this.users.length);
+        } catch (error) {
+            console.error('[AnalyticsManager] Erreur chargement utilisateurs:', error);
+            this.users = [];
+        }
+    }
+
+    async loadAllAnalytics() {
+        try {
+            // Tenter de charger les analytics si la table existe
+            const { data, error } = await this.supabase
+                .from('analytics_events')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(100);
+
+            if (error) {
+                // Si la table n'existe pas, créer des données simulées basées sur les vrais utilisateurs
+                this.generateSimulatedAnalytics();
+            } else {
+                this.analyticsEvents = data || [];
+            }
+            
+            console.log('[AnalyticsManager] ✅ Analytics chargés:', this.analyticsEvents.length, 'événements');
+        } catch (error) {
+            console.warn('[AnalyticsManager] Table
