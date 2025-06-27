@@ -35,6 +35,16 @@ async function checkUserLicense() {
                 company_id: 'test-company-id'
             };
             
+            // Ajouter la méthode loadData si elle n'existe pas dans votre analyticsManager
+            if (window.analyticsManager && !window.analyticsManager.loadData) {
+                console.log('[License Check] Ajout de loadData pour compatibilité');
+                window.analyticsManager.loadData = async function() {
+                    console.log('[Analytics] loadData appelé en mode test');
+                    // Votre analyticsManager v2.0 semble déjà avoir ses propres données
+                    return Promise.resolve();
+                };
+            }
+            
             // Initialiser la page directement
             if (window.initializePage) {
                 window.initializePage();
