@@ -304,13 +304,23 @@ class AnalyticsManager {
     }
 }
 
-// Ajouter une méthode loadData vide pour la compatibilité
-window.analyticsManager.loadData = async function() {
-    console.log('[Analytics] loadData appelé - utilisation des données existantes');
-    // Votre analyticsManager v2.0 a déjà ses propres données
-    // Cette fonction est juste pour la compatibilité
-    return Promise.resolve();
-};
-
-// Instance globale déjà créée par votre code
-console.log('[Analytics] Méthode loadData ajoutée pour compatibilité');
+// Attendre que analyticsManager soit créé avant d'ajouter loadData
+if (window.analyticsManager) {
+    window.analyticsManager.loadData = async function() {
+        console.log('[Analytics] loadData appelé - utilisation des données existantes');
+        return Promise.resolve();
+    };
+    console.log('[Analytics] Méthode loadData ajoutée pour compatibilité');
+} else {
+    // Si analyticsManager n'existe pas encore, l'ajouter quand il sera créé
+    const checkInterval = setInterval(() => {
+        if (window.analyticsManager) {
+            window.analyticsManager.loadData = async function() {
+                console.log('[Analytics] loadData appelé - utilisation des données existantes');
+                return Promise.resolve();
+            };
+            console.log('[Analytics] Méthode loadData ajoutée pour compatibilité (après création)');
+            clearInterval(checkInterval);
+        }
+    }, 100);
+}
