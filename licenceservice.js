@@ -1,5 +1,5 @@
-// LicenseService.js - Service de gestion des licences avec structure réelle de la base
-// Version corrigée pour fonctionner avec la vraie structure Supabase sans mode démo
+// LicenseService.js - Service de gestion des licences EmailSortPro
+// Version complète sans mode démo
 
 class LicenseService {
     constructor() {
@@ -38,7 +38,6 @@ class LicenseService {
             return true;
         } catch (error) {
             console.error('[LicenseService] ❌ Erreur initialisation:', error);
-            console.warn('[LicenseService] 🔄 Mode dégradé désactivé - Service non disponible');
             
             // Pas de mode dégradé - le service ne fonctionne que si les tables existent
             this.initialized = false;
@@ -661,6 +660,6 @@ window.diagnoseLicenseService = async function() {
     return info;
 };
 
-console.log('✅ LicenseService avec structure réelle chargé (sans mode démo)');
+console.log('✅ LicenseService EmailSortPro chargé (sans mode démo)');
 console.log('💡 Utilisez window.licenseService pour accéder au service');
 console.log('🔍 Utilisez diagnoseLicenseService() pour le diagnostic');
