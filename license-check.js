@@ -25,27 +25,59 @@ async function checkUserLicense() {
             console.log('[License Check] 🧪 MODE TEST ACTIVÉ - Accès sans authentification');
             
             // Créer un utilisateur fictif pour les tests
-            authManager.currentUser = {
-                id: 'test-user-id',
-                email: 'test@example.com',
-                name: 'Utilisateur Test',
-                role: 'super_admin', // Donner tous les droits pour les tests
-                license_status: 'active',
-                license_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // +1 an
-                company_id: 'test-company-id'
-            };
-            
-            // Ajouter la méthode loadData si elle n'existe pas dans votre analyticsManager
-            if (window.analyticsManager && !window.analyticsManager.loadData) {
-                console.log('[License Check] Ajout de loadData pour compatibilité');
-                window.analyticsManager.loadData = async function() {
-                    console.log('[Analytics] loadData appelé en mode test');
-                    // Votre analyticsManager v2.0 semble déjà avoir ses propres données
-                    return Promise.resolve();
+            if (!authManager.currentUser) {
+                authManager.currentUser = {
+                    id: 'test-user-id',
+                    email: 'test@example.com',
+                    name: 'Utilisateur Test',
+                    role: 'super_admin', // Donner tous les droits pour les tests
+                    license_status: 'active',
+                    license_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // +1 an
+                    company_id: 'test-company-id'
                 };
             }
             
-            // Initialiser la page directement
+            // Créer une fonction initializePage personnalisée si elle n'existe pas
+            if (!window.initializePage || window.initializePage.toString().includes('loadData')) {
+                console.log('[License Check] Création d\'une fonction initializePage adaptée');
+                window.initializePageOriginal = window.initializePage;
+                window.initializePage = async function() {
+                    try {
+                        console.log('[License Check] Initialisation de la page en mode test');
+                        
+                        // Afficher les informations utilisateur si la fonction existe
+                        if (window.displayUserInfo) {
+                            window.displayUserInfo();
+                        }
+                        
+                        // Afficher les stats si la fonction existe
+                        if (window.displayStats) {
+                            window.displayStats();
+                        }
+                        
+                        // Afficher les tableaux si la fonction existe
+                        if (window.displayTables) {
+                            window.displayTables();
+                        }
+                        
+                        // Créer les graphiques si la fonction existe
+                        if (window.createCharts) {
+                            window.createCharts();
+                        }
+                        
+                        // Tracker l'événement si votre analyticsManager le supporte
+                        if (window.analyticsManager && window.analyticsManager.trackEvent) {
+                            window.analyticsManager.trackEvent('page_view', { page: 'analytics' });
+                        }
+                        
+                        console.log('[License Check] Page initialisée avec succès');
+                    } catch (error) {
+                        console.error('[License Check] Erreur lors de l\'initialisation:', error);
+                    }
+                };
+            }
+            
+            // Initialiser la page
             if (window.initializePage) {
                 window.initializePage();
             }
