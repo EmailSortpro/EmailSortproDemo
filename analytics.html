@@ -1016,6 +1016,24 @@
 
         // === AUTHENTIFICATION UTILISATEUR ===
         async function initializeUser() {
+            // Vérifier d'abord que les tables existent
+            try {
+                const { error: testError } = await supabase
+                    .from('users')
+                    .select('count', { count: 'exact', head: true })
+                    .limit(0);
+
+                if (testError) {
+                    console.error('Table users non accessible:', testError);
+                    showToast('Base de données non accessible. Vérifiez votre configuration Supabase.', 'error');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Erreur connexion Supabase:', error);
+                showToast('Impossible de se connecter à la base de données', 'error');
+                return false;
+            }
+
             // Récupérer l'email utilisateur (en production, ceci viendrait de l'auth)
             let userEmail = localStorage.getItem('userEmail');
             
@@ -1029,13 +1047,10 @@
             }
 
             try {
-                // Rechercher l'utilisateur dans la base
+                // Rechercher l'utilisateur dans la base - requête simplifiée
                 let { data: user, error } = await supabase
                     .from('users')
-                    .select(`
-                        *,
-                        company:companies(*)
-                    `)
+                    .select('*')
                     .eq('email', userEmail.toLowerCase())
                     .single();
 
@@ -1046,13 +1061,30 @@
                     throw error;
                 }
 
+                // Si l'utilisateur a une company_id, charger la société séparément
+                if (user && user.company_id) {
+                    const { data: company } = await supabase
+                        .from('companies')
+                        .select('*')
+                        .eq('id', user.company_id)
+                        .single();
+                    
+                    user.company = company;
+                }
+
                 currentUser = user;
                 window.currentUser = user; // Exposer globalement
                 updateUserInterface();
                 return true;
             } catch (error) {
                 console.error('Erreur lors de l\'initialisation utilisateur:', error);
-                showToast('Erreur lors de l\'authentification', 'error');
+                console.error('Détails de l\'erreur:', {
+                    message: error.message,
+                    code: error.code,
+                    details: error.details,
+                    hint: error.hint
+                });
+                showToast('Erreur lors de l\'authentification: ' + (error.message || 'Erreur inconnue'), 'error');
                 return false;
             }
         }
@@ -1081,13 +1113,13 @@
                             last_login_at: new Date().toISOString()
                         }
                     ])
-                    .select(`
-                        *,
-                        company:companies(*)
-                    `)
+                    .select('*')
                     .single();
 
                 if (error) throw error;
+
+                // Ajouter la société à l'objet utilisateur
+                newUser.company = company;
 
                 showToast(`Utilisateur créé avec succès. Rôle: ${role}`, 'success');
                 return newUser;
@@ -1215,10 +1247,7 @@
             try {
                 let query = supabase
                     .from('users')
-                    .select(`
-                        *,
-                        company:companies(*)
-                    `);
+                    .select('*');
 
                 // Si admin de société, filtrer par société
                 if (currentUser.role === 'company_admin') {
@@ -1228,6 +1257,28 @@
                 const { data: users, error } = await query.order('created_at', { ascending: false });
 
                 if (error) throw error;
+
+                // Charger les sociétés séparément si nécessaire
+                if (users.length > 0) {
+                    const companyIds = [...new Set(users.map(u => u.company_id).filter(id => id))];
+                    if (companyIds.length > 0) {
+                        const { data: companies } = await supabase
+                            .from('companies')
+                            .select('*')
+                            .in('id', companyIds);
+
+                        const companiesMap = {};
+                        companies?.forEach(company => {
+                            companiesMap[company.id] = company;
+                        });
+
+                        users.forEach(user => {
+                            if (user.company_id && companiesMap[user.company_id]) {
+                                user.company = companiesMap[user.company_id];
+                            }
+                        });
+                    }
+                }
 
                 const grouped = groupUsersByCompany(users);
                 groupedUsers = grouped;
@@ -1524,10 +1575,7 @@
             try {
                 let query = supabase
                     .from('users')
-                    .select(`
-                        *,
-                        company:companies(*)
-                    `);
+                    .select('*');
 
                 // Si admin de société, filtrer par société
                 if (currentUser.role === 'company_admin') {
@@ -1537,6 +1585,28 @@
                 const { data: users, error } = await query.order('created_at', { ascending: false });
 
                 if (error) throw error;
+
+                // Charger les sociétés séparément si nécessaire
+                if (users.length > 0) {
+                    const companyIds = [...new Set(users.map(u => u.company_id).filter(id => id))];
+                    if (companyIds.length > 0) {
+                        const { data: companies } = await supabase
+                            .from('companies')
+                            .select('*')
+                            .in('id', companyIds);
+
+                        const companiesMap = {};
+                        companies?.forEach(company => {
+                            companiesMap[company.id] = company;
+                        });
+
+                        users.forEach(user => {
+                            if (user.company_id && companiesMap[user.company_id]) {
+                                user.company = companiesMap[user.company_id];
+                            }
+                        });
+                    }
+                }
 
                 renderAllUsersTable(users);
             } catch (error) {
@@ -1659,10 +1729,7 @@
             try {
                 let query = supabase
                     .from('users')
-                    .select(`
-                        *,
-                        company:companies(*)
-                    `)
+                    .select('*')
                     .eq('license_status', 'blocked');
 
                 // Si admin de société, filtrer par société
@@ -1673,6 +1740,28 @@
                 const { data: blockedUsers, error } = await query.order('updated_at', { ascending: false });
 
                 if (error) throw error;
+
+                // Charger les sociétés séparément si nécessaire
+                if (blockedUsers.length > 0) {
+                    const companyIds = [...new Set(blockedUsers.map(u => u.company_id).filter(id => id))];
+                    if (companyIds.length > 0) {
+                        const { data: companies } = await supabase
+                            .from('companies')
+                            .select('*')
+                            .in('id', companyIds);
+
+                        const companiesMap = {};
+                        companies?.forEach(company => {
+                            companiesMap[company.id] = company;
+                        });
+
+                        blockedUsers.forEach(user => {
+                            if (user.company_id && companiesMap[user.company_id]) {
+                                user.company = companiesMap[user.company_id];
+                            }
+                        });
+                    }
+                }
 
                 renderBlockedAccess(blockedUsers);
             } catch (error) {
