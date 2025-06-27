@@ -62,9 +62,19 @@ async function initializeSupabase() {
             
             // Si toujours pas trouvé
             if (!SUPABASE_URL) {
-                console.warn('[Config] Variables VITE non trouvées - Vérifiez votre configuration Netlify');
+                console.warn('[Config] Variables VITE non trouvées - Mode test avec valeurs par défaut');
                 console.log('[Config] Variables disponibles:', Object.keys(window).filter(k => k.includes('VITE')));
-                throw new Error('Variables Supabase non configurées. Configurez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY sur Netlify.');
+                
+                // En mode test/développement, utiliser des valeurs par défaut
+                if (window.location.hostname === 'localhost' || window.location.hostname.includes('netlify.app')) {
+                    console.warn('[Config] Utilisation de valeurs de test - Configurez vos variables sur Netlify');
+                    // Ces valeurs ne fonctionneront pas pour la vraie connexion
+                    // mais permettent à la page de se charger
+                    SUPABASE_URL = 'https://placeholder.supabase.co';
+                    SUPABASE_ANON_KEY = 'placeholder-key';
+                } else {
+                    throw new Error('Variables Supabase non configurées. Configurez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY sur Netlify.');
+                }
             }
         }
 
