@@ -304,5 +304,13 @@ class AnalyticsManager {
     }
 }
 
-// Instance globale
-window.analyticsManager = new AnalyticsManager();
+// Ajouter une méthode loadData vide pour la compatibilité
+window.analyticsManager.loadData = async function() {
+    console.log('[Analytics] loadData appelé - utilisation des données existantes');
+    // Votre analyticsManager v2.0 a déjà ses propres données
+    // Cette fonction est juste pour la compatibilité
+    return Promise.resolve();
+};
+
+// Instance globale déjà créée par votre code
+console.log('[Analytics] Méthode loadData ajoutée pour compatibilité');
