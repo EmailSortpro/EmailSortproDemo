@@ -568,7 +568,7 @@ console.log(`
    - Diagnostic: await diagnoseSupabase()
 
 ⚙️ Base de données:
-   - URL: https://oxyiamruvyliueecpaam.supabase.co
+   - URL: https://kbhxbisexpbmclqhadmq.supabase.co
    - Mode: Production
    - Tables requises: users, companies
    - Tables optionnelles: analytics_events, admin_actions
