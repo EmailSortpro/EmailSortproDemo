@@ -29,25 +29,11 @@ async function initializeSupabase() {
             SUPABASE_URL = window.VITE_SUPABASE_URL;
             SUPABASE_ANON_KEY = window.VITE_SUPABASE_ANON_KEY;
         } else {
-            // Fallback : appel à une fonction Netlify
-            const response = await fetch('/.netlify/functions/get-supabase-config', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    // Ajouter un token simple pour sécuriser l'endpoint
-                    accessKey: 'analytics-dashboard-2025'
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error('Impossible de récupérer la configuration');
-            }
-
-            const config = await response.json();
-            SUPABASE_URL = config.url;
-            SUPABASE_ANON_KEY = config.anonKey;
+            // En mode test, utiliser des valeurs par défaut
+            console.warn('[Config] Variables VITE non trouvées - Mode test activé');
+            // Vous pouvez mettre des valeurs de test ici si nécessaire
+            SUPABASE_URL = 'https://test.supabase.co';
+            SUPABASE_ANON_KEY = 'test-key';
         }
 
         // Vérifier que les variables sont bien définies
