@@ -20,6 +20,12 @@ const USER_ROLES = {
 
 // Fonction pour récupérer la configuration depuis les variables d'environnement Netlify
 async function initializeSupabase() {
+    // Vérifier si déjà initialisé
+    if (window.supabaseClient) {
+        console.log('[Config] Supabase déjà initialisé');
+        return true;
+    }
+    
     try {
         // Dans un contexte Netlify, les variables VITE_ sont exposées côté client lors du build
         // Si elles ne sont pas disponibles, on fait un appel à une fonction serverless
