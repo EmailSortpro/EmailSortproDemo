@@ -991,6 +991,30 @@
         let groupedUsers = {};
         let currentUser = null;
 
+        // === TEST DE CONNEXION SUPABASE ===
+        async function testSupabaseConnection() {
+            try {
+                console.log('[Analytics] Test de connexion Supabase...');
+                
+                // Test simple pour vérifier la connexion
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('count')
+                    .limit(1);
+
+                if (error) {
+                    console.error('[Analytics] Erreur de connexion:', error);
+                    return { connected: false, error: error };
+                }
+
+                console.log('[Analytics] ✅ Connexion Supabase réussie');
+                return { connected: true };
+            } catch (error) {
+                console.error('[Analytics] Erreur lors du test:', error);
+                return { connected: false, error: error };
+            }
+        }
+
         // === FONCTIONS DE TOAST ===
         function showToast(message, type = 'info', duration = 5000) {
             const container = document.getElementById('toastContainer');
@@ -1025,7 +1049,35 @@
 
                 if (testError) {
                     console.error('Table users non accessible:', testError);
-                    showToast('Base de données non accessible. Vérifiez votre configuration Supabase.', 'error');
+                    
+                    // Afficher un message d'aide détaillé
+                    const helpMessage = `
+                        <div style="max-width: 800px; margin: 50px auto; padding: 20px; background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px;">
+                            <h2 style="color: #dc2626; margin-bottom: 16px;">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Base de données non configurée
+                            </h2>
+                            <p style="color: #991b1b; margin-bottom: 16px;">
+                                Les tables nécessaires n'existent pas dans votre base de données Supabase.
+                            </p>
+                            <div style="background: white; padding: 16px; border-radius: 6px; margin-bottom: 16px;">
+                                <h3 style="color: #1f2937; margin-bottom: 12px;">Pour configurer la base de données :</h3>
+                                <ol style="color: #4b5563; line-height: 1.8;">
+                                    <li>Connectez-vous à votre tableau de bord Supabase</li>
+                                    <li>Allez dans l'éditeur SQL</li>
+                                    <li>Exécutez le script SQL fourni (create-tables.sql)</li>
+                                    <li>Rechargez cette page</li>
+                                </ol>
+                            </div>
+                            <div style="background: #f3f4f6; padding: 12px; border-radius: 6px;">
+                                <p style="color: #4b5563; font-size: 0.875rem; margin: 0;">
+                                    <strong>Note :</strong> Assurez-vous que votre projet Supabase est bien configuré avec l'URL et la clé anon correctes.
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.querySelector('.analytics-standalone').innerHTML = helpMessage;
                     return false;
                 }
             } catch (error) {
@@ -1943,6 +1995,54 @@
         // === INITIALIZATION ===
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('[Analytics Page] DOM loaded, initializing extended analytics...');
+            
+            // Tester la connexion Supabase d'abord
+            const connectionTest = await testSupabaseConnection();
+            
+            if (!connectionTest.connected) {
+                console.error('[Analytics Page] Connexion Supabase échouée');
+                
+                // Afficher un message d'erreur détaillé
+                const errorDetails = connectionTest.error;
+                const isTableMissing = errorDetails?.message?.includes('relation') || errorDetails?.code === '42P01';
+                
+                const helpMessage = `
+                    <div style="max-width: 800px; margin: 50px auto; padding: 20px; background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px;">
+                        <h2 style="color: #dc2626; margin-bottom: 16px;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            ${isTableMissing ? 'Tables manquantes' : 'Erreur de connexion'}
+                        </h2>
+                        <p style="color: #991b1b; margin-bottom: 16px;">
+                            ${isTableMissing ? 
+                                'Les tables nécessaires n\'existent pas dans votre base de données Supabase.' :
+                                'Impossible de se connecter à Supabase. Vérifiez votre configuration.'
+                            }
+                        </p>
+                        ${isTableMissing ? `
+                            <div style="background: white; padding: 16px; border-radius: 6px; margin-bottom: 16px;">
+                                <h3 style="color: #1f2937; margin-bottom: 12px;">Pour créer les tables :</h3>
+                                <ol style="color: #4b5563; line-height: 1.8;">
+                                    <li>Connectez-vous à <a href="${SUPABASE_URL}" target="_blank" style="color: #4F46E5;">votre tableau de bord Supabase</a></li>
+                                    <li>Allez dans SQL Editor (icône SQL dans le menu)</li>
+                                    <li>Créez une nouvelle requête</li>
+                                    <li>Copiez et exécutez le script SQL fourni (create-tables.sql)</li>
+                                    <li>Rechargez cette page</li>
+                                </ol>
+                            </div>
+                        ` : ''}
+                        <div style="background: #f3f4f6; padding: 12px; border-radius: 6px;">
+                            <p style="color: #4b5563; font-size: 0.875rem; margin: 0;">
+                                <strong>Détails de l'erreur :</strong><br>
+                                ${errorDetails?.message || 'Erreur inconnue'}<br>
+                                <small>Code: ${errorDetails?.code || 'N/A'}</small>
+                            </p>
+                        </div>
+                    </div>
+                `;
+                
+                document.querySelector('.analytics-standalone').innerHTML = helpMessage;
+                return;
+            }
             
             // Initialiser l'utilisateur
             const userInitialized = await initializeUser();
