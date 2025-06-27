@@ -1,9 +1,7 @@
-// Configuration Supabase
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-
-// Initialisation du client Supabase
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Configuration Supabase avec récupération automatique depuis Netlify
+let SUPABASE_URL = '';
+let SUPABASE_ANON_KEY = '';
+let supabase = null;
 
 // Configuration des états de licence
 const LICENSE_STATUS = {
@@ -20,7 +18,101 @@ const USER_ROLES = {
     USER: 'user'
 };
 
-// Export pour utilisation dans d'autres fichiers
-window.supabaseClient = supabase;
-window.LICENSE_STATUS = LICENSE_STATUS;
-window.USER_ROLES = USER_ROLES;
+// Fonction pour récupérer la configuration depuis les variables d'environnement Netlify
+async function initializeSupabase() {
+    try {
+        // Dans un contexte Netlify, les variables VITE_ sont exposées côté client lors du build
+        // Si elles ne sont pas disponibles, on fait un appel à une fonction serverless
+        
+        if (window.VITE_SUPABASE_URL && window.VITE_SUPABASE_ANON_KEY) {
+            // Variables disponibles directement (injectées lors du build)
+            SUPABASE_URL = window.VITE_SUPABASE_URL;
+            SUPABASE_ANON_KEY = window.VITE_SUPABASE_ANON_KEY;
+        } else {
+            // Fallback : appel à une fonction Netlify
+            const response = await fetch('/.netlify/functions/get-supabase-config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    // Ajouter un token simple pour sécuriser l'endpoint
+                    accessKey: 'analytics-dashboard-2025'
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Impossible de récupérer la configuration');
+            }
+
+            const config = await response.json();
+            SUPABASE_URL = config.url;
+            SUPABASE_ANON_KEY = config.anonKey;
+        }
+
+        // Vérifier que les variables sont bien définies
+        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+            throw new Error('Variables Supabase non définies');
+        }
+
+        // Initialisation du client Supabase
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Export global
+        window.supabaseClient = supabase;
+        window.LICENSE_STATUS = LICENSE_STATUS;
+        window.USER_ROLES = USER_ROLES;
+        
+        console.log('[Config] Supabase initialisé avec succès');
+        return true;
+        
+    } catch (error) {
+        console.error('[Config] Erreur lors de l\'initialisation:', error);
+        
+        // En développement local, utiliser des variables par défaut si disponibles
+        if (window.location.hostname === 'localhost') {
+            console.warn('[Config] Mode développement - Vérifiez vos variables d\'environnement');
+        }
+        
+        return false;
+    }
+}
+
+// Handler pour la fonction Netlify (à ajouter dans netlify/functions/get-supabase-config.js)
+// Cette fonction n'est utilisée que si les variables VITE_ ne sont pas disponibles
+const netlifyFunctionCode = `
+exports.handler = async (event, context) => {
+    // Vérification basique de sécurité
+    if (event.httpMethod !== 'POST') {
+        return { statusCode: 405, body: 'Method Not Allowed' };
+    }
+
+    try {
+        const { accessKey } = JSON.parse(event.body);
+        
+        if (accessKey !== 'analytics-dashboard-2025') {
+            return { statusCode: 401, body: 'Unauthorized' };
+        }
+
+        return {
+            statusCode: 200,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+                url: process.env.VITE_SUPABASE_URL,
+                anonKey: process.env.VITE_SUPABASE_ANON_KEY
+            })
+        };
+    } catch (error) {
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: 'Internal Server Error' })
+        };
+    }
+};
+`;
+
+// Auto-initialisation au chargement
+window.addEventListener('DOMContentLoaded', initializeSupabase);
