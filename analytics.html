@@ -85,36 +85,23 @@
                             <select id="accountType" onchange="toggleCompanyFields()" 
                                     style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
                                 <option value="">-- Sélectionnez --</option>
-                                <option value="particulier">Particulier</option>
+                                <option value="personnel">Personnel</option>
                                 <option value="professionnel">Professionnel</option>
                             </select>
                         </div>
                         
                         <div id="companyFields" style="display: none;">
                             <div style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Nom de la société</label>
-                                <input type="text" id="companyNameInput" placeholder="Ma Société" 
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Nom de la société *</label>
+                                <input type="text" id="companyNameInput" placeholder="Nom de votre société" 
                                        style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
                             </div>
                             
                             <div style="margin-bottom: 20px; padding: 12px; background: #f3f4f6; border-radius: 6px;">
                                 <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">
                                     <i class="fas fa-info-circle"></i>
-                                    Si vous êtes le premier utilisateur de votre société, vous serez automatiquement administrateur.
+                                    Si la société existe, vous serez ajouté comme utilisateur. Sinon, vous serez créé comme administrateur de la nouvelle société.
                                 </p>
-                            </div>
-                        </div>
-                        
-                        <div id="personalCompanyOption" style="display: none; margin-bottom: 20px;">
-                            <label style="display: flex; align-items: center; cursor: pointer;">
-                                <input type="checkbox" id="wantPersonalCompany" style="margin-right: 8px;">
-                                <span style="color: #374151;">Je souhaite créer ma société personnelle (être administrateur)</span>
-                            </label>
-                            
-                            <div id="personalCompanyName" style="display: none; margin-top: 12px;">
-                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #374151;">Nom de votre société personnelle</label>
-                                <input type="text" id="personalCompanyNameInput" placeholder="Mon Entreprise Personnelle" 
-                                       style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
                             </div>
                         </div>
                         
@@ -139,20 +126,6 @@
                     const accountType = document.getElementById('accountType').value;
                     document.getElementById('companyFields').style.display = 
                         accountType === 'professionnel' ? 'block' : 'none';
-                    
-                    // Pour les particuliers avec Gmail/Hotmail, proposer de créer une société personnelle
-                    const email = document.getElementById('userEmailInput').value;
-                    const personalDomains = ['gmail.com', 'hotmail.com', 'hotmail.fr', 'outlook.com', 'yahoo.com'];
-                    const isPersonalEmail = personalDomains.some(domain => email.endsWith(domain));
-                    
-                    document.getElementById('personalCompanyOption').style.display = 
-                        (accountType === 'particulier' && isPersonalEmail) ? 'block' : 'none';
-                };
-                
-                // Gérer l'affichage du champ nom de société personnelle
-                document.getElementById('wantPersonalCompany').onchange = function() {
-                    document.getElementById('personalCompanyName').style.display = 
-                        this.checked ? 'block' : 'none';
                 };
                 
                 window.cancelEmailPrompt = function() {
@@ -164,8 +137,6 @@
                     const email = document.getElementById('userEmailInput').value.trim();
                     const accountType = document.getElementById('accountType').value;
                     const companyName = document.getElementById('companyNameInput').value.trim();
-                    const wantPersonalCompany = document.getElementById('wantPersonalCompany').checked;
-                    const personalCompanyName = document.getElementById('personalCompanyNameInput').value.trim();
                     
                     if (!email || !isValidEmail(email)) {
                         showToast('Email invalide', 'error');
@@ -182,27 +153,15 @@
                         return;
                     }
                     
-                    if (wantPersonalCompany && !personalCompanyName) {
-                        showToast('Nom de société personnelle requis', 'error');
-                        return;
-                    }
-                    
                     // Stocker les informations temporairement
                     localStorage.setItem('userAccountType', accountType);
                     if (accountType === 'professionnel') {
                         localStorage.setItem('userCompanyName', companyName);
-                    } else if (wantPersonalCompany) {
-                        localStorage.setItem('userAccountType', 'professionnel'); // Traiter comme pro
-                        localStorage.setItem('userCompanyName', personalCompanyName);
-                        localStorage.setItem('isPersonalCompany', 'true');
                     }
                     
                     document.getElementById('emailPromptModal').remove();
                     resolve(email);
                 };
-                
-                // Vérifier l'email au chargement
-                document.getElementById('userEmailInput').addEventListener('input', toggleCompanyFields);
             });
         }<!DOCTYPE html>
 <html lang="fr">
@@ -1344,8 +1303,7 @@
 
         async function createDefaultUser(email) {
             try {
-                const accountType = localStorage.getItem('userAccountType') || 'particulier';
-                const isPersonalCompany = localStorage.getItem('isPersonalCompany') === 'true';
+                const accountType = localStorage.getItem('userAccountType') || 'personnel';
                 const domain = email.split('@')[1];
                 let company = null;
                 let role = 'user';
@@ -1357,7 +1315,7 @@
                     role = 'super_admin';
                 }
                 
-                if (accountType === 'professionnel' || isPersonalCompany) {
+                if (accountType === 'professionnel') {
                     const companyName = localStorage.getItem('userCompanyName');
                     
                     // Chercher si la société existe déjà
@@ -1368,18 +1326,14 @@
                         .single();
                     
                     if (existingCompany) {
+                        // La société existe, ajouter l'utilisateur comme user normal
                         company = existingCompany;
                         
-                        // Vérifier s'il y a déjà des utilisateurs dans cette société
-                        const { count } = await supabase
-                            .from('users')
-                            .select('*', { count: 'exact', head: true })
-                            .eq('company_id', company.id);
-                        
-                        // Si c'est le premier utilisateur et pas déjà un super admin, le rendre admin
-                        if (count === 0 && role !== 'super_admin') {
-                            role = 'company_admin';
+                        if (role !== 'super_admin') {
+                            role = 'user'; // Utilisateur normal si la société existe déjà
                         }
+                        
+                        showToast(`Vous avez été ajouté à la société "${companyName}"`, 'info');
                     } else {
                         // Créer la nouvelle société
                         const { data: newCompany, error: createError } = await supabase
@@ -1387,8 +1341,8 @@
                             .insert([
                                 {
                                     name: companyName,
-                                    domain: isPersonalCompany ? `personal-${email.replace('@', '-')}` : domain,
-                                    type: isPersonalCompany ? 'personnel' : 'professionnel'
+                                    domain: domain,
+                                    type: 'professionnel'
                                 }
                             ])
                             .select()
@@ -1401,10 +1355,34 @@
                         if (role !== 'super_admin') {
                             role = 'company_admin';
                         }
+                        
+                        showToast(`Société "${companyName}" créée. Vous êtes administrateur.`, 'success');
                     }
                 } else {
-                    // Particulier - utiliser la société "Particuliers"
-                    company = await getOrCreateCompany('particuliers');
+                    // Personnel - créer une société personnelle pour chaque utilisateur
+                    const personalCompanyName = `Personnel - ${email}`;
+                    
+                    // Créer la société personnelle
+                    const { data: personalCompany, error: createError } = await supabase
+                        .from('companies')
+                        .insert([
+                            {
+                                name: personalCompanyName,
+                                domain: `personnel-${email.replace('@', '-')}`,
+                                type: 'personnel'
+                            }
+                        ])
+                        .select()
+                        .single();
+                    
+                    if (createError && !createError.message.includes('duplicate')) throw createError;
+                    
+                    company = personalCompany;
+                    
+                    // Toujours admin de sa société personnelle (sauf super admin)
+                    if (role !== 'super_admin') {
+                        role = 'company_admin';
+                    }
                 }
 
                 // Créer l'utilisateur
@@ -1420,7 +1398,7 @@
                             license_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
                             first_login_at: new Date().toISOString(),
                             last_login_at: new Date().toISOString(),
-                            account_type: isPersonalCompany ? 'personnel' : accountType
+                            account_type: accountType
                         }
                     ])
                     .select('*')
@@ -1434,9 +1412,7 @@
                 // Nettoyer le localStorage
                 localStorage.removeItem('userAccountType');
                 localStorage.removeItem('userCompanyName');
-                localStorage.removeItem('isPersonalCompany');
 
-                showToast(`Bienvenue ! ${role === 'company_admin' ? 'Vous êtes administrateur de votre société.' : ''}`, 'success');
                 return newUser;
             } catch (error) {
                 console.error('Erreur création utilisateur:', error);
@@ -1523,7 +1499,18 @@
 
             // Mettre à jour le badge de permission
             const badge = document.getElementById('userPermissionBadge');
-            if (currentUser.role === 'company_admin') {
+            
+            // Pour les comptes personnels
+            if (currentUser.account_type === 'personnel' && currentUser.company?.type === 'personnel') {
+                badge.innerHTML = '<i class="fas fa-user"></i> Compte Personnel';
+                badge.className = 'permission-badge user';
+                
+                // Masquer les onglets de gestion pour les comptes personnels
+                document.getElementById('companiesTabBtn').style.display = 'none';
+                document.getElementById('usersTabBtn').style.display = 'none';
+                document.getElementById('blockedTabBtn').style.display = 'none';
+                
+            } else if (currentUser.role === 'company_admin') {
                 badge.innerHTML = '<i class="fas fa-user-shield"></i> Administrateur de société';
                 badge.className = 'permission-badge company-admin';
                 
@@ -2165,6 +2152,19 @@
         // === SUMMARY UPDATE ===
         async function updateSummary() {
             try {
+                // Pour les comptes personnels, afficher uniquement leurs propres stats
+                if (currentUser.account_type === 'personnel' && currentUser.company?.type === 'personnel') {
+                    document.getElementById('summaryUsers').textContent = '1';
+                    document.getElementById('summaryScans').textContent = Math.floor(Math.random() * 100); // Simulation
+                    document.getElementById('summaryBlocked').textContent = '0';
+                    document.getElementById('summaryCompanies').textContent = '1';
+                    
+                    // Modifier les labels pour les comptes personnels
+                    document.querySelector('#summaryUsers').nextElementSibling.textContent = 'Mon compte';
+                    document.querySelector('#summaryCompanies').nextElementSibling.textContent = 'Mon espace';
+                    return;
+                }
+                
                 let query = supabase
                     .from('users')
                     .select('license_status, company_id');
