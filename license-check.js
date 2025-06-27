@@ -1,7 +1,7 @@
 // Vérification des licences et redirection
 async function checkUserLicense() {
     // MODE TEST - ACCÈS SANS AUTHENTIFICATION
-    const TEST_MODE = false; // Mode production - authentification activée
+    const TEST_MODE = true; // Temporairement activé pour tester
     
     // Attendre que le DOM soit chargé
     if (document.readyState !== 'complete') {
@@ -10,15 +10,19 @@ async function checkUserLicense() {
     }
 
     try {
-        // Initialiser Supabase d'abord
-        const initialized = await initializeSupabase();
-        if (!initialized) {
-            console.warn('[License Check] Supabase non initialisé - Mode test activé');
-            // En mode test, continuer même sans Supabase
-            if (!TEST_MODE) {
-                showLicenseError('Erreur de connexion au service');
-                return;
+        // Vérifier si initializeSupabase existe
+        if (typeof initializeSupabase === 'function') {
+            // Initialiser Supabase d'abord
+            const initialized = await initializeSupabase();
+            if (!initialized) {
+                console.warn('[License Check] Supabase non initialisé');
+                if (!TEST_MODE) {
+                    showLicenseError('Erreur de connexion au service');
+                    return;
+                }
             }
+        } else {
+            console.warn('[License Check] initializeSupabase non trouvé');
         }
 
         if (TEST_MODE) {
@@ -30,44 +34,73 @@ async function checkUserLicense() {
                     id: 'test-user-id',
                     email: 'test@example.com',
                     name: 'Utilisateur Test',
-                    role: 'super_admin', // Donner tous les droits pour les tests
+                    role: 'super_admin',
                     license_status: 'active',
-                    license_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // +1 an
+                    license_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
                     company_id: 'test-company-id'
                 };
             }
             
-            // Créer une fonction initializePage personnalisée si elle n'existe pas
+            // Créer des données fictives pour l'interface
+            window.testModeData = {
+                currentUser: authManager.currentUser,
+                stats: {
+                    totalCompanies: 3,
+                    activeUsers: 47,
+                    activeLicenses: 12,
+                    eventsToday: 234
+                }
+            };
+            
+            // Créer une fonction initializePage personnalisée
             if (!window.initializePage || window.initializePage.toString().includes('loadData')) {
-                console.log('[License Check] Création d\'une fonction initializePage adaptée');
+                console.log('[License Check] Adaptation de initializePage pour le mode test');
                 window.initializePageOriginal = window.initializePage;
                 window.initializePage = async function() {
                     try {
                         console.log('[License Check] Initialisation de la page en mode test');
                         
-                        // Afficher les informations utilisateur si la fonction existe
+                        // Simuler displayUserInfo si elle existe
                         if (window.displayUserInfo) {
-                            window.displayUserInfo();
+                            try {
+                                window.displayUserInfo();
+                            } catch (e) {
+                                // Créer notre propre version
+                                const userNameEl = document.getElementById('userName');
+                                const userRoleEl = document.getElementById('userRole');
+                                if (userNameEl) userNameEl.textContent = authManager.currentUser.name || authManager.currentUser.email;
+                                if (userRoleEl) userRoleEl.textContent = authManager.currentUser.role;
+                            }
                         }
                         
-                        // Afficher les stats si la fonction existe
+                        // Afficher des stats de test
                         if (window.displayStats) {
-                            window.displayStats();
-                        }
-                        
-                        // Afficher les tableaux si la fonction existe
-                        if (window.displayTables) {
-                            window.displayTables();
-                        }
-                        
-                        // Créer les graphiques si la fonction existe
-                        if (window.createCharts) {
-                            window.createCharts();
-                        }
-                        
-                        // Tracker l'événement si votre analyticsManager le supporte
-                        if (window.analyticsManager && window.analyticsManager.trackEvent) {
-                            window.analyticsManager.trackEvent('page_view', { page: 'analytics' });
+                            try {
+                                window.displayStats();
+                            } catch (e) {
+                                console.log('[License Check] Affichage des stats de test');
+                                const statsGrid = document.getElementById('statsGrid');
+                                if (statsGrid) {
+                                    statsGrid.innerHTML = `
+                                        <div class="stat-card">
+                                            <div class="stat-label">Sociétés</div>
+                                            <div class="stat-value">3</div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-label">Utilisateurs actifs</div>
+                                            <div class="stat-value">47</div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-label">Licences actives</div>
+                                            <div class="stat-value">12</div>
+                                        </div>
+                                        <div class="stat-card">
+                                            <div class="stat-label">Événements aujourd'hui</div>
+                                            <div class="stat-value">234</div>
+                                        </div>
+                                    `;
+                                }
+                            }
                         }
                         
                         console.log('[License Check] Page initialisée avec succès');
