@@ -1,7 +1,8 @@
 // Vérification des licences et redirection
 async function checkUserLicense() {
     // MODE TEST - ACCÈS SANS AUTHENTIFICATION
-    const TEST_MODE = true; // Temporairement activé pour tester
+    const TEST_MODE = false; // Mode production - chargement des vraies données
+    const DEMO_MODE = true; // Mode démo - accès sans auth mais avec vraies données
     
     // Attendre que le DOM soit chargé
     if (document.readyState !== 'complete') {
@@ -25,163 +26,28 @@ async function checkUserLicense() {
             console.warn('[License Check] initializeSupabase non trouvé');
         }
 
-        if (TEST_MODE) {
-            console.log('[License Check] 🧪 MODE TEST ACTIVÉ - Accès sans authentification');
+        // MODE DEMO - Accès sans auth mais avec vraies données
+        if (DEMO_MODE && !TEST_MODE) {
+            console.log('[License Check] 🔧 MODE DEMO - Accès aux vraies données sans authentification');
             
-            // Créer un utilisateur fictif pour les tests
+            // Créer un utilisateur demo avec droits super_admin pour voir toutes les données
             if (!authManager.currentUser) {
                 authManager.currentUser = {
-                    id: 'test-user-id',
-                    email: 'test@example.com',
-                    name: 'Utilisateur Test',
-                    role: 'super_admin',
+                    id: 'demo-user-id',
+                    email: 'demo@example.com',
+                    name: 'Utilisateur Demo',
+                    role: 'super_admin', // Pour voir toutes les données
                     license_status: 'active',
                     license_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-                    company_id: 'test-company-id'
+                    company_id: 'demo-company-id'
                 };
             }
             
-            // Ajouter loadData à analyticsManager s'il existe
-            if (window.analyticsManager && !window.analyticsManager.loadData) {
-                window.analyticsManager.loadData = async function() {
-                    console.log('[Analytics] loadData appelé - mode test, pas de chargement nécessaire');
-                    return Promise.resolve();
-                };
+            // Utiliser la vraie fonction initializePage qui charge depuis la BDD
+            if (window.initializePage) {
+                console.log('[License Check] Appel de initializePage pour charger les vraies données');
+                window.initializePage();
             }
-            
-            // Créer une fonction initializePage qui évite l'appel à loadData
-            console.log('[License Check] Remplacement de initializePage pour éviter loadData');
-            const originalInitializePage = window.initializePage;
-            window.initializePage = async function() {
-                try {
-                    console.log('[License Check] Initialisation de la page (version adaptée)');
-                    
-                    // Si l'original existe et ne contient pas loadData, l'utiliser
-                    if (originalInitializePage && !originalInitializePage.toString().includes('loadData')) {
-                        return originalInitializePage();
-                    }
-                    
-                    // Sinon, utiliser notre version personnalisée
-                    // Afficher les informations utilisateur
-                    const userNameEl = document.getElementById('userName');
-                    const userRoleEl = document.getElementById('userRole');
-                    if (userNameEl) userNameEl.textContent = authManager.currentUser.name || authManager.currentUser.email;
-                    if (userRoleEl) {
-                        const roleText = {
-                            'super_admin': 'Super Admin',
-                            'admin': 'Administrateur',
-                            'user': 'Utilisateur'
-                        };
-                        userRoleEl.textContent = roleText[authManager.currentUser.role] || 'Utilisateur';
-                    }
-                    
-                    // Afficher l'onglet sociétés pour les super admins
-                    const companiesTab = document.getElementById('companiesTab');
-                    if (companiesTab && authManager.currentUser.role === 'super_admin') {
-                        companiesTab.style.display = 'block';
-                    }
-                    
-                    // Afficher les stats de test
-                    const statsGrid = document.getElementById('statsGrid');
-                    if (statsGrid) {
-                        statsGrid.innerHTML = `
-                            <div class="stat-card">
-                                <div class="stat-label">Sociétés</div>
-                                <div class="stat-value">3</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-label">Utilisateurs actifs</div>
-                                <div class="stat-value">47</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-label">Licences actives</div>
-                                <div class="stat-value">12</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-label">Événements aujourd'hui</div>
-                                <div class="stat-value">234</div>
-                            </div>
-                        `;
-                    }
-                    
-                    // Remplir les tableaux avec des données de test
-                    const tables = {
-                        'companiesTable': `
-                            <tr>
-                                <td>Entreprise Alpha</td>
-                                <td>alpha.com</td>
-                                <td>15</td>
-                                <td>1</td>
-                                <td>${new Date().toLocaleDateString('fr-FR')}</td>
-                            </tr>
-                            <tr>
-                                <td>Société Beta</td>
-                                <td>beta.fr</td>
-                                <td>23</td>
-                                <td>2</td>
-                                <td>${new Date().toLocaleDateString('fr-FR')}</td>
-                            </tr>
-                        `,
-                        'usersTable': `
-                            <tr>
-                                <td>admin@alpha.com</td>
-                                <td>Jean Admin</td>
-                                <td>Entreprise Alpha</td>
-                                <td>admin</td>
-                                <td><span class="status-badge status-active">active</span></td>
-                                <td>${new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}</td>
-                                <td>${new Date().toLocaleDateString('fr-FR')}</td>
-                            </tr>
-                            <tr>
-                                <td>user@beta.fr</td>
-                                <td>Marie User</td>
-                                <td>Société Beta</td>
-                                <td>user</td>
-                                <td><span class="status-badge status-trial">trial</span></td>
-                                <td>${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}</td>
-                                <td>${new Date().toLocaleDateString('fr-FR')}</td>
-                            </tr>
-                        `,
-                        'licensesTable': `
-                            <tr>
-                                <td>Entreprise Alpha</td>
-                                <td>premium</td>
-                                <td>50</td>
-                                <td>15</td>
-                                <td>4999.99 €</td>
-                                <td><span class="status-badge status-active">active</span></td>
-                                <td>${new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}</td>
-                            </tr>
-                        `,
-                        'eventsTable': `
-                            <tr>
-                                <td>${new Date().toLocaleString('fr-FR')}</td>
-                                <td>test@example.com</td>
-                                <td>page_view</td>
-                                <td>{"page": "analytics"}</td>
-                            </tr>
-                        `
-                    };
-                    
-                    // Injecter les données dans les tableaux
-                    Object.entries(tables).forEach(([tableId, content]) => {
-                        const tbody = document.querySelector(`#${tableId} tbody`);
-                        if (tbody) tbody.innerHTML = content;
-                    });
-                    
-                    // Tracker l'événement
-                    if (window.analyticsManager && window.analyticsManager.trackEvent) {
-                        window.analyticsManager.trackEvent('page_view', { page: 'analytics' });
-                    }
-                    
-                    console.log('[License Check] Page initialisée avec succès (données de test)');
-                } catch (error) {
-                    console.error('[License Check] Erreur lors de l\'initialisation:', error);
-                }
-            };
-            
-            // Appeler la nouvelle fonction
-            window.initializePage();
             return;
         }
 
