@@ -1,5 +1,5 @@
 // LicenseService.js - Service de gestion des licences avec contrôle des connexions
-// Version finale pour EmailSortPro
+// Version corrigée pour EmailSortPro avec gestion des administrateurs par société
 
 class LicenseService {
     constructor() {
@@ -18,15 +18,16 @@ class LicenseService {
         try {
             console.log('[LicenseService] Initialisation...');
             
-            // Attendre que supabaseConfig soit prêt
-            await this.waitForSupabaseConfig();
-            
-            // Obtenir le client Supabase
-            this.supabase = window.getSupabaseClient();
-            
-            if (!this.supabase) {
-                throw new Error('Client Supabase non disponible');
+            // Vérifier la disponibilité de Supabase
+            if (!window.supabase) {
+                throw new Error('Supabase non disponible');
             }
+
+            // Configuration Supabase
+            const SUPABASE_URL = 'https://oxyiamruvyliueecpaam.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94eWlhbXJ1dnlsaXVlZWNwYWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MDM0MTgsImV4cCI6MjA2NTk3OTQxOH0.Wy_jbUB7D5Bly-rZB6oc2bXUHzZQ8MivDL4vdM1jcE0';
+
+            this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
             // Vérifier si les tables existent
             await this.checkTablesExistence();
@@ -46,38 +47,37 @@ class LicenseService {
         }
     }
 
-    async waitForSupabaseConfig(maxAttempts = 20) {
-        let attempts = 0;
-        
-        while (!window.supabaseConfig && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.supabaseConfig) {
-            throw new Error('Configuration Supabase non disponible');
-        }
-
-        // Attendre que le client soit prêt
-        attempts = 0;
-        while (!window.getSupabaseClient() && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-    }
-
     async checkTablesExistence() {
         try {
-            const { allExist } = await window.supabaseConfig.checkTablesExist();
-            this.tablesExist = allExist;
-            
-            if (!allExist) {
-                console.warn('[LicenseService] ⚠️ Tables manquantes - Fonctionnalités limitées');
-                console.info('[LicenseService] 💡 Exécutez le script SQL fourni pour créer les tables');
+            const requiredTables = ['users', 'companies'];
+            const results = {};
+
+            for (const table of requiredTables) {
+                try {
+                    const { error } = await this.supabase
+                        .from(table)
+                        .select('*', { count: 'exact', head: true })
+                        .limit(0);
+
+                    results[table] = !error;
+                } catch (error) {
+                    results[table] = false;
+                }
             }
+
+            this.tablesExist = Object.values(results).every(exists => exists);
+            
+            if (this.tablesExist) {
+                console.log('[LicenseService] ✅ Toutes les tables requises existent');
+            } else {
+                console.warn('[LicenseService] ⚠️ Tables manquantes:', Object.keys(results).filter(t => !results[t]));
+            }
+
+            return { allExist: this.tablesExist, tables: results };
         } catch (error) {
             console.warn('[LicenseService] ⚠️ Impossible de vérifier les tables:', error.message);
             this.tablesExist = false;
+            return { allExist: false, tables: {} };
         }
     }
 
@@ -90,12 +90,9 @@ class LicenseService {
                 valid: true, // Mode dégradé - autoriser l'accès
                 status: 'demo_mode',
                 message: 'Mode démonstration - Tables non configurées',
-                daysRemaining: 999
+                daysRemaining: 999,
+                user: this.createMockUser(email)
             };
-        }
-
-        if (!this.supabase) {
-            return { valid: false, error: 'Service non initialisé' };
         }
 
         try {
@@ -112,8 +109,7 @@ class LicenseService {
                 .from('users')
                 .select(`
                     *, 
-                    company:companies(*),
-                    blocked_by:blocked_by_user_id(email, name)
+                    company:companies(*)
                 `)
                 .eq('email', email.toLowerCase())
                 .single();
@@ -123,18 +119,6 @@ class LicenseService {
                 user = await this.createNewUser(email);
             } else if (error) {
                 throw error;
-            }
-
-            // Vérifier le statut de connexion
-            const connectionCheck = this.checkConnectionStatus(user);
-            if (!connectionCheck.allowed) {
-                return {
-                    valid: false,
-                    status: connectionCheck.status,
-                    message: connectionCheck.message,
-                    blockedBy: connectionCheck.blockedBy,
-                    user: user
-                };
             }
 
             // Mettre à jour la dernière connexion
@@ -158,282 +142,133 @@ class LicenseService {
             };
 
             this.currentUser = user;
+            
+            // Exposer l'utilisateur globalement pour les autres modules
+            window.currentUser = user;
+            
             return this.licenseCache.result;
 
         } catch (error) {
             console.error('[LicenseService] Erreur vérification licence:', error);
             
-            // En cas d'erreur, mode dégradé
+            // En cas d'erreur, mode dégradé avec utilisateur mock
+            const mockUser = this.createMockUser(email);
             return {
                 valid: true,
                 status: 'error_fallback',
                 message: 'Mode dégradé - Erreur base de données',
+                user: mockUser,
                 error: error.message
             };
         }
     }
 
-    // === VÉRIFICATION DU STATUT DE CONNEXION ===
-    checkConnectionStatus(user) {
-        if (!user) {
-            return {
-                allowed: false,
-                status: 'user_not_found',
-                message: 'Utilisateur non trouvé'
-            };
-        }
-
-        const config = window.supabaseConfig.getConfig();
-        
-        if (user.connection_status === config.connectionStatus.BLOCKED) {
-            return {
-                allowed: false,
-                status: 'blocked',
-                message: 'Votre accès a été bloqué par un administrateur.',
-                blockedBy: user.blocked_by
-            };
-        }
-
-        if (user.connection_status === config.connectionStatus.SUSPENDED) {
-            return {
-                allowed: false,
-                status: 'suspended',
-                message: 'Votre accès est temporairement suspendu.',
-                blockedBy: user.blocked_by
-            };
-        }
-
-        if (user.connection_status === config.connectionStatus.PENDING) {
-            return {
-                allowed: false,
-                status: 'pending',
-                message: 'Votre accès est en attente d\'approbation.'
-            };
-        }
-
-        if (user.company && user.company.is_blocked) {
-            return {
-                allowed: false,
-                status: 'company_blocked',
-                message: 'L\'accès de votre société a été bloqué.'
-            };
-        }
-
-        return {
-            allowed: true,
-            status: 'allowed',
-            message: 'Accès autorisé'
-        };
-    }
-
-    // === GESTION DES UTILISATEURS PAR SOCIÉTÉ ===
-    async getAllUsersGroupedByCompany() {
-        if (!this.isAdmin() || !this.tablesExist) {
-            console.warn('[LicenseService] Accès refusé ou tables manquantes');
-            return this.getMockData();
-        }
-
+    // === CRÉATION D'UTILISATEUR ===
+    async createNewUser(email) {
         try {
-            const { data: users, error } = await this.supabase
+            // Obtenir ou créer la société basée sur le domaine
+            const domain = email.split('@')[1];
+            const company = await this.getOrCreateCompany(domain);
+
+            // Déterminer le rôle (vianney.hastings@hotmail.fr est admin par défaut)
+            const role = email.toLowerCase() === 'vianney.hastings@hotmail.fr' ? 'company_admin' : 'user';
+
+            // Créer l'utilisateur
+            const { data: newUser, error } = await this.supabase
                 .from('users')
+                .insert([
+                    {
+                        email: email.toLowerCase(),
+                        name: email.split('@')[0],
+                        company_id: company.id,
+                        role: role,
+                        license_status: 'active',
+                        license_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+                        first_login_at: new Date().toISOString(),
+                        last_login_at: new Date().toISOString()
+                    }
+                ])
                 .select(`
                     *,
-                    company:companies(id, name, domain, is_blocked),
-                    blocked_by:blocked_by_user_id(email, name)
+                    company:companies(*)
                 `)
-                .order('company_id, last_login_at', { ascending: false });
+                .single();
 
             if (error) throw error;
 
-            // Grouper par société
-            const groupedUsers = {};
-            users.forEach(user => {
-                const companyKey = user.company ? user.company.id : 'no_company';
-                const companyName = user.company ? user.company.name : 'Sans société';
-                
-                if (!groupedUsers[companyKey]) {
-                    groupedUsers[companyKey] = {
-                        company: user.company || { id: null, name: companyName, domain: null },
-                        users: []
-                    };
-                }
-                
-                groupedUsers[companyKey].users.push(user);
-            });
-
-            return groupedUsers;
+            console.log(`[LicenseService] ✅ Utilisateur créé: ${email} (${role})`);
+            return newUser;
         } catch (error) {
-            console.error('[LicenseService] Erreur récupération utilisateurs groupés:', error);
-            return this.getMockData();
+            console.error('[LicenseService] ❌ Erreur création utilisateur:', error);
+            // Retourner un utilisateur mock en cas d'erreur
+            return this.createMockUser(email);
         }
     }
 
-    // === CONTRÔLE DES CONNEXIONS ===
-    async blockUser(userId, reason = 'Bloqué par un administrateur') {
-        if (!this.canBlockUsers() || !this.tablesExist) {
-            throw new Error('Droits insuffisants ou service non disponible');
-        }
-
+    async getOrCreateCompany(domain) {
         try {
-            const config = window.supabaseConfig.getConfig();
-            
-            const { error } = await this.supabase
-                .from('users')
-                .update({
-                    connection_status: config.connectionStatus.BLOCKED,
-                    blocked_at: new Date().toISOString(),
-                    blocked_by_user_id: this.currentUser.id,
-                    block_reason: reason,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', userId);
-
-            if (error) throw error;
-
-            this.invalidateCache();
-            await this.logAdminAction('block_user', { target_user_id: userId, reason: reason });
-
-            return { success: true, message: 'Utilisateur bloqué avec succès' };
-        } catch (error) {
-            console.error('[LicenseService] Erreur blocage utilisateur:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    async unblockUser(userId) {
-        if (!this.canBlockUsers() || !this.tablesExist) {
-            throw new Error('Droits insuffisants ou service non disponible');
-        }
-
-        try {
-            const config = window.supabaseConfig.getConfig();
-            
-            const { error } = await this.supabase
-                .from('users')
-                .update({
-                    connection_status: config.connectionStatus.ALLOWED,
-                    blocked_at: null,
-                    blocked_by_user_id: null,
-                    block_reason: null,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', userId);
-
-            if (error) throw error;
-
-            this.invalidateCache();
-            await this.logAdminAction('unblock_user', { target_user_id: userId });
-
-            return { success: true, message: 'Utilisateur débloqué avec succès' };
-        } catch (error) {
-            console.error('[LicenseService] Erreur déblocage utilisateur:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    async blockCompany(companyId, reason = 'Société bloquée par un administrateur') {
-        if (!this.isSuperAdmin() || !this.tablesExist) {
-            throw new Error('Seuls les super-administrateurs peuvent bloquer des sociétés');
-        }
-
-        try {
-            const { error } = await this.supabase
+            // Chercher la société existante
+            let { data: company, error } = await this.supabase
                 .from('companies')
-                .update({
-                    is_blocked: true,
-                    blocked_at: new Date().toISOString(),
-                    blocked_by_user_id: this.currentUser.id,
-                    block_reason: reason,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', companyId);
+                .select('*')
+                .eq('domain', domain)
+                .single();
 
-            if (error) throw error;
+            if (error && error.code === 'PGRST116') {
+                // Créer la société
+                const { data: newCompany, error: createError } = await this.supabase
+                    .from('companies')
+                    .insert([
+                        {
+                            name: `Société ${domain}`,
+                            domain: domain
+                        }
+                    ])
+                    .select()
+                    .single();
 
-            this.invalidateCache();
-            await this.logAdminAction('block_company', { company_id: companyId, reason: reason });
-
-            return { success: true, message: 'Société bloquée avec succès' };
-        } catch (error) {
-            console.error('[LicenseService] Erreur blocage société:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    async unblockCompany(companyId) {
-        if (!this.isSuperAdmin() || !this.tablesExist) {
-            throw new Error('Seuls les super-administrateurs peuvent débloquer des sociétés');
-        }
-
-        try {
-            const { error } = await this.supabase
-                .from('companies')
-                .update({
-                    is_blocked: false,
-                    blocked_at: null,
-                    blocked_by_user_id: null,
-                    block_reason: null,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', companyId);
-
-            if (error) throw error;
-
-            this.invalidateCache();
-            await this.logAdminAction('unblock_company', { company_id: companyId });
-
-            return { success: true, message: 'Société débloquée avec succès' };
-        } catch (error) {
-            console.error('[LicenseService] Erreur déblocage société:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    // === DONNÉES MOCK POUR MODE DÉGRADÉ ===
-    getMockData() {
-        return {
-            'demo-company-1': {
-                company: { id: 'demo-company-1', name: 'Société de démonstration', domain: 'demo.com', is_blocked: false },
-                users: [
-                    {
-                        id: 'demo-user-1',
-                        email: 'admin@demo.com',
-                        name: 'Administrateur Démo',
-                        connection_status: 'allowed',
-                        license_status: 'active',
-                        role: 'company_admin',
-                        last_login_at: new Date().toISOString(),
-                        login_count: 42
-                    },
-                    {
-                        id: 'demo-user-2',
-                        email: 'user@demo.com',
-                        name: 'Utilisateur Démo',
-                        connection_status: 'allowed',
-                        license_status: 'trial',
-                        role: 'user',
-                        last_login_at: new Date(Date.now() - 24*60*60*1000).toISOString(),
-                        login_count: 15
-                    }
-                ]
+                if (createError) throw createError;
+                company = newCompany;
+                console.log(`[LicenseService] ✅ Société créée: ${company.name}`);
+            } else if (error) {
+                throw error;
             }
-        };
+
+            return company;
+        } catch (error) {
+            console.error('[LicenseService] ❌ Erreur gestion société:', error);
+            // Retourner une société mock
+            return {
+                id: 'mock-company-' + Date.now(),
+                name: `Société ${domain}`,
+                domain: domain
+            };
+        }
     }
 
-    // === MÉTHODES UTILITAIRES ===
-    async createNewUser(email) {
-        // Implémentation simplifiée pour éviter les erreurs
+    createMockUser(email) {
+        // Créer un utilisateur fictif pour le mode dégradé
+        const role = email.toLowerCase() === 'vianney.hastings@hotmail.fr' ? 'company_admin' : 'user';
+        const domain = email.split('@')[1];
+        
         const mockUser = {
-            id: 'new-user-' + Date.now(),
+            id: 'mock-user-' + Date.now(),
             email: email,
             name: email.split('@')[0],
-            connection_status: 'allowed',
-            license_status: 'trial',
-            role: 'user',
-            created_at: new Date().toISOString()
+            role: role,
+            license_status: 'active',
+            company_id: 'mock-company-1',
+            company: {
+                id: 'mock-company-1',
+                name: `Société ${domain}`,
+                domain: domain
+            },
+            created_at: new Date().toISOString(),
+            last_login_at: new Date().toISOString(),
+            license_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
         };
-        
-        console.log('[LicenseService] Utilisateur créé en mode démo:', email);
+
+        console.log(`[LicenseService] 🧪 Utilisateur mock créé: ${email} (${role})`);
         return mockUser;
     }
 
@@ -469,8 +304,7 @@ class LicenseService {
             await this.supabase
                 .from('users')
                 .update({ 
-                    last_login_at: new Date().toISOString(),
-                    login_count: this.supabase.raw('login_count + 1')
+                    last_login_at: new Date().toISOString()
                 })
                 .eq('id', userId);
         } catch (error) {
@@ -478,23 +312,214 @@ class LicenseService {
         }
     }
 
+    // === GESTION DES UTILISATEURS PAR SOCIÉTÉ ===
+    async getAllUsersGroupedByCompany() {
+        if (!this.isAdmin() || !this.tablesExist) {
+            console.warn('[LicenseService] Accès refusé ou tables manquantes - retour données mock');
+            return this.getMockData();
+        }
+
+        try {
+            let query = this.supabase
+                .from('users')
+                .select(`
+                    *,
+                    company:companies(*)
+                `);
+
+            // Si admin de société, filtrer par société
+            if (this.currentUser.role === 'company_admin') {
+                query = query.eq('company_id', this.currentUser.company_id);
+            }
+
+            const { data: users, error } = await query.order('company_id, last_login_at', { ascending: false });
+
+            if (error) throw error;
+
+            // Grouper par société
+            const groupedUsers = {};
+            users.forEach(user => {
+                const companyKey = user.company ? user.company.id : 'no_company';
+                const companyName = user.company ? user.company.name : 'Sans société';
+                
+                if (!groupedUsers[companyKey]) {
+                    groupedUsers[companyKey] = {
+                        company: user.company || { id: null, name: companyName, domain: null },
+                        users: []
+                    };
+                }
+                
+                groupedUsers[companyKey].users.push(user);
+            });
+
+            return groupedUsers;
+        } catch (error) {
+            console.error('[LicenseService] Erreur récupération utilisateurs groupés:', error);
+            return this.getMockData();
+        }
+    }
+
+    // === CONTRÔLE DES CONNEXIONS ===
+    async blockUser(userId, reason = 'Bloqué par un administrateur') {
+        if (!this.canBlockUsers() || !this.tablesExist) {
+            return { success: false, error: 'Droits insuffisants ou service non disponible' };
+        }
+
+        try {
+            const { error } = await this.supabase
+                .from('users')
+                .update({
+                    license_status: 'blocked',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', userId);
+
+            if (error) throw error;
+
+            this.invalidateCache();
+            await this.logAdminAction('block_user', { target_user_id: userId, reason: reason });
+
+            return { success: true, message: 'Utilisateur bloqué avec succès' };
+        } catch (error) {
+            console.error('[LicenseService] Erreur blocage utilisateur:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async unblockUser(userId) {
+        if (!this.canBlockUsers() || !this.tablesExist) {
+            return { success: false, error: 'Droits insuffisants ou service non disponible' };
+        }
+
+        try {
+            const { error } = await this.supabase
+                .from('users')
+                .update({
+                    license_status: 'active',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', userId);
+
+            if (error) throw error;
+
+            this.invalidateCache();
+            await this.logAdminAction('unblock_user', { target_user_id: userId });
+
+            return { success: true, message: 'Utilisateur débloqué avec succès' };
+        } catch (error) {
+            console.error('[LicenseService] Erreur déblocage utilisateur:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // === GESTION DES SOCIÉTÉS (Super Admin uniquement) ===
+    async blockCompany(companyId, reason = 'Société bloquée par un administrateur') {
+        if (!this.isSuperAdmin() || !this.tablesExist) {
+            return { success: false, error: 'Seuls les super-administrateurs peuvent bloquer des sociétés' };
+        }
+
+        try {
+            // Pour cette version, on bloque tous les utilisateurs de la société
+            const { error } = await this.supabase
+                .from('users')
+                .update({
+                    license_status: 'blocked',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('company_id', companyId);
+
+            if (error) throw error;
+
+            this.invalidateCache();
+            await this.logAdminAction('block_company', { company_id: companyId, reason: reason });
+
+            return { success: true, message: 'Société bloquée avec succès' };
+        } catch (error) {
+            console.error('[LicenseService] Erreur blocage société:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async unblockCompany(companyId) {
+        if (!this.isSuperAdmin() || !this.tablesExist) {
+            return { success: false, error: 'Seuls les super-administrateurs peuvent débloquer des sociétés' };
+        }
+
+        try {
+            // Pour cette version, on débloque tous les utilisateurs de la société
+            const { error } = await this.supabase
+                .from('users')
+                .update({
+                    license_status: 'active',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('company_id', companyId);
+
+            if (error) throw error;
+
+            this.invalidateCache();
+            await this.logAdminAction('unblock_company', { company_id: companyId });
+
+            return { success: true, message: 'Société débloquée avec succès' };
+        } catch (error) {
+            console.error('[LicenseService] Erreur déblocage société:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // === DONNÉES MOCK POUR MODE DÉGRADÉ ===
+    getMockData() {
+        return {
+            'demo-company-1': {
+                company: { 
+                    id: 'demo-company-1', 
+                    name: 'Société de démonstration', 
+                    domain: 'demo.com'
+                },
+                users: [
+                    {
+                        id: 'vianney-demo',
+                        email: 'vianney.hastings@hotmail.fr',
+                        name: 'Vianney Hastings',
+                        license_status: 'active',
+                        role: 'company_admin',
+                        last_login_at: new Date().toISOString(),
+                        created_at: new Date().toISOString()
+                    },
+                    {
+                        id: 'demo-user-1',
+                        email: 'admin@demo.com',
+                        name: 'Administrateur Démo',
+                        license_status: 'active',
+                        role: 'user',
+                        last_login_at: new Date(Date.now() - 24*60*60*1000).toISOString(),
+                        created_at: new Date().toISOString()
+                    },
+                    {
+                        id: 'demo-user-2',
+                        email: 'user@demo.com',
+                        name: 'Utilisateur Démo',
+                        license_status: 'trial',
+                        role: 'user',
+                        last_login_at: new Date(Date.now() - 48*60*60*1000).toISOString(),
+                        created_at: new Date().toISOString()
+                    }
+                ]
+            }
+        };
+    }
+
+    // === LOGGING DES ACTIONS ADMIN ===
     async logAdminAction(action, details = {}) {
         if (!this.currentUser || !this.tablesExist) return;
 
-        try {
-            await this.supabase
-                .from('admin_actions')
-                .insert([{
-                    admin_user_id: this.currentUser.id,
-                    admin_email: this.currentUser.email,
-                    action: action,
-                    details: details,
-                    timestamp: new Date().toISOString(),
-                    ip_address: 'unknown'
-                }]);
-        } catch (error) {
-            console.warn('[LicenseService] Erreur log action admin:', error);
-        }
+        // Pour cette version, on log en console
+        console.log(`[LicenseService] 📝 Action admin: ${action}`, {
+            admin: this.currentUser.email,
+            action: action,
+            details: details,
+            timestamp: new Date().toISOString()
+        });
     }
 
     // === MÉTHODES DE VÉRIFICATION DES DROITS ===
@@ -505,20 +530,17 @@ class LicenseService {
     isAdmin() {
         if (!this.tablesExist) return true; // Mode démo - accès admin
         
-        const config = window.supabaseConfig.getConfig();
-        return [config.roles.SUPER_ADMIN, config.roles.COMPANY_ADMIN].includes(this.currentUser?.role);
+        return this.currentUser && ['company_admin', 'super_admin'].includes(this.currentUser.role);
     }
 
     isSuperAdmin() {
         if (!this.tablesExist) return true; // Mode démo - accès super admin
         
-        const config = window.supabaseConfig.getConfig();
-        return this.currentUser?.role === config.roles.SUPER_ADMIN;
+        return this.currentUser && this.currentUser.role === 'super_admin';
     }
 
     isCompanyAdmin() {
-        const config = window.supabaseConfig.getConfig();
-        return this.currentUser?.role === config.roles.COMPANY_ADMIN;
+        return this.currentUser && this.currentUser.role === 'company_admin';
     }
 
     canBlockUsers() {
@@ -537,27 +559,64 @@ class LicenseService {
 
     // === MÉTHODES ANALYTICS ===
     async trackEvent(eventType, eventData = {}) {
-        if (!this.currentUser || !this.tablesExist) return;
+        if (!this.currentUser) return;
 
-        try {
-            await this.supabase
-                .from('analytics_events')
-                .insert([{
-                    user_id: this.currentUser.id,
-                    event_type: eventType,
-                    event_data: {
-                        ...eventData,
-                        email: this.currentUser.email,
-                        company_id: this.currentUser.company_id
-                    }
-                }]);
-        } catch (error) {
-            console.warn('[LicenseService] Erreur tracking:', error);
+        // Pour cette version, on utilise l'analytics manager si disponible
+        if (window.analyticsManager) {
+            await window.analyticsManager.trackEvent(eventType, {
+                ...eventData,
+                email: this.currentUser.email,
+                company_id: this.currentUser.company_id
+            });
+        } else {
+            console.log(`[LicenseService] 📊 Événement: ${eventType}`, eventData);
         }
+    }
+
+    // === MÉTHODES UTILITAIRES ===
+    getUserRole() {
+        return this.currentUser?.role || 'user';
+    }
+
+    getCompanyId() {
+        return this.currentUser?.company_id;
+    }
+
+    hasAccess() {
+        return this.currentUser && this.currentUser.license_status === 'active';
+    }
+
+    checkLicenseStatus() {
+        if (!this.currentUser) return 'invalid';
+        return this.currentUser.license_status;
+    }
+
+    async logout() {
+        this.currentUser = null;
+        this.invalidateCache();
+        window.currentUser = null;
+        
+        // Rediriger vers la page de connexion
+        window.location.href = '/';
     }
 }
 
 // Créer l'instance globale
 window.licenseService = new LicenseService();
 
+// Exposer les constantes pour compatibilité
+window.LICENSE_STATUS = {
+    ACTIVE: 'active',
+    TRIAL: 'trial',
+    EXPIRED: 'expired',
+    BLOCKED: 'blocked'
+};
+
+window.USER_ROLES = {
+    SUPER_ADMIN: 'super_admin',
+    COMPANY_ADMIN: 'company_admin',
+    USER: 'user'
+};
+
 console.log('✅ LicenseService avec contrôle des connexions chargé (mode dégradé supporté)');
+console.log('💡 Utilisez window.licenseService pour accéder au service');
