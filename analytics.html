@@ -1156,31 +1156,7 @@
         let groupedUsers = {};
         let currentUser = null;
 
-        // === TEST DE CONNEXION SUPABASE ===
-        async function testSupabaseConnection() {
-            try {
-                console.log('[Analytics] Test de connexion Supabase...');
-                
-                // Test simple pour vérifier la connexion
-                const { data, error } = await supabase
-                    .from('users')
-                    .select('count')
-                    .limit(1);
-
-                if (error) {
-                    console.error('[Analytics] Erreur de connexion:', error);
-                    return { connected: false, error: error };
-                }
-
-                console.log('[Analytics] ✅ Connexion Supabase réussie');
-                return { connected: true };
-            } catch (error) {
-                console.error('[Analytics] Erreur lors du test:', error);
-                return { connected: false, error: error };
-            }
-        }
-
-        // === FONCTIONS DE TOAST ===
+        // === FONCTIONS UTILITAIRES ===
         function showToast(message, type = 'info', duration = 5000) {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
@@ -1203,10 +1179,41 @@
             }
         }
 
-        // === FONCTIONS UTILITAIRES ===
         function isValidEmail(email) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             return emailRegex.test(email);
+        }
+
+        function isAdmin() {
+            return currentUser && ['company_admin', 'super_admin'].includes(currentUser.role);
+        }
+
+        function isSuperAdmin() {
+            return currentUser && currentUser.role === 'super_admin';
+        }
+
+        // === TEST DE CONNEXION SUPABASE ===
+        async function testSupabaseConnection() {
+            try {
+                console.log('[Analytics] Test de connexion Supabase...');
+                
+                // Test simple pour vérifier la connexion
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('count')
+                    .limit(1);
+
+                if (error) {
+                    console.error('[Analytics] Erreur de connexion:', error);
+                    return { connected: false, error: error };
+                }
+
+                console.log('[Analytics] ✅ Connexion Supabase réussie');
+                return { connected: true };
+            } catch (error) {
+                console.error('[Analytics] Erreur lors du test:', error);
+                return { connected: false, error: error };
+            }
         }
 
         // === PROMPT EMAIL ===
@@ -1306,6 +1313,192 @@
                     resolve(email);
                 };
             });
+        }
+
+        // === GESTION DES SOCIÉTÉS ===
+        async function getOrCreateCompany(domain) {
+            try {
+                // Si c'est pour les particuliers
+                if (domain === 'particuliers') {
+                    let { data: company, error } = await supabase
+                        .from('companies')
+                        .select('*')
+                        .eq('domain', 'particuliers')
+                        .single();
+
+                    if (error && error.code === 'PGRST116') {
+                        // Créer la société "Particuliers"
+                        const { data: newCompany, error: createError } = await supabase
+                            .from('companies')
+                            .insert([
+                                {
+                                    name: 'Particuliers',
+                                    domain: 'particuliers',
+                                    type: 'particulier'
+                                }
+                            ])
+                            .select()
+                            .single();
+
+                        if (createError) throw createError;
+                        company = newCompany;
+                    }
+                    
+                    return company;
+                }
+                
+                // Pour les domaines d'entreprise
+                let { data: company, error } = await supabase
+                    .from('companies')
+                    .select('*')
+                    .eq('domain', domain)
+                    .single();
+
+                if (error && error.code === 'PGRST116') {
+                    // Créer la société
+                    const { data: newCompany, error: createError } = await supabase
+                        .from('companies')
+                        .insert([
+                            {
+                                name: `Société ${domain}`,
+                                domain: domain,
+                                type: 'professionnel'
+                            }
+                        ])
+                        .select()
+                        .single();
+
+                    if (createError) throw createError;
+                    company = newCompany;
+                } else if (error) {
+                    throw error;
+                }
+
+                return company;
+            } catch (error) {
+                console.error('Erreur gestion société:', error);
+                throw error;
+            }
+        }
+
+        // === CRÉATION UTILISATEUR ===
+        async function createDefaultUser(email) {
+            try {
+                const accountType = localStorage.getItem('userAccountType') || 'personnel';
+                const domain = email.split('@')[1];
+                let company = null;
+                let role = 'user';
+                
+                // Liste des super admins
+                const superAdmins = ['vianney.hastings@hotmail.fr'];
+                
+                if (superAdmins.includes(email.toLowerCase())) {
+                    role = 'super_admin';
+                }
+                
+                if (accountType === 'professionnel') {
+                    const companyName = localStorage.getItem('userCompanyName');
+                    
+                    // Chercher si la société existe déjà
+                    let { data: existingCompany } = await supabase
+                        .from('companies')
+                        .select('*')
+                        .eq('name', companyName)
+                        .single();
+                    
+                    if (existingCompany) {
+                        // La société existe, ajouter l'utilisateur comme user normal
+                        company = existingCompany;
+                        
+                        if (role !== 'super_admin') {
+                            role = 'user'; // Utilisateur normal si la société existe déjà
+                        }
+                        
+                        showToast(`Vous avez été ajouté à la société "${companyName}"`, 'info');
+                    } else {
+                        // Créer la nouvelle société
+                        const { data: newCompany, error: createError } = await supabase
+                            .from('companies')
+                            .insert([
+                                {
+                                    name: companyName,
+                                    domain: domain,
+                                    type: 'professionnel'
+                                }
+                            ])
+                            .select()
+                            .single();
+                        
+                        if (createError) throw createError;
+                        company = newCompany;
+                        
+                        // Premier utilisateur de la nouvelle société devient admin
+                        if (role !== 'super_admin') {
+                            role = 'company_admin';
+                        }
+                        
+                        showToast(`Société "${companyName}" créée. Vous êtes administrateur.`, 'success');
+                    }
+                } else {
+                    // Personnel - créer une société personnelle pour chaque utilisateur
+                    const personalCompanyName = `Personnel - ${email}`;
+                    
+                    // Créer la société personnelle
+                    const { data: personalCompany, error: createError } = await supabase
+                        .from('companies')
+                        .insert([
+                            {
+                                name: personalCompanyName,
+                                domain: `personnel-${email.replace('@', '-')}`,
+                                type: 'personnel'
+                            }
+                        ])
+                        .select()
+                        .single();
+                    
+                    if (createError && !createError.message.includes('duplicate')) throw createError;
+                    
+                    company = personalCompany;
+                    
+                    // Toujours admin de sa société personnelle (sauf super admin)
+                    if (role !== 'super_admin') {
+                        role = 'company_admin';
+                    }
+                }
+
+                // Créer l'utilisateur
+                const { data: newUser, error } = await supabase
+                    .from('users')
+                    .insert([
+                        {
+                            email: email.toLowerCase(),
+                            name: email.split('@')[0],
+                            company_id: company?.id,
+                            role: role,
+                            license_status: 'active',
+                            license_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+                            first_login_at: new Date().toISOString(),
+                            last_login_at: new Date().toISOString(),
+                            account_type: accountType
+                        }
+                    ])
+                    .select('*')
+                    .single();
+
+                if (error) throw error;
+
+                // Ajouter la société à l'objet utilisateur
+                newUser.company = company;
+
+                // Nettoyer le localStorage
+                localStorage.removeItem('userAccountType');
+                localStorage.removeItem('userCompanyName');
+
+                return newUser;
+            } catch (error) {
+                console.error('Erreur création utilisateur:', error);
+                throw error;
+            }
         }
 
         // === AUTHENTIFICATION UTILISATEUR ===
