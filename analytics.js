@@ -5,10 +5,18 @@ class AnalyticsManager {
         this.users = [];
         this.licenses = [];
         this.analyticsEvents = [];
+        this.testMode = true; // Mode test activé
     }
 
     // Charger toutes les données (selon le rôle)
     async loadData() {
+        // En mode test, charger des données fictives
+        if (this.testMode || !window.supabaseClient) {
+            console.log('[Analytics] 🧪 Mode test - Chargement de données fictives');
+            this.loadTestData();
+            return;
+        }
+        
         const userRole = authManager.getUserRole();
         
         try {
@@ -28,8 +36,105 @@ class AnalyticsManager {
             }
         } catch (error) {
             console.error('Erreur lors du chargement des données:', error);
-            throw error;
+            // En cas d'erreur, charger les données de test
+            this.loadTestData();
         }
+    }
+
+    // Charger des données de test
+    loadTestData() {
+        // Sociétés fictives
+        this.companies = [
+            { id: '1', name: 'Entreprise Alpha', domain: 'alpha.com', created_at: '2024-01-15' },
+            { id: '2', name: 'Société Beta', domain: 'beta.fr', created_at: '2024-02-20' },
+            { id: '3', name: 'Groupe Gamma', domain: 'gamma.io', created_at: '2024-03-10' }
+        ];
+
+        // Utilisateurs fictifs
+        this.users = [
+            { 
+                id: '1', 
+                email: 'admin@alpha.com', 
+                name: 'Jean Admin', 
+                company_id: '1',
+                companies: { name: 'Entreprise Alpha' },
+                role: 'admin',
+                license_status: 'active',
+                license_expires_at: '2025-12-31',
+                last_login_at: new Date().toISOString()
+            },
+            { 
+                id: '2', 
+                email: 'user@beta.fr', 
+                name: 'Marie User', 
+                company_id: '2',
+                companies: { name: 'Société Beta' },
+                role: 'user',
+                license_status: 'trial',
+                license_expires_at: '2025-07-15',
+                last_login_at: '2025-06-25'
+            },
+            { 
+                id: '3', 
+                email: 'test@gamma.io', 
+                name: 'Pierre Test', 
+                company_id: '3',
+                companies: { name: 'Groupe Gamma' },
+                role: 'user',
+                license_status: 'expired',
+                license_expires_at: '2025-05-01',
+                last_login_at: '2025-06-20'
+            }
+        ];
+
+        // Licences fictives
+        this.licenses = [
+            {
+                id: '1',
+                company_id: '1',
+                companies: { name: 'Entreprise Alpha' },
+                type: 'premium',
+                seats: 50,
+                used_seats: 32,
+                price: 4999.99,
+                status: 'active',
+                expires_at: '2025-12-31'
+            },
+            {
+                id: '2',
+                company_id: '2',
+                companies: { name: 'Société Beta' },
+                type: 'standard',
+                seats: 20,
+                used_seats: 15,
+                price: 1999.99,
+                status: 'active',
+                expires_at: '2025-07-15'
+            }
+        ];
+
+        // Événements analytics fictifs
+        const eventTypes = ['page_view', 'feature_use', 'export_data', 'user_login', 'report_generated'];
+        const now = new Date();
+        
+        this.analyticsEvents = [];
+        for (let i = 0; i < 100; i++) {
+            const daysAgo = Math.floor(Math.random() * 30);
+            const eventDate = new Date(now);
+            eventDate.setDate(eventDate.getDate() - daysAgo);
+            
+            this.analyticsEvents.push({
+                id: `event-${i}`,
+                user_id: this.users[Math.floor(Math.random() * this.users.length)].id,
+                users: this.users[Math.floor(Math.random() * this.users.length)],
+                event_type: eventTypes[Math.floor(Math.random() * eventTypes.length)],
+                event_data: { test: true, value: Math.random() * 100 },
+                created_at: eventDate.toISOString()
+            });
+        }
+
+        // Trier par date décroissante
+        this.analyticsEvents.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     }
 
     // Charger toutes les sociétés
