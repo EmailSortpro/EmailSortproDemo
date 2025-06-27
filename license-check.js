@@ -41,79 +41,147 @@ async function checkUserLicense() {
                 };
             }
             
-            // Créer des données fictives pour l'interface
-            window.testModeData = {
-                currentUser: authManager.currentUser,
-                stats: {
-                    totalCompanies: 3,
-                    activeUsers: 47,
-                    activeLicenses: 12,
-                    eventsToday: 234
-                }
-            };
-            
-            // Créer une fonction initializePage personnalisée
-            if (!window.initializePage || window.initializePage.toString().includes('loadData')) {
-                console.log('[License Check] Adaptation de initializePage pour le mode test');
-                window.initializePageOriginal = window.initializePage;
-                window.initializePage = async function() {
-                    try {
-                        console.log('[License Check] Initialisation de la page en mode test');
-                        
-                        // Simuler displayUserInfo si elle existe
-                        if (window.displayUserInfo) {
-                            try {
-                                window.displayUserInfo();
-                            } catch (e) {
-                                // Créer notre propre version
-                                const userNameEl = document.getElementById('userName');
-                                const userRoleEl = document.getElementById('userRole');
-                                if (userNameEl) userNameEl.textContent = authManager.currentUser.name || authManager.currentUser.email;
-                                if (userRoleEl) userRoleEl.textContent = authManager.currentUser.role;
-                            }
-                        }
-                        
-                        // Afficher des stats de test
-                        if (window.displayStats) {
-                            try {
-                                window.displayStats();
-                            } catch (e) {
-                                console.log('[License Check] Affichage des stats de test');
-                                const statsGrid = document.getElementById('statsGrid');
-                                if (statsGrid) {
-                                    statsGrid.innerHTML = `
-                                        <div class="stat-card">
-                                            <div class="stat-label">Sociétés</div>
-                                            <div class="stat-value">3</div>
-                                        </div>
-                                        <div class="stat-card">
-                                            <div class="stat-label">Utilisateurs actifs</div>
-                                            <div class="stat-value">47</div>
-                                        </div>
-                                        <div class="stat-card">
-                                            <div class="stat-label">Licences actives</div>
-                                            <div class="stat-value">12</div>
-                                        </div>
-                                        <div class="stat-card">
-                                            <div class="stat-label">Événements aujourd'hui</div>
-                                            <div class="stat-value">234</div>
-                                        </div>
-                                    `;
-                                }
-                            }
-                        }
-                        
-                        console.log('[License Check] Page initialisée avec succès');
-                    } catch (error) {
-                        console.error('[License Check] Erreur lors de l\'initialisation:', error);
-                    }
+            // Ajouter loadData à analyticsManager s'il existe
+            if (window.analyticsManager && !window.analyticsManager.loadData) {
+                window.analyticsManager.loadData = async function() {
+                    console.log('[Analytics] loadData appelé - mode test, pas de chargement nécessaire');
+                    return Promise.resolve();
                 };
             }
             
-            // Initialiser la page
-            if (window.initializePage) {
-                window.initializePage();
-            }
+            // Créer une fonction initializePage qui évite l'appel à loadData
+            console.log('[License Check] Remplacement de initializePage pour éviter loadData');
+            const originalInitializePage = window.initializePage;
+            window.initializePage = async function() {
+                try {
+                    console.log('[License Check] Initialisation de la page (version adaptée)');
+                    
+                    // Si l'original existe et ne contient pas loadData, l'utiliser
+                    if (originalInitializePage && !originalInitializePage.toString().includes('loadData')) {
+                        return originalInitializePage();
+                    }
+                    
+                    // Sinon, utiliser notre version personnalisée
+                    // Afficher les informations utilisateur
+                    const userNameEl = document.getElementById('userName');
+                    const userRoleEl = document.getElementById('userRole');
+                    if (userNameEl) userNameEl.textContent = authManager.currentUser.name || authManager.currentUser.email;
+                    if (userRoleEl) {
+                        const roleText = {
+                            'super_admin': 'Super Admin',
+                            'admin': 'Administrateur',
+                            'user': 'Utilisateur'
+                        };
+                        userRoleEl.textContent = roleText[authManager.currentUser.role] || 'Utilisateur';
+                    }
+                    
+                    // Afficher l'onglet sociétés pour les super admins
+                    const companiesTab = document.getElementById('companiesTab');
+                    if (companiesTab && authManager.currentUser.role === 'super_admin') {
+                        companiesTab.style.display = 'block';
+                    }
+                    
+                    // Afficher les stats de test
+                    const statsGrid = document.getElementById('statsGrid');
+                    if (statsGrid) {
+                        statsGrid.innerHTML = `
+                            <div class="stat-card">
+                                <div class="stat-label">Sociétés</div>
+                                <div class="stat-value">3</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Utilisateurs actifs</div>
+                                <div class="stat-value">47</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Licences actives</div>
+                                <div class="stat-value">12</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Événements aujourd'hui</div>
+                                <div class="stat-value">234</div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Remplir les tableaux avec des données de test
+                    const tables = {
+                        'companiesTable': `
+                            <tr>
+                                <td>Entreprise Alpha</td>
+                                <td>alpha.com</td>
+                                <td>15</td>
+                                <td>1</td>
+                                <td>${new Date().toLocaleDateString('fr-FR')}</td>
+                            </tr>
+                            <tr>
+                                <td>Société Beta</td>
+                                <td>beta.fr</td>
+                                <td>23</td>
+                                <td>2</td>
+                                <td>${new Date().toLocaleDateString('fr-FR')}</td>
+                            </tr>
+                        `,
+                        'usersTable': `
+                            <tr>
+                                <td>admin@alpha.com</td>
+                                <td>Jean Admin</td>
+                                <td>Entreprise Alpha</td>
+                                <td>admin</td>
+                                <td><span class="status-badge status-active">active</span></td>
+                                <td>${new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}</td>
+                                <td>${new Date().toLocaleDateString('fr-FR')}</td>
+                            </tr>
+                            <tr>
+                                <td>user@beta.fr</td>
+                                <td>Marie User</td>
+                                <td>Société Beta</td>
+                                <td>user</td>
+                                <td><span class="status-badge status-trial">trial</span></td>
+                                <td>${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}</td>
+                                <td>${new Date().toLocaleDateString('fr-FR')}</td>
+                            </tr>
+                        `,
+                        'licensesTable': `
+                            <tr>
+                                <td>Entreprise Alpha</td>
+                                <td>premium</td>
+                                <td>50</td>
+                                <td>15</td>
+                                <td>4999.99 €</td>
+                                <td><span class="status-badge status-active">active</span></td>
+                                <td>${new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}</td>
+                            </tr>
+                        `,
+                        'eventsTable': `
+                            <tr>
+                                <td>${new Date().toLocaleString('fr-FR')}</td>
+                                <td>test@example.com</td>
+                                <td>page_view</td>
+                                <td>{"page": "analytics"}</td>
+                            </tr>
+                        `
+                    };
+                    
+                    // Injecter les données dans les tableaux
+                    Object.entries(tables).forEach(([tableId, content]) => {
+                        const tbody = document.querySelector(`#${tableId} tbody`);
+                        if (tbody) tbody.innerHTML = content;
+                    });
+                    
+                    // Tracker l'événement
+                    if (window.analyticsManager && window.analyticsManager.trackEvent) {
+                        window.analyticsManager.trackEvent('page_view', { page: 'analytics' });
+                    }
+                    
+                    console.log('[License Check] Page initialisée avec succès (données de test)');
+                } catch (error) {
+                    console.error('[License Check] Erreur lors de l\'initialisation:', error);
+                }
+            };
+            
+            // Appeler la nouvelle fonction
+            window.initializePage();
             return;
         }
 
