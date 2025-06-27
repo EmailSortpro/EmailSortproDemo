@@ -1,5 +1,5 @@
-// config-supabase.js - Configuration Supabase pour structure réelle sans mode démo
-// Version corrigée pour EmailSortPro avec vianney.hastings@hotmail.fr comme admin par défaut
+// config-supabase.js - Configuration Supabase pour EmailSortPro
+// Version complète sans mode démo avec structure réelle
 
 class SupabaseConfig {
     constructor() {
@@ -507,7 +507,7 @@ window.initializeSupabase = async function() {
 
 // Fonction de diagnostic complète
 window.diagnoseSupabase = async function() {
-    console.group('🔍 DIAGNOSTIC SUPABASE - EmailSortPro (Structure Réelle)');
+    console.group('🔍 DIAGNOSTIC SUPABASE - EmailSortPro');
     
     const diagnostic = await window.supabaseConfig.getFullDiagnostic();
     
@@ -529,7 +529,7 @@ window.diagnoseSupabase = async function() {
 
 // Auto-diagnostic et initialisation
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[SupabaseConfig] 🚀 Configuration EmailSortPro chargée (structure réelle)');
+    console.log('[SupabaseConfig] 🚀 Configuration EmailSortPro chargée');
     
     // Attendre un peu pour que Supabase soit complètement chargé
     setTimeout(async () => {
@@ -543,7 +543,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (tablesCheck.allExist) {
                     // Obtenir les statistiques
                     await config.getDatabaseStats();
-                    console.log('[SupabaseConfig] ✅ Base de données prête avec structure réelle');
+                    console.log('[SupabaseConfig] ✅ Base de données prête');
                 } else {
                     console.warn('[SupabaseConfig] ⚠️ Certaines tables manquantes');
                     console.info('[SupabaseConfig] 💡 Assurez-vous que les tables users et companies existent');
@@ -559,7 +559,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Instructions pour les développeurs
 console.log(`
-🎯 CONFIGURATION SUPABASE EMAILSORTPRO (STRUCTURE RÉELLE)
+🎯 CONFIGURATION SUPABASE EMAILSORTPRO
 
 📋 Pour utiliser:
    - Client Supabase: window.getSupabaseClient()
@@ -569,7 +569,7 @@ console.log(`
 
 ⚙️ Base de données:
    - URL: https://oxyiamruvyliueecpaam.supabase.co
-   - Mode: Production avec structure réelle
+   - Mode: Production
    - Tables requises: users, companies
    - Tables optionnelles: analytics_events, admin_actions
 
@@ -585,4 +585,4 @@ console.log(`
 💡 Pour déboguer: await diagnoseSupabase()
 `);
 
-console.log('[SupabaseConfig] ✅ Configuration avec structure réelle chargée (sans mode démo)');
+console.log('[SupabaseConfig] ✅ Configuration chargée');
