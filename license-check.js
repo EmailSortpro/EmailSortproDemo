@@ -1,7 +1,7 @@
 // Vérification des licences et redirection
 async function checkUserLicense() {
     // MODE TEST - ACCÈS SANS AUTHENTIFICATION
-    const TEST_MODE = true; // Mettre à false pour activer l'authentification
+    const TEST_MODE = false; // Mode production - authentification activée
     
     // Attendre que le DOM soit chargé
     if (document.readyState !== 'complete') {
