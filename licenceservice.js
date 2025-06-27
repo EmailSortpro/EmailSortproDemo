@@ -24,16 +24,20 @@ class LicenseService {
                 throw new Error('Configuration Supabase invalide');
             }
 
-            // Charger Supabase client
-            if (typeof window.supabase === 'undefined') {
-                await this.loadSupabaseClient();
+            // Utiliser le client Supabase déjà configuré
+            this.supabase = window.supabaseConfig.getClient();
+            
+            if (!this.supabase) {
+                // Attendre que le client soit prêt
+                await this.waitForSupabaseClient();
             }
 
-            // Initialiser le client
-            this.supabase = window.supabase.createClient(config.url, config.anonKey, config.auth);
             this.initialized = true;
-
             console.log('[LicenseService] ✅ Initialisé avec gestion des connexions');
+            
+            // Tester la connexion
+            await this.testDatabaseConnection();
+            
             return true;
         } catch (error) {
             console.error('[LicenseService] ❌ Erreur initialisation:', error);
@@ -41,14 +45,40 @@ class LicenseService {
         }
     }
 
+    async waitForSupabaseClient(maxAttempts = 10) {
+        let attempts = 0;
+        
+        while (!this.supabase && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            this.supabase = window.supabaseConfig.getClient();
+            attempts++;
+        }
+        
+        if (!this.supabase) {
+            throw new Error('Client Supabase non disponible après attente');
+        }
+    }
+
+    async testDatabaseConnection() {
+        try {
+            const { data, error } = await this.supabase
+                .from('users')
+                .select('count', { count: 'exact', head: true })
+                .limit(0);
+
+            if (error && !error.message.includes('relation "users" does not exist')) {
+                console.warn('[LicenseService] ⚠️ Tables possiblement manquantes:', error.message);
+            } else {
+                console.log('[LicenseService] ✅ Connexion base de données validée');
+            }
+        } catch (error) {
+            console.warn('[LicenseService] ⚠️ Test connexion échoué:', error.message);
+        }
+    }
+
     async loadSupabaseClient() {
-        return new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-            script.onload = resolve;
-            script.onerror = () => reject(new Error('Impossible de charger Supabase'));
-            document.head.appendChild(script);
-        });
+        // Cette méthode n'est plus nécessaire car le client est géré par SupabaseConfig
+        return Promise.resolve();
     }
 
     // === VÉRIFICATION DE LA LICENCE AVEC CONTRÔLE DE CONNEXION ===
