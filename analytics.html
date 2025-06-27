@@ -1,590 +1,580 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analytics - Tableau de bord</title>
-    
-    <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- Chart.js pour les graphiques -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Styles -->
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+// Gestion des analytics et des données
+class AnalyticsManager {
+    constructor() {
+        this.companies = [];
+        this.users = [];
+        this.licenses = [];
+        this.analyticsEvents = [];
+        this.testMode = true; // Mode test activé
+    }
+
+    // Charger toutes les données (selon le rôle)
+    async loadData() {
+        // En mode test, charger des données fictives
+        if (this.testMode || !window.supabaseClient) {
+            console.log('[Analytics] 🧪 Mode test - Chargement de données fictives');
+            this.loadTestData();
+            return;
         }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background-color: #f3f4f6;
-            color: #1f2937;
-        }
-
-        /* Header */
-        .header {
-            background-color: #ffffff;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header h1 {
-            font-size: 1.5rem;
-            color: #1f2937;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .user-role {
-            background-color: #3b82f6;
-            color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-        }
-
-        .logout-btn {
-            background-color: #ef4444;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-            cursor: pointer;
-            font-size: 0.875rem;
-        }
-
-        /* Container */
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background-color: #ffffff;
-            padding: 1.5rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .stat-label {
-            color: #6b7280;
-            font-size: 0.875rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #1f2937;
-        }
-
-        /* Tabs */
-        .tabs {
-            background-color: #ffffff;
-            border-radius: 0.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-
-        .tab-buttons {
-            display: flex;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .tab-button {
-            padding: 1rem 2rem;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 0.875rem;
-            color: #6b7280;
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s;
-        }
-
-        .tab-button.active {
-            color: #3b82f6;
-            border-bottom-color: #3b82f6;
-        }
-
-        .tab-content {
-            padding: 2rem;
-        }
-
-        .tab-panel {
-            display: none;
-        }
-
-        .tab-panel.active {
-            display: block;
-        }
-
-        /* Tables */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .data-table th {
-            background-color: #f9fafb;
-            padding: 0.75rem;
-            text-align: left;
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: #6b7280;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .data-table td {
-            padding: 0.75rem;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .data-table tr:hover {
-            background-color: #f9fafb;
-        }
-
-        /* Status badges */
-        .status-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-
-        .status-active {
-            background-color: #d1fae5;
-            color: #065f46;
-        }
-
-        .status-trial {
-            background-color: #dbeafe;
-            color: #1e40af;
-        }
-
-        .status-expired {
-            background-color: #fee2e2;
-            color: #991b1b;
-        }
-
-        .status-blocked {
-            background-color: #f3f4f6;
-            color: #374151;
-        }
-
-        /* Charts */
-        .chart-container {
-            position: relative;
-            height: 300px;
-            margin-top: 2rem;
-        }
-
-        /* Loading */
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 200px;
-            color: #6b7280;
-        }
-
-        .loading-spinner {
-            border: 2px solid #f3f4f6;
-            border-top: 2px solid #3b82f6;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Error */
-        .error-message {
-            background-color: #fee2e2;
-            color: #991b1b;
-            padding: 1rem;
-            border-radius: 0.375rem;
-            margin-bottom: 1rem;
-        }
-    </style>
-</head>
-<body>
-    <!-- Header -->
-    <header class="header">
-        <h1>Analytics Dashboard</h1>
-        <div class="user-info">
-            <span id="userName"></span>
-            <span class="user-role" id="userRole"></span>
-            <button class="logout-btn" onclick="authManager.logout()">Déconnexion</button>
-        </div>
-    </header>
-
-    <!-- Main Container -->
-    <div class="container">
-        <!-- Stats Grid -->
-        <div class="stats-grid" id="statsGrid">
-            <div class="loading">
-                <div class="loading-spinner"></div>
-            </div>
-        </div>
-
-        <!-- Tabs -->
-        <div class="tabs">
-            <div class="tab-buttons">
-                <button class="tab-button active" onclick="switchTab('overview')">Vue d'ensemble</button>
-                <button class="tab-button" onclick="switchTab('companies')" id="companiesTab" style="display:none;">Sociétés</button>
-                <button class="tab-button" onclick="switchTab('users')">Utilisateurs</button>
-                <button class="tab-button" onclick="switchTab('licenses')">Licences</button>
-                <button class="tab-button" onclick="switchTab('events')">Événements</button>
-            </div>
-
-            <div class="tab-content">
-                <!-- Overview Tab -->
-                <div class="tab-panel active" id="overview-panel">
-                    <h2>Activité récente</h2>
-                    <div class="chart-container">
-                        <canvas id="activityChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Companies Tab -->
-                <div class="tab-panel" id="companies-panel">
-                    <h2>Gestion des sociétés</h2>
-                    <table class="data-table" id="companiesTable">
-                        <thead>
-                            <tr>
-                                <th>Nom</th>
-                                <th>Domaine</th>
-                                <th>Utilisateurs</th>
-                                <th>Licences actives</th>
-                                <th>Date de création</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="5" class="loading">Chargement...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Users Tab -->
-                <div class="tab-panel" id="users-panel">
-                    <h2>Gestion des utilisateurs</h2>
-                    <table class="data-table" id="usersTable">
-                        <thead>
-                            <tr>
-                                <th>Email</th>
-                                <th>Nom</th>
-                                <th>Société</th>
-                                <th>Rôle</th>
-                                <th>Statut</th>
-                                <th>Expire le</th>
-                                <th>Dernière connexion</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="7" class="loading">Chargement...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Licenses Tab -->
-                <div class="tab-panel" id="licenses-panel">
-                    <h2>Gestion des licences</h2>
-                    <table class="data-table" id="licensesTable">
-                        <thead>
-                            <tr>
-                                <th>Société</th>
-                                <th>Type</th>
-                                <th>Sièges</th>
-                                <th>Utilisés</th>
-                                <th>Prix</th>
-                                <th>Statut</th>
-                                <th>Expire le</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="7" class="loading">Chargement...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Events Tab -->
-                <div class="tab-panel" id="events-panel">
-                    <h2>Événements récents</h2>
-                    <table class="data-table" id="eventsTable">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Utilisateur</th>
-                                <th>Type d'événement</th>
-                                <th>Détails</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="4" class="loading">Chargement...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <script src="config.js"></script>
-    <script src="auth.js"></script>
-    <script src="analytics.js"></script>
-    <script src="license-check.js"></script>
-    
-    <script>
-        let activityChart = null;
-
-        // Initialiser la page (appelée après la vérification de licence)
-        async function initializePage() {
-            try {
-                // Afficher les informations utilisateur
-                displayUserInfo();
-                
-                // Charger les données
-                await analyticsManager.loadData();
-                
-                // Afficher les statistiques
-                displayStats();
-                
-                // Afficher les tableaux
-                displayTables();
-                
-                // Créer les graphiques
-                createCharts();
-                
-                // Enregistrer l'événement
-                analyticsManager.trackEvent('page_view', { page: 'analytics' });
-                
-            } catch (error) {
-                console.error('Erreur lors de l\'initialisation:', error);
-                showError('Erreur lors du chargement des données');
+        
+        const userRole = authManager.getUserRole();
+        
+        try {
+            if (userRole === USER_ROLES.SUPER_ADMIN) {
+                // Super admin : accès à toutes les données
+                await this.loadAllCompanies();
+                await this.loadAllUsers();
+                await this.loadAllLicenses();
+                await this.loadAllAnalytics();
+            } else if (userRole === USER_ROLES.ADMIN) {
+                // Admin : accès aux données de sa société uniquement
+                const companyId = authManager.currentUser.company_id;
+                await this.loadCompanyData(companyId);
+            } else {
+                // Utilisateur normal : accès à ses propres données uniquement
+                await this.loadUserData(authManager.currentUser.id);
             }
+        } catch (error) {
+            console.error('Erreur lors du chargement des données:', error);
+            // En cas d'erreur, charger les données de test
+            this.loadTestData();
         }
+    }
 
-        // Afficher les informations utilisateur
-        function displayUserInfo() {
-            const user = authManager.currentUser;
-            document.getElementById('userName').textContent = user.name || user.email;
-            
-            const roleText = {
-                'super_admin': 'Super Admin',
-                'admin': 'Administrateur',
-                'user': 'Utilisateur'
-            };
-            document.getElementById('userRole').textContent = roleText[user.role] || 'Utilisateur';
-            
-            // Afficher l'onglet sociétés pour les super admins
-            if (user.role === USER_ROLES.SUPER_ADMIN) {
-                document.getElementById('companiesTab').style.display = 'block';
+    // Charger des données de test
+    loadTestData() {
+        // Sociétés fictives
+        this.companies = [
+            { id: '1', name: 'Entreprise Alpha', domain: 'alpha.com', created_at: '2024-01-15' },
+            { id: '2', name: 'Société Beta', domain: 'beta.fr', created_at: '2024-02-20' },
+            { id: '3', name: 'Groupe Gamma', domain: 'gamma.io', created_at: '2024-03-10' }
+        ];
+
+        // Utilisateurs fictifs
+        this.users = [
+            { 
+                id: '1', 
+                email: 'admin@alpha.com', 
+                name: 'Jean Admin', 
+                company_id: '1',
+                companies: { name: 'Entreprise Alpha' },
+                role: 'admin',
+                license_status: 'active',
+                license_expires_at: '2025-12-31',
+                last_login_at: new Date().toISOString()
+            },
+            { 
+                id: '2', 
+                email: 'user@beta.fr', 
+                name: 'Marie User', 
+                company_id: '2',
+                companies: { name: 'Société Beta' },
+                role: 'user',
+                license_status: 'trial',
+                license_expires_at: '2025-07-15',
+                last_login_at: '2025-06-25'
+            },
+            { 
+                id: '3', 
+                email: 'test@gamma.io', 
+                name: 'Pierre Test', 
+                company_id: '3',
+                companies: { name: 'Groupe Gamma' },
+                role: 'user',
+                license_status: 'expired',
+                license_expires_at: '2025-05-01',
+                last_login_at: '2025-06-20'
             }
-        }
+        ];
 
-        // Afficher les statistiques
-        function displayStats() {
-            const stats = analyticsManager.getGlobalStats();
-            const statsGrid = document.getElementById('statsGrid');
-            
-            const statsHTML = `
-                ${authManager.getUserRole() === USER_ROLES.SUPER_ADMIN ? `
-                <div class="stat-card">
-                    <div class="stat-label">Sociétés</div>
-                    <div class="stat-value">${stats.totalCompanies}</div>
-                </div>
-                ` : ''}
-                <div class="stat-card">
-                    <div class="stat-label">Utilisateurs actifs</div>
-                    <div class="stat-value">${stats.activeUsers}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Licences actives</div>
-                    <div class="stat-value">${stats.activeLicenses}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Événements aujourd'hui</div>
-                    <div class="stat-value">${stats.eventsToday}</div>
-                </div>
-            `;
-            
-            statsGrid.innerHTML = statsHTML;
-        }
-
-        // Afficher les tableaux
-        function displayTables() {
-            if (authManager.getUserRole() === USER_ROLES.SUPER_ADMIN) {
-                displayCompaniesTable();
+        // Licences fictives
+        this.licenses = [
+            {
+                id: '1',
+                company_id: '1',
+                companies: { name: 'Entreprise Alpha' },
+                type: 'premium',
+                seats: 50,
+                used_seats: 32,
+                price: 4999.99,
+                status: 'active',
+                expires_at: '2025-12-31'
+            },
+            {
+                id: '2',
+                company_id: '2',
+                companies: { name: 'Société Beta' },
+                type: 'standard',
+                seats: 20,
+                used_seats: 15,
+                price: 1999.99,
+                status: 'active',
+                expires_at: '2025-07-15'
             }
-            displayUsersTable();
-            displayLicensesTable();
-            displayEventsTable();
-        }
+        ];
 
-        // Afficher le tableau des sociétés
-        function displayCompaniesTable() {
-            const tbody = document.querySelector('#companiesTable tbody');
-            const companiesWithStats = analyticsManager.companies.map(company => {
-                const stats = analyticsManager.getCompanyStats(company.id);
-                return { ...company, ...stats };
+        // Événements analytics fictifs
+        const eventTypes = ['page_view', 'feature_use', 'export_data', 'user_login', 'report_generated'];
+        const now = new Date();
+        
+        this.analyticsEvents = [];
+        for (let i = 0; i < 100; i++) {
+            const daysAgo = Math.floor(Math.random() * 30);
+            const eventDate = new Date(now);
+            eventDate.setDate(eventDate.getDate() - daysAgo);
+            
+            this.analyticsEvents.push({
+                id: `event-${i}`,
+                user_id: this.users[Math.floor(Math.random() * this.users.length)].id,
+                users: this.users[Math.floor(Math.random() * this.users.length)],
+                event_type: eventTypes[Math.floor(Math.random() * eventTypes.length)],
+                event_data: { test: true, value: Math.random() * 100 },
+                created_at: eventDate.toISOString()
             });
-
-            tbody.innerHTML = companiesWithStats.map(company => `
-                <tr>
-                    <td>${company.name}</td>
-                    <td>${company.domain || '-'}</td>
-                    <td>${company.totalUsers || 0}</td>
-                    <td>${company.licenses?.filter(l => l.status === 'active').length || 0}</td>
-                    <td>${new Date(company.created_at).toLocaleDateString('fr-FR')}</td>
-                </tr>
-            `).join('');
         }
 
-        // Afficher le tableau des utilisateurs
-        function displayUsersTable() {
-            const tbody = document.querySelector('#usersTable tbody');
-            
-            tbody.innerHTML = analyticsManager.users.map(user => `
-                <tr>
-                    <td>${user.email}</td>
-                    <td>${user.name || '-'}</td>
-                    <td>${user.companies?.name || '-'}</td>
-                    <td>${user.role}</td>
-                    <td><span class="status-badge status-${user.license_status}">${user.license_status}</span></td>
-                    <td>${new Date(user.license_expires_at).toLocaleDateString('fr-FR')}</td>
-                    <td>${user.last_login_at ? new Date(user.last_login_at).toLocaleDateString('fr-FR') : '-'}</td>
-                </tr>
-            `).join('');
-        }
+        // Trier par date décroissante
+        this.analyticsEvents.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
 
-        // Afficher le tableau des licences
-        function displayLicensesTable() {
-            const tbody = document.querySelector('#licensesTable tbody');
-            
-            tbody.innerHTML = analyticsManager.licenses.map(license => `
-                <tr>
-                    <td>${license.companies?.name || '-'}</td>
-                    <td>${license.type}</td>
-                    <td>${license.seats}</td>
-                    <td>${license.used_seats}</td>
-                    <td>${license.price ? license.price + ' €' : '-'}</td>
-                    <td><span class="status-badge status-${license.status}">${license.status}</span></td>
-                    <td>${new Date(license.expires_at).toLocaleDateString('fr-FR')}</td>
-                </tr>
-            `).join('');
-        }
+    // Charger toutes les sociétés
+    async loadAllCompanies() {
+        const { data, error } = await supabaseClient
+            .from('companies')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-        // Afficher le tableau des événements
-        function displayEventsTable() {
-            const tbody = document.querySelector('#eventsTable tbody');
-            
-            tbody.innerHTML = analyticsManager.analyticsEvents.slice(0, 50).map(event => `
-                <tr>
-                    <td>${new Date(event.created_at).toLocaleString('fr-FR')}</td>
-                    <td>${event.users?.email || '-'}</td>
-                    <td>${event.event_type}</td>
-                    <td>${event.event_data ? JSON.stringify(event.event_data) : '-'}</td>
-                </tr>
-            `).join('');
-        }
+        if (error) throw error;
+        this.companies = data;
+    }
 
-        // Créer les graphiques
-        function createCharts() {
-            const ctx = document.getElementById('activityChart').getContext('2d');
-            
-            // Préparer les données pour le graphique
-            const last7Days = [];
-            const eventCounts = [];
-            
-            for (let i = 6; i >= 0; i--) {
-                const date = new Date();
-                date.setDate(date.getDate() - i);
-                last7Days.push(date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }));
-                
-                const dayEvents = analyticsManager.analyticsEvents.filter(e => {
-                    const eventDate = new Date(e.created_at);
-                    return eventDate.toDateString() === date.toDateString();
+    // Charger tous les utilisateurs
+    async loadAllUsers() {
+        const { data, error } = await supabaseClient
+            .from('users')
+            .select(`
+                *,
+                companies (name)
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        this.users = data;
+    }
+
+    // Charger toutes les licences
+    async loadAllLicenses() {
+        const { data, error } = await supabaseClient
+            .from('licenses')
+            .select(`
+                *,
+                companies (name),
+                users (email, name)
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        this.licenses = data;
+    }
+
+    // Charger tous les événements analytics
+    async loadAllAnalytics() {
+        const { data, error } = await supabaseClient
+            .from('analytics_events')
+            .select(`
+                *,
+                users (email, name)
+            `)
+            .order('created_at', { ascending: false })
+            .limit(1000);
+
+        if (error) throw error;
+        this.analyticsEvents = data;
+    }
+
+    // Charger les données d'une société spécifique
+    async loadCompanyData(companyId) {
+        // Utilisateurs de la société
+        const { data: users, error: usersError } = await supabaseClient
+            .from('users')
+            .select('*')
+            .eq('company_id', companyId)
+            .order('created_at', { ascending: false });
+
+        if (usersError) throw usersError;
+        this.users = users;
+
+        // Licences de la société
+        const { data: licenses, error: licensesError } = await supabaseClient
+            .from('licenses')
+            .select('*')
+            .eq('company_id', companyId)
+            .order('created_at', { ascending: false });
+
+        if (licensesError) throw licensesError;
+        this.licenses = licenses;
+
+        // Événements analytics des utilisateurs de la société
+        const userIds = users.map(u => u.id);
+        if (userIds.length > 0) {
+            const { data: events, error: eventsError } = await supabaseClient
+                .from('analytics_events')
+                .select('*')
+                .in('user_id', userIds)
+                .order('created_at', { ascending: false })
+                .limit(500);
+
+            if (eventsError) throw eventsError;
+            this.analyticsEvents = events;
+        }
+    }
+
+    // Charger les données d'un utilisateur spécifique
+    async loadUserData(userId) {
+        const { data: events, error } = await supabaseClient
+            .from('analytics_events')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+        if (error) throw error;
+        this.analyticsEvents = events;
+    }
+
+    // Obtenir les statistiques globales
+    getGlobalStats() {
+        const now = new Date();
+        
+        return {
+            totalCompanies: this.companies.length,
+            totalUsers: this.users.length,
+            activeUsers: this.users.filter(u => 
+                u.license_status === LICENSE_STATUS.ACTIVE || 
+                u.license_status === LICENSE_STATUS.TRIAL
+            ).length,
+            totalLicenses: this.licenses.length,
+            activeLicenses: this.licenses.filter(l => 
+                l.status === 'active' && 
+                new Date(l.expires_at) > now
+            ).length,
+            totalEvents: this.analyticsEvents.length,
+            eventsToday: this.analyticsEvents.filter(e => {
+                const eventDate = new Date(e.created_at);
+                return eventDate.toDateString() === now.toDateString();
+            }).length
+        };
+    }
+
+    // Obtenir les statistiques par société
+    getCompanyStats(companyId) {
+        const companyUsers = this.users.filter(u => u.company_id === companyId);
+        const companyLicenses = this.licenses.filter(l => l.company_id === companyId);
+        const userIds = companyUsers.map(u => u.id);
+        const companyEvents = this.analyticsEvents.filter(e => userIds.includes(e.user_id));
+
+        return {
+            totalUsers: companyUsers.length,
+            activeUsers: companyUsers.filter(u => 
+                u.license_status === LICENSE_STATUS.ACTIVE || 
+                u.license_status === LICENSE_STATUS.TRIAL
+            ).length,
+            licenses: companyLicenses,
+            totalEvents: companyEvents.length
+        };
+    }
+
+    // Enregistrer un événement analytics
+    async trackEvent(eventType, eventData = {}) {
+        if (!authManager.currentUser) return;
+
+        try {
+            const { error } = await supabaseClient
+                .from('analytics_events')
+                .insert({
+                    user_id: authManager.currentUser.id,
+                    event_type: eventType,
+                    event_data: eventData
                 });
-                eventCounts.push(dayEvents.length);
+
+            if (error) throw error;
+        } catch (error) {
+            console.error('Erreur lors de l\'enregistrement de l\'événement:', error);
+        }
+    }
+}
+
+// Ajouter la méthode loadData pour charger les vraies données depuis Supabase
+if (!window.analyticsManager) {
+    window.analyticsManager = new AnalyticsManager();
+}
+
+// Ajouter la fonction loadData qui charge depuis la BDD
+window.analyticsManager.loadData = async function() {
+    console.log('[Analytics] Chargement des données depuis la base de données...');
+    
+    try {
+        // Vérifier que Supabase est initialisé
+        if (!window.supabaseClient) {
+            console.error('[Analytics] Supabase non initialisé');
+            // En mode test, charger des données fictives
+            this.loadTestData();
+            return;
+        }
+
+        // Déterminer le rôle de l'utilisateur
+        const userRole = window.authManager?.currentUser?.role || 'user';
+        console.log('[Analytics] Rôle utilisateur:', userRole);
+
+        // Charger les données selon le rôle
+        if (userRole === 'super_admin') {
+            // Super admin : accès à tout
+            await Promise.all([
+                this.loadCompanies(),
+                this.loadUsers(),
+                this.loadLicenses(),
+                this.loadAnalyticsEvents()
+            ]);
+        } else if (userRole === 'admin') {
+            // Admin : données de sa société
+            const companyId = window.authManager?.currentUser?.company_id;
+            if (companyId) {
+                await this.loadCompanyData(companyId);
             }
-
-            activityChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: last7Days,
-                    datasets: [{
-                        label: 'Événements',
-                        data: eventCounts,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        tension: 0.3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
-                            }
-                        }
-                    }
-                }
-            });
+        } else {
+            // Utilisateur : ses propres données
+            const userId = window.authManager?.currentUser?.id;
+            if (userId) {
+                await this.loadUserEvents(userId);
+            }
         }
 
-        // Changer d'onglet
-        function switchTab(tabName) {
-            // Désactiver tous les onglets
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
-            
-            // Activer l'onglet sélectionné
-            event.target.classList.add('active');
-            document.getElementById(`${tabName}-panel`).classList.add('active');
-        }
+        console.log('[Analytics] Données chargées avec succès');
+    } catch (error) {
+        console.error('[Analytics] Erreur lors du chargement des données:', error);
+        // En cas d'erreur, charger des données de test
+        this.loadTestData();
+    }
+};
 
-        // Afficher une erreur
-        function showError(message) {
-            const container = document.querySelector('.container');
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message';
-            errorDiv.textContent = message;
-            container.insertBefore(errorDiv, container.firstChild);
+// Fonction pour charger toutes les sociétés
+window.analyticsManager.loadCompanies = async function() {
+    const { data, error } = await window.supabaseClient
+        .from('companies')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('[Analytics] Erreur chargement sociétés:', error);
+        return;
+    }
+
+    this.companies = data || [];
+    console.log('[Analytics] Sociétés chargées:', this.companies.length);
+};
+
+// Fonction pour charger tous les utilisateurs
+window.analyticsManager.loadUsers = async function() {
+    const { data, error } = await window.supabaseClient
+        .from('users')
+        .select(`
+            *,
+            companies (name)
+        `)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('[Analytics] Erreur chargement utilisateurs:', error);
+        return;
+    }
+
+    this.users = data || [];
+    console.log('[Analytics] Utilisateurs chargés:', this.users.length);
+};
+
+// Fonction pour charger toutes les licences
+window.analyticsManager.loadLicenses = async function() {
+    const { data, error } = await window.supabaseClient
+        .from('licenses')
+        .select(`
+            *,
+            companies (name),
+            users (email, name)
+        `)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('[Analytics] Erreur chargement licences:', error);
+        return;
+    }
+
+    this.licenses = data || [];
+    console.log('[Analytics] Licences chargées:', this.licenses.length);
+};
+
+// Fonction pour charger les événements analytics
+window.analyticsManager.loadAnalyticsEvents = async function() {
+    const { data, error } = await window.supabaseClient
+        .from('analytics_events')
+        .select(`
+            *,
+            users (email, name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(1000);
+
+    if (error) {
+        console.error('[Analytics] Erreur chargement événements:', error);
+        return;
+    }
+
+    this.events = data || [];
+    console.log('[Analytics] Événements chargés:', this.events.length);
+};
+
+// Fonction pour charger les données d'une société
+window.analyticsManager.loadCompanyData = async function(companyId) {
+    // Utilisateurs de la société
+    const { data: users, error: usersError } = await window.supabaseClient
+        .from('users')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+
+    if (!usersError) {
+        this.users = users || [];
+    }
+
+    // Licences de la société
+    const { data: licenses, error: licensesError } = await window.supabaseClient
+        .from('licenses')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+
+    if (!licensesError) {
+        this.licenses = licenses || [];
+    }
+
+    // Événements des utilisateurs
+    if (this.users.length > 0) {
+        const userIds = this.users.map(u => u.id);
+        const { data: events, error: eventsError } = await window.supabaseClient
+            .from('analytics_events')
+            .select('*')
+            .in('user_id', userIds)
+            .order('created_at', { ascending: false })
+            .limit(500);
+
+        if (!eventsError) {
+            this.events = events || [];
         }
-    </script>
-</body>
-</html>
+    }
+};
+
+// Fonction pour charger les événements d'un utilisateur
+window.analyticsManager.loadUserEvents = async function(userId) {
+    const { data, error } = await window.supabaseClient
+        .from('analytics_events')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+    if (!error) {
+        this.events = data || [];
+    }
+};
+
+// Fonction pour charger des données de test (fallback)
+window.analyticsManager.loadTestData = function() {
+    console.log('[Analytics] Chargement de données de test');
+    
+    this.companies = [
+        { id: '1', name: 'Entreprise Alpha', domain: 'alpha.com', created_at: '2024-01-15' },
+        { id: '2', name: 'Société Beta', domain: 'beta.fr', created_at: '2024-02-20' },
+        { id: '3', name: 'Groupe Gamma', domain: 'gamma.io', created_at: '2024-03-10' }
+    ];
+
+    this.users = [
+        { 
+            id: '1', 
+            email: 'admin@alpha.com', 
+            name: 'Jean Admin', 
+            company_id: '1',
+            companies: { name: 'Entreprise Alpha' },
+            role: 'admin',
+            license_status: 'active',
+            license_expires_at: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(),
+            last_login_at: new Date().toISOString()
+        },
+        { 
+            id: '2', 
+            email: 'user@beta.fr', 
+            name: 'Marie User', 
+            company_id: '2',
+            companies: { name: 'Société Beta' },
+            role: 'user',
+            license_status: 'trial',
+            license_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            last_login_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+        }
+    ];
+
+    this.licenses = [
+        {
+            id: '1',
+            company_id: '1',
+            companies: { name: 'Entreprise Alpha' },
+            type: 'premium',
+            seats: 50,
+            used_seats: 15,
+            price: 4999.99,
+            status: 'active',
+            expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+        }
+    ];
+
+    this.events = [];
+    const eventTypes = ['page_view', 'feature_use', 'export_data', 'user_login'];
+    
+    // Générer des événements fictifs
+    for (let i = 0; i < 50; i++) {
+        const daysAgo = Math.floor(Math.random() * 7);
+        const eventDate = new Date();
+        eventDate.setDate(eventDate.getDate() - daysAgo);
+        
+        this.events.push({
+            id: `event-${i}`,
+            user_id: this.users[Math.floor(Math.random() * this.users.length)].id,
+            users: this.users[Math.floor(Math.random() * this.users.length)],
+            event_type: eventTypes[Math.floor(Math.random() * eventTypes.length)],
+            event_data: { page: 'test', value: Math.random() * 100 },
+            created_at: eventDate.toISOString()
+        });
+    }
+};
+
+// Fonction pour obtenir les statistiques
+window.analyticsManager.getStats = function() {
+    const now = new Date();
+    const today = now.toDateString();
+    
+    return {
+        totalCompanies: this.companies?.length || 0,
+        totalUsers: this.users?.length || 0,
+        activeUsers: this.users?.filter(u => 
+            u.license_status === 'active' || u.license_status === 'trial'
+        ).length || 0,
+        totalLicenses: this.licenses?.length || 0,
+        activeLicenses: this.licenses?.filter(l => 
+            l.status === 'active' && new Date(l.expires_at) > now
+        ).length || 0,
+        totalEvents: this.events?.length || 0,
+        eventsToday: this.events?.filter(e => 
+            new Date(e.created_at).toDateString() === today
+        ).length || 0
+    };
+};
+
+console.log('[Analytics] Fonctions de chargement BDD ajoutées à analyticsManager');
