@@ -31,11 +31,11 @@ async function initializeSupabase() {
         // Si elles ne sont pas disponibles, on fait un appel à une fonction serverless
         
         // Essayer différentes méthodes pour récupérer les variables
-        // 1. Variables d'environnement Vite (build time)
-        if (typeof import !== 'undefined' && import.meta?.env?.VITE_SUPABASE_URL) {
-            SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-            SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-            console.log('[Config] Variables Vite trouvées via import.meta.env');
+        // 1. Variables dans window.__env__ (Netlify)
+        if (window.__env__?.VITE_SUPABASE_URL) {
+            SUPABASE_URL = window.__env__.VITE_SUPABASE_URL;
+            SUPABASE_ANON_KEY = window.__env__.VITE_SUPABASE_ANON_KEY;
+            console.log('[Config] Variables trouvées dans window.__env__');
         } 
         // 2. Variables injectées dans window
         else if (window.env?.VITE_SUPABASE_URL) {
