@@ -24,16 +24,42 @@ async function initializeSupabase() {
         // Dans un contexte Netlify, les variables VITE_ sont exposées côté client lors du build
         // Si elles ne sont pas disponibles, on fait un appel à une fonction serverless
         
-        if (window.VITE_SUPABASE_URL && window.VITE_SUPABASE_ANON_KEY) {
-            // Variables disponibles directement (injectées lors du build)
+        // Essayer différentes méthodes pour récupérer les variables
+        // 1. Variables d'environnement Vite (build time)
+        if (typeof import !== 'undefined' && import.meta?.env?.VITE_SUPABASE_URL) {
+            SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+            SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+            console.log('[Config] Variables Vite trouvées via import.meta.env');
+        } 
+        // 2. Variables injectées dans window
+        else if (window.env?.VITE_SUPABASE_URL) {
+            SUPABASE_URL = window.env.VITE_SUPABASE_URL;
+            SUPABASE_ANON_KEY = window.env.VITE_SUPABASE_ANON_KEY;
+            console.log('[Config] Variables trouvées dans window.env');
+        }
+        // 3. Variables directement dans window
+        else if (window.VITE_SUPABASE_URL) {
             SUPABASE_URL = window.VITE_SUPABASE_URL;
             SUPABASE_ANON_KEY = window.VITE_SUPABASE_ANON_KEY;
-        } else {
-            // En mode test, utiliser des valeurs par défaut
-            console.warn('[Config] Variables VITE non trouvées - Mode test activé');
-            // Vous pouvez mettre des valeurs de test ici si nécessaire
-            SUPABASE_URL = 'https://test.supabase.co';
-            SUPABASE_ANON_KEY = 'test-key';
+            console.log('[Config] Variables trouvées dans window');
+        }
+        // 4. Recherche dans le HTML (Netlify injecte parfois les variables dans des scripts)
+        else {
+            const scripts = document.getElementsByTagName('script');
+            for (let script of scripts) {
+                if (script.textContent && script.textContent.includes('VITE_SUPABASE_URL')) {
+                    console.log('[Config] Recherche des variables dans les scripts...');
+                    // Les variables peuvent être injectées comme: window.VITE_SUPABASE_URL = "..."
+                    break;
+                }
+            }
+            
+            // Si toujours pas trouvé
+            if (!SUPABASE_URL) {
+                console.warn('[Config] Variables VITE non trouvées - Vérifiez votre configuration Netlify');
+                console.log('[Config] Variables disponibles:', Object.keys(window).filter(k => k.includes('VITE')));
+                throw new Error('Variables Supabase non configurées. Configurez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY sur Netlify.');
+            }
         }
 
         // Vérifier que les variables sont bien définies
