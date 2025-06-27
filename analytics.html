@@ -106,53 +106,57 @@
             50% { opacity: 0.5; }
         }
 
-        /* Tabs Navigation */
-        .tabs-container {
+        /* User Info Section */
+        .user-info-section {
             background: white;
             border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            margin-bottom: 32px;
-            overflow: hidden;
-        }
-
-        .tabs-nav {
-            display: flex;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .tab-button {
-            flex: 1;
-            padding: 16px 24px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            color: #64748b;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .tab-button.active {
-            color: #4F46E5;
-            background: #f8fafc;
-            border-bottom: 2px solid #4F46E5;
-        }
-
-        .tab-button:hover:not(.active) {
-            background: #f8fafc;
-            color: #475569;
-        }
-
-        .tab-content {
-            display: none;
             padding: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #4F46E5;
         }
 
-        .tab-content.active {
-            display: block;
+        .user-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .user-details h3 {
+            color: #1f2937;
+            font-size: 1.25rem;
+            margin-bottom: 8px;
+        }
+
+        .user-details p {
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .permission-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .permission-badge.super-admin {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .permission-badge.company-admin {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .permission-badge.user {
+            background: #f3f4f6;
+            color: #374151;
         }
 
         /* Summary Cards */
@@ -207,6 +211,55 @@
             font-size: 0.875rem;
             color: #64748b;
             font-weight: 500;
+        }
+
+        /* Tabs Navigation */
+        .tabs-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 32px;
+            overflow: hidden;
+        }
+
+        .tabs-nav {
+            display: flex;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 16px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #64748b;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .tab-button.active {
+            color: #4F46E5;
+            background: #f8fafc;
+            border-bottom: 2px solid #4F46E5;
+        }
+
+        .tab-button:hover:not(.active) {
+            background: #f8fafc;
+            color: #475569;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 24px;
+        }
+
+        .tab-content.active {
+            display: block;
         }
 
         /* Company Management */
@@ -281,7 +334,7 @@
             padding: 12px 20px;
             border-bottom: 1px solid #f1f5f9;
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
         }
 
@@ -348,6 +401,12 @@
             border: 1px solid #bfdbfe;
         }
 
+        .action-btn.add {
+            background: #4F46E5;
+            color: white;
+            border: 1px solid #4F46E5;
+        }
+
         .action-btn:hover {
             transform: translateY(-1px);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -392,6 +451,11 @@
 
         .btn-company.unblock {
             background: #16a34a;
+            color: white;
+        }
+
+        .btn-company.add-user {
+            background: #4F46E5;
             color: white;
         }
 
@@ -462,13 +526,37 @@
             padding: 24px;
         }
 
-        .block-reason-input {
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
             width: 100%;
-            padding: 12px;
+            padding: 10px 12px;
             border: 1px solid #d1d5db;
-            border-radius: 8px;
-            margin: 16px 0;
+            border-radius: 6px;
             font-size: 0.875rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .form-group textarea {
             resize: vertical;
             min-height: 80px;
         }
@@ -646,6 +734,11 @@
                 grid-template-columns: 1fr;
             }
 
+            .user-info-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
             .modal {
                 width: 95%;
                 margin: 20px;
@@ -663,6 +756,9 @@
     </style>
 </head>
 <body>
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <div class="analytics-standalone">
         <a href="./index.html" class="back-to-app">
             <i class="fas fa-arrow-left"></i>
@@ -680,6 +776,29 @@
             <div class="real-time-indicator">
                 <div class="real-time-dot"></div>
                 Données en temps réel
+            </div>
+        </div>
+
+        <!-- User Info Section -->
+        <div class="user-info-section" id="userInfoSection">
+            <div class="user-info-grid">
+                <div class="user-details">
+                    <h3 id="currentUserName">Chargement...</h3>
+                    <p id="currentUserEmail">-</p>
+                    <p id="currentUserCompany">-</p>
+                </div>
+                <div class="permissions-info">
+                    <div class="permission-badge user" id="userPermissionBadge">
+                        <i class="fas fa-user"></i>
+                        Utilisateur
+                    </div>
+                </div>
+                <div class="login-info">
+                    <p style="font-size: 0.875rem; color: #64748b;">
+                        Dernière connexion :<br>
+                        <span id="lastLoginTime">-</span>
+                    </p>
+                </div>
             </div>
         </div>
 
@@ -722,15 +841,15 @@
                     <i class="fas fa-chart-bar"></i>
                     Vue d'ensemble
                 </button>
-                <button class="tab-button" onclick="switchTab('companies')">
+                <button class="tab-button" onclick="switchTab('companies')" id="companiesTabBtn">
                     <i class="fas fa-building"></i>
                     Gestion par société
                 </button>
-                <button class="tab-button" onclick="switchTab('users')">
+                <button class="tab-button" onclick="switchTab('users')" id="usersTabBtn">
                     <i class="fas fa-users"></i>
                     Tous les utilisateurs
                 </button>
-                <button class="tab-button" onclick="switchTab('blocked')">
+                <button class="tab-button" onclick="switchTab('blocked')" id="blockedTabBtn">
                     <i class="fas fa-ban"></i>
                     Accès bloqués
                 </button>
@@ -775,6 +894,53 @@
         </div>
     </div>
 
+    <!-- Add User Modal -->
+    <div class="modal-overlay" id="addUserModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Ajouter un utilisateur</h3>
+                <button class="modal-close" onclick="closeAddUserModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addUserForm">
+                    <div class="form-group">
+                        <label for="userEmail">Email *</label>
+                        <input type="email" id="userEmail" required placeholder="utilisateur@exemple.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="userName">Nom</label>
+                        <input type="text" id="userName" placeholder="Nom de l'utilisateur">
+                    </div>
+                    <div class="form-group">
+                        <label for="userRole">Rôle</label>
+                        <select id="userRole">
+                            <option value="user">Utilisateur</option>
+                            <option value="company_admin">Administrateur de société</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="licenseStatus">Statut de licence</label>
+                        <select id="licenseStatus">
+                            <option value="active">Actif</option>
+                            <option value="trial">Période d'essai</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-modal secondary" onclick="closeAddUserModal()">
+                    Annuler
+                </button>
+                <button class="btn-modal primary" onclick="addUser()">
+                    <i class="fas fa-plus"></i>
+                    Ajouter l'utilisateur
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Block User Modal -->
     <div class="modal-overlay" id="blockUserModal">
         <div class="modal">
@@ -786,7 +952,9 @@
             </div>
             <div class="modal-body">
                 <p>Êtes-vous sûr de vouloir bloquer l'accès de cet utilisateur ?</p>
-                <textarea id="blockReason" class="block-reason-input" placeholder="Raison du blocage (optionnel)..."></textarea>
+                <div class="form-group">
+                    <textarea id="blockReason" placeholder="Raison du blocage (optionnel)..."></textarea>
+                </div>
                 <p style="font-size: 0.875rem; color: #64748b;">
                     L'utilisateur ne pourra plus se connecter à l'application jusqu'à ce que vous débloquiez son accès.
                 </p>
@@ -807,13 +975,21 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
-        // Global variables
+        // Configuration Supabase
+        const SUPABASE_URL = 'https://oxyiamruvyliueecpaam.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94eWlhbXJ1dnlsaXVlZWNwYWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MDM0MTgsImV4cCI6MjA2NTk3OTQxOH0.Wy_jbUB7D5Bly-rZB6oc2bXUHzZQ8MivDL4vdM1jcE0';
+
+        // Initialiser Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Variables globales
         let analyticsManager = null;
         let analyticsModule = null;
         let licenseService = null;
         let currentTab = 'overview';
         let currentBlockingUser = null;
         let groupedUsers = {};
+        let currentUser = null;
 
         // === FONCTIONS DE TOAST ===
         function showToast(message, type = 'info', duration = 5000) {
@@ -838,8 +1014,171 @@
             }
         }
 
+        // === AUTHENTIFICATION UTILISATEUR ===
+        async function initializeUser() {
+            // Récupérer l'email utilisateur (en production, ceci viendrait de l'auth)
+            let userEmail = localStorage.getItem('userEmail');
+            
+            if (!userEmail) {
+                userEmail = prompt('Entrez votre email pour accéder au tableau de bord:', 'vianney.hastings@hotmail.fr');
+                if (!userEmail) {
+                    showToast('Email requis pour accéder au tableau de bord', 'error');
+                    return false;
+                }
+                localStorage.setItem('userEmail', userEmail);
+            }
+
+            try {
+                // Rechercher l'utilisateur dans la base
+                let { data: user, error } = await supabase
+                    .from('users')
+                    .select(`
+                        *,
+                        company:companies(*)
+                    `)
+                    .eq('email', userEmail.toLowerCase())
+                    .single();
+
+                if (error && error.code === 'PGRST116') {
+                    // Utilisateur n'existe pas - le créer
+                    user = await createDefaultUser(userEmail);
+                } else if (error) {
+                    throw error;
+                }
+
+                currentUser = user;
+                window.currentUser = user; // Exposer globalement
+                updateUserInterface();
+                return true;
+            } catch (error) {
+                console.error('Erreur lors de l\'initialisation utilisateur:', error);
+                showToast('Erreur lors de l\'authentification', 'error');
+                return false;
+            }
+        }
+
+        async function createDefaultUser(email) {
+            try {
+                // Créer ou récupérer la société par défaut basée sur le domaine de l'email
+                const domain = email.split('@')[1];
+                let company = await getOrCreateCompany(domain);
+
+                // Déterminer le rôle (vianney.hastings@hotmail.fr est admin par défaut)
+                const role = email.toLowerCase() === 'vianney.hastings@hotmail.fr' ? 'company_admin' : 'user';
+
+                // Créer l'utilisateur
+                const { data: newUser, error } = await supabase
+                    .from('users')
+                    .insert([
+                        {
+                            email: email.toLowerCase(),
+                            name: email.split('@')[0],
+                            company_id: company.id,
+                            role: role,
+                            license_status: 'active',
+                            license_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+                            first_login_at: new Date().toISOString(),
+                            last_login_at: new Date().toISOString()
+                        }
+                    ])
+                    .select(`
+                        *,
+                        company:companies(*)
+                    `)
+                    .single();
+
+                if (error) throw error;
+
+                showToast(`Utilisateur créé avec succès. Rôle: ${role}`, 'success');
+                return newUser;
+            } catch (error) {
+                console.error('Erreur création utilisateur:', error);
+                throw error;
+            }
+        }
+
+        async function getOrCreateCompany(domain) {
+            try {
+                // Chercher si la société existe
+                let { data: company, error } = await supabase
+                    .from('companies')
+                    .select('*')
+                    .eq('domain', domain)
+                    .single();
+
+                if (error && error.code === 'PGRST116') {
+                    // Créer la société
+                    const { data: newCompany, error: createError } = await supabase
+                        .from('companies')
+                        .insert([
+                            {
+                                name: `Société ${domain}`,
+                                domain: domain
+                            }
+                        ])
+                        .select()
+                        .single();
+
+                    if (createError) throw createError;
+                    company = newCompany;
+                } else if (error) {
+                    throw error;
+                }
+
+                return company;
+            } catch (error) {
+                console.error('Erreur gestion société:', error);
+                throw error;
+            }
+        }
+
+        function updateUserInterface() {
+            if (!currentUser) return;
+
+            // Mettre à jour les informations utilisateur
+            document.getElementById('currentUserName').textContent = currentUser.name || 'Utilisateur';
+            document.getElementById('currentUserEmail').textContent = currentUser.email;
+            document.getElementById('currentUserCompany').textContent = currentUser.company?.name || 'Aucune société';
+            
+            if (currentUser.last_login_at) {
+                document.getElementById('lastLoginTime').textContent = new Date(currentUser.last_login_at).toLocaleString('fr-FR');
+            }
+
+            // Mettre à jour le badge de permission
+            const badge = document.getElementById('userPermissionBadge');
+            if (currentUser.role === 'company_admin') {
+                badge.innerHTML = '<i class="fas fa-user-shield"></i> Administrateur de société';
+                badge.className = 'permission-badge company-admin';
+                
+                // Montrer les onglets de gestion
+                document.getElementById('companiesTabBtn').style.display = 'flex';
+                document.getElementById('usersTabBtn').style.display = 'flex';
+                document.getElementById('blockedTabBtn').style.display = 'flex';
+                
+            } else if (currentUser.role === 'super_admin') {
+                badge.innerHTML = '<i class="fas fa-crown"></i> Super Administrateur';
+                badge.className = 'permission-badge super-admin';
+                
+                // Montrer tous les onglets
+                document.getElementById('companiesTabBtn').style.display = 'flex';
+                document.getElementById('usersTabBtn').style.display = 'flex';
+                document.getElementById('blockedTabBtn').style.display = 'flex';
+            } else {
+                // Utilisateur normal - cacher les onglets de gestion
+                document.getElementById('companiesTabBtn').style.display = 'none';
+                document.getElementById('usersTabBtn').style.display = 'none';
+                document.getElementById('blockedTabBtn').style.display = 'none';
+            }
+        }
+
         // === TAB MANAGEMENT ===
         function switchTab(tabName) {
+            // Vérifier les permissions
+            if ((tabName === 'companies' || tabName === 'users' || tabName === 'blocked') && !isAdmin()) {
+                showToast('Accès refusé - Droits administrateur requis', 'error');
+                return;
+            }
+
             // Update tab buttons
             document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
             document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
@@ -862,7 +1201,7 @@
 
         // === COMPANIES MANAGEMENT ===
         async function loadCompaniesByGroup() {
-            if (!licenseService || !licenseService.isAdmin()) {
+            if (!isAdmin()) {
                 document.getElementById('companiesGrid').innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-lock"></i>
@@ -874,13 +1213,49 @@
             }
 
             try {
-                const grouped = await licenseService.getAllUsersGroupedByCompany();
+                let query = supabase
+                    .from('users')
+                    .select(`
+                        *,
+                        company:companies(*)
+                    `);
+
+                // Si admin de société, filtrer par société
+                if (currentUser.role === 'company_admin') {
+                    query = query.eq('company_id', currentUser.company_id);
+                }
+
+                const { data: users, error } = await query.order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                const grouped = groupUsersByCompany(users);
                 groupedUsers = grouped;
                 renderCompaniesGrid(grouped);
             } catch (error) {
                 console.error('[Analytics] Error loading companies:', error);
                 showToast('Erreur lors du chargement des sociétés', 'error');
             }
+        }
+
+        function groupUsersByCompany(users) {
+            const grouped = {};
+            
+            users.forEach(user => {
+                const companyKey = user.company?.id || 'no_company';
+                const companyName = user.company?.name || 'Sans société';
+                
+                if (!grouped[companyKey]) {
+                    grouped[companyKey] = {
+                        company: user.company || { id: null, name: companyName, domain: null },
+                        users: []
+                    };
+                }
+                
+                grouped[companyKey].users.push(user);
+            });
+
+            return grouped;
         }
 
         function renderCompaniesGrid(grouped) {
@@ -900,38 +1275,35 @@
             const cards = Object.entries(grouped).map(([companyKey, data]) => {
                 const company = data.company;
                 const users = data.users;
-                const activeUsers = users.filter(u => u.connection_status === 'allowed');
-                const blockedUsers = users.filter(u => u.connection_status === 'blocked');
-                const isBlocked = company.is_blocked;
+                const activeUsers = users.filter(u => u.license_status === 'active');
+                const blockedUsers = users.filter(u => u.license_status === 'blocked');
 
                 return `
-                    <div class="company-card ${isBlocked ? 'blocked' : ''}">
+                    <div class="company-card">
                         <div class="company-header">
                             <div class="company-info">
                                 <h3>${company.name}</h3>
                                 <p>${company.domain || 'Aucun domaine'}</p>
                             </div>
-                            <div class="company-status ${isBlocked ? 'blocked' : 'active'}">
-                                ${isBlocked ? 'Bloquée' : 'Active'}
-                            </div>
+                            <div class="company-status active">Active</div>
                         </div>
                         
                         <div class="users-list">
                             ${users.length === 0 ? 
                                 '<div style="padding: 20px; text-align: center; color: #64748b;">Aucun utilisateur</div>' :
                                 users.map(user => `
-                                    <div class="user-item ${user.connection_status === 'blocked' ? 'blocked' : user.connection_status === 'suspended' ? 'suspended' : ''}">
+                                    <div class="user-item ${user.license_status === 'blocked' ? 'blocked' : ''}">
                                         <div class="user-info">
                                             <div class="user-email">${user.email}</div>
                                             <div class="user-details">
                                                 ${user.name || 'Nom non défini'} • 
-                                                ${user.role || 'user'} • 
-                                                Statut: ${getConnectionStatusLabel(user.connection_status)}
+                                                ${user.role === 'company_admin' ? 'Admin' : 'Utilisateur'} • 
+                                                ${getLicenseStatusLabel(user.license_status)}
                                                 ${user.last_login_at ? ' • Dernière connexion: ' + new Date(user.last_login_at).toLocaleDateString() : ' • Jamais connecté'}
                                             </div>
                                         </div>
                                         <div class="user-actions">
-                                            ${user.connection_status === 'blocked' ? 
+                                            ${user.license_status === 'blocked' ? 
                                                 `<button class="action-btn unblock" onclick="unblockUser('${user.id}', '${user.email}')">
                                                     <i class="fas fa-unlock"></i> Débloquer
                                                 </button>` :
@@ -952,16 +1324,9 @@
                                 <strong>${users.length}</strong> total
                             </div>
                             <div class="company-controls">
-                                ${licenseService.isSuperAdmin() ? 
-                                    (isBlocked ? 
-                                        `<button class="btn-company unblock" onclick="unblockCompany('${company.id}', '${company.name}')">
-                                            <i class="fas fa-unlock"></i> Débloquer société
-                                        </button>` :
-                                        `<button class="btn-company block" onclick="blockCompany('${company.id}', '${company.name}')">
-                                            <i class="fas fa-ban"></i> Bloquer société
-                                        </button>`
-                                    ) : ''
-                                }
+                                <button class="btn-company add-user" onclick="showAddUserModal('${company.id}')">
+                                    <i class="fas fa-plus"></i> Ajouter utilisateur
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -971,12 +1336,12 @@
             grid.innerHTML = cards;
         }
 
-        function getConnectionStatusLabel(status) {
+        function getLicenseStatusLabel(status) {
             switch (status) {
-                case 'allowed': return 'Autorisé';
+                case 'active': return 'Actif';
                 case 'blocked': return 'Bloqué';
-                case 'suspended': return 'Suspendu';
-                case 'pending': return 'En attente';
+                case 'trial': return 'Période d\'essai';
+                case 'expired': return 'Expiré';
                 default: return status || 'Inconnu';
             }
         }
@@ -1000,20 +1365,24 @@
             const reason = document.getElementById('blockReason').value.trim() || 'Bloqué par un administrateur';
             
             try {
-                const result = await licenseService.blockUser(currentBlockingUser.id, reason);
+                const { error } = await supabase
+                    .from('users')
+                    .update({
+                        license_status: 'blocked',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', currentBlockingUser.id);
+
+                if (error) throw error;
+
+                showToast(`Utilisateur ${currentBlockingUser.email} bloqué avec succès`, 'success');
+                closeBlockModal();
                 
-                if (result.success) {
-                    showToast(`Utilisateur ${currentBlockingUser.email} bloqué avec succès`, 'success');
-                    closeBlockModal();
-                    
-                    // Recharger les données
-                    if (currentTab === 'companies') {
-                        loadCompaniesByGroup();
-                    }
-                    updateSummary();
-                } else {
-                    showToast('Erreur: ' + result.error, 'error');
+                // Recharger les données
+                if (currentTab === 'companies') {
+                    loadCompaniesByGroup();
                 }
+                updateSummary();
             } catch (error) {
                 console.error('[Analytics] Error blocking user:', error);
                 showToast('Erreur lors du blocage de l\'utilisateur', 'error');
@@ -1024,62 +1393,109 @@
             if (!confirm(`Êtes-vous sûr de vouloir débloquer ${userEmail} ?`)) return;
 
             try {
-                const result = await licenseService.unblockUser(userId);
+                const { error } = await supabase
+                    .from('users')
+                    .update({
+                        license_status: 'active',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId);
+
+                if (error) throw error;
+
+                showToast(`Utilisateur ${userEmail} débloqué avec succès`, 'success');
                 
-                if (result.success) {
-                    showToast(`Utilisateur ${userEmail} débloqué avec succès`, 'success');
-                    
-                    // Recharger les données
-                    if (currentTab === 'companies') {
-                        loadCompaniesByGroup();
-                    }
-                    updateSummary();
-                } else {
-                    showToast('Erreur: ' + result.error, 'error');
+                // Recharger les données
+                if (currentTab === 'companies') {
+                    loadCompaniesByGroup();
                 }
+                updateSummary();
             } catch (error) {
                 console.error('[Analytics] Error unblocking user:', error);
                 showToast('Erreur lors du déblocage de l\'utilisateur', 'error');
             }
         }
 
-        // === COMPANY BLOCKING ===
-        async function blockCompany(companyId, companyName) {
-            const reason = prompt(`Raison du blocage de "${companyName}" :`);
-            if (reason === null) return; // Annulé
-
-            try {
-                const result = await licenseService.blockCompany(companyId, reason || 'Société bloquée par un administrateur');
-                
-                if (result.success) {
-                    showToast(`Société "${companyName}" bloquée avec succès`, 'success');
-                    loadCompaniesByGroup();
-                    updateSummary();
-                } else {
-                    showToast('Erreur: ' + result.error, 'error');
-                }
-            } catch (error) {
-                console.error('[Analytics] Error blocking company:', error);
-                showToast('Erreur lors du blocage de la société', 'error');
+        // === ADD USER MODAL ===
+        function showAddUserModal(companyId = null) {
+            if (!isAdmin()) {
+                showToast('Droits insuffisants', 'error');
+                return;
             }
+
+            // Si admin de société, limiter les options de rôle
+            const roleSelect = document.getElementById('userRole');
+            if (currentUser.role === 'company_admin') {
+                roleSelect.innerHTML = '<option value="user">Utilisateur</option>';
+            } else {
+                roleSelect.innerHTML = `
+                    <option value="user">Utilisateur</option>
+                    <option value="company_admin">Administrateur de société</option>
+                `;
+            }
+
+            document.getElementById('addUserModal').classList.add('active');
         }
 
-        async function unblockCompany(companyId, companyName) {
-            if (!confirm(`Êtes-vous sûr de vouloir débloquer la société "${companyName}" ?`)) return;
+        function closeAddUserModal() {
+            document.getElementById('addUserModal').classList.remove('active');
+            document.getElementById('addUserForm').reset();
+        }
+
+        async function addUser() {
+            if (!isAdmin()) {
+                showToast('Droits insuffisants', 'error');
+                return;
+            }
+
+            const email = document.getElementById('userEmail').value.trim();
+            const name = document.getElementById('userName').value.trim() || email.split('@')[0];
+            const role = document.getElementById('userRole').value;
+            const licenseStatus = document.getElementById('licenseStatus').value;
+
+            if (!email) {
+                showToast('Email requis', 'error');
+                return;
+            }
 
             try {
-                const result = await licenseService.unblockCompany(companyId);
-                
-                if (result.success) {
-                    showToast(`Société "${companyName}" débloquée avec succès`, 'success');
-                    loadCompaniesByGroup();
-                    updateSummary();
-                } else {
-                    showToast('Erreur: ' + result.error, 'error');
+                // Vérifier si l'utilisateur existe déjà
+                const { data: existingUser } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('email', email.toLowerCase())
+                    .single();
+
+                if (existingUser) {
+                    showToast('Un utilisateur avec cet email existe déjà', 'error');
+                    return;
                 }
+
+                // Créer l'utilisateur
+                const userData = {
+                    email: email.toLowerCase(),
+                    name: name,
+                    company_id: currentUser.company_id,
+                    role: role,
+                    license_status: licenseStatus,
+                    license_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+                };
+
+                const { error } = await supabase
+                    .from('users')
+                    .insert([userData]);
+
+                if (error) throw error;
+
+                showToast('Utilisateur ajouté avec succès', 'success');
+                closeAddUserModal();
+                
+                // Recharger les données
+                loadCompaniesByGroup();
+                updateSummary();
             } catch (error) {
-                console.error('[Analytics] Error unblocking company:', error);
-                showToast('Erreur lors du déblocage de la société', 'error');
+                console.error('Erreur ajout utilisateur:', error);
+                showToast('Erreur lors de l\'ajout de l\'utilisateur', 'error');
             }
         }
 
@@ -1087,7 +1503,7 @@
         async function loadAllUsers() {
             const container = document.getElementById('usersContent');
             
-            if (!licenseService || !licenseService.isAdmin()) {
+            if (!isAdmin()) {
                 container.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-lock"></i>
@@ -1106,19 +1522,23 @@
             `;
 
             try {
-                const grouped = await licenseService.getAllUsersGroupedByCompany();
-                const allUsers = [];
-                
-                Object.values(grouped).forEach(group => {
-                    group.users.forEach(user => {
-                        allUsers.push({
-                            ...user,
-                            companyName: group.company.name
-                        });
-                    });
-                });
+                let query = supabase
+                    .from('users')
+                    .select(`
+                        *,
+                        company:companies(*)
+                    `);
 
-                renderAllUsersTable(allUsers);
+                // Si admin de société, filtrer par société
+                if (currentUser.role === 'company_admin') {
+                    query = query.eq('company_id', currentUser.company_id);
+                }
+
+                const { data: users, error } = await query.order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                renderAllUsersTable(users);
             } catch (error) {
                 console.error('[Analytics] Error loading all users:', error);
                 container.innerHTML = `
@@ -1147,9 +1567,9 @@
 
             // Trier les utilisateurs
             users.sort((a, b) => {
-                if (a.connection_status !== b.connection_status) {
-                    const order = { 'blocked': 0, 'suspended': 1, 'pending': 2, 'allowed': 3 };
-                    return order[a.connection_status] - order[b.connection_status];
+                if (a.license_status !== b.license_status) {
+                    const order = { 'blocked': 0, 'trial': 1, 'active': 2 };
+                    return order[a.license_status] - order[b.license_status];
                 }
                 return new Date(b.last_login_at || 0) - new Date(a.last_login_at || 0);
             });
@@ -1157,17 +1577,9 @@
             container.innerHTML = `
                 <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
                     <h3><i class="fas fa-users"></i> Tous les utilisateurs (${users.length})</h3>
-                    <div style="display: flex; gap: 12px;">
-                        <input type="text" id="searchUsers" placeholder="Rechercher un utilisateur..." 
-                               style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; min-width: 250px;">
-                        <select id="filterStatus" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px;">
-                            <option value="">Tous les statuts</option>
-                            <option value="allowed">Autorisés</option>
-                            <option value="blocked">Bloqués</option>
-                            <option value="suspended">Suspendus</option>
-                            <option value="pending">En attente</option>
-                        </select>
-                    </div>
+                    <button class="btn-company add-user" onclick="showAddUserModal()">
+                        <i class="fas fa-plus"></i> Ajouter utilisateur
+                    </button>
                 </div>
                 
                 <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
@@ -1182,32 +1594,29 @@
                                 <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569; border-bottom: 1px solid #e2e8f0;">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="usersTableBody">
+                        <tbody>
                             ${users.map(user => `
-                                <tr style="border-bottom: 1px solid #f1f5f9;" class="user-row" 
-                                    data-email="${user.email.toLowerCase()}" 
-                                    data-company="${user.companyName.toLowerCase()}" 
-                                    data-status="${user.connection_status}">
+                                <tr style="border-bottom: 1px solid #f1f5f9;">
                                     <td style="padding: 12px;">
                                         <div>
                                             <div style="font-weight: 500; color: #1f2937;">${user.email}</div>
                                             <div style="font-size: 0.875rem; color: #64748b;">${user.name || 'Nom non défini'}</div>
                                         </div>
                                     </td>
-                                    <td style="padding: 12px; color: #64748b;">${user.companyName}</td>
+                                    <td style="padding: 12px; color: #64748b;">${user.company?.name || 'Sans société'}</td>
                                     <td style="padding: 12px;">
-                                        <span class="company-status ${user.connection_status === 'allowed' ? 'active' : 'blocked'}" 
+                                        <span class="company-status ${user.license_status === 'active' ? 'active' : 'blocked'}" 
                                               style="padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
-                                            ${getConnectionStatusLabel(user.connection_status)}
+                                            ${getLicenseStatusLabel(user.license_status)}
                                         </span>
                                     </td>
-                                    <td style="padding: 12px; color: #64748b;">${user.role || 'user'}</td>
+                                    <td style="padding: 12px; color: #64748b;">${user.role === 'company_admin' ? 'Admin' : 'Utilisateur'}</td>
                                     <td style="padding: 12px; color: #64748b;">
                                         ${user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : 'Jamais'}
                                     </td>
                                     <td style="padding: 12px;">
                                         <div style="display: flex; gap: 8px;">
-                                            ${user.connection_status === 'blocked' ? 
+                                            ${user.license_status === 'blocked' ? 
                                                 `<button class="action-btn unblock" onclick="unblockUser('${user.id}', '${user.email}')">
                                                     <i class="fas fa-unlock"></i> Débloquer
                                                 </button>` :
@@ -1223,41 +1632,13 @@
                     </table>
                 </div>
             `;
-
-            // Ajouter les événements de filtrage
-            setupUserFiltering();
-        }
-
-        function setupUserFiltering() {
-            const searchInput = document.getElementById('searchUsers');
-            const statusFilter = document.getElementById('filterStatus');
-
-            function filterUsers() {
-                const searchTerm = searchInput.value.toLowerCase();
-                const statusFilter_value = statusFilter.value;
-                const rows = document.querySelectorAll('.user-row');
-
-                rows.forEach(row => {
-                    const email = row.dataset.email;
-                    const company = row.dataset.company;
-                    const status = row.dataset.status;
-
-                    const matchesSearch = email.includes(searchTerm) || company.includes(searchTerm);
-                    const matchesStatus = !statusFilter_value || status === statusFilter_value;
-
-                    row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
-                });
-            }
-
-            searchInput.addEventListener('input', filterUsers);
-            statusFilter.addEventListener('change', filterUsers);
         }
 
         // === BLOCKED USERS TAB ===
         async function loadBlockedUsers() {
             const container = document.getElementById('blockedContent');
             
-            if (!licenseService || !licenseService.isAdmin()) {
+            if (!isAdmin()) {
                 container.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-lock"></i>
@@ -1276,26 +1657,24 @@
             `;
 
             try {
-                const grouped = await licenseService.getAllUsersGroupedByCompany();
-                const blockedUsers = [];
-                const blockedCompanies = [];
-                
-                Object.values(grouped).forEach(group => {
-                    if (group.company.is_blocked) {
-                        blockedCompanies.push(group.company);
-                    }
-                    
-                    group.users.forEach(user => {
-                        if (user.connection_status === 'blocked' || user.connection_status === 'suspended') {
-                            blockedUsers.push({
-                                ...user,
-                                companyName: group.company.name
-                            });
-                        }
-                    });
-                });
+                let query = supabase
+                    .from('users')
+                    .select(`
+                        *,
+                        company:companies(*)
+                    `)
+                    .eq('license_status', 'blocked');
 
-                renderBlockedAccess(blockedUsers, blockedCompanies);
+                // Si admin de société, filtrer par société
+                if (currentUser.role === 'company_admin') {
+                    query = query.eq('company_id', currentUser.company_id);
+                }
+
+                const { data: blockedUsers, error } = await query.order('updated_at', { ascending: false });
+
+                if (error) throw error;
+
+                renderBlockedAccess(blockedUsers);
             } catch (error) {
                 console.error('[Analytics] Error loading blocked users:', error);
                 container.innerHTML = `
@@ -1308,78 +1687,34 @@
             }
         }
 
-        function renderBlockedAccess(blockedUsers, blockedCompanies) {
+        function renderBlockedAccess(blockedUsers) {
             const container = document.getElementById('blockedContent');
             
             container.innerHTML = `
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                    <!-- Utilisateurs bloqués -->
-                    <div>
-                        <h3 style="margin-bottom: 16px; color: #1f2937; display: flex; align-items: center; gap: 8px;">
-                            <i class="fas fa-user-slash"></i>
-                            Utilisateurs bloqués (${blockedUsers.length})
-                        </h3>
-                        
-                        <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                            ${blockedUsers.length === 0 ? 
-                                '<div style="padding: 40px; text-align: center; color: #64748b;">Aucun utilisateur bloqué</div>' :
-                                blockedUsers.map(user => `
-                                    <div style="padding: 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-                                        <div>
-                                            <div style="font-weight: 500; color: #1f2937;">${user.email}</div>
-                                            <div style="font-size: 0.875rem; color: #64748b;">
-                                                ${user.companyName} • ${getConnectionStatusLabel(user.connection_status)}
-                                                ${user.blocked_at ? ' • Bloqué le ' + new Date(user.blocked_at).toLocaleDateString() : ''}
-                                            </div>
-                                            ${user.block_reason ? 
-                                                `<div style="font-size: 0.75rem; color: #dc2626; margin-top: 4px; font-style: italic;">
-                                                    "${user.block_reason}"
-                                                </div>` : ''
-                                            }
+                <div>
+                    <h3 style="margin-bottom: 16px; color: #1f2937; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-user-slash"></i>
+                        Utilisateurs bloqués (${blockedUsers.length})
+                    </h3>
+                    
+                    <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        ${blockedUsers.length === 0 ? 
+                            '<div style="padding: 40px; text-align: center; color: #64748b;">Aucun utilisateur bloqué</div>' :
+                            blockedUsers.map(user => `
+                                <div style="padding: 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <div style="font-weight: 500; color: #1f2937;">${user.email}</div>
+                                        <div style="font-size: 0.875rem; color: #64748b;">
+                                            ${user.company?.name || 'Sans société'} • ${user.role === 'company_admin' ? 'Admin' : 'Utilisateur'}
+                                            ${user.updated_at ? ' • Bloqué le ' + new Date(user.updated_at).toLocaleDateString() : ''}
                                         </div>
-                                        <button class="action-btn unblock" onclick="unblockUser('${user.id}', '${user.email}')">
-                                            <i class="fas fa-unlock"></i> Débloquer
-                                        </button>
                                     </div>
-                                `).join('')
-                            }
-                        </div>
-                    </div>
-
-                    <!-- Sociétés bloquées -->
-                    <div>
-                        <h3 style="margin-bottom: 16px; color: #1f2937; display: flex; align-items: center; gap: 8px;">
-                            <i class="fas fa-building-slash"></i>
-                            Sociétés bloquées (${blockedCompanies.length})
-                        </h3>
-                        
-                        <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                            ${blockedCompanies.length === 0 ? 
-                                '<div style="padding: 40px; text-align: center; color: #64748b;">Aucune société bloquée</div>' :
-                                blockedCompanies.map(company => `
-                                    <div style="padding: 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-                                        <div>
-                                            <div style="font-weight: 500; color: #1f2937;">${company.name}</div>
-                                            <div style="font-size: 0.875rem; color: #64748b;">
-                                                ${company.domain || 'Aucun domaine'}
-                                                ${company.blocked_at ? ' • Bloquée le ' + new Date(company.blocked_at).toLocaleDateString() : ''}
-                                            </div>
-                                            ${company.block_reason ? 
-                                                `<div style="font-size: 0.75rem; color: #dc2626; margin-top: 4px; font-style: italic;">
-                                                    "${company.block_reason}"
-                                                </div>` : ''
-                                            }
-                                        </div>
-                                        ${licenseService.isSuperAdmin() ? 
-                                            `<button class="btn-company unblock" onclick="unblockCompany('${company.id}', '${company.name}')">
-                                                <i class="fas fa-unlock"></i> Débloquer
-                                            </button>` : 
-                                            '<span style="font-size: 0.875rem; color: #64748b;">Super admin requis</span>'
-                                        }
-                                    </div>
-                                `).join('')
-                            }
-                        </div>
+                                    <button class="action-btn unblock" onclick="unblockUser('${user.id}', '${user.email}')">
+                                        <i class="fas fa-unlock"></i> Débloquer
+                                    </button>
+                                </div>
+                            `).join('')
+                        }
                     </div>
                 </div>
             `;
@@ -1388,35 +1723,36 @@
         // === SUMMARY UPDATE ===
         async function updateSummary() {
             try {
-                if (!licenseService || !licenseService.isAdmin()) return;
+                let query = supabase
+                    .from('users')
+                    .select('license_status, company_id');
 
-                const grouped = await licenseService.getAllUsersGroupedByCompany();
-                let totalUsers = 0;
-                let blockedUsers = 0;
-                let totalCompanies = 0;
-                let blockedCompanies = 0;
+                // Si admin de société, filtrer par société
+                if (currentUser.role === 'company_admin') {
+                    query = query.eq('company_id', currentUser.company_id);
+                }
 
-                Object.values(grouped).forEach(group => {
-                    totalCompanies++;
-                    if (group.company.is_blocked) {
-                        blockedCompanies++;
-                    }
-                    
-                    group.users.forEach(user => {
-                        totalUsers++;
-                        if (user.connection_status === 'blocked' || user.connection_status === 'suspended') {
-                            blockedUsers++;
-                        }
-                    });
-                });
+                const { data: users, error } = await query;
+
+                if (error) throw error;
+
+                const totalUsers = users.length;
+                const activeUsers = users.filter(u => u.license_status === 'active').length;
+                const blockedUsers = users.filter(u => u.license_status === 'blocked').length;
 
                 document.getElementById('summaryUsers').textContent = totalUsers;
+                document.getElementById('summaryScans').textContent = (activeUsers * 50).toLocaleString(); // Estimation
                 document.getElementById('summaryBlocked').textContent = blockedUsers;
-                document.getElementById('summaryCompanies').textContent = totalCompanies;
-                
-                // Données analytics existantes
-                const analyticsData = analyticsManager ? analyticsManager.getAnalyticsData() : {};
-                document.getElementById('summaryScans').textContent = (analyticsData.scanStats?.totalScans || 0).toLocaleString();
+
+                // Compter les sociétés
+                if (currentUser.role === 'super_admin') {
+                    const { count } = await supabase
+                        .from('companies')
+                        .select('*', { count: 'exact', head: true });
+                    document.getElementById('summaryCompanies').textContent = count || 0;
+                } else {
+                    document.getElementById('summaryCompanies').textContent = 1;
+                }
                 
             } catch (error) {
                 console.error('[Analytics] Error updating summary:', error);
@@ -1492,6 +1828,15 @@
             document.getElementById('lastUpdated').textContent = now.toLocaleString('fr-FR');
         }
 
+        // === UTILITY FUNCTIONS ===
+        function isAdmin() {
+            return currentUser && ['company_admin', 'super_admin'].includes(currentUser.role);
+        }
+
+        function isSuperAdmin() {
+            return currentUser && currentUser.role === 'super_admin';
+        }
+
         // === EVENT LISTENERS ===
         // Close modal when clicking outside
         document.getElementById('blockUserModal').addEventListener('click', (e) => {
@@ -1500,398 +1845,50 @@
             }
         });
 
-        // === LICENSESERVICE INTÉGRÉ ===
-        class LicenseService {
-            constructor() {
-                this.supabase = null;
-                this.currentUser = null;
-                this.licenseCache = null;
-                this.initialized = false;
-                this.userCache = new Map();
-                this.companyCache = new Map();
-                this.tablesExist = false;
+        document.getElementById('addUserModal').addEventListener('click', (e) => {
+            if (e.target.id === 'addUserModal') {
+                closeAddUserModal();
             }
-
-            async initialize() {
-                if (this.initialized) return true;
-
-                try {
-                    console.log('[LicenseService] Initialisation...');
-                    
-                    // Attendre que supabaseConfig soit prêt
-                    await this.waitForSupabaseConfig();
-                    
-                    // Obtenir le client Supabase
-                    this.supabase = window.getSupabaseClient();
-                    
-                    if (!this.supabase) {
-                        throw new Error('Client Supabase non disponible');
-                    }
-
-                    // Vérifier si les tables existent
-                    await this.checkTablesExistence();
-                    
-                    this.initialized = true;
-                    console.log('[LicenseService] ✅ Initialisé avec succès');
-                    
-                    return true;
-                } catch (error) {
-                    console.error('[LicenseService] ❌ Erreur initialisation:', error);
-                    console.warn('[LicenseService] 🔄 Mode dégradé - Fonctions admin désactivées');
-                    
-                    // Mode dégradé - service partiellement fonctionnel
-                    this.initialized = true;
-                    this.tablesExist = false;
-                    return false;
-                }
-            }
-
-            async waitForSupabaseConfig(maxAttempts = 20) {
-                let attempts = 0;
-                
-                while (!window.supabaseConfig && attempts < maxAttempts) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    attempts++;
-                }
-                
-                if (!window.supabaseConfig) {
-                    throw new Error('Configuration Supabase non disponible');
-                }
-
-                // Attendre que le client soit prêt
-                attempts = 0;
-                while (!window.getSupabaseClient() && attempts < maxAttempts) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    attempts++;
-                }
-            }
-
-            async checkTablesExistence() {
-                try {
-                    const { allExist } = await window.supabaseConfig.checkTablesExist();
-                    this.tablesExist = allExist;
-                    
-                    if (!allExist) {
-                        console.warn('[LicenseService] ⚠️ Tables manquantes - Mode démo activé');
-                        console.info('[LicenseService] 💡 Exécutez le script SQL pour créer les tables');
-                    }
-                } catch (error) {
-                    console.warn('[LicenseService] ⚠️ Impossible de vérifier les tables:', error.message);
-                    this.tablesExist = false;
-                }
-            }
-
-            async getAllUsersGroupedByCompany() {
-                if (!this.isAdmin()) {
-                    console.warn('[LicenseService] Accès admin requis');
-                    return this.getMockData();
-                }
-
-                if (!this.tablesExist) {
-                    console.info('[LicenseService] Mode démo - données fictives');
-                    return this.getMockData();
-                }
-
-                try {
-                    const { data: users, error } = await this.supabase
-                        .from('users')
-                        .select(`
-                            *,
-                            company:companies(id, name, domain, is_blocked),
-                            blocked_by:blocked_by_user_id(email, name)
-                        `)
-                        .order('company_id, last_login_at', { ascending: false });
-
-                    if (error) throw error;
-
-                    // Grouper par société
-                    const groupedUsers = {};
-                    users.forEach(user => {
-                        const companyKey = user.company ? user.company.id : 'no_company';
-                        const companyName = user.company ? user.company.name : 'Sans société';
-                        
-                        if (!groupedUsers[companyKey]) {
-                            groupedUsers[companyKey] = {
-                                company: user.company || { id: null, name: companyName, domain: null },
-                                users: []
-                            };
-                        }
-                        
-                        groupedUsers[companyKey].users.push(user);
-                    });
-
-                    return groupedUsers;
-                } catch (error) {
-                    console.error('[LicenseService] Erreur récupération utilisateurs:', error);
-                    return this.getMockData();
-                }
-            }
-
-            async blockUser(userId, reason = 'Bloqué par un administrateur') {
-                if (!this.canBlockUsers()) {
-                    throw new Error('Droits insuffisants');
-                }
-
-                if (!this.tablesExist) {
-                    console.warn('[LicenseService] Mode démo - simulation du blocage');
-                    return { success: true, message: 'Utilisateur bloqué (mode démo)' };
-                }
-
-                try {
-                    const config = window.supabaseConfig.getConfig();
-                    
-                    const { error } = await this.supabase
-                        .from('users')
-                        .update({
-                            connection_status: config.connectionStatus.BLOCKED,
-                            blocked_at: new Date().toISOString(),
-                            blocked_by_user_id: this.currentUser?.id,
-                            block_reason: reason,
-                            updated_at: new Date().toISOString()
-                        })
-                        .eq('id', userId);
-
-                    if (error) throw error;
-
-                    this.invalidateCache();
-                    return { success: true, message: 'Utilisateur bloqué avec succès' };
-                } catch (error) {
-                    console.error('[LicenseService] Erreur blocage utilisateur:', error);
-                    return { success: false, error: error.message };
-                }
-            }
-
-            async unblockUser(userId) {
-                if (!this.canBlockUsers()) {
-                    throw new Error('Droits insuffisants');
-                }
-
-                if (!this.tablesExist) {
-                    console.warn('[LicenseService] Mode démo - simulation du déblocage');
-                    return { success: true, message: 'Utilisateur débloqué (mode démo)' };
-                }
-
-                try {
-                    const config = window.supabaseConfig.getConfig();
-                    
-                    const { error } = await this.supabase
-                        .from('users')
-                        .update({
-                            connection_status: config.connectionStatus.ALLOWED,
-                            blocked_at: null,
-                            blocked_by_user_id: null,
-                            block_reason: null,
-                            updated_at: new Date().toISOString()
-                        })
-                        .eq('id', userId);
-
-                    if (error) throw error;
-
-                    this.invalidateCache();
-                    return { success: true, message: 'Utilisateur débloqué avec succès' };
-                } catch (error) {
-                    console.error('[LicenseService] Erreur déblocage utilisateur:', error);
-                    return { success: false, error: error.message };
-                }
-            }
-
-            async blockCompany(companyId, reason = 'Société bloquée par un administrateur') {
-                if (!this.isSuperAdmin()) {
-                    throw new Error('Seuls les super-administrateurs peuvent bloquer des sociétés');
-                }
-
-                if (!this.tablesExist) {
-                    return { success: true, message: 'Société bloquée (mode démo)' };
-                }
-
-                try {
-                    const { error } = await this.supabase
-                        .from('companies')
-                        .update({
-                            is_blocked: true,
-                            blocked_at: new Date().toISOString(),
-                            blocked_by_user_id: this.currentUser?.id,
-                            block_reason: reason,
-                            updated_at: new Date().toISOString()
-                        })
-                        .eq('id', companyId);
-
-                    if (error) throw error;
-                    this.invalidateCache();
-                    return { success: true, message: 'Société bloquée avec succès' };
-                } catch (error) {
-                    console.error('[LicenseService] Erreur blocage société:', error);
-                    return { success: false, error: error.message };
-                }
-            }
-
-            async unblockCompany(companyId) {
-                if (!this.isSuperAdmin()) {
-                    throw new Error('Seuls les super-administrateurs peuvent débloquer des sociétés');
-                }
-
-                if (!this.tablesExist) {
-                    return { success: true, message: 'Société débloquée (mode démo)' };
-                }
-
-                try {
-                    const { error } = await this.supabase
-                        .from('companies')
-                        .update({
-                            is_blocked: false,
-                            blocked_at: null,
-                            blocked_by_user_id: null,
-                            block_reason: null,
-                            updated_at: new Date().toISOString()
-                        })
-                        .eq('id', companyId);
-
-                    if (error) throw error;
-                    this.invalidateCache();
-                    return { success: true, message: 'Société débloquée avec succès' };
-                } catch (error) {
-                    console.error('[LicenseService] Erreur déblocage société:', error);
-                    return { success: false, error: error.message };
-                }
-            }
-
-            getMockData() {
-                return {
-                    'demo-company-1': {
-                        company: { 
-                            id: 'demo-company-1', 
-                            name: 'TechCorp Solutions (Démo)', 
-                            domain: 'techcorp.com', 
-                            is_blocked: false 
-                        },
-                        users: [
-                            {
-                                id: 'demo-user-1',
-                                email: 'john.doe@techcorp.com',
-                                name: 'John Doe',
-                                connection_status: 'allowed',
-                                license_status: 'active',
-                                role: 'company_admin',
-                                last_login_at: new Date().toISOString(),
-                                login_count: 42
-                            },
-                            {
-                                id: 'demo-user-2',
-                                email: 'jane.smith@techcorp.com',
-                                name: 'Jane Smith',
-                                connection_status: 'allowed',
-                                license_status: 'active',
-                                role: 'user',
-                                last_login_at: new Date(Date.now() - 24*60*60*1000).toISOString(),
-                                login_count: 28
-                            }
-                        ]
-                    },
-                    'demo-company-2': {
-                        company: { 
-                            id: 'demo-company-2', 
-                            name: 'Digital Innovations (Démo)', 
-                            domain: 'digital-innovations.io', 
-                            is_blocked: false 
-                        },
-                        users: [
-                            {
-                                id: 'demo-user-3',
-                                email: 'vianney.hastings@hotmail.fr',
-                                name: 'Vianney Hastings',
-                                connection_status: 'allowed',
-                                license_status: 'trial',
-                                role: 'user',
-                                last_login_at: new Date().toISOString(),
-                                login_count: 12
-                            },
-                            {
-                                id: 'demo-user-4',
-                                email: 'sarah.johnson@digital-innovations.io',
-                                name: 'Sarah Johnson',
-                                connection_status: 'blocked',
-                                license_status: 'trial',
-                                role: 'user',
-                                last_login_at: new Date(Date.now() - 7*24*60*60*1000).toISOString(),
-                                login_count: 5,
-                                blocked_at: new Date(Date.now() - 24*60*60*1000).toISOString(),
-                                block_reason: 'Utilisation excessive des APIs'
-                            }
-                        ]
-                    }
-                };
-            }
-
-            isAdmin() {
-                return true; // Mode démo - accès admin pour tous
-            }
-
-            isSuperAdmin() {
-                return true; // Mode démo - accès super admin
-            }
-
-            canBlockUsers() {
-                return this.isAdmin();
-            }
-
-            canBlockCompanies() {
-                return this.isSuperAdmin();
-            }
-
-            invalidateCache() {
-                this.licenseCache = null;
-                this.userCache.clear();
-                this.companyCache.clear();
-            }
-        }
+        });
 
         // === INITIALIZATION ===
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('[Analytics Page] DOM loaded, initializing extended analytics...');
             
-            // Charger la configuration Supabase
-            const configScript = document.createElement('script');
-            configScript.src = './config-supabase.js';
-            configScript.onload = async () => {
-                console.log('[Analytics] Supabase config loaded');
-                
-                // Créer l'instance LicenseService intégrée
-                licenseService = new LicenseService();
-                
-                // Initialiser le service
-                await licenseService.initialize();
-                
-                // Charger les données
-                updateSummary();
-            };
-            document.head.appendChild(configScript);
+            // Initialiser l'utilisateur
+            const userInitialized = await initializeUser();
             
-            // Charger les analytics existants
-            loadAnalytics();
-            updateLastUpdated();
+            if (userInitialized) {
+                // Mettre à jour le résumé
+                await updateSummary();
+                
+                // Charger les analytics existants
+                loadAnalytics();
+                updateLastUpdated();
+                
+                console.log('[Analytics Page] ✅ Initialisé avec succès');
+            } else {
+                console.error('[Analytics Page] ❌ Échec de l\'initialisation utilisateur');
+            }
         });
 
         // === DEBUG FUNCTION ===
         window.debugAnalyticsExtended = function() {
             console.log('=== ANALYTICS EXTENDED DEBUG ===');
+            console.log('Current user:', currentUser);
             console.log('Current tab:', currentTab);
-            console.log('License service:', !!licenseService);
-            console.log('License service initialized:', licenseService?.initialized);
-            console.log('Current user:', licenseService?.getCurrentUser());
-            console.log('Is admin:', licenseService?.isAdmin());
-            console.log('Is super admin:', licenseService?.isSuperAdmin());
+            console.log('Is admin:', isAdmin());
+            console.log('Is super admin:', isSuperAdmin());
             console.log('Grouped users:', Object.keys(groupedUsers).length, 'companies');
             console.log('Analytics manager:', !!analyticsManager);
             console.log('Analytics module:', !!analyticsModule);
             
             return {
+                currentUser,
                 currentTab,
-                licenseServiceReady: !!licenseService && licenseService.initialized,
                 userPermissions: {
-                    isAdmin: licenseService?.isAdmin(),
-                    isSuperAdmin: licenseService?.isSuperAdmin(),
-                    canBlockUsers: licenseService?.canBlockUsers(),
-                    canBlockCompanies: licenseService?.canBlockCompanies()
+                    isAdmin: isAdmin(),
+                    isSuperAdmin: isSuperAdmin()
                 },
                 companiesCount: Object.keys(groupedUsers).length,
                 analyticsReady: !!analyticsManager && !!analyticsModule
