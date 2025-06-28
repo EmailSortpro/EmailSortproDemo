@@ -1,6 +1,300 @@
-// app.js - Application EmailSortPro avec intégration Analytics et Licence
-// Version corrigée et simplifiée
+// app.js - Application EmailSortPro avec LicenseService intégré
+// Version 5.1 - Corrigée avec service de licence intégré
 
+// =====================================
+// SERVICE DE LICENCE INTÉGRÉ
+// =====================================
+class IntegratedLicenseService {
+    constructor() {
+        this.supabase = null;
+        this.currentUser = null;
+        this.licenseCache = null;
+        this.initialized = false;
+        this.userCache = new Map();
+        this.companyCache = new Map();
+        this.tablesExist = false;
+    }
+
+    async initialize() {
+        if (this.initialized) return true;
+
+        try {
+            console.log('[LicenseService] Initialisation...');
+            
+            // Vérifier la disponibilité de Supabase
+            if (!window.supabase) {
+                console.warn('[LicenseService] Supabase non disponible');
+                return false;
+            }
+
+            // Configuration Supabase
+            const SUPABASE_URL = 'https://oxyiamruvyliueecpaam.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94eWlhbXJ1dnlsaXVlZWNwYWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MDM0MTgsImV4cCI6MjA2NTk3OTQxOH0.Wy_jbUB7D5Bly-rZB6oc2bXUHzZQ8MivDL4vdM1jcE0';
+
+            this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            // Vérifier si les tables existent
+            await this.checkTablesExistence();
+            
+            this.initialized = true;
+            console.log('[LicenseService] ✅ Initialisé avec succès');
+            
+            return true;
+        } catch (error) {
+            console.error('[LicenseService] ❌ Erreur initialisation:', error);
+            this.initialized = false;
+            this.tablesExist = false;
+            return false;
+        }
+    }
+
+    async checkTablesExistence() {
+        try {
+            const requiredTables = ['users', 'companies'];
+            const results = {};
+
+            for (const table of requiredTables) {
+                try {
+                    const { error } = await this.supabase
+                        .from(table)
+                        .select('*', { count: 'exact', head: true })
+                        .limit(0);
+
+                    results[table] = !error;
+                    
+                    if (error) {
+                        console.warn(`[LicenseService] ⚠️ Table '${table}' non accessible:`, error.message);
+                    } else {
+                        console.log(`[LicenseService] ✅ Table '${table}' accessible`);
+                    }
+                } catch (error) {
+                    results[table] = false;
+                    console.warn(`[LicenseService] ❌ Erreur vérification table '${table}':`, error.message);
+                }
+            }
+
+            this.tablesExist = Object.values(results).every(exists => exists);
+            return { allExist: this.tablesExist, tables: results };
+        } catch (error) {
+            console.warn('[LicenseService] ⚠️ Impossible de vérifier les tables:', error.message);
+            this.tablesExist = false;
+            return { allExist: false, tables: {} };
+        }
+    }
+
+    async checkUserLicense(email) {
+        if (!this.initialized) await this.initialize();
+        
+        if (!this.tablesExist) {
+            console.log('[LicenseService] Tables non disponibles - mode permissif');
+            return {
+                valid: true,
+                status: 'no_license_check',
+                message: 'Accès autorisé (vérification de licence désactivée)',
+                user: { email: email, role: 'user' }
+            };
+        }
+
+        try {
+            // Vérifier dans le cache
+            if (this.licenseCache && this.licenseCache.email === email) {
+                const cacheAge = Date.now() - this.licenseCache.timestamp;
+                if (cacheAge < 2 * 60 * 1000) {
+                    return this.licenseCache.result;
+                }
+            }
+
+            // Rechercher l'utilisateur
+            let { data: user, error } = await this.supabase
+                .from('users')
+                .select('*')
+                .eq('email', email.toLowerCase())
+                .single();
+
+            if (error && error.code === 'PGRST116') {
+                // Utilisateur n'existe pas - le créer
+                user = await this.createNewUser(email);
+            } else if (error) {
+                throw error;
+            }
+
+            // Récupérer la société si nécessaire
+            if (user && user.company_id) {
+                const { data: company } = await this.supabase
+                    .from('companies')
+                    .select('*')
+                    .eq('id', user.company_id)
+                    .single();
+                
+                user.company = company;
+            }
+
+            // Mettre à jour la dernière connexion
+            await this.updateLastLogin(user.id);
+
+            // Évaluer le statut de la licence
+            const licenseStatus = this.evaluateLicenseStatus(user);
+
+            // Mettre en cache
+            this.licenseCache = {
+                email: email,
+                timestamp: Date.now(),
+                result: {
+                    valid: licenseStatus.valid,
+                    status: licenseStatus.status,
+                    user: user,
+                    message: licenseStatus.message,
+                    daysRemaining: licenseStatus.daysRemaining
+                }
+            };
+
+            this.currentUser = user;
+            window.currentUser = user;
+            
+            return this.licenseCache.result;
+
+        } catch (error) {
+            console.error('[LicenseService] Erreur vérification licence:', error);
+            
+            // Mode permissif en cas d'erreur
+            return {
+                valid: true,
+                status: 'error_fallback',
+                message: 'Accès autorisé (erreur de vérification)',
+                user: { email: email, role: 'user' },
+                error: error.message
+            };
+        }
+    }
+
+    async createNewUser(email) {
+        try {
+            const domain = email.split('@')[1];
+            const company = await this.getOrCreateCompany(domain);
+
+            const role = email.toLowerCase() === 'vianney.hastings@hotmail.fr' ? 'company_admin' : 'user';
+
+            const newUserData = {
+                email: email.toLowerCase(),
+                name: email.split('@')[0],
+                role: role,
+                license_status: 'active',
+                license_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+                last_login_at: new Date().toISOString()
+            };
+
+            if (company && company.id) {
+                newUserData.company_id = company.id;
+            }
+
+            const { data: newUser, error } = await this.supabase
+                .from('users')
+                .insert([newUserData])
+                .select('*')
+                .single();
+
+            if (error) throw error;
+
+            newUser.company = company;
+            console.log(`[LicenseService] ✅ Utilisateur créé: ${email} (${role})`);
+            return newUser;
+        } catch (error) {
+            console.error('[LicenseService] ❌ Erreur création utilisateur:', error);
+            throw error;
+        }
+    }
+
+    async getOrCreateCompany(domain) {
+        try {
+            let { data: company, error } = await this.supabase
+                .from('companies')
+                .select('*')
+                .eq('domain', domain)
+                .single();
+
+            if (error && error.code === 'PGRST116') {
+                const { data: newCompany, error: createError } = await this.supabase
+                    .from('companies')
+                    .insert([
+                        {
+                            name: `Société ${domain}`,
+                            domain: domain
+                        }
+                    ])
+                    .select('*')
+                    .single();
+
+                if (createError) throw createError;
+                company = newCompany;
+                console.log(`[LicenseService] ✅ Société créée: ${company.name}`);
+            } else if (error) {
+                console.warn('[LicenseService] ⚠️ Erreur recherche société:', error);
+                return null;
+            }
+
+            return company;
+        } catch (error) {
+            console.error('[LicenseService] ❌ Erreur gestion société:', error);
+            return null;
+        }
+    }
+
+    evaluateLicenseStatus(user) {
+        if (user.license_status === 'blocked') {
+            return {
+                valid: false,
+                status: 'blocked',
+                message: 'Accès bloqué. Veuillez contacter votre administrateur.'
+            };
+        }
+
+        if (user.license_status === 'active' || user.license_status === 'trial') {
+            return {
+                valid: true,
+                status: user.license_status,
+                message: user.license_status === 'trial' ? 'Période d\'essai' : 'Licence active',
+                daysRemaining: 30
+            };
+        }
+
+        return {
+            valid: false,
+            status: 'invalid',
+            message: 'Statut de licence invalide'
+        };
+    }
+
+    async updateLastLogin(userId) {
+        if (!this.tablesExist) return;
+        
+        try {
+            await this.supabase
+                .from('users')
+                .update({ 
+                    last_login_at: new Date().toISOString()
+                })
+                .eq('id', userId);
+        } catch (error) {
+            console.warn('[LicenseService] Erreur mise à jour login:', error);
+        }
+    }
+
+    getCurrentUser() {
+        return this.currentUser;
+    }
+
+    isAdmin() {
+        return this.currentUser && ['company_admin', 'super_admin'].includes(this.currentUser.role);
+    }
+
+    hasAccess() {
+        return this.currentUser && ['active', 'trial'].includes(this.currentUser.license_status);
+    }
+}
+
+// =====================================
+// APPLICATION PRINCIPALE
+// =====================================
 class App {
     constructor() {
         this.user = null;
@@ -12,21 +306,21 @@ class App {
         this.currentPage = 'dashboard';
         this.isNetlifyEnv = window.location.hostname.includes('netlify.app');
         
-        console.log('[App] Constructor - EmailSortPro v5.0...');
+        console.log('[App] Constructor - EmailSortPro v5.1...');
         console.log('[App] Environment:', this.isNetlifyEnv ? 'Netlify' : 'Local');
+        
+        // Créer le service de licence intégré
+        this.licenseService = new IntegratedLicenseService();
+        window.licenseService = this.licenseService;
         
         // Initialiser Analytics de manière sûre
         this.initializeAnalyticsSafe();
     }
 
-    // =====================================
-    // INITIALISATION ANALYTICS SÉCURISÉE
-    // =====================================
     initializeAnalyticsSafe() {
         try {
             if (window.analyticsManager) {
                 console.log('[App] Analytics manager found');
-                // Ne pas appeler de méthodes qui pourraient ne pas exister
             } else {
                 console.log('[App] Analytics manager not available yet');
             }
@@ -35,9 +329,6 @@ class App {
         }
     }
 
-    // =====================================
-    // INITIALISATION PRINCIPALE
-    // =====================================
     async init() {
         if (this.isInitializing) {
             console.log('[App] Already initializing, skipping...');
@@ -53,8 +344,8 @@ class App {
                 throw new Error('Basic requirements not met');
             }
 
-            // 2. Charger le service de licence (optionnel)
-            await this.loadLicenseServiceSafe();
+            // 2. Initialiser le service de licence intégré
+            await this.licenseService.initialize();
 
             // 3. Initialiser les services d'authentification
             await this.initializeAuthServices();
@@ -76,9 +367,6 @@ class App {
         }
     }
 
-    // =====================================
-    // VÉRIFICATIONS DE BASE
-    // =====================================
     checkBasicRequirements() {
         console.log('[App] Checking basic requirements...');
         
@@ -104,65 +392,6 @@ class App {
         return true;
     }
 
-    // =====================================
-    // CHARGEMENT SÉCURISÉ DU SERVICE DE LICENCE
-    // =====================================
-    async loadLicenseServiceSafe() {
-        if (window.licenseService) {
-            console.log('[App] License service already loaded');
-            return true;
-        }
-
-        console.log('[App] Attempting to load license service...');
-        
-        try {
-            // Essayer de charger le service
-            await new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = './LicenseService.js';
-                
-                script.onload = async () => {
-                    console.log('[App] License service script loaded');
-                    if (window.licenseService && window.licenseService.initialize) {
-                        try {
-                            await window.licenseService.initialize();
-                            console.log('[App] ✅ License service initialized');
-                            resolve(true);
-                        } catch (err) {
-                            console.warn('[App] License service init failed:', err);
-                            resolve(false);
-                        }
-                    } else {
-                        resolve(false);
-                    }
-                };
-                
-                script.onerror = () => {
-                    console.warn('[App] Could not load LicenseService.js');
-                    resolve(false);
-                };
-                
-                // Timeout après 3 secondes
-                setTimeout(() => {
-                    if (!window.licenseService) {
-                        console.warn('[App] License service load timeout');
-                        resolve(false);
-                    }
-                }, 3000);
-                
-                document.head.appendChild(script);
-            });
-            
-            return true;
-        } catch (error) {
-            console.warn('[App] License service loading error:', error);
-            return false;
-        }
-    }
-
-    // =====================================
-    // INITIALISATION DES SERVICES D'AUTH
-    // =====================================
     async initializeAuthServices() {
         console.log('[App] Initializing auth services...');
         
@@ -206,9 +435,6 @@ class App {
         console.log('[App] Auth services ready:', successfulServices);
     }
 
-    // =====================================
-    // VÉRIFICATION DE L'AUTHENTIFICATION
-    // =====================================
     async checkAuthenticationStatus() {
         console.log('[App] Checking authentication status...');
         
@@ -227,11 +453,9 @@ class App {
                     this.isAuthenticated = true;
                     this.activeProvider = 'microsoft';
                     
-                    // Vérifier la licence si disponible
-                    if (window.licenseService) {
-                        const licenseValid = await this.verifyUserLicense();
-                        if (!licenseValid) return;
-                    }
+                    // Vérifier la licence
+                    const licenseValid = await this.verifyUserLicense();
+                    if (!licenseValid) return;
                     
                     console.log('[App] ✅ Microsoft user authenticated');
                     this.showApp();
@@ -253,11 +477,9 @@ class App {
                     this.isAuthenticated = true;
                     this.activeProvider = 'google';
                     
-                    // Vérifier la licence si disponible
-                    if (window.licenseService) {
-                        const licenseValid = await this.verifyUserLicense();
-                        if (!licenseValid) return;
-                    }
+                    // Vérifier la licence
+                    const licenseValid = await this.verifyUserLicense();
+                    if (!licenseValid) return;
                     
                     console.log('[App] ✅ Google user authenticated');
                     this.showApp();
@@ -274,15 +496,7 @@ class App {
         this.showLogin();
     }
 
-    // =====================================
-    // VÉRIFICATION DE LICENCE SIMPLIFIÉE
-    // =====================================
     async verifyUserLicense() {
-        if (!window.licenseService) {
-            console.log('[App] License service not available, skipping check');
-            return true;
-        }
-        
         try {
             const userEmail = this.user.email || this.user.mail || this.user.userPrincipalName;
             if (!userEmail) {
@@ -291,7 +505,7 @@ class App {
             }
             
             console.log('[App] Checking license for:', userEmail);
-            const result = await window.licenseService.checkUserLicense(userEmail);
+            const result = await this.licenseService.checkUserLicense(userEmail);
             
             // Si nouvel utilisateur, lancer l'onboarding
             if (result.error && result.error.includes('PGRST116')) {
@@ -299,18 +513,18 @@ class App {
                 return await this.startOnboarding(userEmail);
             }
             
-            // Si licence invalide
-            if (!result.valid) {
+            // Si licence invalide et pas en mode permissif
+            if (!result.valid && result.status !== 'no_license_check' && result.status !== 'error_fallback') {
                 console.warn('[App] Invalid license:', result.message);
                 this.showLicenseError(result.message || 'Licence invalide');
                 setTimeout(() => this.logout(), 10000);
                 return false;
             }
             
-            // Licence valide
+            // Licence valide ou mode permissif
             this.licenseUser = result.user;
             this.hasValidLicense = true;
-            console.log('[App] ✅ License valid');
+            console.log('[App] ✅ License valid or permissive mode');
             return true;
             
         } catch (error) {
@@ -320,9 +534,6 @@ class App {
         }
     }
 
-    // =====================================
-    // ONBOARDING SIMPLIFIÉ
-    // =====================================
     async startOnboarding(email) {
         return new Promise((resolve) => {
             const modal = document.createElement('div');
@@ -422,20 +633,12 @@ class App {
         });
     }
 
-    // =====================================
-    // CRÉATION D'UTILISATEUR
-    // =====================================
     async createUser(email, type, companyName = null) {
-        if (!window.licenseService) {
-            console.error('[App] Cannot create user without license service');
-            return true; // Ne pas bloquer
-        }
-        
         try {
-            // Laisser le service de licence gérer la création
-            const result = await window.licenseService.checkUserLicense(email);
+            // Utiliser le service de licence pour la création
+            const result = await this.licenseService.checkUserLicense(email);
             
-            if (result.valid) {
+            if (result.valid || result.status === 'no_license_check' || result.status === 'error_fallback') {
                 this.licenseUser = result.user;
                 this.hasValidLicense = true;
                 this.showWelcomeMessage();
@@ -449,9 +652,6 @@ class App {
         }
     }
 
-    // =====================================
-    // AFFICHAGE DE BIENVENUE
-    // =====================================
     showWelcomeMessage() {
         const toast = document.createElement('div');
         toast.style.cssText = `
@@ -467,16 +667,13 @@ class App {
         `;
         toast.innerHTML = `
             <h3 style="margin: 0 0 0.5rem 0;">Bienvenue !</h3>
-            <p style="margin: 0;">Votre compte a été créé avec 15 jours d'essai gratuit.</p>
+            <p style="margin: 0;">Connexion réussie à EmailSortPro.</p>
         `;
         
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 5000);
     }
 
-    // =====================================
-    // MÉTHODES D'AUTHENTIFICATION
-    // =====================================
     async loginMicrosoft() {
         try {
             this.showLoading('Connexion à Microsoft...');
@@ -530,9 +727,6 @@ class App {
         }
     }
 
-    // =====================================
-    // AFFICHAGE DE L'APPLICATION
-    // =====================================
     showApp() {
         console.log('[App] Showing application...');
         
@@ -582,9 +776,6 @@ class App {
         this.hideLoading();
     }
 
-    // =====================================
-    // CHARGEMENT DU DASHBOARD
-    // =====================================
     loadDashboard() {
         this.currentPage = 'dashboard';
         
@@ -616,9 +807,6 @@ class App {
         `;
     }
 
-    // =====================================
-    // GESTION DES ERREURS
-    // =====================================
     showError(message) {
         console.error('[App] Error:', message);
         
@@ -672,9 +860,6 @@ class App {
         document.body.appendChild(overlay);
     }
 
-    // =====================================
-    // UTILITAIRES
-    // =====================================
     showLoading(message = 'Chargement...') {
         const overlay = document.getElementById('loadingOverlay');
         if (overlay) {
@@ -718,9 +903,6 @@ class App {
         sessionStorage.clear();
     }
 
-    // =====================================
-    // EVENT LISTENERS
-    // =====================================
     setupEventListeners() {
         // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
@@ -733,9 +915,6 @@ class App {
         });
     }
 
-    // =====================================
-    // MODULES CRITIQUES
-    // =====================================
     async initializeCriticalModules() {
         console.log('[App] Initializing critical modules...');
         
@@ -763,9 +942,6 @@ class App {
         console.log('[App] Critical modules ready');
     }
 
-    // =====================================
-    // GESTION DES CALLBACKS
-    // =====================================
     async handleGoogleCallback() {
         const callbackData = sessionStorage.getItem('google_callback_data');
         if (!callbackData) return false;
@@ -786,10 +962,8 @@ class App {
                 this.isAuthenticated = true;
                 this.activeProvider = 'google';
                 
-                if (window.licenseService) {
-                    const licenseValid = await this.verifyUserLicense();
-                    if (!licenseValid) return false;
-                }
+                const licenseValid = await this.verifyUserLicense();
+                if (!licenseValid) return false;
                 
                 this.showApp();
                 return true;
@@ -801,9 +975,6 @@ class App {
         return false;
     }
 
-    // =====================================
-    // GESTION DES ERREURS D'INIT
-    // =====================================
     handleInitError(error) {
         console.error('[App] Init error:', error);
         
@@ -818,7 +989,7 @@ class App {
 }
 
 // =====================================
-// FONCTIONS GLOBALES
+// FONCTIONS GLOBALES DE DIAGNOSTIC
 // =====================================
 window.diagnoseApp = function() {
     console.group('🔍 DIAGNOSTIC');
@@ -831,10 +1002,15 @@ window.diagnoseApp = function() {
             user: window.app.user?.email || 'none'
         } : 'App not initialized',
         
+        licenseService: window.licenseService ? {
+            initialized: window.licenseService.initialized,
+            tablesExist: window.licenseService.tablesExist,
+            currentUser: window.licenseService.currentUser?.email || 'none'
+        } : 'License service not available',
+        
         services: {
             microsoft: !!window.authService,
             google: !!window.googleAuthService,
-            license: !!window.licenseService,
             analytics: !!window.analyticsManager,
             mail: !!window.mailService,
             page: !!window.pageManager
@@ -842,7 +1018,8 @@ window.diagnoseApp = function() {
         
         environment: {
             netlify: window.location.hostname.includes('netlify.app'),
-            domain: window.location.hostname
+            domain: window.location.hostname,
+            supabase: !!window.supabase
         }
     };
     
@@ -859,6 +1036,26 @@ window.emergencyReset = function() {
     window.location.reload();
 };
 
+window.testLicenseService = async function(email = 'test@example.com') {
+    if (!window.licenseService) {
+        console.error('License service not available');
+        return;
+    }
+    
+    console.group('🧪 TEST LICENSE SERVICE');
+    try {
+        const result = await window.licenseService.checkUserLicense(email);
+        console.log('Test result:', result);
+        console.log('Service status:', {
+            initialized: window.licenseService.initialized,
+            tablesExist: window.licenseService.tablesExist
+        });
+    } catch (error) {
+        console.error('Test error:', error);
+    }
+    console.groupEnd();
+};
+
 // =====================================
 // INITIALISATION
 // =====================================
@@ -866,7 +1063,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('[App] DOM loaded');
     
     try {
-        // Créer l'instance de l'app
+        // Créer l'instance de l'app avec service de licence intégré
         window.app = new App();
         
         // Attendre que les services de base soient prêts
@@ -879,8 +1076,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('[App] Services ready, initializing...');
                 window.app.init();
             } else {
-                console.error('[App] Missing required services');
-                window.app.showError('Services requis non disponibles');
+                console.log('[App] Services status:', {
+                    uiManager: !!window.uiManager,
+                    authService: !!window.authService,
+                    googleAuthService: !!window.googleAuthService
+                });
+                
+                // Essayer d'initialiser même si certains services manquent
+                console.warn('[App] Some services missing, trying to initialize anyway...');
+                window.app.init();
             }
         }, 500);
         
@@ -892,11 +1096,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h1>Erreur Critique</h1>
                     <p>${error.message}</p>
                     <button onclick="location.reload()">Recharger</button>
+                    <br><br>
+                    <button onclick="window.emergencyReset()">Reset d'urgence</button>
                 </div>
             </div>
         `;
     }
 });
 
-console.log('✅ EmailSortPro App v5.0 loaded');
-console.log('🔧 Commands: diagnoseApp(), emergencyReset()');
+console.log('✅ EmailSortPro App v5.1 loaded with integrated LicenseService');
+console.log('🔧 Commands: diagnoseApp(), emergencyReset(), testLicenseService(email)');
