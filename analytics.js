@@ -1,5 +1,5 @@
 // AnalyticsManager.js - Gestion des analytics pour EmailSortPro
-// Version complète sans mode démo, avec données réelles uniquement
+// Version corrigée sans boucle infinie
 
 class AnalyticsManager {
     constructor() {
@@ -10,6 +10,7 @@ class AnalyticsManager {
         this.analyticsEvents = [];
         this.initialized = false;
         this.tablesExist = false;
+        this.isLoadingData = false; // Flag pour éviter les appels multiples
     }
 
     // === INITIALISATION ===
@@ -77,19 +78,27 @@ class AnalyticsManager {
         }
     }
 
-    // === CHARGEMENT DES DONNÉES ===
+    // === CHARGEMENT DES DONNÉES (CORRIGÉ) ===
     async loadData() {
-        if (!this.initialized) await this.initialize();
-
-        if (!this.tablesExist) {
-            console.error('[AnalyticsManager] Tables non disponibles - pas de données');
-            this.companies = [];
-            this.users = [];
-            this.analyticsEvents = [];
+        // Éviter les appels multiples simultanés
+        if (this.isLoadingData) {
+            console.log('[Analytics] Chargement déjà en cours, annulation');
             return;
         }
-        
+
+        this.isLoadingData = true;
+
         try {
+            if (!this.initialized) await this.initialize();
+
+            if (!this.tablesExist) {
+                console.error('[AnalyticsManager] Tables non disponibles - pas de données');
+                this.companies = [];
+                this.users = [];
+                this.analyticsEvents = [];
+                return;
+            }
+            
             // Récupérer l'utilisateur actuel depuis le contexte global
             if (window.currentUser) {
                 this.currentUser = window.currentUser;
@@ -118,6 +127,8 @@ class AnalyticsManager {
             this.companies = [];
             this.users = [];
             this.analyticsEvents = [];
+        } finally {
+            this.isLoadingData = false;
         }
     }
 
@@ -395,6 +406,25 @@ class AnalyticsManager {
         console.log('[AnalyticsManager] 📊 Événement tracké:', eventType);
     }
 
+    // === MÉTHODES POUR APP.JS COMPATIBILITY ===
+    trackAuthentication(provider, userInfo) {
+        console.log('[Analytics] Tracking authentication:', provider, userInfo?.email);
+        return this.trackEvent('user_authentication', {
+            provider: provider,
+            email: userInfo?.email,
+            name: userInfo?.displayName || userInfo?.name,
+            company: userInfo?.company
+        });
+    }
+
+    onError(errorType, errorData) {
+        console.log('[Analytics] Tracking error:', errorType);
+        return this.trackEvent('error_occurred', {
+            errorType: errorType,
+            ...errorData
+        });
+    }
+
     // === MÉTHODES DE FILTRAGES ===
     filterUsersByCompany(companyId) {
         return this.users.filter(u => u.company_id === companyId);
@@ -473,6 +503,15 @@ class AnalyticsManager {
         );
     }
 
+    // === MÉTHODES D'ACCÈS AUX DONNÉES ===
+    getAllUsers() {
+        return this.users;
+    }
+
+    getAllCompanies() {
+        return this.companies;
+    }
+
     // === MÉTHODES DE DIAGNOSTIC ===
     getDiagnosticInfo() {
         return {
@@ -488,7 +527,8 @@ class AnalyticsManager {
                 users: this.users.length,
                 events: this.analyticsEvents.length
             },
-            dataSource: this.tablesExist ? 'database' : 'unavailable'
+            dataSource: this.tablesExist ? 'database' : 'unavailable',
+            isLoadingData: this.isLoadingData
         };
     }
 }
@@ -604,16 +644,9 @@ window.analyticsModule = analyticsModule;
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('[Analytics] Initialisation du manager...');
     await window.analyticsManager.initialize();
-    await window.analyticsManager.loadData();
+    // Pas d'appel automatique à loadData pour éviter les conflits
     console.log('[Analytics] ✅ Manager initialisé');
 });
-
-// Fonction de compatibilité pour loadData
-window.analyticsManager.loadData = async function() {
-    console.log('[Analytics] loadData appelé - rechargement des données');
-    await this.loadData();
-    return Promise.resolve();
-};
 
 // Fonction de diagnostic
 window.debugAnalyticsManager = function() {
@@ -624,6 +657,6 @@ window.debugAnalyticsManager = function() {
     return info;
 };
 
-console.log('[Analytics] ✅ AnalyticsManager chargé (sans mode démo)');
+console.log('[Analytics] ✅ AnalyticsManager chargé (version corrigée)');
 console.log('[Analytics] 💡 Utilisez window.analyticsManager pour accéder aux données');
 console.log('[Analytics] 🔍 Utilisez debugAnalyticsManager() pour le diagnostic');
