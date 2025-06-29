@@ -8,6 +8,9 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
         * {
             margin: 0;
@@ -78,6 +81,49 @@
             background: #f8fafc;
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .user-info-badge {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4F46E5, #6366F1);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .user-details {
+            text-align: right;
+        }
+
+        .user-email {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 0.875rem;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: #64748b;
         }
 
         .real-time-indicator {
@@ -194,6 +240,7 @@
         .summary-icon.errors { background: #fef2f2; color: #dc2626; }
         .summary-icon.activity { background: #fef3c7; color: #d97706; }
         .summary-icon.licenses { background: #f3e8ff; color: #7c3aed; }
+        .summary-icon.database { background: #e0e7ff; color: #4338ca; }
 
         .summary-number {
             font-size: 2rem;
@@ -824,6 +871,148 @@
             font-size: 0.875rem;
         }
 
+        /* Database Connection Status */
+        .db-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+        }
+
+        .db-status.connected {
+            border-color: #10b981;
+            color: #059669;
+        }
+
+        .db-status.disconnected {
+            border-color: #ef4444;
+            color: #dc2626;
+        }
+
+        .db-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .db-status.connected .db-status-dot {
+            background: #10b981;
+        }
+
+        .db-status.disconnected .db-status-dot {
+            background: #ef4444;
+        }
+
+        /* Authentication Form */
+        .auth-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+        }
+
+        .auth-box {
+            background: white;
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            max-width: 450px;
+            width: 90%;
+        }
+
+        .auth-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .form-input {
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .auth-submit {
+            padding: 14px 28px;
+            background: #4F46E5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .auth-submit:hover {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+
+        .auth-submit:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            text-align: center;
+        }
+
+        .auth-info {
+            background: #dbeafe;
+            border: 1px solid #bfdbfe;
+            color: #1d4ed8;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            text-align: center;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .analytics-standalone {
@@ -874,15 +1063,63 @@
             .detail-grid {
                 grid-template-columns: 1fr;
             }
+
+            .user-info-badge {
+                position: static;
+                margin-bottom: 20px;
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="analytics-standalone">
+    <div id="authContainer" class="auth-container" style="display: none;">
+        <div class="auth-box">
+            <h2 class="auth-title">
+                <i class="fas fa-chart-line"></i>
+                Analytics EmailSortPro
+            </h2>
+            <form id="authForm" class="auth-form">
+                <div class="auth-info">
+                    <i class="fas fa-info-circle"></i>
+                    Entrez votre email pour accéder aux analytics
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="emailInput">Adresse Email</label>
+                    <input 
+                        type="email" 
+                        id="emailInput" 
+                        class="form-input" 
+                        placeholder="vianney.hastings@hotmail.fr"
+                        value="vianney.hastings@hotmail.fr"
+                        required
+                    >
+                </div>
+                <button type="submit" id="authSubmit" class="auth-submit">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Accéder aux Analytics
+                </button>
+                <div id="authError" class="auth-error" style="display: none;"></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="mainContent" class="analytics-standalone" style="display: none;">
         <a href="./index.html" class="back-to-app">
             <i class="fas fa-arrow-left"></i>
             Retour à l'application
         </a>
+
+        <div class="user-info-badge">
+            <div class="user-avatar" id="userAvatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="user-details">
+                <div class="user-email" id="userEmailDisplay">-</div>
+                <div class="user-role" id="userRoleDisplay">-</div>
+            </div>
+        </div>
 
         <div class="page-header">
             <h1>
@@ -928,6 +1165,13 @@
                     <div class="summary-number" id="summaryLicenses">-</div>
                     <div class="summary-label">Licences actives</div>
                 </div>
+                <div class="summary-item">
+                    <div class="summary-icon database">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="summary-number" id="summaryDatabase">-</div>
+                    <div class="summary-label">Événements DB</div>
+                </div>
             </div>
         </div>
 
@@ -961,13 +1205,14 @@
                 <div class="users-controls">
                     <div class="search-box">
                         <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Rechercher un utilisateur..." id="userSearch">
+                        <input type="text" placeholder="Rechercher un utilisateur par email..." id="userSearch">
                     </div>
                     <select class="filter-select" id="statusFilter">
                         <option value="">Tous les statuts</option>
                         <option value="active">Actifs</option>
-                        <option value="inactive">Inactifs</option>
-                        <option value="error">Avec erreurs</option>
+                        <option value="trial">Essai</option>
+                        <option value="expired">Expirés</option>
+                        <option value="blocked">Bloqués</option>
                     </select>
                     <select class="filter-select" id="companyFilter">
                         <option value="">Toutes les sociétés</option>
@@ -983,12 +1228,12 @@
                         <thead>
                             <tr>
                                 <th>Utilisateur</th>
+                                <th>Email</th>
                                 <th>Société</th>
                                 <th>Statut</th>
                                 <th>Dernière connexion</th>
-                                <th>Scans</th>
-                                <th>Erreurs</th>
                                 <th>Licence</th>
+                                <th>Expiration</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -1019,6 +1264,12 @@
         </div>
     </div>
 
+    <!-- Database Status Indicator -->
+    <div id="dbStatus" class="db-status disconnected" style="display: none;">
+        <div class="db-status-dot"></div>
+        <span id="dbStatusText">Base de données déconnectée</span>
+    </div>
+
     <!-- User Details Modal -->
     <div class="modal-overlay" id="userModal">
         <div class="modal">
@@ -1039,55 +1290,139 @@
         let analyticsManager = null;
         let analyticsModule = null;
         let licenseService = null;
+        let currentUser = null;
         let currentUsers = [];
         let filteredUsers = [];
         let currentTab = 'overview';
+        let dbConnected = false;
+        let dbUsers = [];
+        let dbEvents = [];
 
-        // Mock data for demonstration (will be replaced by real data)
-        const mockUsers = [
-            {
-                id: 'user1',
-                email: 'john.doe@company1.com',
-                name: 'John Doe',
-                company: 'Company One',
-                status: 'active',
-                lastLogin: new Date(Date.now() - 2 * 60 * 60 * 1000),
-                scansCount: 145,
-                errorsCount: 2,
-                license: { type: 'premium', status: 'active', expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) },
-                errors: [
-                    { timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), message: 'Connexion IMAP échouée' },
-                    { timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000), message: 'Limite de taux atteinte' }
-                ]
-            },
-            {
-                id: 'user2',
-                email: 'jane.smith@company2.com',
-                name: 'Jane Smith',
-                company: 'Company Two',
-                status: 'active',
-                lastLogin: new Date(Date.now() - 30 * 60 * 1000),
-                scansCount: 89,
-                errorsCount: 0,
-                license: { type: 'trial', status: 'active', expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
-                errors: []
-            },
-            {
-                id: 'user3',
-                email: 'bob.wilson@company1.com',
-                name: 'Bob Wilson',
-                company: 'Company One',
-                status: 'inactive',
-                lastLogin: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-                scansCount: 234,
-                errorsCount: 5,
-                license: { type: 'basic', status: 'expired', expires: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
-                errors: [
-                    { timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), message: 'Licence expirée' },
-                    { timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), message: 'Accès refusé' }
-                ]
+        // Authentication check on page load
+        async function checkAuthentication() {
+            console.log('[Analytics] Checking authentication...');
+            
+            // Vérifier si on a déjà un utilisateur en session
+            const storedEmail = localStorage.getItem('emailsortpro_user_email');
+            
+            if (storedEmail) {
+                // Essayer de se connecter automatiquement
+                const result = await authenticateUser(storedEmail);
+                if (result.success) {
+                    showMainContent(result.user);
+                    return;
+                }
             }
-        ];
+            
+            // Sinon, afficher le formulaire de connexion
+            showAuthForm();
+        }
+
+        function showAuthForm() {
+            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('mainContent').style.display = 'none';
+            document.getElementById('dbStatus').style.display = 'none';
+        }
+
+        function showMainContent(user) {
+            currentUser = user;
+            
+            // Mettre à jour l'affichage utilisateur
+            const userEmail = user.email || user.mail || 'Utilisateur';
+            const userName = user.name || userEmail.split('@')[0];
+            const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+            
+            document.getElementById('userAvatar').textContent = initials;
+            document.getElementById('userEmailDisplay').textContent = userEmail;
+            document.getElementById('userRoleDisplay').textContent = getRoleName(user.role);
+            
+            // Afficher le contenu principal
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            document.getElementById('dbStatus').style.display = 'flex';
+            
+            // Charger les analytics
+            loadAnalytics();
+        }
+
+        async function authenticateUser(email) {
+            try {
+                // Charger le service de licence si nécessaire
+                if (!licenseService) {
+                    await loadLicenseService();
+                }
+                
+                // Authentifier l'utilisateur
+                const result = await licenseService.authenticateWithEmail(email);
+                
+                if (result.valid) {
+                    localStorage.setItem('emailsortpro_user_email', email);
+                    updateDbStatus(true);
+                    return { success: true, user: result.user };
+                } else {
+                    return { success: false, error: result.message || 'Authentification échouée' };
+                }
+            } catch (error) {
+                console.error('[Analytics] Authentication error:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Event listener pour le formulaire d'authentification
+        document.getElementById('authForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('emailInput').value.trim();
+            const submitBtn = document.getElementById('authSubmit');
+            const errorDiv = document.getElementById('authError');
+            
+            if (!email) {
+                errorDiv.textContent = 'Veuillez entrer une adresse email';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            // Désactiver le bouton pendant l'authentification
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
+            errorDiv.style.display = 'none';
+            
+            const result = await authenticateUser(email);
+            
+            if (result.success) {
+                showMainContent(result.user);
+            } else {
+                errorDiv.textContent = result.error || 'Erreur d\'authentification';
+                errorDiv.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accéder aux Analytics';
+            }
+        });
+
+        function getRoleName(role) {
+            switch (role) {
+                case 'super_admin': return 'Super Administrateur';
+                case 'admin': return 'Administrateur';
+                case 'user': return 'Utilisateur';
+                default: return 'Utilisateur';
+            }
+        }
+
+        function updateDbStatus(connected) {
+            dbConnected = connected;
+            const statusElement = document.getElementById('dbStatus');
+            const statusText = document.getElementById('dbStatusText');
+            
+            if (connected) {
+                statusElement.classList.remove('disconnected');
+                statusElement.classList.add('connected');
+                statusText.textContent = 'Base de données connectée';
+            } else {
+                statusElement.classList.remove('connected');
+                statusElement.classList.add('disconnected');
+                statusText.textContent = 'Base de données déconnectée';
+            }
+        }
 
         // Tab management
         function switchTab(tabName) {
@@ -1109,9 +1444,76 @@
             }
         }
 
-        // Users management
-        function loadUsers() {
-            currentUsers = mockUsers; // In real app, load from analyticsManager
+        // Users management - Load from both local analytics and database
+        async function loadUsers() {
+            // 1. Charger les utilisateurs depuis les analytics locaux
+            let localUsers = [];
+            if (window.analyticsManager) {
+                const analyticsData = window.analyticsManager.getAnalyticsData();
+                const usersByEmail = analyticsData.userStatsByEmail || {};
+                
+                localUsers = Object.entries(usersByEmail).map(([email, stats]) => ({
+                    id: email,
+                    email: email,
+                    name: stats.name || email.split('@')[0],
+                    company: stats.company || stats.domain || 'Non défini',
+                    lastLogin: stats.lastAccess ? new Date(stats.lastAccess) : null,
+                    scansCount: stats.totalScans || 0,
+                    emailsCount: stats.totalEmailsScanned || 0,
+                    status: 'active', // Par défaut depuis analytics
+                    license_status: 'unknown',
+                    role: 'user',
+                    source: 'analytics'
+                }));
+            }
+
+            // 2. Charger les utilisateurs depuis la base de données
+            if (licenseService && dbConnected) {
+                try {
+                    const companyUsers = await licenseService.getCompanyUsers();
+                    dbUsers = companyUsers.map(user => ({
+                        id: user.id,
+                        email: user.email,
+                        name: user.name || user.email.split('@')[0],
+                        company: user.company?.name || 'Non défini',
+                        lastLogin: user.last_login_at ? new Date(user.last_login_at) : null,
+                        license_status: user.license_status,
+                        license_expires_at: user.license_expires_at,
+                        role: user.role,
+                        status: user.license_status === 'blocked' ? 'blocked' : 
+                               user.license_status === 'expired' ? 'expired' : 'active',
+                        source: 'database'
+                    }));
+                } catch (error) {
+                    console.error('[Analytics] Error loading DB users:', error);
+                }
+            }
+
+            // 3. Fusionner les données (priorité à la DB)
+            const mergedUsers = new Map();
+            
+            // D'abord ajouter les utilisateurs locaux
+            localUsers.forEach(user => {
+                mergedUsers.set(user.email.toLowerCase(), user);
+            });
+            
+            // Puis écraser/compléter avec les données DB
+            dbUsers.forEach(user => {
+                const existing = mergedUsers.get(user.email.toLowerCase());
+                if (existing) {
+                    // Fusionner les données
+                    mergedUsers.set(user.email.toLowerCase(), {
+                        ...existing,
+                        ...user,
+                        scansCount: existing.scansCount || 0,
+                        emailsCount: existing.emailsCount || 0
+                    });
+                } else {
+                    mergedUsers.set(user.email.toLowerCase(), user);
+                }
+            });
+            
+            currentUsers = Array.from(mergedUsers.values());
             populateCompanyFilter();
             filterUsers();
         }
@@ -1120,7 +1522,6 @@
             const companies = [...new Set(currentUsers.map(user => user.company))];
             const filter = document.getElementById('companyFilter');
             
-            // Clear existing options except first one
             filter.innerHTML = '<option value="">Toutes les sociétés</option>';
             
             companies.forEach(company => {
@@ -1141,7 +1542,12 @@
                                     user.email.toLowerCase().includes(searchTerm) ||
                                     user.company.toLowerCase().includes(searchTerm);
                 
-                const matchesStatus = !statusFilter || user.status === statusFilter;
+                const matchesStatus = !statusFilter || 
+                                    (statusFilter === 'active' && user.license_status === 'active') ||
+                                    (statusFilter === 'trial' && user.license_status === 'trial') ||
+                                    (statusFilter === 'expired' && user.license_status === 'expired') ||
+                                    (statusFilter === 'blocked' && user.license_status === 'blocked');
+                                    
                 const matchesCompany = !companyFilter || user.company === companyFilter;
 
                 return matchesSearch && matchesStatus && matchesCompany;
@@ -1163,12 +1569,25 @@
             emptyState.style.display = 'none';
 
             tbody.innerHTML = filteredUsers.map(user => {
-                const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
-                const statusClass = user.status === 'active' ? 'active' : 
-                                  user.status === 'inactive' ? 'inactive' : 'error';
+                const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
                 
-                const licenseClass = user.license.status === 'active' ? 'active' : 
-                                   user.license.status === 'expired' ? 'expired' : 'trial';
+                let statusClass = 'active';
+                let statusText = 'Actif';
+                
+                if (user.license_status === 'trial') {
+                    statusClass = 'trial';
+                    statusText = 'Essai';
+                } else if (user.license_status === 'expired') {
+                    statusClass = 'expired';
+                    statusText = 'Expiré';
+                } else if (user.license_status === 'blocked') {
+                    statusClass = 'blocked';
+                    statusText = 'Bloqué';
+                }
+
+                const expirationDate = user.license_expires_at ? 
+                    new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 
+                    'Non défini';
 
                 return `
                     <tr>
@@ -1177,33 +1596,28 @@
                                 <div class="user-avatar">${initials}</div>
                                 <div class="user-details">
                                     <h4>${user.name}</h4>
-                                    <p>${user.email}</p>
+                                    <p>${getRoleName(user.role)}</p>
                                 </div>
                             </div>
                         </td>
+                        <td class="user-email">${user.email}</td>
                         <td>${user.company}</td>
-                        <td><span class="status-badge ${statusClass}">${user.status}</span></td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                         <td>${formatLastLogin(user.lastLogin)}</td>
-                        <td>${user.scansCount.toLocaleString()}</td>
                         <td>
-                            ${user.errorsCount > 0 ? 
-                                `<span style="color: #dc2626; font-weight: 600;">${user.errorsCount}</span>` : 
-                                `<span style="color: #16a34a;">0</span>`
-                            }
+                            <span class="license-badge ${statusClass}">${user.license_status || 'unknown'}</span>
                         </td>
-                        <td>
-                            <div class="license-info">
-                                <span class="license-badge ${licenseClass}">${user.license.type}</span>
-                            </div>
-                        </td>
+                        <td>${expirationDate}</td>
                         <td>
                             <div class="actions-cell">
-                                <button class="action-btn edit" onclick="viewUserDetails('${user.id}')">
+                                <button class="action-btn edit" onclick="viewUserDetails('${user.email}')">
                                     <i class="fas fa-eye"></i> Voir
                                 </button>
-                                <button class="action-btn license" onclick="manageLicense('${user.id}')">
-                                    <i class="fas fa-key"></i> Licence
-                                </button>
+                                ${user.source === 'database' ? `
+                                    <button class="action-btn license" onclick="manageLicense('${user.id}')">
+                                        <i class="fas fa-key"></i> Licence
+                                    </button>
+                                ` : ''}
                             </div>
                         </td>
                     </tr>
@@ -1212,6 +1626,8 @@
         }
 
         function formatLastLogin(date) {
+            if (!date) return 'Jamais';
+            
             const now = new Date();
             const diff = now - date;
             const minutes = Math.floor(diff / 60000);
@@ -1229,11 +1645,28 @@
             }
         }
 
-        function viewUserDetails(userId) {
-            const user = currentUsers.find(u => u.id === userId);
+        async function viewUserDetails(userEmail) {
+            const user = currentUsers.find(u => u.email === userEmail);
             if (!user) return;
 
             document.getElementById('modalTitle').textContent = `Détails - ${user.name}`;
+            
+            // Récupérer les analytics de l'utilisateur depuis la DB si possible
+            let dbAnalytics = [];
+            if (licenseService && user.source === 'database') {
+                try {
+                    dbAnalytics = await licenseService.getUserAnalytics(user.id);
+                } catch (error) {
+                    console.error('[Analytics] Error fetching user analytics:', error);
+                }
+            }
+
+            // Récupérer les analytics locaux
+            let localAnalytics = {};
+            if (window.analyticsManager) {
+                const analyticsData = window.analyticsManager.getAnalyticsData();
+                localAnalytics = analyticsData.userStatsByEmail?.[userEmail] || {};
+            }
             
             const modalBody = document.getElementById('modalBody');
             modalBody.innerHTML = `
@@ -1241,20 +1674,20 @@
                     <h4><i class="fas fa-user"></i> Informations générales</h4>
                     <div class="detail-grid">
                         <div class="detail-item">
-                            <label>Nom complet</label>
-                            <value>${user.name}</value>
+                            <label>Email</label>
+                            <value style="font-weight: bold; color: #4F46E5;">${user.email}</value>
                         </div>
                         <div class="detail-item">
-                            <label>Email</label>
-                            <value>${user.email}</value>
+                            <label>Nom complet</label>
+                            <value>${user.name}</value>
                         </div>
                         <div class="detail-item">
                             <label>Société</label>
                             <value>${user.company}</value>
                         </div>
                         <div class="detail-item">
-                            <label>Statut</label>
-                            <value><span class="status-badge ${user.status}">${user.status}</span></value>
+                            <label>Rôle</label>
+                            <value>${getRoleName(user.role)}</value>
                         </div>
                     </div>
                 </div>
@@ -1264,19 +1697,19 @@
                     <div class="detail-grid">
                         <div class="detail-item">
                             <label>Dernière connexion</label>
-                            <value>${user.lastLogin.toLocaleString('fr-FR')}</value>
+                            <value>${user.lastLogin ? user.lastLogin.toLocaleString('fr-FR') : 'Jamais'}</value>
                         </div>
                         <div class="detail-item">
-                            <label>Scans effectués</label>
-                            <value>${user.scansCount.toLocaleString()}</value>
+                            <label>Nombre de scans</label>
+                            <value>${user.scansCount || localAnalytics.totalScans || 0}</value>
                         </div>
                         <div class="detail-item">
-                            <label>Erreurs rencontrées</label>
-                            <value style="color: ${user.errorsCount > 0 ? '#dc2626' : '#16a34a'}">${user.errorsCount}</value>
+                            <label>Emails scannés</label>
+                            <value>${user.emailsCount || localAnalytics.totalEmailsScanned || 0}</value>
                         </div>
                         <div class="detail-item">
-                            <label>Temps d'activité</label>
-                            <value>${calculateActiveTime(user)}</value>
+                            <label>Sessions totales</label>
+                            <value>${localAnalytics.totalSessions || 0}</value>
                         </div>
                     </div>
                 </div>
@@ -1285,32 +1718,38 @@
                     <h4><i class="fas fa-key"></i> Informations licence</h4>
                     <div class="detail-grid">
                         <div class="detail-item">
-                            <label>Type de licence</label>
-                            <value><span class="license-badge ${user.license.status}">${user.license.type}</span></value>
-                        </div>
-                        <div class="detail-item">
-                            <label>Statut</label>
-                            <value><span class="license-badge ${user.license.status}">${user.license.status}</span></value>
+                            <label>Statut de licence</label>
+                            <value><span class="license-badge ${user.license_status}">${user.license_status || 'unknown'}</span></value>
                         </div>
                         <div class="detail-item">
                             <label>Date d'expiration</label>
-                            <value>${user.license.expires.toLocaleDateString('fr-FR')}</value>
+                            <value>${user.license_expires_at ? new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 'Non défini'}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Source des données</label>
+                            <value>${user.source === 'database' ? 'Base de données' : 'Analytics local'}</value>
                         </div>
                         <div class="detail-item">
                             <label>Jours restants</label>
-                            <value>${calculateDaysRemaining(user.license.expires)}</value>
+                            <value>${calculateDaysRemaining(user.license_expires_at)}</value>
                         </div>
                     </div>
                 </div>
 
-                ${user.errors.length > 0 ? `
+                ${dbAnalytics.length > 0 ? `
                 <div class="detail-group">
-                    <h4><i class="fas fa-exclamation-triangle"></i> Erreurs récentes</h4>
-                    <div class="error-list">
-                        ${user.errors.map(error => `
-                            <div class="error-item">
-                                <div class="error-time">${error.timestamp.toLocaleString('fr-FR')}</div>
-                                <div class="error-message">${error.message}</div>
+                    <h4><i class="fas fa-database"></i> Événements récents (Base de données)</h4>
+                    <div class="activity-list" style="max-height: 200px; overflow-y: auto;">
+                        ${dbAnalytics.slice(0, 20).map(event => `
+                            <div class="activity-item">
+                                <div class="activity-icon ${getEventIcon(event.event_type)}">
+                                    <i class="fas ${getEventIconClass(event.event_type)}"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <div class="activity-title">${formatEventType(event.event_type)}</div>
+                                    <div class="activity-details">${JSON.stringify(event.event_data).substring(0, 100)}...</div>
+                                </div>
+                                <div class="activity-time">${new Date(event.created_at).toLocaleString('fr-FR')}</div>
                             </div>
                         `).join('')}
                     </div>
@@ -1321,15 +1760,40 @@
             document.getElementById('userModal').classList.add('active');
         }
 
-        function calculateActiveTime(user) {
-            // Mock calculation - in real app, calculate from actual data
-            const days = Math.floor((Date.now() - (Date.now() - 30 * 24 * 60 * 60 * 1000)) / (24 * 60 * 60 * 1000));
-            return `${days} jours`;
+        function getEventIcon(eventType) {
+            switch (eventType) {
+                case 'user_login': return 'session';
+                case 'email_scan': return 'scan';
+                case 'error': return 'error';
+                default: return 'activity';
+            }
+        }
+
+        function getEventIconClass(eventType) {
+            switch (eventType) {
+                case 'user_login': return 'fa-sign-in-alt';
+                case 'email_scan': return 'fa-search';
+                case 'error': return 'fa-exclamation-triangle';
+                default: return 'fa-circle';
+            }
+        }
+
+        function formatEventType(eventType) {
+            switch (eventType) {
+                case 'user_login': return 'Connexion utilisateur';
+                case 'email_scan': return 'Scan d\'emails';
+                case 'license_updated': return 'Mise à jour licence';
+                case 'user_added_to_company': return 'Utilisateur ajouté';
+                default: return eventType;
+            }
         }
 
         function calculateDaysRemaining(expirationDate) {
+            if (!expirationDate) return 'Non défini';
+            
             const now = new Date();
-            const diff = expirationDate - now;
+            const expiry = new Date(expirationDate);
+            const diff = expiry - now;
             const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
             
             if (days < 0) {
@@ -1346,21 +1810,17 @@
         }
 
         function manageLicense(userId) {
-            const user = currentUsers.find(u => u.id === userId);
-            if (!user) return;
-
-            // Pour l'instant, basculer vers l'onglet licences
+            // Basculer vers l'onglet licences
             switchTab('licenses');
         }
 
-        function refreshUsers() {
-            // In real app, reload from server
+        async function refreshUsers() {
             console.log('Refreshing users data...');
             loadUsers();
             updateLastUpdated();
         }
 
-        // License Management Functions
+        // License Management Functions (unchanged from your original)
         async function loadLicenseManagement() {
             const container = document.getElementById('licenseManagement');
             
@@ -1548,7 +2008,7 @@
             }
         }
 
-        // Analytics loading (existing functionality)
+        // Analytics loading
         async function loadAnalyticsScript() {
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
@@ -1599,6 +2059,11 @@
                 document.getElementById('loadingContainer').style.display = 'none';
                 updateLastUpdated();
 
+                // Synchroniser les analytics locaux avec la DB
+                if (licenseService && dbConnected) {
+                    await licenseService.syncLocalAnalytics();
+                }
+
                 console.log('[Analytics Page] ✅ Analytics loaded successfully');
 
             } catch (error) {
@@ -1613,21 +2078,37 @@
             }
         }
 
-        function updateSummary(data = {}) {
+        async function updateSummary(data = {}) {
             // Users summary
-            document.getElementById('summaryUsers').textContent = mockUsers.filter(u => u.status === 'active').length;
+            const userCount = Object.keys(data.userStatsByEmail || {}).length;
+            document.getElementById('summaryUsers').textContent = userCount.toLocaleString();
             
             // Scans summary
-            const totalScans = mockUsers.reduce((sum, user) => sum + user.scansCount, 0);
+            const totalScans = data.scanStats?.totalScans || 0;
             document.getElementById('summaryScans').textContent = totalScans.toLocaleString();
 
             // Errors summary
-            const totalErrors = mockUsers.reduce((sum, user) => sum + user.errorsCount, 0);
+            let totalErrors = 0;
+            if (data.events) {
+                totalErrors = data.events.filter(e => e.type === 'error').length;
+            }
             document.getElementById('summaryErrors').textContent = totalErrors;
 
-            // Licenses summary
-            const activeLicenses = mockUsers.filter(u => u.license.status === 'active').length;
+            // Licenses summary (from DB users)
+            const activeLicenses = dbUsers.filter(u => u.license_status === 'active').length;
             document.getElementById('summaryLicenses').textContent = activeLicenses;
+
+            // Database events
+            if (licenseService && dbConnected) {
+                try {
+                    const analytics = await licenseService.getUserAnalytics();
+                    document.getElementById('summaryDatabase').textContent = analytics.length;
+                } catch (error) {
+                    document.getElementById('summaryDatabase').textContent = '0';
+                }
+            } else {
+                document.getElementById('summaryDatabase').textContent = '0';
+            }
         }
 
         function updateLastUpdated() {
@@ -1647,53 +2128,133 @@
             }
         });
 
-        // Initialize
+        // Load License Service
+        async function loadLicenseService() {
+            console.log('[Analytics] Loading license service...');
+            
+            // Charger config-supabase.js
+            await loadScript('./config-supabase.js');
+            
+            // Charger LicenseService.js
+            await loadScript('./LicenseService.js');
+            
+            // Attendre que le service soit disponible
+            let attempts = 0;
+            while (!window.licenseService && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!window.licenseService) {
+                throw new Error('License service not available');
+            }
+            
+            licenseService = window.licenseService;
+            
+            // Initialiser le service
+            await licenseService.initialize();
+            
+            console.log('[Analytics] License service loaded successfully');
+        }
+
+        async function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = () => reject(new Error(`Failed to load ${src}`));
+                document.head.appendChild(script);
+            });
+        }
+
+        // Initialize on page load
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('[Analytics Page] DOM loaded, initializing...');
             
-            // Charger le service de licence
-            const licenseScript = document.createElement('script');
-            licenseScript.src = './LicenseService.js';
-            licenseScript.onload = async () => {
-                console.log('[Analytics] LicenseService loaded');
-                licenseService = window.licenseService;
+            try {
+                // Charger d'abord le service de licence
+                await loadLicenseService();
                 
-                // Charger la configuration Supabase
-                const configScript = document.createElement('script');
-                configScript.src = './config-supabase.js';
-                configScript.onload = () => {
-                    console.log('[Analytics] Supabase config loaded');
-                };
-                document.head.appendChild(configScript);
-            };
-            document.head.appendChild(licenseScript);
-            
-            loadAnalytics();
-            updateLastUpdated();
+                // Ensuite vérifier l'authentification
+                await checkAuthentication();
+                
+            } catch (error) {
+                console.error('[Analytics] Initialization error:', error);
+                document.getElementById('authContainer').style.display = 'flex';
+                document.getElementById('authError').textContent = 'Erreur d\'initialisation: ' + error.message;
+                document.getElementById('authError').style.display = 'block';
+            }
         });
 
         // Debug function
         window.debugAnalytics = function() {
-            console.log('=== ANALYTICS PAGE DEBUG ===');
+            console.group('=== ANALYTICS PAGE DEBUG ===');
+            console.log('Current user:', currentUser);
             console.log('Current tab:', currentTab);
             console.log('Current users:', currentUsers);
             console.log('Filtered users:', filteredUsers);
-            console.log('Analytics manager:', analyticsManager);
-            console.log('Analytics module:', analyticsModule);
-            console.log('License service:', licenseService);
+            console.log('DB Connected:', dbConnected);
+            console.log('DB Users:', dbUsers);
+            console.log('Analytics manager:', !!analyticsManager);
+            console.log('Analytics module:', !!analyticsModule);
+            console.log('License service:', !!licenseService);
+            
+            if (currentUser) {
+                console.log('User email:', currentUser.email);
+                console.log('User role:', currentUser.role);
+                console.log('User company:', currentUser.company);
+            }
+            
+            console.groupEnd();
             
             return {
                 currentTab,
                 usersCount: currentUsers.length,
                 filteredCount: filteredUsers.length,
+                dbConnected,
+                dbUsersCount: dbUsers.length,
                 analyticsManager: !!analyticsManager,
                 analyticsModule: !!analyticsModule,
-                licenseService: !!licenseService
+                licenseService: !!licenseService,
+                currentUser: currentUser ? {
+                    email: currentUser.email,
+                    role: currentUser.role,
+                    company: currentUser.company?.name
+                } : null
             };
         };
 
-        console.log('[Analytics Page] ✅ Enhanced analytics page initialized with license management');
+        // Fonction utilitaire pour voir les détails d'un utilisateur par email
+        window.getUserDetails = function(email) {
+            const user = currentUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+            if (user) {
+                console.log('User found:', user);
+                viewUserDetails(email);
+                return user;
+            } else {
+                console.log('User not found:', email);
+                return null;
+            }
+        };
+
+        // Fonction pour synchroniser manuellement avec la DB
+        window.syncWithDatabase = async function() {
+            if (!licenseService || !dbConnected) {
+                console.error('Database not connected');
+                return;
+            }
+            
+            console.log('Syncing with database...');
+            await licenseService.syncLocalAnalytics();
+            await loadUsers();
+            updateLastUpdated();
+            console.log('Sync complete');
+        };
+
+        console.log('[Analytics Page] ✅ Enhanced analytics page initialized with authentication');
         console.log('[Analytics Page] Use debugAnalytics() for debug information');
+        console.log('[Analytics Page] Use getUserDetails("email@example.com") to view user details');
+        console.log('[Analytics Page] Use syncWithDatabase() to manually sync with DB');
     </script>
 </body>
 </html>
