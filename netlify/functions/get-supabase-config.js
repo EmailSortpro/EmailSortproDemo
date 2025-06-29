@@ -200,3 +200,5 @@ exports.handler = async (event, context) => {
         help: 'Consultez les logs Netlify pour plus de détails'
       })
     };
+  }
+};
