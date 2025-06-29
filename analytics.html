@@ -11,9 +11,317 @@
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- Configuration et services -->
-    <script src="./config-supabase.js"></script>
-    <script src="./LicenseService.js"></script>
+    <!-- Configuration Supabase intégrée -->
+    <script>
+        // Configuration Supabase directement intégrée
+        class SupabaseConfig {
+            constructor() {
+                this.config = null;
+                this.initialized = false;
+                console.log('[SupabaseConfig] Initializing...');
+                this.loadConfig();
+            }
+
+            loadConfig() {
+                // Configuration avec vos valeurs
+                this.config = {
+                    url: 'https://kbhxbisexpbmclqhadmq.supabase.co',
+                    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiaHhiaXNleHBibWNscWhhZG1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MzcyODEsImV4cCI6MjA2NjUxMzI4MX0.9mwrKDT2HpegDFdufqmVU2e9fFtgM-46ecbYTjRrMXo',
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: true,
+                        detectSessionInUrl: false,
+                        storage: window.localStorage
+                    }
+                };
+                this.initialized = true;
+                console.log('[SupabaseConfig] Configuration loaded');
+            }
+
+            getConfig() {
+                return this.config;
+            }
+
+            validate() {
+                const issues = [];
+                if (!this.config.url) issues.push('URL manquante');
+                if (!this.config.anonKey) issues.push('Clé manquante');
+                return { valid: issues.length === 0, issues };
+            }
+
+            async testConnection() {
+                try {
+                    const client = window.supabase.createClient(this.config.url, this.config.anonKey, this.config.auth);
+                    const { data, error } = await client.auth.getSession();
+                    return { success: !error || !error.message.includes('Invalid API key'), message: 'Connexion réussie' };
+                } catch (error) {
+                    return { success: false, message: error.message, error };
+                }
+            }
+        }
+        window.supabaseConfig = new SupabaseConfig();
+    </script>
+    
+    <!-- Service de Licence intégré -->
+    <script>
+        // LicenseService directement intégré
+        class LicenseService {
+            constructor() {
+                this.supabase = null;
+                this.currentUser = null;
+                this.licenseCache = null;
+                this.initialized = false;
+            }
+
+            async initialize() {
+                if (this.initialized) return true;
+                try {
+                    const config = window.supabaseConfig.getConfig();
+                    this.supabase = window.supabase.createClient(config.url, config.anonKey, config.auth);
+                    this.initialized = true;
+                    console.log('[LicenseService] ✅ Initialisé');
+                    return true;
+                } catch (error) {
+                    console.error('[LicenseService] ❌ Erreur initialisation:', error);
+                    return false;
+                }
+            }
+
+            async authenticateWithEmail(email) {
+                if (!this.initialized) await this.initialize();
+                if (!this.supabase) return { valid: false, error: 'Service non initialisé' };
+
+                try {
+                    const cleanEmail = email.toLowerCase().trim();
+                    
+                    // Rechercher l'utilisateur
+                    let { data: user, error } = await this.supabase
+                        .from('users')
+                        .select('*, company:companies(*)')
+                        .eq('email', cleanEmail)
+                        .single();
+
+                    if (error && error.code === 'PGRST116') {
+                        // Créer l'utilisateur s'il n'existe pas
+                        user = await this.createNewUser(cleanEmail);
+                    } else if (error) {
+                        throw error;
+                    }
+
+                    // Mettre à jour la dernière connexion
+                    await this.updateLastLogin(user.id);
+
+                    this.currentUser = user;
+                    
+                    const licenseStatus = this.evaluateLicenseStatus(user);
+                    
+                    return {
+                        valid: licenseStatus.valid,
+                        status: licenseStatus.status,
+                        user: user,
+                        message: licenseStatus.message,
+                        daysRemaining: licenseStatus.daysRemaining
+                    };
+                } catch (error) {
+                    console.error('[LicenseService] Erreur authentification:', error);
+                    return { valid: false, error: error.message, status: 'error' };
+                }
+            }
+
+            async createNewUser(email) {
+                const domain = email.split('@')[1];
+                const name = email.split('@')[0];
+                
+                const { data: company } = await this.supabase
+                    .from('companies')
+                    .select('*')
+                    .eq('domain', domain)
+                    .single();
+
+                const isPersonalEmail = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'live.com'].includes(domain.toLowerCase());
+                
+                let companyId = company?.id;
+                if (isPersonalEmail && !company) {
+                    const { data: newCompany } = await this.supabase
+                        .from('companies')
+                        .insert([{
+                            name: `Personnel - ${email}`,
+                            domain: email,
+                            created_at: new Date().toISOString()
+                        }])
+                        .select()
+                        .single();
+                    companyId = newCompany?.id;
+                }
+
+                const newUser = {
+                    email: email.toLowerCase(),
+                    name: name,
+                    company_id: companyId,
+                    role: isPersonalEmail ? 'admin' : 'user',
+                    license_status: 'trial',
+                    license_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    first_login_at: new Date().toISOString(),
+                    created_at: new Date().toISOString()
+                };
+
+                const { data, error } = await this.supabase
+                    .from('users')
+                    .insert([newUser])
+                    .select('*, company:companies(*)')
+                    .single();
+
+                if (error) throw error;
+                return data;
+            }
+
+            evaluateLicenseStatus(user) {
+                if (user.license_status === 'blocked') {
+                    return { valid: false, status: 'blocked', message: 'Accès bloqué' };
+                }
+
+                const expiresAt = new Date(user.license_expires_at);
+                const now = new Date();
+
+                if (expiresAt < now) {
+                    return { valid: false, status: 'expired', message: 'Licence expirée' };
+                }
+
+                if (user.license_status === 'active' || user.license_status === 'trial') {
+                    const daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
+                    return {
+                        valid: true,
+                        status: user.license_status,
+                        message: user.license_status === 'trial' ? `Essai - ${daysRemaining} jours` : 'Licence active',
+                        daysRemaining
+                    };
+                }
+
+                return { valid: false, status: 'invalid', message: 'Statut invalide' };
+            }
+
+            async updateLastLogin(userId) {
+                try {
+                    await this.supabase
+                        .from('users')
+                        .update({ last_login_at: new Date().toISOString() })
+                        .eq('id', userId);
+                } catch (error) {
+                    console.warn('[LicenseService] Erreur mise à jour login:', error);
+                }
+            }
+
+            getCurrentUser() {
+                return this.currentUser;
+            }
+
+            isAdmin() {
+                return this.currentUser?.role === 'admin' || this.currentUser?.role === 'super_admin';
+            }
+
+            async getCompanyUsers() {
+                if (!this.currentUser?.company_id || !this.isAdmin()) return [];
+                try {
+                    const { data, error } = await this.supabase
+                        .from('users')
+                        .select('*')
+                        .eq('company_id', this.currentUser.company_id)
+                        .order('created_at', { ascending: false });
+                    if (error) throw error;
+                    return data;
+                } catch (error) {
+                    console.error('[LicenseService] Erreur récupération utilisateurs:', error);
+                    return [];
+                }
+            }
+
+            async getUserAnalytics(userId = null) {
+                try {
+                    const targetUserId = userId || this.currentUser?.id;
+                    if (!targetUserId) return [];
+                    const { data, error } = await this.supabase
+                        .from('analytics_events')
+                        .select('*')
+                        .eq('user_id', targetUserId)
+                        .order('created_at', { ascending: false })
+                        .limit(100);
+                    if (error) throw error;
+                    return data;
+                } catch (error) {
+                    console.error('[LicenseService] Erreur récupération analytics:', error);
+                    return [];
+                }
+            }
+
+            async updateUserLicense(userId, status, expiresAt = null) {
+                if (!this.isAdmin()) throw new Error('Droits insuffisants');
+                try {
+                    const updateData = { license_status: status, updated_at: new Date().toISOString() };
+                    if (expiresAt) updateData.license_expires_at = expiresAt;
+                    
+                    const { error } = await this.supabase
+                        .from('users')
+                        .update(updateData)
+                        .eq('id', userId)
+                        .eq('company_id', this.currentUser.company_id);
+                    if (error) throw error;
+                    return { success: true };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            }
+
+            async addUserToCompany(email) {
+                if (!this.isAdmin()) throw new Error('Droits insuffisants');
+                try {
+                    const { data: existingUser } = await this.supabase
+                        .from('users')
+                        .select('*')
+                        .eq('email', email.toLowerCase())
+                        .single();
+
+                    if (existingUser?.company_id) {
+                        throw new Error('Utilisateur déjà dans une société');
+                    }
+
+                    if (existingUser) {
+                        const { error } = await this.supabase
+                            .from('users')
+                            .update({
+                                company_id: this.currentUser.company_id,
+                                license_status: 'active',
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('id', existingUser.id);
+                        if (error) throw error;
+                    } else {
+                        const { error } = await this.supabase
+                            .from('users')
+                            .insert([{
+                                email: email.toLowerCase(),
+                                name: email.split('@')[0],
+                                company_id: this.currentUser.company_id,
+                                role: 'user',
+                                license_status: 'active',
+                                created_at: new Date().toISOString()
+                            }]);
+                        if (error) throw error;
+                    }
+                    return { success: true };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            }
+
+            async syncLocalAnalytics() {
+                // Méthode vide pour compatibilité
+                console.log('[LicenseService] Sync analytics called');
+            }
+        }
+        
+        window.licenseService = new LicenseService();
+        console.log('✅ LicenseService chargé');
+    </script>
     
     <style>
         * {
@@ -2136,35 +2444,7 @@
         async function loadLicenseService() {
             console.log('[Analytics] Checking license service...');
             
-            // Attendre que Supabase soit chargé
-            let supabaseAttempts = 0;
-            while (!window.supabase && supabaseAttempts < 50) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                supabaseAttempts++;
-            }
-            
-            if (!window.supabase) {
-                throw new Error('Supabase library not loaded');
-            }
-            
-            // Attendre que la config soit disponible
-            let configAttempts = 0;
-            while (!window.supabaseConfig && configAttempts < 30) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                configAttempts++;
-            }
-            
-            if (!window.supabaseConfig) {
-                throw new Error('Supabase config not available');
-            }
-            
-            // Attendre que le service soit disponible
-            let serviceAttempts = 0;
-            while (!window.licenseService && serviceAttempts < 30) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                serviceAttempts++;
-            }
-            
+            // Le service est maintenant intégré directement dans la page
             if (!window.licenseService) {
                 throw new Error('License service not available');
             }
