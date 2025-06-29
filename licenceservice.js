@@ -1,5 +1,4 @@
-// LicenseService.js - Service de gestion des licences EmailSortPro
-// Version complète sans mode démo
+// LicenseService.js - Service de gestion des licences simplifié
 
 class LicenseService {
     constructor() {
@@ -7,137 +6,81 @@ class LicenseService {
         this.currentUser = null;
         this.licenseCache = null;
         this.initialized = false;
-        this.userCache = new Map();
-        this.companyCache = new Map();
-        this.tablesExist = false;
     }
 
     async initialize() {
         if (this.initialized) return true;
 
         try {
-            console.log('[LicenseService] Initialisation...');
-            
-            // Vérifier la disponibilité de Supabase
-            if (!window.supabase) {
-                throw new Error('Supabase non disponible');
+            // Vérifier la configuration
+            if (!window.supabaseConfig) {
+                throw new Error('Configuration Supabase manquante');
             }
 
-            // Configuration Supabase
-            const SUPABASE_URL = 'https://oxyiamruvyliueecpaam.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94eWlhbXJ1dnlsaXVlZWNwYWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MDM0MTgsImV4cCI6MjA2NTk3OTQxOH0.Wy_jbUB7D5Bly-rZB6oc2bXUHzZQ8MivDL4vdM1jcE0';
+            const config = window.supabaseConfig.getConfig();
+            if (!config) {
+                throw new Error('Configuration Supabase invalide');
+            }
 
-            this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            // Charger Supabase client
+            if (typeof window.supabase === 'undefined') {
+                await this.loadSupabaseClient();
+            }
 
-            // Vérifier si les tables existent
-            await this.checkTablesExistence();
-            
+            // Initialiser le client
+            this.supabase = window.supabase.createClient(config.url, config.anonKey, config.auth);
             this.initialized = true;
-            console.log('[LicenseService] ✅ Initialisé avec succès');
-            
+
+            console.log('[LicenseService] ✅ Initialisé');
             return true;
         } catch (error) {
             console.error('[LicenseService] ❌ Erreur initialisation:', error);
-            
-            // Pas de mode dégradé - le service ne fonctionne que si les tables existent
-            this.initialized = false;
-            this.tablesExist = false;
             return false;
         }
     }
 
-    async checkTablesExistence() {
-        try {
-            const requiredTables = ['users', 'companies'];
-            const results = {};
-
-            for (const table of requiredTables) {
-                try {
-                    const { error } = await this.supabase
-                        .from(table)
-                        .select('*', { count: 'exact', head: true })
-                        .limit(0);
-
-                    results[table] = !error;
-                    
-                    if (error) {
-                        console.warn(`[LicenseService] ⚠️ Table '${table}' non accessible:`, error.message);
-                    } else {
-                        console.log(`[LicenseService] ✅ Table '${table}' accessible`);
-                    }
-                } catch (error) {
-                    results[table] = false;
-                    console.warn(`[LicenseService] ❌ Erreur vérification table '${table}':`, error.message);
-                }
-            }
-
-            this.tablesExist = Object.values(results).every(exists => exists);
-            
-            if (this.tablesExist) {
-                console.log('[LicenseService] ✅ Toutes les tables requises sont accessibles');
-            } else {
-                console.warn('[LicenseService] ⚠️ Tables manquantes ou inaccessibles:', Object.keys(results).filter(t => !results[t]));
-            }
-
-            return { allExist: this.tablesExist, tables: results };
-        } catch (error) {
-            console.warn('[LicenseService] ⚠️ Impossible de vérifier les tables:', error.message);
-            this.tablesExist = false;
-            return { allExist: false, tables: {} };
-        }
+    async loadSupabaseClient() {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+            script.onload = resolve;
+            script.onerror = () => reject(new Error('Impossible de charger Supabase'));
+            document.head.appendChild(script);
+        });
     }
 
-    // === VÉRIFICATION DE LA LICENCE ===
+    // Vérifier la licence d'un utilisateur
     async checkUserLicense(email) {
         if (!this.initialized) await this.initialize();
-        
-        if (!this.tablesExist) {
-            console.error('[LicenseService] Tables non disponibles');
-            return {
-                valid: false,
-                status: 'tables_unavailable',
-                message: 'Service non disponible - Tables de base de données manquantes'
-            };
-        }
+        if (!this.supabase) return { valid: false, error: 'Service non initialisé' };
 
         try {
-            // Vérifier dans le cache
+            // Vérifier d'abord dans le cache
             if (this.licenseCache && this.licenseCache.email === email) {
                 const cacheAge = Date.now() - this.licenseCache.timestamp;
-                if (cacheAge < 2 * 60 * 1000) {
+                if (cacheAge < 5 * 60 * 1000) { // Cache de 5 minutes
                     return this.licenseCache.result;
                 }
             }
 
-            // Rechercher l'utilisateur - requête simplifiée
+            // Rechercher ou créer l'utilisateur
             let { data: user, error } = await this.supabase
                 .from('users')
-                .select('*')
+                .select('*, company:companies(*)')
                 .eq('email', email.toLowerCase())
                 .single();
 
             if (error && error.code === 'PGRST116') {
-                // Utilisateur n'existe pas - le créer
+                // Utilisateur n'existe pas, le créer
                 user = await this.createNewUser(email);
             } else if (error) {
                 throw error;
             }
 
-            // Récupérer la société séparément si l'utilisateur a une company_id
-            if (user && user.company_id) {
-                const { data: company } = await this.supabase
-                    .from('companies')
-                    .select('*')
-                    .eq('id', user.company_id)
-                    .single();
-                
-                user.company = company;
-            }
-
             // Mettre à jour la dernière connexion
             await this.updateLastLogin(user.id);
 
-            // Évaluer le statut de la licence
+            // Vérifier le statut de la licence
             const licenseStatus = this.evaluateLicenseStatus(user);
 
             // Mettre en cache
@@ -149,110 +92,107 @@ class LicenseService {
                     status: licenseStatus.status,
                     user: user,
                     message: licenseStatus.message,
-                    daysRemaining: licenseStatus.daysRemaining,
-                    connectionAllowed: true
+                    daysRemaining: licenseStatus.daysRemaining
                 }
             };
 
             this.currentUser = user;
-            
-            // Exposer l'utilisateur globalement pour les autres modules
-            window.currentUser = user;
-            
             return this.licenseCache.result;
 
         } catch (error) {
             console.error('[LicenseService] Erreur vérification licence:', error);
-            
             return {
                 valid: false,
-                status: 'error',
-                message: 'Erreur lors de la vérification de la licence: ' + error.message,
-                error: error.message
+                error: error.message,
+                status: 'error'
             };
         }
     }
 
-    // === CRÉATION D'UTILISATEUR ===
+    // Créer un nouvel utilisateur
     async createNewUser(email) {
-        try {
-            // Obtenir ou créer la société basée sur le domaine
-            const domain = email.split('@')[1];
-            const company = await this.getOrCreateCompany(domain);
+        const domain = email.split('@')[1];
+        const name = email.split('@')[0];
 
-            // Déterminer le rôle (vianney.hastings@hotmail.fr est admin par défaut)
-            const role = email.toLowerCase() === 'vianney.hastings@hotmail.fr' ? 'company_admin' : 'user';
+        // Vérifier si c'est un domaine d'entreprise existant
+        const { data: company } = await this.supabase
+            .from('companies')
+            .select('*')
+            .eq('domain', domain)
+            .single();
 
-            // Créer l'utilisateur avec la structure réelle
-            const newUserData = {
-                email: email.toLowerCase(),
-                name: email.split('@')[0],
-                role: role,
-                license_status: 'active',
-                license_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-                last_login_at: new Date().toISOString()
-            };
+        const isPersonalEmail = this.isPersonalEmailDomain(domain);
 
-            // Ajouter company_id seulement si on a réussi à créer/récupérer la société
-            if (company && company.id) {
-                newUserData.company_id = company.id;
-            }
+        const newUser = {
+            email: email.toLowerCase(),
+            name: name,
+            company_id: company?.id || null,
+            role: isPersonalEmail ? 'admin' : 'user', // Admin si email personnel
+            license_status: 'trial',
+            license_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 jours
+            first_login_at: new Date()
+        };
 
-            const { data: newUser, error } = await this.supabase
-                .from('users')
-                .insert([newUserData])
-                .select('*')
-                .single();
+        const { data, error } = await this.supabase
+            .from('users')
+            .insert([newUser])
+            .select('*, company:companies(*)')
+            .single();
 
-            if (error) throw error;
+        if (error) throw error;
 
-            newUser.company = company;
-            console.log(`[LicenseService] ✅ Utilisateur créé: ${email} (${role})`);
-            return newUser;
-        } catch (error) {
-            console.error('[LicenseService] ❌ Erreur création utilisateur:', error);
-            throw error;
+        // Si email personnel et pas de société, créer une société individuelle
+        if (isPersonalEmail && !company) {
+            await this.createPersonalCompany(data.id, email);
         }
+
+        return data;
     }
 
-    async getOrCreateCompany(domain) {
-        try {
-            // Chercher la société existante
-            let { data: company, error } = await this.supabase
-                .from('companies')
-                .select('*')
-                .eq('domain', domain)
-                .single();
+    // Créer une société pour un particulier
+    async createPersonalCompany(userId, email) {
+        const companyName = `Personnel - ${email}`;
+        
+        const { data: company, error: companyError } = await this.supabase
+            .from('companies')
+            .insert([{
+                name: companyName,
+                domain: email // Utiliser l'email comme domaine unique
+            }])
+            .select()
+            .single();
 
-            if (error && error.code === 'PGRST116') {
-                // Créer la société
-                const { data: newCompany, error: createError } = await this.supabase
-                    .from('companies')
-                    .insert([
-                        {
-                            name: `Société ${domain}`,
-                            domain: domain
-                        }
-                    ])
-                    .select('*')
-                    .single();
-
-                if (createError) throw createError;
-                company = newCompany;
-                console.log(`[LicenseService] ✅ Société créée: ${company.name}`);
-            } else if (error) {
-                console.warn('[LicenseService] ⚠️ Erreur recherche société:', error);
-                return null;
-            }
-
-            return company;
-        } catch (error) {
-            console.error('[LicenseService] ❌ Erreur gestion société:', error);
-            return null;
+        if (companyError) {
+            console.error('[LicenseService] Erreur création société:', companyError);
+            return;
         }
+
+        // Mettre à jour l'utilisateur avec la société
+        await this.supabase
+            .from('users')
+            .update({ 
+                company_id: company.id,
+                role: 'admin' // Admin de sa propre société
+            })
+            .eq('id', userId);
+
+        // Créer une licence trial
+        await this.supabase
+            .from('licenses')
+            .insert([{
+                company_id: company.id,
+                user_id: userId,
+                type: 'trial',
+                seats: 1,
+                used_seats: 1,
+                status: 'active',
+                expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            }]);
     }
 
+    // Évaluer le statut de la licence
     evaluateLicenseStatus(user) {
+        // Vérifier si bloqué
         if (user.license_status === 'blocked') {
             return {
                 valid: false,
@@ -261,12 +201,29 @@ class LicenseService {
             };
         }
 
+        // Vérifier l'expiration
+        const expiresAt = new Date(user.license_expires_at);
+        const now = new Date();
+
+        if (expiresAt < now) {
+            return {
+                valid: false,
+                status: 'expired',
+                message: 'Votre licence a expiré. Veuillez la renouveler.'
+            };
+        }
+
+        // Vérifier le statut
         if (user.license_status === 'active' || user.license_status === 'trial') {
+            const daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
+            
             return {
                 valid: true,
                 status: user.license_status,
-                message: user.license_status === 'trial' ? 'Période d\'essai' : 'Licence active',
-                daysRemaining: 30
+                message: user.license_status === 'trial' 
+                    ? `Période d'essai - ${daysRemaining} jours restants`
+                    : 'Licence active',
+                daysRemaining: daysRemaining
             };
         }
 
@@ -277,268 +234,164 @@ class LicenseService {
         };
     }
 
+    // Mettre à jour la dernière connexion
     async updateLastLogin(userId) {
-        if (!this.tablesExist) return;
-        
         try {
             await this.supabase
                 .from('users')
-                .update({ 
-                    last_login_at: new Date().toISOString()
-                })
+                .update({ last_login_at: new Date() })
                 .eq('id', userId);
         } catch (error) {
             console.warn('[LicenseService] Erreur mise à jour login:', error);
         }
     }
 
-    // === GESTION DES UTILISATEURS PAR SOCIÉTÉ ===
-    async getAllUsersGroupedByCompany() {
-        if (!this.isAdmin() || !this.tablesExist) {
-            console.warn('[LicenseService] Accès refusé ou tables manquantes');
-            return {};
-        }
-
-        try {
-            // Charger les utilisateurs avec requête simplifiée
-            let usersQuery = this.supabase.from('users').select('*');
-
-            // Si admin de société, filtrer par société
-            if (this.currentUser.role === 'company_admin' && this.currentUser.company_id) {
-                usersQuery = usersQuery.eq('company_id', this.currentUser.company_id);
-            }
-
-            const { data: users, error: usersError } = await usersQuery.order('created_at', { ascending: false });
-
-            if (usersError) throw usersError;
-
-            // Charger les sociétés séparément
-            const { data: companies, error: companiesError } = await this.supabase
-                .from('companies')
-                .select('*');
-
-            if (companiesError) throw companiesError;
-
-            // Associer les sociétés aux utilisateurs
-            const companiesMap = {};
-            companies.forEach(company => {
-                companiesMap[company.id] = company;
-            });
-
-            users.forEach(user => {
-                if (user.company_id && companiesMap[user.company_id]) {
-                    user.company = companiesMap[user.company_id];
-                }
-            });
-
-            // Grouper par société
-            const groupedUsers = {};
-            users.forEach(user => {
-                const companyKey = user.company ? user.company.id : 'no_company';
-                const companyName = user.company ? user.company.name : 'Sans société';
-                
-                if (!groupedUsers[companyKey]) {
-                    groupedUsers[companyKey] = {
-                        company: user.company || { id: null, name: companyName, domain: null },
-                        users: []
-                    };
-                }
-                
-                groupedUsers[companyKey].users.push(user);
-            });
-
-            return groupedUsers;
-        } catch (error) {
-            console.error('[LicenseService] Erreur récupération utilisateurs groupés:', error);
-            return {};
-        }
+    // Vérifier si c'est un domaine email personnel
+    isPersonalEmailDomain(domain) {
+        const personalDomains = [
+            'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com',
+            'live.com', 'aol.com', 'icloud.com', 'mail.com',
+            'protonmail.com', 'yandex.com', 'zoho.com', 'gmx.com',
+            'orange.fr', 'free.fr', 'sfr.fr', 'laposte.net'
+        ];
+        
+        return personalDomains.includes(domain.toLowerCase());
     }
 
-    // === CONTRÔLE DES CONNEXIONS ===
-    async blockUser(userId, reason = 'Bloqué par un administrateur') {
-        if (!this.canBlockUsers() || !this.tablesExist) {
-            return { success: false, error: 'Droits insuffisants ou service non disponible' };
-        }
-
-        try {
-            const { error } = await this.supabase
-                .from('users')
-                .update({
-                    license_status: 'blocked',
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', userId);
-
-            if (error) throw error;
-
-            this.invalidateCache();
-            await this.logAdminAction('block_user', { target_user_id: userId, reason: reason });
-
-            return { success: true, message: 'Utilisateur bloqué avec succès' };
-        } catch (error) {
-            console.error('[LicenseService] Erreur blocage utilisateur:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    async unblockUser(userId) {
-        if (!this.canBlockUsers() || !this.tablesExist) {
-            return { success: false, error: 'Droits insuffisants ou service non disponible' };
-        }
-
-        try {
-            const { error } = await this.supabase
-                .from('users')
-                .update({
-                    license_status: 'active',
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', userId);
-
-            if (error) throw error;
-
-            this.invalidateCache();
-            await this.logAdminAction('unblock_user', { target_user_id: userId });
-
-            return { success: true, message: 'Utilisateur débloqué avec succès' };
-        } catch (error) {
-            console.error('[LicenseService] Erreur déblocage utilisateur:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    // === GESTION DES SOCIÉTÉS (Super Admin uniquement) ===
-    async blockCompany(companyId, reason = 'Société bloquée par un administrateur') {
-        if (!this.isSuperAdmin() || !this.tablesExist) {
-            return { success: false, error: 'Seuls les super-administrateurs peuvent bloquer des sociétés' };
-        }
-
-        try {
-            // Bloquer tous les utilisateurs de la société
-            const { error } = await this.supabase
-                .from('users')
-                .update({
-                    license_status: 'blocked',
-                    updated_at: new Date().toISOString()
-                })
-                .eq('company_id', companyId);
-
-            if (error) throw error;
-
-            this.invalidateCache();
-            await this.logAdminAction('block_company', { company_id: companyId, reason: reason });
-
-            return { success: true, message: 'Société bloquée avec succès' };
-        } catch (error) {
-            console.error('[LicenseService] Erreur blocage société:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    async unblockCompany(companyId) {
-        if (!this.isSuperAdmin() || !this.tablesExist) {
-            return { success: false, error: 'Seuls les super-administrateurs peuvent débloquer des sociétés' };
-        }
-
-        try {
-            // Débloquer tous les utilisateurs de la société
-            const { error } = await this.supabase
-                .from('users')
-                .update({
-                    license_status: 'active',
-                    updated_at: new Date().toISOString()
-                })
-                .eq('company_id', companyId);
-
-            if (error) throw error;
-
-            this.invalidateCache();
-            await this.logAdminAction('unblock_company', { company_id: companyId });
-
-            return { success: true, message: 'Société débloquée avec succès' };
-        } catch (error) {
-            console.error('[LicenseService] Erreur déblocage société:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    // === LOGGING DES ACTIONS ADMIN ===
-    async logAdminAction(action, details = {}) {
-        if (!this.currentUser || !this.tablesExist) return;
-
-        // Log en console pour cette version
-        console.log(`[LicenseService] 📝 Action admin: ${action}`, {
-            admin: this.currentUser.email,
-            action: action,
-            details: details,
-            timestamp: new Date().toISOString()
-        });
-
-        // Tentative de sauvegarde en base si la table existe
-        try {
-            await this.supabase
-                .from('admin_actions')
-                .insert([{
-                    admin_user_id: this.currentUser.id,
-                    admin_email: this.currentUser.email,
-                    action: action,
-                    details: details,
-                    timestamp: new Date().toISOString(),
-                    ip_address: 'unknown'
-                }]);
-        } catch (error) {
-            // Ignorer l'erreur si la table n'existe pas
-            console.warn('[LicenseService] Impossible de sauvegarder l\'action admin (table admin_actions manquante)');
-        }
-    }
-
-    // === MÉTHODES DE VÉRIFICATION DES DROITS ===
+    // Obtenir les infos utilisateur actuelles
     getCurrentUser() {
         return this.currentUser;
     }
 
+    // Vérifier si l'utilisateur est admin
     isAdmin() {
-        if (!this.tablesExist || !this.currentUser) return false;
-        
-        return ['company_admin', 'super_admin'].includes(this.currentUser.role);
+        return this.currentUser?.role === 'admin' || this.currentUser?.role === 'super_admin';
     }
 
+    // Vérifier si l'utilisateur est super admin
     isSuperAdmin() {
-        if (!this.tablesExist || !this.currentUser) return false;
-        
-        return this.currentUser.role === 'super_admin';
+        return this.currentUser?.role === 'super_admin';
     }
 
-    isCompanyAdmin() {
-        return this.currentUser && this.currentUser.role === 'company_admin';
-    }
-
-    canBlockUsers() {
-        return this.isAdmin();
-    }
-
-    canBlockCompanies() {
-        return this.isSuperAdmin();
-    }
-
+    // Invalider le cache
     invalidateCache() {
         this.licenseCache = null;
-        this.userCache.clear();
-        this.companyCache.clear();
+    }
+
+    // === MÉTHODES ADMIN ===
+
+    // Obtenir tous les utilisateurs de la société
+    async getCompanyUsers() {
+        if (!this.currentUser?.company_id) return [];
+        if (!this.isAdmin()) return [];
+
+        try {
+            const { data, error } = await this.supabase
+                .from('users')
+                .select('*')
+                .eq('company_id', this.currentUser.company_id)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('[LicenseService] Erreur récupération utilisateurs:', error);
+            return [];
+        }
+    }
+
+    // Mettre à jour le statut d'un utilisateur
+    async updateUserLicense(userId, status, expiresAt = null) {
+        if (!this.isAdmin()) {
+            throw new Error('Droits insuffisants');
+        }
+
+        try {
+            const updateData = {
+                license_status: status,
+                updated_at: new Date()
+            };
+
+            if (expiresAt) {
+                updateData.license_expires_at = expiresAt;
+            }
+
+            const { error } = await this.supabase
+                .from('users')
+                .update(updateData)
+                .eq('id', userId)
+                .eq('company_id', this.currentUser.company_id); // Sécurité: même société
+
+            if (error) throw error;
+
+            // Invalider le cache
+            this.invalidateCache();
+
+            return { success: true };
+        } catch (error) {
+            console.error('[LicenseService] Erreur mise à jour licence:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Ajouter un utilisateur à la société
+    async addUserToCompany(email) {
+        if (!this.isAdmin()) {
+            throw new Error('Droits insuffisants');
+        }
+
+        try {
+            // Vérifier si l'utilisateur existe
+            let { data: existingUser } = await this.supabase
+                .from('users')
+                .select('*')
+                .eq('email', email.toLowerCase())
+                .single();
+
+            if (existingUser && existingUser.company_id) {
+                throw new Error('Cet utilisateur appartient déjà à une société');
+            }
+
+            if (existingUser) {
+                // Mettre à jour l'utilisateur existant
+                const { error } = await this.supabase
+                    .from('users')
+                    .update({
+                        company_id: this.currentUser.company_id,
+                        license_status: 'active',
+                        updated_at: new Date()
+                    })
+                    .eq('id', existingUser.id);
+
+                if (error) throw error;
+            } else {
+                // Créer un nouvel utilisateur
+                const { error } = await this.supabase
+                    .from('users')
+                    .insert([{
+                        email: email.toLowerCase(),
+                        name: email.split('@')[0],
+                        company_id: this.currentUser.company_id,
+                        role: 'user',
+                        license_status: 'active'
+                    }]);
+
+                if (error) throw error;
+            }
+
+            return { success: true };
+        } catch (error) {
+            console.error('[LicenseService] Erreur ajout utilisateur:', error);
+            return { success: false, error: error.message };
+        }
     }
 
     // === MÉTHODES ANALYTICS ===
+
+    // Enregistrer un événement analytics
     async trackEvent(eventType, eventData = {}) {
         if (!this.currentUser) return;
 
-        // Log en console pour cette version
-        console.log(`[LicenseService] 📊 Événement: ${eventType}`, {
-            user: this.currentUser.email,
-            data: eventData,
-            timestamp: new Date().toISOString()
-        });
-
-        // Tentative de sauvegarde en base si la table existe
         try {
             await this.supabase
                 .from('analytics_events')
@@ -552,114 +405,12 @@ class LicenseService {
                     }
                 }]);
         } catch (error) {
-            // Ignorer l'erreur si la table n'existe pas
-            console.warn('[LicenseService] Impossible de sauvegarder l\'événement (table analytics_events manquante)');
+            console.warn('[LicenseService] Erreur tracking:', error);
         }
-    }
-
-    // === MÉTHODES UTILITAIRES ===
-    getUserRole() {
-        return this.currentUser?.role || 'user';
-    }
-
-    getCompanyId() {
-        return this.currentUser?.company_id;
-    }
-
-    hasAccess() {
-        return this.currentUser && this.currentUser.license_status === 'active';
-    }
-
-    checkLicenseStatus() {
-        if (!this.currentUser) return 'invalid';
-        return this.currentUser.license_status;
-    }
-
-    async logout() {
-        this.currentUser = null;
-        this.invalidateCache();
-        window.currentUser = null;
-        
-        // Supprimer l'email stocké
-        try {
-            localStorage.removeItem('userEmail');
-        } catch (error) {
-            console.warn('[LicenseService] Impossible de supprimer l\'email du localStorage');
-        }
-        
-        // Rediriger vers la page de connexion
-        window.location.href = '/';
-    }
-
-    // === MÉTHODES DE DIAGNOSTIC ===
-    async getDiagnosticInfo() {
-        const info = {
-            initialized: this.initialized,
-            tablesExist: this.tablesExist,
-            currentUser: this.currentUser ? {
-                email: this.currentUser.email,
-                role: this.currentUser.role,
-                company: this.currentUser.company?.name
-            } : null,
-            permissions: {
-                isAdmin: this.isAdmin(),
-                isSuperAdmin: this.isSuperAdmin(),
-                canBlockUsers: this.canBlockUsers(),
-                canBlockCompanies: this.canBlockCompanies()
-            }
-        };
-
-        if (this.tablesExist) {
-            try {
-                // Compter les utilisateurs
-                const { count: userCount } = await this.supabase
-                    .from('users')
-                    .select('*', { count: 'exact', head: true });
-                
-                // Compter les sociétés
-                const { count: companyCount } = await this.supabase
-                    .from('companies')
-                    .select('*', { count: 'exact', head: true });
-
-                info.stats = {
-                    totalUsers: userCount || 0,
-                    totalCompanies: companyCount || 0
-                };
-            } catch (error) {
-                info.stats = { error: error.message };
-            }
-        }
-
-        return info;
     }
 }
 
 // Créer l'instance globale
 window.licenseService = new LicenseService();
 
-// Exposer les constantes pour compatibilité
-window.LICENSE_STATUS = {
-    ACTIVE: 'active',
-    TRIAL: 'trial',
-    EXPIRED: 'expired',
-    BLOCKED: 'blocked'
-};
-
-window.USER_ROLES = {
-    SUPER_ADMIN: 'super_admin',
-    COMPANY_ADMIN: 'company_admin',
-    USER: 'user'
-};
-
-// Fonction de diagnostic globale
-window.diagnoseLicenseService = async function() {
-    console.group('🔍 DIAGNOSTIC LICENSE SERVICE');
-    const info = await window.licenseService.getDiagnosticInfo();
-    console.log('Service info:', info);
-    console.groupEnd();
-    return info;
-};
-
-console.log('✅ LicenseService EmailSortPro chargé (sans mode démo)');
-console.log('💡 Utilisez window.licenseService pour accéder au service');
-console.log('🔍 Utilisez diagnoseLicenseService() pour le diagnostic');
+console.log('✅ LicenseService chargé');
