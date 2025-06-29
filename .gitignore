@@ -1,6 +1,7 @@
-# Variables d'environnement (SÉCURITÉ)
+# Variables d'environnement - SÉCURITÉ IMPORTANTE !
 .env
 .env.local
 .env.*.local
 config.local.js
 secrets.js
+*.secret.js
