@@ -6,13 +6,13 @@ exports.handler = async (event, context) => {
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization'
   };
-
+  
   console.log('🚀 Function called:', event.httpMethod);
-
+  
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: corsHeaders, body: '' };
   }
-
+  
   if (event.httpMethod !== 'GET') {
     return {
       statusCode: 405,
@@ -20,29 +20,38 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
-
+  
   try {
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-
+    // ✅ CORRECTION: Utiliser les variables avec préfixe VITE_
+    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+    
     console.log('Environment check:', {
       hasUrl: !!supabaseUrl,
       hasKey: !!supabaseAnonKey,
-      nodeEnv: process.env.NODE_ENV
+      nodeEnv: process.env.NODE_ENV,
+      // Debug: afficher les premiers caractères pour vérifier
+      urlPreview: supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : 'MISSING',
+      keyPreview: supabaseAnonKey ? supabaseAnonKey.substring(0, 20) + '...' : 'MISSING'
     });
-
+    
     if (!supabaseUrl || !supabaseAnonKey) {
       return {
         statusCode: 500,
         headers: corsHeaders,
         body: JSON.stringify({
           error: 'Configuration manquante',
-          details: 'SUPABASE_URL et SUPABASE_ANON_KEY doivent être définis',
-          help: 'Ajoutez ces variables dans Site Settings > Environment Variables'
+          details: 'VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY doivent être définis',
+          help: 'Vérifiez que ces variables sont bien configurées dans Site Settings > Environment Variables',
+          debug: {
+            hasUrl: !!supabaseUrl,
+            hasKey: !!supabaseAnonKey,
+            availableVars: Object.keys(process.env).filter(key => key.includes('SUPABASE'))
+          }
         })
       };
     }
-
+    
     // Validation basique
     if (!supabaseUrl.startsWith('https://') || !supabaseUrl.includes('supabase.co')) {
       return {
@@ -50,24 +59,27 @@ exports.handler = async (event, context) => {
         headers: corsHeaders,
         body: JSON.stringify({
           error: 'URL Supabase invalide',
-          details: 'L\'URL doit être au format https://xxx.supabase.co'
+          details: 'L\'URL doit être au format https://xxx.supabase.co',
+          received: supabaseUrl.substring(0, 50) + '...'
         })
       };
     }
-
+    
     if (supabaseAnonKey.length < 100 || !supabaseAnonKey.startsWith('eyJ')) {
       return {
         statusCode: 500,
         headers: corsHeaders,
         body: JSON.stringify({
           error: 'Clé Supabase invalide',
-          details: 'La clé doit être un JWT valide'
+          details: 'La clé doit être un JWT valide (commence par eyJ)',
+          keyLength: supabaseAnonKey.length,
+          keyStart: supabaseAnonKey.substring(0, 10)
         })
       };
     }
-
+    
     console.log('✅ Configuration validated successfully');
-
+    
     return {
       statusCode: 200,
       headers: corsHeaders,
@@ -75,10 +87,11 @@ exports.handler = async (event, context) => {
         url: supabaseUrl,
         anonKey: supabaseAnonKey,
         timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'production'
+        environment: process.env.NODE_ENV || 'production',
+        success: true
       })
     };
-
+    
   } catch (error) {
     console.error('❌ Function error:', error);
     return {
@@ -87,7 +100,8 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         error: 'Erreur serveur',
         message: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       })
     };
   }
