@@ -1,588 +1,184 @@
 // config-supabase.js - Configuration Supabase pour EmailSortPro
-// Version complète sans mode démo avec structure réelle
+// ⚠️ Ce fichier contient vos clés - ne pas committer dans Git !
 
 class SupabaseConfig {
     constructor() {
-        // Configuration avec les vraies clés Supabase
-        this.url = 'https://oxyiamruvyliueecpaam.supabase.co';
-        this.anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94eWlhbXJ1dnlsaXVlZWNwYWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MDM0MTgsImV4cCI6MjA2NTk3OTQxOH0.Wy_jbUB7D5Bly-rZB6oc2bXUHzZQ8MivDL4vdM1jcE0';
-        
-        // Configuration des rôles pour EmailSortPro
-        this.roles = {
-            SUPER_ADMIN: 'super_admin',
-            COMPANY_ADMIN: 'company_admin', 
-            USER: 'user'
-        };
-
-        // Configuration des statuts de licence selon la structure réelle
-        this.licenseStatus = {
-            ACTIVE: 'active',
-            TRIAL: 'trial',
-            EXPIRED: 'expired',
-            BLOCKED: 'blocked'
-        };
-
-        // Emails d'administrateurs par défaut
-        this.defaultAdmins = [
-            'vianney.hastings@hotmail.fr'
-        ];
-
-        // Initialiser le client Supabase
-        this.client = null;
+        this.config = null;
         this.initialized = false;
-        this.initializeClient();
+        
+        console.log('[SupabaseConfig] Initializing...');
+        this.loadConfig();
     }
 
-    async initializeClient() {
-        try {
-            console.log('[SupabaseConfig] 🚀 Initialisation du client...');
-            
-            // Vérifier si Supabase est disponible
-            if (typeof window !== 'undefined' && window.supabase) {
-                this.client = window.supabase.createClient(this.url, this.anonKey, {
-                    auth: {
-                        autoRefreshToken: false,
-                        persistSession: false,
-                        detectSessionInUrl: false
-                    },
-                    realtime: {
-                        enabled: false
-                    }
-                });
-                
-                console.log('[SupabaseConfig] ✅ Client Supabase initialisé pour EmailSortPro');
-                
-                // Test de connexion
-                await this.testConnection();
-                this.initialized = true;
-            } else {
-                console.warn('[SupabaseConfig] ⚠️ SDK Supabase non disponible, chargement...');
-                
-                // Essayer de charger le SDK Supabase
-                await this.loadSupabaseSDK();
-                await this.initializeClient();
+    loadConfig() {
+        // 🔑 REMPLACEZ CES VALEURS PAR VOS VRAIES CLÉS SUPABASE
+        const supabaseUrl = this.getEnvVar('VITE_SUPABASE_URL') || 
+                           this.getEnvVar('SUPABASE_URL') || 
+                           'https://VOTRE-PROJET.supabase.co'; // ← REMPLACEZ ICI
+        
+        const supabaseAnonKey = this.getEnvVar('VITE_SUPABASE_ANON_KEY') || 
+                               this.getEnvVar('SUPABASE_ANON_KEY') || 
+                               'eyJhbGciOiJIUzI1NiIsInR5cCI6JWT...'; // ← REMPLACEZ ICI
+        
+        this.config = {
+            url: supabaseUrl,
+            anonKey: supabaseAnonKey,
+            auth: {
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: false,
+                storage: window.localStorage
+            },
+            realtime: {
+                params: {
+                    eventsPerSecond: 10
+                }
             }
-        } catch (error) {
-            console.error('[SupabaseConfig] ❌ Erreur initialisation:', error);
-            this.client = null;
-            this.initialized = false;
+        };
+
+        this.initialized = true;
+        console.log('[SupabaseConfig] Configuration loaded:', {
+            url: this.config.url,
+            hasAnonKey: !!this.config.anonKey,
+            environment: this.getEnvironment()
+        });
+    }
+
+    getEnvVar(name) {
+        // Variables d'environnement Netlify (build-time)
+        if (typeof import !== 'undefined' && import.meta && import.meta.env) {
+            return import.meta.env[name];
+        }
+        
+        // Variables d'environnement Node.js
+        if (typeof process !== 'undefined' && process.env) {
+            return process.env[name];
+        }
+        
+        // Variables globales Netlify (runtime)
+        if (typeof window !== 'undefined' && window.netlifyEnv) {
+            return window.netlifyEnv[name];
+        }
+        
+        return null;
+    }
+
+    getEnvironment() {
+        const hostname = window.location.hostname;
+        
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            return 'development';
+        } else if (hostname.includes('netlify.app')) {
+            return 'production';
+        } else {
+            return 'unknown';
         }
     }
 
-    async loadSupabaseSDK() {
-        return new Promise((resolve, reject) => {
-            // Vérifier si déjà chargé
-            if (window.supabase) {
-                resolve();
-                return;
-            }
+    getConfig() {
+        if (!this.initialized) {
+            this.loadConfig();
+        }
+        return this.config;
+    }
 
-            console.log('[SupabaseConfig] 📦 Chargement du SDK Supabase...');
-            
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-            script.onload = () => {
-                console.log('[SupabaseConfig] ✅ SDK Supabase chargé avec succès');
-                resolve();
-            };
-            script.onerror = () => {
-                console.error('[SupabaseConfig] ❌ Erreur chargement SDK Supabase');
-                reject(new Error('Impossible de charger le SDK Supabase'));
-            };
-            document.head.appendChild(script);
-        });
+    validate() {
+        const config = this.getConfig();
+        const issues = [];
+        
+        if (!config.url || config.url.includes('VOTRE-PROJET')) {
+            issues.push('URL Supabase manquante ou non configurée');
+        }
+        
+        if (!config.anonKey || config.anonKey.includes('eyJhbGciOiJIUzI1NiIsInR5cCI6JWT...')) {
+            issues.push('Clé anonyme Supabase manquante ou non configurée');
+        }
+        
+        if (!config.url.includes('supabase.co')) {
+            issues.push('URL Supabase invalide');
+        }
+        
+        return {
+            valid: issues.length === 0,
+            issues: issues,
+            environment: this.getEnvironment()
+        };
     }
 
     async testConnection() {
         try {
-            if (!this.client) return false;
-
-            console.log('[SupabaseConfig] 🔍 Test de connexion...');
-
-            // Test simple de connexion avec la table users
-            const { data, error } = await this.client
-                .from('users')
-                .select('count', { count: 'exact', head: true });
-
-            // Accepter les erreurs 404 comme normales (pas de données mais table accessible)
-            if (error && !error.message.includes('relation "users" does not exist') && !error.message.includes('404')) {
-                console.error('[SupabaseConfig] 🚨 Erreur connexion:', error.message);
-                return false;
+            if (!window.supabase) {
+                throw new Error('Client Supabase non chargé');
             }
-
-            console.log('[SupabaseConfig] ✅ Connexion Supabase validée');
-            return true;
-        } catch (error) {
-            console.warn('[SupabaseConfig] ⚠️ Test de connexion échoué:', error.message);
-            return false;
-        }
-    }
-
-    // === MÉTHODES DE CONFIGURATION ===
-
-    getConfig() {
-        return {
-            url: this.url,
-            anonKey: this.anonKey,
-            client: this.client,
-            initialized: this.initialized,
-            roles: this.roles,
-            licenseStatus: this.licenseStatus,
-            defaultAdmins: this.defaultAdmins
-        };
-    }
-
-    getClient() {
-        return this.client;
-    }
-
-    isInitialized() {
-        return this.initialized && this.client !== null;
-    }
-
-    // === MÉTHODES UTILITAIRES POUR LES RÔLES ===
-
-    canManageUsers(userRole) {
-        return [this.roles.SUPER_ADMIN, this.roles.COMPANY_ADMIN].includes(userRole);
-    }
-
-    canBlockUsers(userRole) {
-        return [this.roles.SUPER_ADMIN, this.roles.COMPANY_ADMIN].includes(userRole);
-    }
-
-    canManageCompanies(userRole) {
-        return userRole === this.roles.SUPER_ADMIN;
-    }
-
-    isSuperAdmin(userRole) {
-        return userRole === this.roles.SUPER_ADMIN;
-    }
-
-    isCompanyAdmin(userRole) {
-        return userRole === this.roles.COMPANY_ADMIN;
-    }
-
-    isDefaultAdmin(email) {
-        return this.defaultAdmins.includes(email.toLowerCase());
-    }
-
-    getRoleForEmail(email) {
-        if (this.isDefaultAdmin(email)) {
-            return this.roles.COMPANY_ADMIN;
-        }
-        return this.roles.USER;
-    }
-
-    // === MÉTHODES UTILITAIRES POUR LES STATUTS ===
-
-    isLicenseActive(status) {
-        return [this.licenseStatus.ACTIVE, this.licenseStatus.TRIAL].includes(status);
-    }
-
-    isLicenseBlocked(status) {
-        return status === this.licenseStatus.BLOCKED;
-    }
-
-    getLicenseStatusLabel(status) {
-        switch (status) {
-            case this.licenseStatus.ACTIVE: return 'Actif';
-            case this.licenseStatus.TRIAL: return 'Période d\'essai';
-            case this.licenseStatus.EXPIRED: return 'Expiré';
-            case this.licenseStatus.BLOCKED: return 'Bloqué';
-            default: return 'Inconnu';
-        }
-    }
-
-    getRoleLabel(role) {
-        switch (role) {
-            case this.roles.SUPER_ADMIN: return 'Super Administrateur';
-            case this.roles.COMPANY_ADMIN: return 'Administrateur de Société';
-            case this.roles.USER: return 'Utilisateur';
-            default: return 'Utilisateur';
-        }
-    }
-
-    // === MÉTHODES DE VÉRIFICATION DES TABLES ===
-
-    async checkTablesExist() {
-        if (!this.client) {
-            console.warn('[SupabaseConfig] ⚠️ Client non initialisé');
-            return { allExist: false, tables: {} };
-        }
-
-        const requiredTables = ['users', 'companies'];
-        const optionalTables = ['analytics_events', 'admin_actions'];
-        const allTables = [...requiredTables, ...optionalTables];
-        
-        const results = {};
-
-        console.log('[SupabaseConfig] 🔍 Vérification des tables...');
-
-        for (const table of allTables) {
-            try {
-                const { error } = await this.client
-                    .from(table)
-                    .select('*', { count: 'exact', head: true })
-                    .limit(0);
-
-                // Considérer qu'une table existe si pas d'erreur de relation
-                const tableExists = !error || !error.message.includes('relation') && !error.message.includes('does not exist');
-                results[table] = tableExists;
-                
-                if (tableExists) {
-                    console.log(`[SupabaseConfig] ✅ Table '${table}' existe`);
-                } else {
-                    console.warn(`[SupabaseConfig] ⚠️ Table '${table}' non trouvée`);
-                }
-            } catch (error) {
-                results[table] = false;
-                console.warn(`[SupabaseConfig] ❌ Erreur vérification table '${table}':`, error.message);
-            }
-        }
-
-        const allExist = requiredTables.every(table => results[table]);
-        const someExist = Object.values(results).some(exists => exists);
-        
-        if (allExist) {
-            console.log('[SupabaseConfig] ✅ Toutes les tables requises existent');
-        } else if (someExist) {
-            console.warn('[SupabaseConfig] ⚠️ Certaines tables manquantes:', requiredTables.filter(t => !results[t]));
-        } else {
-            console.error('[SupabaseConfig] ❌ Aucune table trouvée - Base de données non configurée');
-        }
-
-        return { allExist, tables: results, requiredTables, optionalTables };
-    }
-
-    // === MÉTHODES DE STATISTIQUES ===
-
-    async getDatabaseStats() {
-        if (!this.client) {
-            console.warn('[SupabaseConfig] ⚠️ Client non initialisé');
-            return null;
-        }
-
-        try {
-            console.log('[SupabaseConfig] 📊 Récupération des statistiques...');
-            const stats = {};
-
-            // Compter les utilisateurs
-            try {
-                const { count: usersCount } = await this.client
-                    .from('users')
-                    .select('*', { count: 'exact', head: true });
-                stats.users = usersCount || 0;
-            } catch (error) {
-                console.warn('[SupabaseConfig] Table users inaccessible');
-                stats.users = 0;
-            }
-
-            // Compter les sociétés
-            try {
-                const { count: companiesCount } = await this.client
-                    .from('companies')
-                    .select('*', { count: 'exact', head: true });
-                stats.companies = companiesCount || 0;
-            } catch (error) {
-                console.warn('[SupabaseConfig] Table companies inaccessible');
-                stats.companies = 0;
-            }
-
-            // Compter les événements analytics si la table existe
-            try {
-                const { count: eventsCount } = await this.client
-                    .from('analytics_events')
-                    .select('*', { count: 'exact', head: true });
-                stats.events = eventsCount || 0;
-            } catch (error) {
-                stats.events = 0;
-            }
-
-            console.log('[SupabaseConfig] 📊 Statistiques récupérées:', stats);
-            return stats;
-        } catch (error) {
-            console.error('[SupabaseConfig] ❌ Erreur récupération statistiques:', error);
-            return null;
-        }
-    }
-
-    // === MÉTHODES DE GESTION DES UTILISATEURS ===
-
-    async createUser(userData) {
-        if (!this.client) throw new Error('Client non initialisé');
-
-        try {
-            // Assigner le rôle approprié selon l'email
-            const role = this.getRoleForEmail(userData.email);
             
-            const userToCreate = {
-                ...userData,
-                role: role,
-                license_status: this.licenseStatus.ACTIVE,
-                license_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-                last_login_at: new Date().toISOString()
-            };
-
-            const { data, error } = await this.client
+            const config = this.getConfig();
+            const client = window.supabase.createClient(config.url, config.anonKey);
+            
+            // Test simple avec la table users
+            const { data, error } = await client
                 .from('users')
-                .insert([userToCreate])
-                .select()
-                .single();
-
-            if (error) throw error;
-
-            console.log(`[SupabaseConfig] ✅ Utilisateur créé: ${userData.email} (${role})`);
-            return data;
-        } catch (error) {
-            console.error('[SupabaseConfig] ❌ Erreur création utilisateur:', error);
-            throw error;
-        }
-    }
-
-    async createCompany(companyData) {
-        if (!this.client) throw new Error('Client non initialisé');
-
-        try {
-            const { data, error } = await this.client
-                .from('companies')
-                .insert([companyData])
-                .select()
-                .single();
-
-            if (error) throw error;
-
-            console.log(`[SupabaseConfig] ✅ Société créée: ${companyData.name}`);
-            return data;
-        } catch (error) {
-            console.error('[SupabaseConfig] ❌ Erreur création société:', error);
-            throw error;
-        }
-    }
-
-    // === MÉTHODES DE VALIDATION ===
-
-    validateUserData(userData) {
-        const errors = [];
-
-        if (!userData.email || !this.isValidEmail(userData.email)) {
-            errors.push('Email invalide');
-        }
-
-        if (!userData.name || userData.name.trim().length < 2) {
-            errors.push('Nom requis (minimum 2 caractères)');
-        }
-
-        if (userData.role && !Object.values(this.roles).includes(userData.role)) {
-            errors.push('Rôle invalide');
-        }
-
-        return {
-            isValid: errors.length === 0,
-            errors: errors
-        };
-    }
-
-    validateCompanyData(companyData) {
-        const errors = [];
-
-        if (!companyData.name || companyData.name.trim().length < 2) {
-            errors.push('Nom de société requis (minimum 2 caractères)');
-        }
-
-        if (companyData.domain && !this.isValidDomain(companyData.domain)) {
-            errors.push('Domaine invalide');
-        }
-
-        return {
-            isValid: errors.length === 0,
-            errors: errors
-        };
-    }
-
-    isValidEmail(email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    }
-
-    isValidDomain(domain) {
-        const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/;
-        return domainRegex.test(domain);
-    }
-
-    // === MÉTHODES DE LOGGING ===
-
-    async logActivity(activity, details = {}) {
-        // Log en console pour cette version
-        console.log(`[SupabaseConfig] 📝 Activité: ${activity}`, {
-            activity: activity,
-            details: details,
-            timestamp: new Date().toISOString()
-        });
-
-        // Tentative de sauvegarde en base si possible
-        try {
-            if (this.client) {
-                await this.client
-                    .from('admin_actions')
-                    .insert([{
-                        action: activity,
-                        details: details,
-                        timestamp: new Date().toISOString(),
-                        ip_address: 'unknown'
-                    }]);
+                .select('count')
+                .limit(1);
+            
+            if (error && error.code !== '42P01') {
+                throw error;
             }
+            
+            return {
+                success: true,
+                message: 'Connexion Supabase réussie',
+                environment: this.getEnvironment()
+            };
+            
         } catch (error) {
-            // Ignorer l'erreur si la table n'existe pas
-            console.warn('[SupabaseConfig] Impossible de sauvegarder l\'activité (table admin_actions manquante)');
+            return {
+                success: false,
+                message: error.message,
+                error: error
+            };
         }
-    }
-
-    // === MÉTHODES DE DIAGNOSTIC ===
-
-    async getFullDiagnostic() {
-        const diagnostic = {
-            config: {
-                url: this.url,
-                initialized: this.initialized,
-                clientReady: !!this.client
-            },
-            tables: {},
-            stats: {},
-            roles: this.roles,
-            licenseStatus: this.licenseStatus,
-            defaultAdmins: this.defaultAdmins
-        };
-
-        if (this.client) {
-            try {
-                const tablesCheck = await this.checkTablesExist();
-                diagnostic.tables = tablesCheck;
-
-                if (tablesCheck.allExist) {
-                    const stats = await this.getDatabaseStats();
-                    diagnostic.stats = stats;
-                }
-            } catch (error) {
-                diagnostic.error = error.message;
-            }
-        }
-
-        return diagnostic;
     }
 }
 
-// === EXPORT ET INITIALISATION ===
-
-// Créer l'instance singleton
+// Créer l'instance globale
 window.supabaseConfig = new SupabaseConfig();
 
-// Fonction globale pour accéder au client Supabase
-window.getSupabaseClient = function() {
-    return window.supabaseConfig.getClient();
-};
-
-// Fonction d'initialisation asynchrone
-window.initializeSupabase = async function() {
-    try {
-        console.log('[SupabaseConfig] 🚀 Initialisation Supabase...');
-        
-        // Attendre que le client soit prêt
-        let attempts = 0;
-        while (!window.supabaseConfig.isInitialized() && attempts < 20) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            attempts++;
-        }
-
-        if (!window.supabaseConfig.isInitialized()) {
-            throw new Error('Impossible d\'initialiser Supabase après 10 secondes');
-        }
-
-        console.log('[SupabaseConfig] ✅ Supabase initialisé avec succès');
-        return true;
-    } catch (error) {
-        console.error('[SupabaseConfig] ❌ Erreur initialisation Supabase:', error);
-        return false;
-    }
-};
-
-// Fonction de diagnostic complète
-window.diagnoseSupabase = async function() {
-    console.group('🔍 DIAGNOSTIC SUPABASE - EmailSortPro');
+// Fonction de diagnostic
+window.diagnoseSupabase = function() {
+    console.group('🔍 DIAGNOSTIC SUPABASE');
     
-    const diagnostic = await window.supabaseConfig.getFullDiagnostic();
+    const config = window.supabaseConfig.getConfig();
+    const validation = window.supabaseConfig.validate();
     
-    console.log('🌐 Configuration:', diagnostic.config);
-    console.log('📋 Tables:', diagnostic.tables);
-    console.log('📊 Statistiques:', diagnostic.stats);
-    console.log('👥 Rôles:', diagnostic.roles);
-    console.log('📄 Statuts de licence:', diagnostic.licenseStatus);
-    console.log('👨‍💼 Admins par défaut:', diagnostic.defaultAdmins);
+    console.log('Configuration:', {
+        url: config.url,
+        hasAnonKey: !!config.anonKey,
+        environment: window.supabaseConfig.getEnvironment()
+    });
     
-    if (diagnostic.error) {
-        console.error('❌ Erreur:', diagnostic.error);
+    console.log('Validation:', validation);
+    
+    console.log('Variables d\'environnement détectées:', {
+        VITE_SUPABASE_URL: !!window.supabaseConfig.getEnvVar('VITE_SUPABASE_URL'),
+        SUPABASE_URL: !!window.supabaseConfig.getEnvVar('SUPABASE_URL'),
+        VITE_SUPABASE_ANON_KEY: !!window.supabaseConfig.getEnvVar('VITE_SUPABASE_ANON_KEY'),
+        SUPABASE_ANON_KEY: !!window.supabaseConfig.getEnvVar('SUPABASE_ANON_KEY')
+    });
+    
+    if (!validation.valid) {
+        console.log('🚨 ACTIONS REQUISES:');
+        validation.issues.forEach(issue => console.log(`  - ${issue}`));
+        console.log('🔧 ÉTAPES DE CORRECTION:');
+        console.log('  1. Allez sur https://supabase.com/dashboard');
+        console.log('  2. Sélectionnez votre projet');
+        console.log('  3. Settings > API');
+        console.log('  4. Copiez Project URL et anon public key');
+        console.log('  5. Remplacez les valeurs dans config-supabase.js');
     }
     
     console.groupEnd();
     
-    return diagnostic;
+    return validation;
 };
 
-// Auto-diagnostic et initialisation
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[SupabaseConfig] 🚀 Configuration EmailSortPro chargée');
-    
-    // Attendre un peu pour que Supabase soit complètement chargé
-    setTimeout(async () => {
-        try {
-            const config = window.supabaseConfig;
-            
-            if (config.isInitialized()) {
-                // Vérifier les tables
-                const tablesCheck = await config.checkTablesExist();
-                
-                if (tablesCheck.allExist) {
-                    // Obtenir les statistiques
-                    await config.getDatabaseStats();
-                    console.log('[SupabaseConfig] ✅ Base de données prête');
-                } else {
-                    console.warn('[SupabaseConfig] ⚠️ Certaines tables manquantes');
-                    console.info('[SupabaseConfig] 💡 Assurez-vous que les tables users et companies existent');
-                }
-            } else {
-                console.warn('[SupabaseConfig] ⚠️ Client non initialisé');
-            }
-        } catch (error) {
-            console.error('[SupabaseConfig] ❌ Erreur lors du diagnostic:', error);
-        }
-    }, 2000);
-});
-
-// Instructions pour les développeurs
-console.log(`
-🎯 CONFIGURATION SUPABASE EMAILSORTPRO
-
-📋 Pour utiliser:
-   - Client Supabase: window.getSupabaseClient()
-   - Configuration: window.supabaseConfig.getConfig()
-   - Initialisation: await initializeSupabase()
-   - Diagnostic: await diagnoseSupabase()
-
-⚙️ Base de données:
-   - URL: https://kbhxbisexpbmclqhadmq.supabase.co
-   - Mode: Production
-   - Tables requises: users, companies
-   - Tables optionnelles: analytics_events, admin_actions
-
-🔒 Sécurité:
-   - Clé anonyme utilisée (normale pour frontend)
-   - Permissions gérées par Row Level Security (RLS)
-
-👨‍💼 Administration:
-   - vianney.hastings@hotmail.fr = Administrateur par défaut
-   - Autres utilisateurs = Utilisateurs normaux
-   - Rôles: super_admin, company_admin, user
-
-💡 Pour déboguer: await diagnoseSupabase()
-`);
-
-console.log('[SupabaseConfig] ✅ Configuration chargée');
+console.log('✅ SupabaseConfig loaded - Use diagnoseSupabase() for diagnostic');
