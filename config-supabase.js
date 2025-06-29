@@ -1,5 +1,5 @@
-// config-supabase.js - Configuration Supabase pour EmailSortPro
-// Version corrigée avec support des variables d'environnement Netlify
+// config-supabase.js - Configuration Supabase sécurisée pour EmailSortPro
+// Version corrigée sans clés exposées
 
 // Charger Supabase depuis CDN si pas déjà disponible
 if (typeof window.supabase === 'undefined') {
@@ -19,13 +19,9 @@ class SupabaseConfig {
 
     async loadConfig() {
         try {
-            // Configuration par défaut avec vos valeurs
-            const defaultConfig = {
-                url: 'https://kbhxbisexpbmclqhadmq.supabase.co',
-                anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiaHhiaXNleHBibWNscWhhZG1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MzcyODEsImV4cCI6MjA2NjUxMzI4MX0.9mwrKDT2HpegDFdufqmVU2e9fFtgM-46ecbYTjRrMXo'
-            };
-
-            // Essayer de charger depuis les variables d'environnement
+            // ⚠️ IMPORTANT: Les clés doivent être définies dans les variables d'environnement
+            // Ne jamais mettre de clés par défaut dans le code !
+            
             let supabaseUrl = this.getEnvVar('VITE_SUPABASE_URL');
             let supabaseAnonKey = this.getEnvVar('VITE_SUPABASE_ANON_KEY');
 
@@ -38,10 +34,14 @@ class SupabaseConfig {
                 }
             }
 
-            // Utiliser les valeurs par défaut si nécessaire
+            // Vérifier que les variables d'environnement sont définies
+            if (!supabaseUrl || !supabaseAnonKey) {
+                throw new Error('Variables d\'environnement Supabase manquantes. Veuillez définir VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY');
+            }
+
             this.config = {
-                url: supabaseUrl || defaultConfig.url,
-                anonKey: supabaseAnonKey || defaultConfig.anonKey,
+                url: supabaseUrl,
+                anonKey: supabaseAnonKey,
                 auth: {
                     autoRefreshToken: true,
                     persistSession: true,
@@ -64,28 +64,46 @@ class SupabaseConfig {
             });
         } catch (error) {
             console.error('[SupabaseConfig] Error loading config:', error);
-            // Utiliser la configuration par défaut en cas d'erreur
-            this.config = {
-                url: 'https://kbhxbisexpbmclqhadmq.supabase.co',
-                anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiaHhiaXNleHBibWNscWhhZG1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MzcyODEsImV4cCI6MjA2NjUxMzI4MX0.9mwrKDT2HpegDFdufqmVU2e9fFtgM-46ecbYTjRrMXo',
-                auth: {
-                    autoRefreshToken: true,
-                    persistSession: true,
-                    detectSessionInUrl: false,
-                    storage: window.localStorage
-                },
-                realtime: {
-                    params: {
-                        eventsPerSecond: 10
-                    }
-                }
-            };
-            this.initialized = true;
+            
+            // En cas d'erreur, afficher des instructions claires
+            this.showConfigurationError(error.message);
+            throw error;
         }
     }
 
+    showConfigurationError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 20px;
+            z-index: 9999;
+            font-family: monospace;
+            color: #dc2626;
+        `;
+        
+        errorDiv.innerHTML = `
+            <h3>⚠️ Configuration Supabase manquante</h3>
+            <p><strong>Erreur:</strong> ${message}</p>
+            <p><strong>Solution:</strong> Définissez les variables d'environnement suivantes :</p>
+            <ul>
+                <li><code>VITE_SUPABASE_URL</code> - URL de votre projet Supabase</li>
+                <li><code>VITE_SUPABASE_ANON_KEY</code> - Clé anonyme de votre projet Supabase</li>
+            </ul>
+            <p>Pour Netlify : ajoutez ces variables dans Settings > Environment Variables</p>
+            <button onclick="this.parentElement.remove()" style="margin-top: 10px; padding: 5px 10px;">Fermer</button>
+        `;
+        
+        document.body.appendChild(errorDiv);
+    }
+
     getEnvVar(name) {
-        // Variables d'environnement Netlify (build-time)
+        // Variables d'environnement Vite (build-time)
         if (typeof import !== 'undefined' && import.meta && import.meta.env) {
             return import.meta.env[name];
         }
@@ -174,7 +192,7 @@ class SupabaseConfig {
             issues.push('Clé anonyme Supabase manquante');
         }
         
-        if (!config.url.includes('supabase.co')) {
+        if (config.url && !config.url.includes('supabase.co')) {
             issues.push('URL Supabase invalide');
         }
         
@@ -233,38 +251,44 @@ window.supabaseConfig = new SupabaseConfig();
 window.diagnoseSupabase = async function() {
     console.group('🔍 DIAGNOSTIC SUPABASE');
     
-    const config = window.supabaseConfig.getConfig();
-    const validation = window.supabaseConfig.validate();
-    
-    console.log('Configuration:', {
-        url: config.url,
-        hasAnonKey: !!config.anonKey,
-        keyLength: config.anonKey?.length,
-        environment: window.supabaseConfig.getEnvironment()
-    });
-    
-    console.log('Validation:', validation);
-    
-    console.log('Variables d\'environnement détectées:', {
-        VITE_SUPABASE_URL: !!window.supabaseConfig.getEnvVar('VITE_SUPABASE_URL'),
-        VITE_SUPABASE_ANON_KEY: !!window.supabaseConfig.getEnvVar('VITE_SUPABASE_ANON_KEY')
-    });
-    
-    // Test de connexion
-    console.log('Test de connexion en cours...');
-    const connectionTest = await window.supabaseConfig.testConnection();
-    console.log('Résultat test connexion:', connectionTest);
-    
-    if (!validation.valid) {
-        console.log('🚨 PROBLÈMES DÉTECTÉS:');
-        validation.issues.forEach(issue => console.log(`  - ${issue}`));
-    } else {
-        console.log('✅ Configuration valide');
+    try {
+        const config = window.supabaseConfig.getConfig();
+        const validation = window.supabaseConfig.validate();
+        
+        console.log('Configuration:', {
+            url: config.url,
+            hasAnonKey: !!config.anonKey,
+            keyLength: config.anonKey?.length,
+            environment: window.supabaseConfig.getEnvironment()
+        });
+        
+        console.log('Validation:', validation);
+        
+        console.log('Variables d\'environnement détectées:', {
+            VITE_SUPABASE_URL: !!window.supabaseConfig.getEnvVar('VITE_SUPABASE_URL'),
+            VITE_SUPABASE_ANON_KEY: !!window.supabaseConfig.getEnvVar('VITE_SUPABASE_ANON_KEY')
+        });
+        
+        // Test de connexion
+        console.log('Test de connexion en cours...');
+        const connectionTest = await window.supabaseConfig.testConnection();
+        console.log('Résultat test connexion:', connectionTest);
+        
+        if (!validation.valid) {
+            console.log('🚨 PROBLÈMES DÉTECTÉS:');
+            validation.issues.forEach(issue => console.log(`  - ${issue}`));
+        } else {
+            console.log('✅ Configuration valide');
+        }
+        
+        console.groupEnd();
+        
+        return { validation, connectionTest };
+    } catch (error) {
+        console.error('Erreur lors du diagnostic:', error);
+        console.groupEnd();
+        return { error: error.message };
     }
-    
-    console.groupEnd();
-    
-    return { validation, connectionTest };
 };
 
 console.log('✅ SupabaseConfig loaded - Use diagnoseSupabase() for diagnostic');
