@@ -3,840 +3,433 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analytics - EmailSortPro</title>
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Supabase Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- Configuration Supabase sécurisée via Netlify Functions -->
-    <script>
-        // Configuration Supabase sécurisée
-        class SupabaseConfig {
-            constructor() {
-                this.config = null;
-                this.initialized = false;
-                console.log('[SupabaseConfig] Initializing with Netlify Functions...');
-                this.loadConfig();
-            }
-
-            async loadConfig() {
-                try {
-                    // Charger la configuration depuis les variables d'environnement Netlify
-                    // Créer une fonction Netlify pour exposer les variables de manière sécurisée
-                    const response = await fetch('/.netlify/functions/get-supabase-config');
-                    
-                    if (!response.ok) {
-                        throw new Error(`Failed to fetch config: ${response.status}`);
-                    }
-                    
-                    const configData = await response.json();
-                    
-                    this.config = {
-                        url: configData.url,
-                        anonKey: configData.anonKey,
-                        auth: {
-                            autoRefreshToken: true,
-                            persistSession: true,
-                            detectSessionInUrl: false,
-                            storage: window.localStorage
-                        }
-                    };
-                    
-                    this.initialized = true;
-                    console.log('[SupabaseConfig] Configuration loaded securely from Netlify');
-                    
-                } catch (error) {
-                    console.error('[SupabaseConfig] Failed to load configuration:', error);
-                    
-                    // Fallback pour le développement local - utilisez un fichier .env local
-                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                        console.warn('[SupabaseConfig] Using fallback configuration for local development');
-                        this.config = {
-                            url: process.env.VITE_SUPABASE_URL || 'YOUR_LOCAL_SUPABASE_URL',
-                            anonKey: process.env.VITE_SUPABASE_ANON_KEY || 'YOUR_LOCAL_SUPABASE_ANON_KEY',
-                            auth: {
-                                autoRefreshToken: true,
-                                persistSession: true,
-                                detectSessionInUrl: false,
-                                storage: window.localStorage
-                            }
-                        };
-                        this.initialized = true;
-                    } else {
-                        throw error;
-                    }
-                }
-            }
-
-            getConfig() {
-                return this.config;
-            }
-
-            validate() {
-                const issues = [];
-                if (!this.config.url) issues.push('URL manquante');
-                if (!this.config.anonKey) issues.push('Clé manquante');
-                return { valid: issues.length === 0, issues };
-            }
-
-            async testConnection() {
-                try {
-                    const client = window.supabase.createClient(this.config.url, this.config.anonKey, this.config.auth);
-                    const { data, error } = await client.auth.getSession();
-                    return { success: !error || !error.message.includes('Invalid API key'), message: 'Connexion réussie' };
-                } catch (error) {
-                    return { success: false, message: error.message, error };
-                }
-            }
-        }
-        
-        // Initialiser de manière asynchrone
-        window.supabaseConfigPromise = (async () => {
-            const config = new SupabaseConfig();
-            await config.loadConfig();
-            return config;
-        })();
-    </script>
-    
-    <!-- Service de Licence sécurisé -->
-    <script>
-        // LicenseService avec configuration sécurisée
-        class LicenseService {
-            constructor() {
-                this.supabase = null;
-                this.currentUser = null;
-                this.licenseCache = null;
-                this.initialized = false;
-            }
-
-            async initialize() {
-                if (this.initialized) return true;
-                try {
-                    // Attendre que la configuration soit chargée
-                    const supabaseConfig = await window.supabaseConfigPromise;
-                    const config = supabaseConfig.getConfig();
-                    
-                    if (!config.url || !config.anonKey) {
-                        throw new Error('Configuration Supabase manquante');
-                    }
-                    
-                    this.supabase = window.supabase.createClient(config.url, config.anonKey, config.auth);
-                    this.initialized = true;
-                    console.log('[LicenseService] ✅ Initialisé avec configuration sécurisée');
-                    return true;
-                } catch (error) {
-                    console.error('[LicenseService] ❌ Erreur initialisation:', error);
-                    return false;
-                }
-            }
-
-            async authenticateWithEmail(email) {
-                if (!this.initialized) {
-                    const success = await this.initialize();
-                    if (!success) {
-                        return { valid: false, error: 'Service non initialisé' };
-                    }
-                }
-                
-                if (!this.supabase) return { valid: false, error: 'Service non initialisé' };
-
-                try {
-                    const cleanEmail = email.toLowerCase().trim();
-                    
-                    // Rechercher l'utilisateur
-                    let { data: user, error } = await this.supabase
-                        .from('users')
-                        .select('*, company:companies(*)')
-                        .eq('email', cleanEmail)
-                        .single();
-
-                    if (error && error.code === 'PGRST116') {
-                        // Créer l'utilisateur s'il n'existe pas
-                        user = await this.createNewUser(cleanEmail);
-                    } else if (error) {
-                        throw error;
-                    }
-
-                    // Mettre à jour la dernière connexion
-                    await this.updateLastLogin(user.id);
-
-                    this.currentUser = user;
-                    
-                    const licenseStatus = this.evaluateLicenseStatus(user);
-                    
-                    return {
-                        valid: licenseStatus.valid,
-                        status: licenseStatus.status,
-                        user: user,
-                        message: licenseStatus.message,
-                        daysRemaining: licenseStatus.daysRemaining
-                    };
-                } catch (error) {
-                    console.error('[LicenseService] Erreur authentification:', error);
-                    return { valid: false, error: error.message, status: 'error' };
-                }
-            }
-
-            async createNewUser(email) {
-                const domain = email.split('@')[1];
-                const name = email.split('@')[0];
-                
-                const { data: company } = await this.supabase
-                    .from('companies')
-                    .select('*')
-                    .eq('domain', domain)
-                    .single();
-
-                const isPersonalEmail = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'live.com'].includes(domain.toLowerCase());
-                
-                let companyId = company?.id;
-                if (isPersonalEmail && !company) {
-                    const { data: newCompany } = await this.supabase
-                        .from('companies')
-                        .insert([{
-                            name: `Personnel - ${email}`,
-                            domain: email,
-                            created_at: new Date().toISOString()
-                        }])
-                        .select()
-                        .single();
-                    companyId = newCompany?.id;
-                }
-
-                // Calculer la date d'expiration (15 jours d'essai)
-                const trialDays = 15;
-                const expirationDate = new Date();
-                expirationDate.setDate(expirationDate.getDate() + trialDays);
-
-                // Si c'est vianney.hastings@hotmail.fr, le créer comme company_admin
-                const isVianney = email.toLowerCase() === 'vianney.hastings@hotmail.fr';
-                
-                const newUser = {
-                    email: email.toLowerCase(),
-                    name: name,
-                    company_id: companyId,
-                    role: isVianney ? 'company_admin' : (isPersonalEmail ? 'admin' : 'user'),
-                    license_status: 'trial',
-                    license_expires_at: expirationDate.toISOString(),
-                    first_login_at: new Date().toISOString(),
-                    created_at: new Date().toISOString()
-                };
-
-                const { data, error } = await this.supabase
-                    .from('users')
-                    .insert([newUser])
-                    .select('*, company:companies(*)')
-                    .single();
-
-                if (error) throw error;
-                return data;
-            }
-
-            evaluateLicenseStatus(user) {
-                // Pour la page analytics, on vérifie seulement si l'utilisateur est admin
-                // On ne bloque PAS l'accès pour les licences expirées
-                if (user.license_status === 'blocked') {
-                    return { valid: false, status: 'blocked', message: 'Accès bloqué' };
-                }
-
-                // Vérifier si l'utilisateur est admin
-                const isAdmin = user.role === 'admin' || user.role === 'company_admin' || user.role === 'super_admin';
-                
-                if (!isAdmin) {
-                    return { 
-                        valid: false, 
-                        status: 'unauthorized', 
-                        message: 'Accès réservé aux administrateurs' 
-                    };
-                }
-
-                // Pour les admins, on autorise l'accès même avec une licence expirée
-                const expiresAt = user.license_expires_at ? new Date(user.license_expires_at) : null;
-                const now = new Date();
-                let licenseInfo = '';
-                let daysRemaining = null;
-
-                if (expiresAt && expiresAt < now) {
-                    licenseInfo = 'Licence expirée - Accès analytics autorisé';
-                } else if (expiresAt) {
-                    daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
-                    licenseInfo = `Licence ${user.license_status} - ${daysRemaining} jours restants`;
-                } else {
-                    licenseInfo = `Licence ${user.license_status}`;
-                }
-
-                // Les admins ont toujours accès aux analytics
-                return {
-                    valid: true,
-                    status: user.license_status,
-                    message: licenseInfo,
-                    daysRemaining,
-                    isAdmin: true
-                };
-            }
-
-            async updateLastLogin(userId) {
-                try {
-                    await this.supabase
-                        .from('users')
-                        .update({ last_login_at: new Date().toISOString() })
-                        .eq('id', userId);
-                } catch (error) {
-                    console.warn('[LicenseService] Erreur mise à jour login:', error);
-                }
-            }
-
-            getCurrentUser() {
-                return this.currentUser;
-            }
-
-            isAdmin() {
-                // Vérifier tous les rôles admin possibles
-                return this.currentUser?.role === 'admin' || 
-                       this.currentUser?.role === 'company_admin' || 
-                       this.currentUser?.role === 'super_admin';
-            }
-
-            async getCompanyUsers() {
-                if (!this.currentUser?.company_id || !this.isAdmin()) return [];
-                try {
-                    const { data, error } = await this.supabase
-                        .from('users')
-                        .select('*')
-                        .eq('company_id', this.currentUser.company_id)
-                        .order('created_at', { ascending: false });
-                    if (error) throw error;
-                    return data;
-                } catch (error) {
-                    console.error('[LicenseService] Erreur récupération utilisateurs:', error);
-                    return [];
-                }
-            }
-
-            async getUserAnalytics(userId = null) {
-                try {
-                    const targetUserId = userId || this.currentUser?.id;
-                    if (!targetUserId) return [];
-                    const { data, error } = await this.supabase
-                        .from('analytics_events')
-                        .select('*')
-                        .eq('user_id', targetUserId)
-                        .order('created_at', { ascending: false })
-                        .limit(100);
-                    if (error) throw error;
-                    return data;
-                } catch (error) {
-                    console.error('[LicenseService] Erreur récupération analytics:', error);
-                    return [];
-                }
-            }
-
-            async updateUserLicense(userId, status, expiresAt = null) {
-                if (!this.isAdmin()) throw new Error('Droits insuffisants');
-                try {
-                    const updateData = { license_status: status, updated_at: new Date().toISOString() };
-                    if (expiresAt) updateData.license_expires_at = expiresAt;
-                    
-                    const { error } = await this.supabase
-                        .from('users')
-                        .update(updateData)
-                        .eq('id', userId)
-                        .eq('company_id', this.currentUser.company_id);
-                    if (error) throw error;
-                    return { success: true };
-                } catch (error) {
-                    return { success: false, error: error.message };
-                }
-            }
-
-            async addUserToCompany(email) {
-                if (!this.isAdmin()) throw new Error('Droits insuffisants');
-                try {
-                    const { data: existingUser } = await this.supabase
-                        .from('users')
-                        .select('*')
-                        .eq('email', email.toLowerCase())
-                        .single();
-
-                    if (existingUser?.company_id) {
-                        throw new Error('Utilisateur déjà dans une société');
-                    }
-
-                    if (existingUser) {
-                        const { error } = await this.supabase
-                            .from('users')
-                            .update({
-                                company_id: this.currentUser.company_id,
-                                license_status: 'active',
-                                updated_at: new Date().toISOString()
-                            })
-                            .eq('id', existingUser.id);
-                        if (error) throw error;
-                    } else {
-                        const { error } = await this.supabase
-                            .from('users')
-                            .insert([{
-                                email: email.toLowerCase(),
-                                name: email.split('@')[0],
-                                company_id: this.currentUser.company_id,
-                                role: 'user',
-                                license_status: 'active',
-                                created_at: new Date().toISOString()
-                            }]);
-                        if (error) throw error;
-                    }
-                    return { success: true };
-                } catch (error) {
-                    return { success: false, error: error.message };
-                }
-            }
-
-            // Nouvelles méthodes pour la gestion des paiements
-            async getCompanyPaymentInfo() {
-                if (!this.currentUser?.company_id) return null;
-                try {
-                    const { data, error } = await this.supabase
-                        .from('companies')
-                        .select('*, payment_info:company_payments(*)')
-                        .eq('id', this.currentUser.company_id)
-                        .single();
-                    if (error) throw error;
-                    return data;
-                } catch (error) {
-                    console.error('[LicenseService] Erreur récupération info paiement:', error);
-                    return null;
-                }
-            }
-
-            async getPaymentHistory() {
-                if (!this.currentUser?.company_id) return [];
-                try {
-                    const { data, error } = await this.supabase
-                        .from('payment_history')
-                        .select('*')
-                        .eq('company_id', this.currentUser.company_id)
-                        .order('created_at', { ascending: false });
-                    if (error) throw error;
-                    return data || [];
-                } catch (error) {
-                    console.error('[LicenseService] Erreur récupération historique paiements:', error);
-                    return [];
-                }
-            }
-
-            async createPaymentIntent(licenseCount) {
-                if (!this.currentUser?.company_id) throw new Error('Aucune société associée');
-                try {
-                    // Simuler la création d'un payment intent (sera remplacé par l'API Stripe)
-                    const amount = licenseCount * 990; // 9.90€ en centimes
-                    return {
-                        intentId: `pi_${Date.now()}`,
-                        amount: amount,
-                        currency: 'eur',
-                        status: 'requires_payment_method'
-                    };
-                } catch (error) {
-                    console.error('[LicenseService] Erreur création payment intent:', error);
-                    throw error;
-                }
-            }
-
-            async syncLocalAnalytics() {
-                // Méthode vide pour compatibilité
-                console.log('[LicenseService] Sync analytics called');
-            }
-        }
-        
-        // Initialiser le service de manière asynchrone
-        window.licenseServicePromise = (async () => {
-            const service = new LicenseService();
-            await service.initialize();
-            return service;
-        })();
-        
-        console.log('✅ LicenseService configuré avec sécurité renforcée');
-    </script>
-    
-    <!-- Styles CSS restent identiques -->
+    <title>Analytics Test - EmailSortPro</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f8fafc;
-            line-height: 1.6;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
         }
-
-        .analytics-standalone {
-            max-width: 1400px;
+        .container {
+            max-width: 800px;
             margin: 0 auto;
-            padding: 40px 20px;
-        }
-
-        .page-header {
-            text-align: center;
-            margin-bottom: 48px;
-            padding: 40px 0;
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-            color: white;
-            border-radius: 16px;
-            margin: 0 0 48px 0;
-        }
-
-        .page-header h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-        }
-
-        .page-header p {
-            font-size: 1.25rem;
-            opacity: 0.9;
-            max-width: 600px;
-            margin: 0 auto;
-            line-height: 1.5;
-        }
-
-        .auth-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-        }
-
-        .auth-box {
             background: white;
-            padding: 48px;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-            max-width: 450px;
-            width: 90%;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-
-        .auth-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1f2937;
-            text-align: center;
-            margin-bottom: 32px;
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
         }
-
-        .auth-form {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .form-label {
-            font-weight: 600;
-            color: #374151;
-            font-size: 0.875rem;
-        }
-
-        .form-input {
-            padding: 12px 16px;
-            border: 1px solid #d1d5db;
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
             border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.2s ease;
         }
-
-        .form-input:focus {
-            outline: none;
-            border-color: #4F46E5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
-
-        .auth-submit {
-            padding: 14px 28px;
-            background: #4F46E5;
+        button {
+            background: #007bff;
             color: white;
             border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 1rem;
+            padding: 10px 20px;
+            border-radius: 5px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            margin: 5px;
         }
-
-        .auth-submit:hover {
-            background: #4338ca;
-            transform: translateY(-1px);
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
         }
-
-        .auth-submit:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-            transform: none;
+        .log-area {
+            height: 200px;
+            overflow-y: auto;
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
         }
-
-        .auth-error {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #dc2626;
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 0.875rem;
-            text-align: center;
-        }
-
-        .auth-info {
-            background: #dbeafe;
-            border: 1px solid #bfdbfe;
-            color: #1d4ed8;
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 0.875rem;
-            text-align: center;
-        }
-
-        .loading-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 400px;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #f3f4f6;
-            border-top: 4px solid #4F46E5;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            color: #64748b;
-            font-size: 1.125rem;
-            font-weight: 500;
-        }
-
-        /* Ajoutez ici tous les autres styles CSS de votre fichier original */
     </style>
 </head>
 <body>
-    <div id="authContainer" class="auth-container" style="display: none;">
-        <div class="auth-box">
-            <h2 class="auth-title">
-                <i class="fas fa-chart-line"></i>
-                Analytics EmailSortPro
-            </h2>
-            <form id="authForm" class="auth-form">
-                <div class="auth-info">
-                    <i class="fas fa-info-circle"></i>
-                    Accès réservé aux administrateurs
-                    <br>
-                    <small>Configuration sécurisée via Netlify Functions</small>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="emailInput">Adresse Email</label>
-                    <input 
-                        type="email" 
-                        id="emailInput" 
-                        class="form-input" 
-                        placeholder="vianney.hastings@hotmail.fr"
-                        value="vianney.hastings@hotmail.fr"
-                        required
-                    >
-                </div>
-                <button type="submit" id="authSubmit" class="auth-submit">
-                    <i class="fas fa-sign-in-alt"></i>
-                    Accéder aux Analytics
-                </button>
-                <div id="authError" class="auth-error" style="display: none;"></div>
-            </form>
+    <div class="container">
+        <h1>🧪 Analytics Test - Configuration Netlify</h1>
+        <p>Test de connexion sécurisé pour EmailSortPro</p>
+
+        <!-- Status général -->
+        <div id="globalStatus" class="status info">
+            🔄 Initialisation en cours...
+        </div>
+
+        <!-- Test 1: Fonction Netlify -->
+        <div class="test-section">
+            <h3>📡 Test 1: Fonction Netlify</h3>
+            <div id="netlifyStatus" class="status warning">⏳ En attente</div>
+            <button onclick="testNetlifyFunction()">Tester la fonction</button>
+            <button onclick="showNetlifyInstructions()">Voir les instructions</button>
+            <pre id="netlifyResult"></pre>
+        </div>
+
+        <!-- Test 2: Configuration Supabase -->
+        <div class="test-section">
+            <h3>🗄️ Test 2: Configuration Supabase</h3>
+            <div id="supabaseStatus" class="status warning">⏳ En attente</div>
+            <button onclick="testSupabaseConfig()" disabled id="testSupabaseBtn">Tester Supabase</button>
+            <pre id="supabaseResult"></pre>
+        </div>
+
+        <!-- Test 3: Connexion Base -->
+        <div class="test-section">
+            <h3>🔌 Test 3: Connexion Base de Données</h3>
+            <div id="dbStatus" class="status warning">⏳ En attente</div>
+            <button onclick="testDatabaseConnection()" disabled id="testDbBtn">Tester la DB</button>
+            <pre id="dbResult"></pre>
+        </div>
+
+        <!-- Logs en temps réel -->
+        <div class="test-section">
+            <h3>📋 Logs en temps réel</h3>
+            <div id="logArea" class="log-area"></div>
+            <button onclick="clearLogs()">Effacer</button>
+            <button onclick="runFullDiagnostic()">Diagnostic complet</button>
+        </div>
+
+        <!-- Instructions -->
+        <div id="instructions" class="test-section" style="display: none;">
+            <h3>📚 Instructions de configuration</h3>
+            <div class="status info">
+                <strong>Étapes pour configurer Netlify:</strong>
+                <ol>
+                    <li>Aller sur votre dashboard Netlify</li>
+                    <li>Sélectionner votre site</li>
+                    <li>Aller dans "Site settings" → "Environment variables"</li>
+                    <li>Ajouter ces variables:
+                        <ul>
+                            <li><code>SUPABASE_URL</code> = votre URL Supabase</li>
+                            <li><code>SUPABASE_ANON_KEY</code> = votre clé anonyme Supabase</li>
+                        </ul>
+                    </li>
+                    <li>Redéployer votre site</li>
+                    <li>Vérifier que le fichier <code>netlify/functions/get-supabase-config.js</code> existe</li>
+                </ol>
+            </div>
         </div>
     </div>
 
-    <div id="mainContent" class="analytics-standalone" style="display: none;">
-        <div id="loadingContainer" class="loading-container">
-            <div class="spinner"></div>
-            <div class="loading-text">Chargement de la configuration sécurisée...</div>
-        </div>
-        <!-- Le reste du contenu sera chargé dynamiquement -->
-    </div>
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        // Variables globales
-        let licenseService = null;
-        let currentUser = null;
+        // État global
+        let netlifyWorking = false;
+        let supabaseConfig = null;
+        let supabaseClient = null;
 
-        // Fonction principale d'initialisation
-        async function initializeApp() {
+        // Logging
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logArea = document.getElementById('logArea');
+            const colors = {
+                info: '#e2e8f0',
+                success: '#68d391',
+                error: '#fc8181',
+                warning: '#f6e05e'
+            };
+            
+            logArea.innerHTML += `<div style="color: ${colors[type]}">[${timestamp}] ${message}</div>`;
+            logArea.scrollTop = logArea.scrollHeight;
+            console.log(`[Analytics Test] ${message}`);
+        }
+
+        function clearLogs() {
+            document.getElementById('logArea').innerHTML = '';
+        }
+
+        function updateStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+
+        // Test 1: Fonction Netlify
+        async function testNetlifyFunction() {
+            log('🧪 Test de la fonction Netlify...', 'info');
+            updateStatus('netlifyStatus', '🔄 Test en cours...', 'warning');
+
             try {
-                console.log('[Analytics] Initialisation avec configuration sécurisée...');
-                
-                // Attendre que le service de licence soit prêt
-                licenseService = await window.licenseServicePromise;
-                
-                console.log('[Analytics] Service de licence initialisé');
-                
-                // Vérifier l'authentification
-                await checkAuthentication();
-                
-            } catch (error) {
-                console.error('[Analytics] Erreur d\'initialisation:', error);
-                showError('Erreur de configuration: ' + error.message);
-            }
-        }
+                const response = await fetch('/.netlify/functions/get-supabase-config', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-        function showError(message) {
-            document.getElementById('authContainer').style.display = 'flex';
-            document.getElementById('mainContent').style.display = 'none';
-            
-            const errorDiv = document.getElementById('authError');
-            if (errorDiv) {
-                errorDiv.textContent = message;
-                errorDiv.style.display = 'block';
-            }
-        }
+                const result = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: Object.fromEntries(response.headers.entries()),
+                    url: response.url
+                };
 
-        async function checkAuthentication() {
-            console.log('[Analytics] Vérification de l\'authentification...');
-            
-            // Vérifier si on a déjà un utilisateur en session
-            const storedEmail = localStorage.getItem('emailsortpro_user_email');
-            
-            if (storedEmail) {
-                // Essayer de se connecter automatiquement
-                const result = await authenticateUser(storedEmail);
-                if (result.success) {
-                    showMainContent(result.user);
-                    return;
-                }
-            }
-            
-            // Sinon, afficher le formulaire de connexion
-            showAuthForm();
-        }
+                if (response.ok) {
+                    const data = await response.json();
+                    result.data = {
+                        hasUrl: !!data.url,
+                        hasAnonKey: !!data.anonKey,
+                        urlValid: data.url && data.url.includes('supabase.co'),
+                        keyValid: data.anonKey && data.anonKey.length > 100,
+                        timestamp: data.timestamp
+                    };
 
-        function showAuthForm() {
-            document.getElementById('authContainer').style.display = 'flex';
-            document.getElementById('mainContent').style.display = 'none';
-        }
-
-        function showMainContent(user) {
-            currentUser = user;
-            console.log('[Analytics] Utilisateur connecté:', user.email);
-            
-            document.getElementById('authContainer').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'block';
-            
-            // Ici vous pouvez charger le reste de votre interface analytics
-            loadAnalyticsInterface();
-        }
-
-        async function authenticateUser(email) {
-            try {
-                if (!licenseService) {
-                    throw new Error('Service de licence non disponible');
-                }
-                
-                const result = await licenseService.authenticateWithEmail(email);
-                
-                if (result.valid) {
-                    localStorage.setItem('emailsortpro_user_email', email);
-                    return { success: true, user: result.user };
-                } else {
-                    return { success: false, error: result.message || 'Authentification échouée' };
-                }
-            } catch (error) {
-                console.error('[Analytics] Erreur d\'authentification:', error);
-                return { success: false, error: error.message };
-            }
-        }
-
-        function loadAnalyticsInterface() {
-            const mainContent = document.getElementById('mainContent');
-            mainContent.innerHTML = `
-                <div class="page-header">
-                    <h1>
-                        <i class="fas fa-chart-line"></i>
-                        Analytics EmailSortPro
-                    </h1>
-                    <p>Configuration sécurisée via Netlify Functions</p>
-                </div>
-                
-                <div style="text-align: center; padding: 40px;">
-                    <i class="fas fa-check-circle" style="font-size: 4rem; color: #10b981; margin-bottom: 20px;"></i>
-                    <h2>Configuration sécurisée activée</h2>
-                    <p>Utilisateur connecté: <strong>${currentUser.email}</strong></p>
-                    <p>Rôle: <strong>${currentUser.role}</strong></p>
+                    supabaseConfig = data;
+                    netlifyWorking = true;
                     
-                    <div style="margin-top: 30px; padding: 20px; background: #f0f9ff; border-radius: 8px;">
-                        <h3>✅ Sécurité renforcée</h3>
-                        <ul style="text-align: left; margin: 10px 0;">
-                            <li>Clés API sécurisées via Netlify Functions</li>
-                            <li>Variables d'environnement cachées</li>
-                            <li>Configuration chargée dynamiquement</li>
-                            <li>Authentification sécurisée</li>
-                        </ul>
-                    </div>
-                </div>
-            `;
+                    updateStatus('netlifyStatus', '✅ Fonction Netlify OK', 'success');
+                    log('✅ Fonction Netlify fonctionne correctement', 'success');
+                    
+                    // Activer le test Supabase
+                    document.getElementById('testSupabaseBtn').disabled = false;
+                    
+                } else {
+                    const errorText = await response.text();
+                    result.error = errorText;
+                    updateStatus('netlifyStatus', `❌ Erreur ${response.status}`, 'error');
+                    log(`❌ Fonction Netlify échoue: ${response.status} - ${errorText}`, 'error');
+                }
+
+                document.getElementById('netlifyResult').textContent = JSON.stringify(result, null, 2);
+
+            } catch (error) {
+                const errorResult = {
+                    error: error.message,
+                    type: 'NetworkError',
+                    timestamp: new Date().toISOString()
+                };
+
+                updateStatus('netlifyStatus', '❌ Fonction inaccessible', 'error');
+                log(`❌ Erreur réseau: ${error.message}`, 'error');
+                document.getElementById('netlifyResult').textContent = JSON.stringify(errorResult, null, 2);
+            }
         }
 
-        // Event listener pour le formulaire d'authentification
-        document.getElementById('authForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const email = document.getElementById('emailInput').value.trim();
-            const submitBtn = document.getElementById('authSubmit');
-            const errorDiv = document.getElementById('authError');
-            
-            if (!email) {
-                errorDiv.textContent = 'Veuillez entrer une adresse email';
-                errorDiv.style.display = 'block';
+        // Test 2: Configuration Supabase
+        async function testSupabaseConfig() {
+            if (!netlifyWorking || !supabaseConfig) {
+                log('⚠️ Testez d\'abord la fonction Netlify', 'warning');
                 return;
             }
+
+            log('🧪 Test de la configuration Supabase...', 'info');
+            updateStatus('supabaseStatus', '🔄 Test en cours...', 'warning');
+
+            try {
+                // Validation des données
+                const validation = {
+                    hasUrl: !!supabaseConfig.url,
+                    hasAnonKey: !!supabaseConfig.anonKey,
+                    urlFormat: supabaseConfig.url && supabaseConfig.url.startsWith('https://'),
+                    urlSupabase: supabaseConfig.url && supabaseConfig.url.includes('supabase.co'),
+                    keyLength: supabaseConfig.anonKey && supabaseConfig.anonKey.length > 100
+                };
+
+                const allValid = Object.values(validation).every(v => v === true);
+
+                if (allValid) {
+                    // Créer le client Supabase
+                    supabaseClient = window.supabase.createClient(
+                        supabaseConfig.url,
+                        supabaseConfig.anonKey,
+                        {
+                            auth: {
+                                autoRefreshToken: false,
+                                persistSession: false
+                            }
+                        }
+                    );
+
+                    updateStatus('supabaseStatus', '✅ Configuration Supabase OK', 'success');
+                    log('✅ Configuration Supabase valide', 'success');
+                    
+                    // Activer le test de DB
+                    document.getElementById('testDbBtn').disabled = false;
+
+                } else {
+                    updateStatus('supabaseStatus', '❌ Configuration invalide', 'error');
+                    log('❌ Configuration Supabase invalide', 'error');
+                }
+
+                const result = {
+                    validation: validation,
+                    config: {
+                        url: supabaseConfig.url ? supabaseConfig.url.substring(0, 50) + '...' : null,
+                        keyLength: supabaseConfig.anonKey ? supabaseConfig.anonKey.length : 0
+                    }
+                };
+
+                document.getElementById('supabaseResult').textContent = JSON.stringify(result, null, 2);
+
+            } catch (error) {
+                updateStatus('supabaseStatus', '❌ Erreur configuration', 'error');
+                log(`❌ Erreur configuration: ${error.message}`, 'error');
+                
+                document.getElementById('supabaseResult').textContent = JSON.stringify({
+                    error: error.message,
+                    stack: error.stack
+                }, null, 2);
+            }
+        }
+
+        // Test 3: Connexion Base de Données
+        async function testDatabaseConnection() {
+            if (!supabaseClient) {
+                log('⚠️ Testez d\'abord la configuration Supabase', 'warning');
+                return;
+            }
+
+            log('🧪 Test de connexion à la base de données...', 'info');
+            updateStatus('dbStatus', '🔄 Connexion en cours...', 'warning');
+
+            try {
+                // Test 1: Session auth
+                const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+                
+                const tests = {
+                    session: {
+                        success: !sessionError || !sessionError.message.includes('Invalid API key'),
+                        error: sessionError?.message
+                    }
+                };
+
+                // Test 2: Requête simple sur une table
+                try {
+                    const { data: userData, error: userError } = await supabaseClient
+                        .from('users')
+                        .select('count', { count: 'exact', head: true });
+
+                    tests.usersTable = {
+                        success: !userError,
+                        error: userError?.message,
+                        code: userError?.code
+                    };
+                } catch (tableError) {
+                    tests.usersTable = {
+                        success: false,
+                        error: tableError.message
+                    };
+                }
+
+                // Test 3: Permissions
+                try {
+                    const { data: companyData, error: companyError } = await supabaseClient
+                        .from('companies')
+                        .select('count', { count: 'exact', head: true });
+
+                    tests.companiesTable = {
+                        success: !companyError,
+                        error: companyError?.message,
+                        code: companyError?.code
+                    };
+                } catch (compError) {
+                    tests.companiesTable = {
+                        success: false,
+                        error: compError.message
+                    };
+                }
+
+                // Évaluation globale
+                const tablesWorking = tests.usersTable.success && tests.companiesTable.success;
+                const apiWorking = tests.session.success;
+
+                if (apiWorking && tablesWorking) {
+                    updateStatus('dbStatus', '✅ Base de données OK', 'success');
+                    log('✅ Connexion base de données réussie', 'success');
+                    updateStatus('globalStatus', '🎉 Tous les tests réussis ! Prêt pour analytics.html', 'success');
+                } else if (apiWorking) {
+                    updateStatus('dbStatus', '⚠️ API OK, tables manquantes', 'warning');
+                    log('⚠️ API fonctionne mais schéma de base incomplet', 'warning');
+                } else {
+                    updateStatus('dbStatus', '❌ Connexion échouée', 'error');
+                    log('❌ Connexion base de données échouée', 'error');
+                }
+
+                document.getElementById('dbResult').textContent = JSON.stringify(tests, null, 2);
+
+            } catch (error) {
+                updateStatus('dbStatus', '❌ Erreur critique', 'error');
+                log(`❌ Erreur critique DB: ${error.message}`, 'error');
+                
+                document.getElementById('dbResult').textContent = JSON.stringify({
+                    error: error.message,
+                    type: 'CriticalError'
+                }, null, 2);
+            }
+        }
+
+        // Diagnostic complet
+        async function runFullDiagnostic() {
+            log('🚀 Lancement du diagnostic complet...', 'info');
+            clearLogs();
             
-            // Désactiver le bouton pendant l'authentification
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
-            errorDiv.style.display = 'none';
+            // Reset statuts
+            updateStatus('netlifyStatus', '⏳ En attente', 'warning');
+            updateStatus('supabaseStatus', '⏳ En attente', 'warning');
+            updateStatus('dbStatus', '⏳ En attente', 'warning');
+            updateStatus('globalStatus', '🔄 Diagnostic en cours...', 'warning');
+
+            // Exécution séquentielle
+            await testNetlifyFunction();
             
-            const result = await authenticateUser(email);
+            if (netlifyWorking) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                await testSupabaseConfig();
+                
+                if (supabaseClient) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await testDatabaseConnection();
+                }
+            }
+
+            log('🏁 Diagnostic terminé', 'info');
+        }
+
+        function showNetlifyInstructions() {
+            const instructions = document.getElementById('instructions');
+            instructions.style.display = instructions.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Auto-start
+        window.addEventListener('load', () => {
+            log('📱 Analytics Test chargé', 'info');
+            log('🌍 Environnement: ' + window.location.hostname, 'info');
             
-            if (result.success) {
-                showMainContent(result.user);
+            if (window.location.hostname.includes('netlify.app')) {
+                log('🔧 Netlify détecté - Test automatique dans 2s', 'info');
+                setTimeout(runFullDiagnostic, 2000);
             } else {
-                errorDiv.textContent = result.error || 'Erreur d\'authentification';
-                errorDiv.style.display = 'block';
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Accéder aux Analytics';
+                log('🏠 Environnement local détecté', 'info');
             }
         });
 
-        // Initialiser l'application au chargement de la page
-        window.addEventListener('load', initializeApp);
+        // Fonctions utilitaires globales
+        window.testNetlify = testNetlifyFunction;
+        window.fullDiag = runFullDiagnostic;
 
-        console.log('[Analytics] Page initialisée avec configuration sécurisée');
+        console.log('🧪 Analytics Test chargé - Utilisez testNetlify() ou fullDiag() dans la console');
     </script>
 </body>
 </html>
