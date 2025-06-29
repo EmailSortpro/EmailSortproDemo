@@ -1,5 +1,5 @@
 // config-supabase.js - Configuration Supabase pour EmailSortPro
-// ⚠️ Ce fichier contient vos clés - ne pas committer dans Git !
+// Version corrigée avec support des variables d'environnement Netlify
 
 class SupabaseConfig {
     constructor() {
@@ -10,38 +10,71 @@ class SupabaseConfig {
         this.loadConfig();
     }
 
-    loadConfig() {
-        // 🔑 REMPLACEZ CES VALEURS PAR VOS VRAIES CLÉS SUPABASE
-        const supabaseUrl = this.getEnvVar('VITE_SUPABASE_URL') || 
-                           this.getEnvVar('SUPABASE_URL') || 
-                           'https://VOTRE-PROJET.supabase.co'; // ← REMPLACEZ ICI
-        
-        const supabaseAnonKey = this.getEnvVar('VITE_SUPABASE_ANON_KEY') || 
-                               this.getEnvVar('SUPABASE_ANON_KEY') || 
-                               'eyJhbGciOiJIUzI1NiIsInR5cCI6JWT...'; // ← REMPLACEZ ICI
-        
-        this.config = {
-            url: supabaseUrl,
-            anonKey: supabaseAnonKey,
-            auth: {
-                autoRefreshToken: true,
-                persistSession: true,
-                detectSessionInUrl: false,
-                storage: window.localStorage
-            },
-            realtime: {
-                params: {
-                    eventsPerSecond: 10
+    async loadConfig() {
+        try {
+            // Configuration par défaut avec vos valeurs
+            const defaultConfig = {
+                url: 'https://kbhxbisexpbmclqhadmq.supabase.co',
+                anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiaHhiaXNleHBibWNscWhhZG1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MzcyODEsImV4cCI6MjA2NjUxMzI4MX0.9mwrKDT2HpegDFdufqmVU2e9fFtgM-46ecbYTjRrMXo'
+            };
+
+            // Essayer de charger depuis les variables d'environnement
+            let supabaseUrl = this.getEnvVar('VITE_SUPABASE_URL');
+            let supabaseAnonKey = this.getEnvVar('VITE_SUPABASE_ANON_KEY');
+
+            // Si on est sur Netlify et qu'on n'a pas les variables, essayer la fonction
+            if (!supabaseAnonKey && this.isNetlifyEnvironment()) {
+                const netlifyVars = await this.loadNetlifyEnvVars();
+                if (netlifyVars) {
+                    supabaseUrl = netlifyVars.url || supabaseUrl;
+                    supabaseAnonKey = netlifyVars.anonKey || supabaseAnonKey;
                 }
             }
-        };
 
-        this.initialized = true;
-        console.log('[SupabaseConfig] Configuration loaded:', {
-            url: this.config.url,
-            hasAnonKey: !!this.config.anonKey,
-            environment: this.getEnvironment()
-        });
+            // Utiliser les valeurs par défaut si nécessaire
+            this.config = {
+                url: supabaseUrl || defaultConfig.url,
+                anonKey: supabaseAnonKey || defaultConfig.anonKey,
+                auth: {
+                    autoRefreshToken: true,
+                    persistSession: true,
+                    detectSessionInUrl: false,
+                    storage: window.localStorage
+                },
+                realtime: {
+                    params: {
+                        eventsPerSecond: 10
+                    }
+                }
+            };
+
+            this.initialized = true;
+            console.log('[SupabaseConfig] Configuration loaded:', {
+                url: this.config.url,
+                hasAnonKey: !!this.config.anonKey,
+                keyLength: this.config.anonKey?.length,
+                environment: this.getEnvironment()
+            });
+        } catch (error) {
+            console.error('[SupabaseConfig] Error loading config:', error);
+            // Utiliser la configuration par défaut en cas d'erreur
+            this.config = {
+                url: 'https://kbhxbisexpbmclqhadmq.supabase.co',
+                anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiaHhiaXNleHBibWNscWhhZG1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MzcyODEsImV4cCI6MjA2NjUxMzI4MX0.9mwrKDT2HpegDFdufqmVU2e9fFtgM-46ecbYTjRrMXo',
+                auth: {
+                    autoRefreshToken: true,
+                    persistSession: true,
+                    detectSessionInUrl: false,
+                    storage: window.localStorage
+                },
+                realtime: {
+                    params: {
+                        eventsPerSecond: 10
+                    }
+                }
+            };
+            this.initialized = true;
+        }
     }
 
     getEnvVar(name) {
@@ -56,11 +89,51 @@ class SupabaseConfig {
         }
         
         // Variables globales Netlify (runtime)
-        if (typeof window !== 'undefined' && window.netlifyEnv) {
-            return window.netlifyEnv[name];
+        if (typeof window !== 'undefined' && window.NETLIFY_ENV) {
+            return window.NETLIFY_ENV[name];
+        }
+        
+        // Variables injectées via window
+        if (typeof window !== 'undefined' && window[name]) {
+            return window[name];
         }
         
         return null;
+    }
+
+    isNetlifyEnvironment() {
+        const hostname = window.location.hostname;
+        return hostname.includes('netlify.app') || hostname.includes('netlify.com');
+    }
+
+    async loadNetlifyEnvVars() {
+        try {
+            const response = await fetch('/.netlify/functions/env-vars');
+            if (!response.ok) {
+                console.warn('[SupabaseConfig] Netlify function not available');
+                return null;
+            }
+            
+            const jsCode = await response.text();
+            if (jsCode.trim().startsWith('<')) {
+                console.warn('[SupabaseConfig] HTML response received instead of JS');
+                return null;
+            }
+            
+            eval(jsCode);
+            
+            if (window.NETLIFY_ENV) {
+                return {
+                    url: window.NETLIFY_ENV.VITE_SUPABASE_URL,
+                    anonKey: window.NETLIFY_ENV.VITE_SUPABASE_ANON_KEY
+                };
+            }
+            
+            return null;
+        } catch (error) {
+            console.warn('[SupabaseConfig] Error loading Netlify vars:', error.message);
+            return null;
+        }
     }
 
     getEnvironment() {
@@ -86,12 +159,12 @@ class SupabaseConfig {
         const config = this.getConfig();
         const issues = [];
         
-        if (!config.url || config.url.includes('VOTRE-PROJET')) {
-            issues.push('URL Supabase manquante ou non configurée');
+        if (!config.url) {
+            issues.push('URL Supabase manquante');
         }
         
-        if (!config.anonKey || config.anonKey.includes('eyJhbGciOiJIUzI1NiIsInR5cCI6JWT...')) {
-            issues.push('Clé anonyme Supabase manquante ou non configurée');
+        if (!config.anonKey) {
+            issues.push('Clé anonyme Supabase manquante');
         }
         
         if (!config.url.includes('supabase.co')) {
@@ -108,26 +181,32 @@ class SupabaseConfig {
     async testConnection() {
         try {
             if (!window.supabase) {
-                throw new Error('Client Supabase non chargé');
+                // Attendre que Supabase soit chargé
+                await new Promise((resolve) => {
+                    const checkSupabase = setInterval(() => {
+                        if (window.supabase) {
+                            clearInterval(checkSupabase);
+                            resolve();
+                        }
+                    }, 100);
+                });
             }
             
             const config = this.getConfig();
-            const client = window.supabase.createClient(config.url, config.anonKey);
+            const client = window.supabase.createClient(config.url, config.anonKey, config.auth);
             
-            // Test simple avec la table users
-            const { data, error } = await client
-                .from('users')
-                .select('count')
-                .limit(1);
+            // Test simple de connexion
+            const { data, error } = await client.auth.getSession();
             
-            if (error && error.code !== '42P01') {
-                throw error;
+            if (error && error.message.includes('Invalid API key')) {
+                throw new Error('Clé API invalide');
             }
             
             return {
                 success: true,
                 message: 'Connexion Supabase réussie',
-                environment: this.getEnvironment()
+                environment: this.getEnvironment(),
+                hasSession: !!data?.session
             };
             
         } catch (error) {
@@ -144,7 +223,7 @@ class SupabaseConfig {
 window.supabaseConfig = new SupabaseConfig();
 
 // Fonction de diagnostic
-window.diagnoseSupabase = function() {
+window.diagnoseSupabase = async function() {
     console.group('🔍 DIAGNOSTIC SUPABASE');
     
     const config = window.supabaseConfig.getConfig();
@@ -153,6 +232,7 @@ window.diagnoseSupabase = function() {
     console.log('Configuration:', {
         url: config.url,
         hasAnonKey: !!config.anonKey,
+        keyLength: config.anonKey?.length,
         environment: window.supabaseConfig.getEnvironment()
     });
     
@@ -160,25 +240,24 @@ window.diagnoseSupabase = function() {
     
     console.log('Variables d\'environnement détectées:', {
         VITE_SUPABASE_URL: !!window.supabaseConfig.getEnvVar('VITE_SUPABASE_URL'),
-        SUPABASE_URL: !!window.supabaseConfig.getEnvVar('SUPABASE_URL'),
-        VITE_SUPABASE_ANON_KEY: !!window.supabaseConfig.getEnvVar('VITE_SUPABASE_ANON_KEY'),
-        SUPABASE_ANON_KEY: !!window.supabaseConfig.getEnvVar('SUPABASE_ANON_KEY')
+        VITE_SUPABASE_ANON_KEY: !!window.supabaseConfig.getEnvVar('VITE_SUPABASE_ANON_KEY')
     });
     
+    // Test de connexion
+    console.log('Test de connexion en cours...');
+    const connectionTest = await window.supabaseConfig.testConnection();
+    console.log('Résultat test connexion:', connectionTest);
+    
     if (!validation.valid) {
-        console.log('🚨 ACTIONS REQUISES:');
+        console.log('🚨 PROBLÈMES DÉTECTÉS:');
         validation.issues.forEach(issue => console.log(`  - ${issue}`));
-        console.log('🔧 ÉTAPES DE CORRECTION:');
-        console.log('  1. Allez sur https://supabase.com/dashboard');
-        console.log('  2. Sélectionnez votre projet');
-        console.log('  3. Settings > API');
-        console.log('  4. Copiez Project URL et anon public key');
-        console.log('  5. Remplacez les valeurs dans config-supabase.js');
+    } else {
+        console.log('✅ Configuration valide');
     }
     
     console.groupEnd();
     
-    return validation;
+    return { validation, connectionTest };
 };
 
 console.log('✅ SupabaseConfig loaded - Use diagnoseSupabase() for diagnostic');
