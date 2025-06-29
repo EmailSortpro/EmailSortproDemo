@@ -1,9 +1,9 @@
-// license-check.js - Vérification des licences et redirection
-// Version complète sans mode démo pour EmailSortPro
+// license-check.js - Vérification des licences avec base de données
+// Version intégrée avec Supabase pour EmailSortPro
 
 async function checkUserLicense() {
-    // Configuration des modes - PRODUCTION uniquement
-    const AUTH_REQUIRED = true; // Authentification toujours requise
+    // Configuration
+    const AUTH_REQUIRED = true;
     
     // Attendre que le DOM soit chargé
     if (document.readyState !== 'complete') {
@@ -14,16 +14,17 @@ async function checkUserLicense() {
     console.log('[License Check] 🚀 Démarrage de la vérification de licence...');
 
     try {
-        // Charger le service de licence si pas encore fait
-        if (!window.licenseService) {
-            console.log('[License Check] Chargement du service de licence...');
-            await loadLicenseService();
-        }
+        // Charger les dépendances nécessaires
+        await loadDependencies();
 
         // Initialiser le service de licence
-        await window.licenseService.initialize();
+        const initResult = await window.licenseService.initialize();
+        if (!initResult) {
+            showLicenseError('Impossible d\'initialiser le service de licences');
+            return;
+        }
 
-        // MODE PRODUCTION - Authentification complète
+        // MODE PRODUCTION - Authentification requise
         console.log('[License Check] 🔐 MODE PRODUCTION - Authentification requise');
         
         // Vérifier si l'utilisateur est déjà authentifié
@@ -36,12 +37,11 @@ async function checkUserLicense() {
                 showLicenseError('Email requis pour accéder à l\'application');
                 return;
             }
-            storeUserEmail(userEmail);
         }
 
-        // Vérifier la licence
+        // Authentifier et vérifier la licence
         console.log('[License Check] Vérification de la licence pour:', userEmail);
-        const licenseResult = await window.licenseService.checkUserLicense(userEmail);
+        const licenseResult = await window.licenseService.authenticateWithEmail(userEmail);
         
         if (!licenseResult.valid) {
             console.warn('[License Check] ❌ Licence invalide:', licenseResult.message);
@@ -50,57 +50,100 @@ async function checkUserLicense() {
             return;
         }
 
+        // Stocker l'email pour la prochaine fois
+        storeUserEmail(userEmail);
+
         console.log('[License Check] ✅ Licence valide pour:', userEmail);
-        console.log('[License Check] Rôle utilisateur:', licenseResult.user?.role);
+        console.log('[License Check] Utilisateur:', licenseResult.user);
+        console.log('[License Check] Rôle:', licenseResult.user?.role);
         
-        // Tracker la connexion
-        if (window.licenseService.trackEvent) {
-            await window.licenseService.trackEvent('user_login', {
+        // Exposer l'utilisateur globalement pour compatibilité
+        window.currentUser = licenseResult.user;
+        
+        // Synchroniser les analytics locaux avec la base
+        if (window.analyticsManager && window.licenseService.syncLocalAnalytics) {
+            await window.licenseService.syncLocalAnalytics();
+        }
+        
+        // Tracker la connexion dans les analytics locaux
+        if (window.analyticsManager) {
+            window.analyticsManager.trackEvent('license_check_success', {
                 email: userEmail,
                 role: licenseResult.user?.role,
-                company: licenseResult.user?.company?.name
+                company: licenseResult.user?.company?.name,
+                license_status: licenseResult.status,
+                licenses_count: licenseResult.licenses?.length || 0
             });
         }
 
         // Initialiser la page si tout est OK
         if (window.initializePage) {
             console.log('[License Check] Initialisation de la page...');
-            window.initializePage();
+            await window.initializePage();
         } else {
             console.warn('[License Check] ⚠️ Fonction initializePage non trouvée');
         }
 
     } catch (error) {
         console.error('[License Check] ❌ Erreur lors de la vérification de licence:', error);
-        showLicenseError('Erreur de connexion au service de licences');
+        showLicenseError('Erreur de connexion au service de licences: ' + error.message);
     }
 }
 
-// === FONCTIONS UTILITAIRES ===
+// === CHARGEMENT DES DÉPENDANCES ===
 
-async function loadLicenseService() {
+async function loadDependencies() {
+    const dependencies = [
+        { name: 'config-supabase.js', check: () => window.supabaseConfig },
+        { name: 'LicenseService.js', check: () => window.licenseService }
+    ];
+
+    for (const dep of dependencies) {
+        if (!dep.check()) {
+            console.log(`[License Check] Chargement de ${dep.name}...`);
+            await loadScript(dep.name);
+            
+            // Attendre que le script soit vraiment chargé
+            let attempts = 0;
+            while (!dep.check() && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!dep.check()) {
+                throw new Error(`Impossible de charger ${dep.name}`);
+            }
+        }
+    }
+}
+
+async function loadScript(filename) {
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = './LicenseService.js';
+        script.src = `./${filename}`;
         script.onload = () => {
-            console.log('[License Check] ✅ Service de licence chargé');
+            console.log(`[License Check] ✅ ${filename} chargé`);
             resolve();
         };
         script.onerror = () => {
-            console.error('[License Check] ❌ Échec du chargement du service de licence');
-            reject(new Error('Impossible de charger LicenseService.js'));
+            console.error(`[License Check] ❌ Échec du chargement de ${filename}`);
+            reject(new Error(`Impossible de charger ${filename}`));
         };
         document.head.appendChild(script);
     });
 }
 
+// === FONCTIONS UTILITAIRES ===
+
 async function promptForEmail() {
     // Vérifier si on est sur la page analytics (pas de prompt nécessaire)
     if (window.location.pathname.includes('analytics.html')) {
-        return null; // La page analytics gère sa propre authentification
+        return null;
     }
 
-    const userEmail = prompt('Entrez votre email pour accéder à l\'application:', 'vianney.hastings@hotmail.fr');
+    // Utiliser l'email par défaut fourni
+    const defaultEmail = 'vianney.hastings@hotmail.fr';
+    const userEmail = prompt('Entrez votre email pour accéder à l\'application:', defaultEmail);
     
     if (!userEmail || !isValidEmail(userEmail)) {
         return null;
@@ -116,7 +159,7 @@ function isValidEmail(email) {
 
 function getStoredUserEmail() {
     try {
-        return localStorage.getItem('userEmail');
+        return localStorage.getItem('emailsortpro_user_email');
     } catch (error) {
         console.warn('[License Check] Impossible de lire le localStorage:', error);
         return null;
@@ -125,7 +168,7 @@ function getStoredUserEmail() {
 
 function storeUserEmail(email) {
     try {
-        localStorage.setItem('userEmail', email);
+        localStorage.setItem('emailsortpro_user_email', email);
     } catch (error) {
         console.warn('[License Check] Impossible d\'écrire dans le localStorage:', error);
     }
@@ -133,7 +176,7 @@ function storeUserEmail(email) {
 
 function clearStoredUserEmail() {
     try {
-        localStorage.removeItem('userEmail');
+        localStorage.removeItem('emailsortpro_user_email');
     } catch (error) {
         console.warn('[License Check] Impossible de supprimer du localStorage:', error);
     }
@@ -175,7 +218,7 @@ function showLicenseError(message = 'Accès refusé') {
     // Déterminer le type d'erreur et l'icône appropriée
     let icon = '⚠️';
     let title = 'Accès Refusé';
-    let actionButton = '';
+    let helpText = 'Contactez votre administrateur système';
 
     if (message.includes('bloqué')) {
         icon = '🚫';
@@ -183,13 +226,27 @@ function showLicenseError(message = 'Accès refusé') {
     } else if (message.includes('expiré')) {
         icon = '⏰';
         title = 'Licence Expirée';
+        helpText = 'Veuillez renouveler votre abonnement';
     } else if (message.includes('essai')) {
         icon = '⏳';
         title = 'Période d\'Essai';
+        helpText = 'Profitez de votre période d\'essai gratuite';
+    } else if (message.includes('connexion')) {
+        icon = '🔌';
+        title = 'Erreur de Connexion';
+        helpText = 'Vérifiez votre connexion internet';
     }
 
-    // Bouton de déconnexion
-    actionButton = `
+    errorBox.innerHTML = `
+        <div style="color: #dc2626; font-size: 3rem; margin-bottom: 1rem;">${icon}</div>
+        <h2 style="color: #1f2937; margin-bottom: 1rem; font-size: 1.5rem; font-weight: 700;">${title}</h2>
+        <p style="color: #6b7280; margin-bottom: 1.5rem; line-height: 1.6;">${message}</p>
+        <div style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 1.5rem;">
+            <p style="color: #64748b; font-size: 0.875rem; margin: 0;">
+                <strong>Besoin d'aide ?</strong><br>
+                ${helpText}
+            </p>
+        </div>
         <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px;">
             <button onclick="retryLogin()" style="
                 background-color: #4F46E5;
@@ -202,7 +259,7 @@ function showLicenseError(message = 'Accès refusé') {
                 font-weight: 600;
                 transition: all 0.2s ease;
             ">Réessayer</button>
-            <button onclick="contactSupport()" style="
+            <button onclick="debugConnection()" style="
                 background-color: #6b7280;
                 color: white;
                 padding: 12px 24px;
@@ -212,21 +269,8 @@ function showLicenseError(message = 'Accès refusé') {
                 font-size: 0.875rem;
                 font-weight: 600;
                 transition: all 0.2s ease;
-            ">Contacter le support</button>
+            ">Diagnostiquer</button>
         </div>
-    `;
-
-    errorBox.innerHTML = `
-        <div style="color: #dc2626; font-size: 3rem; margin-bottom: 1rem;">${icon}</div>
-        <h2 style="color: #1f2937; margin-bottom: 1rem; font-size: 1.5rem; font-weight: 700;">${title}</h2>
-        <p style="color: #6b7280; margin-bottom: 1.5rem; line-height: 1.6;">${message}</p>
-        <div style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 1.5rem;">
-            <p style="color: #64748b; font-size: 0.875rem; margin: 0;">
-                <strong>Besoin d'aide ?</strong><br>
-                Contactez votre administrateur système ou l'équipe support EmailSortPro
-            </p>
-        </div>
-        ${actionButton}
     `;
 
     overlay.appendChild(errorBox);
@@ -243,8 +287,10 @@ function showLicenseError(message = 'Accès refusé') {
         checkUserLicense();
     };
 
-    window.contactSupport = function() {
-        window.open('mailto:support@emailsortpro.com?subject=Problème d\'accès - EmailSortPro', '_blank');
+    window.debugConnection = async function() {
+        console.log('🔍 Diagnostic de connexion...');
+        const diagResult = await window.diagnoseSupabase();
+        alert(`Diagnostic:\n${JSON.stringify(diagResult, null, 2)}`);
     };
 }
 
@@ -293,16 +339,18 @@ function getUserRoleInfo(user) {
                 'Accès à toutes les sociétés',
                 'Gestion de tous les utilisateurs',
                 'Blocage/déblocage des sociétés',
-                'Accès aux analytics globaux'
+                'Accès aux analytics globaux',
+                'Gestion des licences'
             );
             break;
             
-        case 'company_admin':
+        case 'admin':
             permissions.push(
                 'Gestion des utilisateurs de sa société',
                 'Ajout/suppression d\'utilisateurs',
                 'Accès aux analytics de sa société',
-                'Configuration des paramètres société'
+                'Configuration des paramètres société',
+                'Gestion des licences de sa société'
             );
             break;
             
@@ -327,15 +375,14 @@ function getUserRoleInfo(user) {
 function getRoleName(role) {
     switch (role) {
         case 'super_admin': return 'Super Administrateur';
-        case 'company_admin': return 'Administrateur de Société';
+        case 'admin': return 'Administrateur';
         case 'user': return 'Utilisateur';
         default: return 'Utilisateur';
     }
 }
 
-// === INITIALISATION ET GESTION AUTH ===
+// === GESTIONNAIRE D'AUTHENTIFICATION ===
 
-// Gestionnaire d'authentification pour compatibilité
 const authManager = {
     currentUser: null,
     
@@ -355,6 +402,14 @@ const authManager = {
         return this.currentUser?.role || 'user';
     },
     
+    isAdmin() {
+        return this.currentUser?.role === 'admin' || this.currentUser?.role === 'super_admin';
+    },
+    
+    isSuperAdmin() {
+        return this.currentUser?.role === 'super_admin';
+    },
+    
     checkLicenseStatus() {
         return this.currentUser?.license_status || 'unknown';
     },
@@ -365,54 +420,60 @@ const authManager = {
         
         if (window.licenseService?.logout) {
             await window.licenseService.logout();
-        } else {
-            window.location.href = '/';
         }
+        
+        window.location.href = '/';
     }
 };
 
-// Exposer authManager globalement pour compatibilité
+// Exposer authManager globalement
 window.authManager = authManager;
 
-// === INITIALISATION AUTOMATIQUE ===
+// === FONCTIONS DE DÉBOGAGE ===
 
-// Fonction d'initialisation pour les pages
-async function initializePageSafely() {
-    try {
-        console.log('[License Check] 📋 Initialisation sécurisée de la page...');
-        
-        // Vérifier que l'utilisateur est toujours valide
-        if (window.currentUser) {
-            const permCheck = checkUserPermissions(window.currentUser);
-            if (!permCheck.canAccess) {
-                showLicenseError(permCheck.reason);
-                return;
-            }
-        }
-
-        // Initialiser la page si la fonction existe
-        if (window.initializePage && typeof window.initializePage === 'function') {
-            await window.initializePage();
-            console.log('[License Check] ✅ Page initialisée avec succès');
-        } else {
-            console.warn('[License Check] ⚠️ Fonction initializePage non disponible');
-        }
-
-        // Logger l'activité utilisateur
-        if (window.licenseService?.trackEvent) {
-            await window.licenseService.trackEvent('page_view', {
-                page: window.location.pathname,
-                timestamp: new Date().toISOString()
-            });
-        }
-
-    } catch (error) {
-        console.error('[License Check] ❌ Erreur lors de l\'initialisation de la page:', error);
-        showLicenseError('Erreur lors de l\'initialisation de l\'application');
+window.debugLicenseCheck = async function() {
+    console.group('🔍 DEBUG LICENSE CHECK');
+    console.log('Current user:', window.currentUser);
+    console.log('License service:', !!window.licenseService);
+    console.log('Supabase config:', !!window.supabaseConfig);
+    console.log('Auth manager:', authManager);
+    console.log('Stored email:', getStoredUserEmail());
+    console.log('Page pathname:', window.location.pathname);
+    
+    if (window.currentUser) {
+        const roleInfo = getUserRoleInfo(window.currentUser);
+        const permCheck = checkUserPermissions(window.currentUser);
+        console.log('Role info:', roleInfo);
+        console.log('Permissions check:', permCheck);
     }
-}
+    
+    // Test de connexion Supabase
+    if (window.supabaseConfig) {
+        console.log('Test connexion Supabase...');
+        const testResult = await window.supabaseConfig.testConnection();
+        console.log('Résultat test connexion:', testResult);
+    }
+    
+    // Récupérer les analytics de l'utilisateur
+    if (window.licenseService && window.currentUser) {
+        console.log('Récupération des analytics utilisateur...');
+        const analytics = await window.licenseService.getUserAnalytics();
+        console.log('Analytics utilisateur:', analytics);
+    }
+    
+    console.groupEnd();
+    
+    return {
+        user: window.currentUser,
+        hasLicenseService: !!window.licenseService,
+        hasSupabaseConfig: !!window.supabaseConfig,
+        storedEmail: getStoredUserEmail(),
+        canAccess: authManager.hasAccess(),
+        isAdmin: authManager.isAdmin()
+    };
+};
 
-// === ÉVÉNEMENTS ET DÉMARRAGE ===
+// === ÉVÉNEMENTS ET MONITORING ===
 
 // Écouter les changements de visibilité pour revalider la licence
 document.addEventListener('visibilitychange', async () => {
@@ -430,63 +491,45 @@ document.addEventListener('visibilitychange', async () => {
     }
 });
 
-// Fonction de debug pour les développeurs
-window.debugLicenseCheck = function() {
-    console.group('🔍 DEBUG LICENSE CHECK');
-    console.log('Current user:', window.currentUser);
-    console.log('License service:', !!window.licenseService);
-    console.log('Auth manager:', authManager);
-    console.log('Stored email:', getStoredUserEmail());
-    console.log('Page pathname:', window.location.pathname);
-    
-    if (window.currentUser) {
-        const roleInfo = getUserRoleInfo(window.currentUser);
-        const permCheck = checkUserPermissions(window.currentUser);
-        console.log('Role info:', roleInfo);
-        console.log('Permissions check:', permCheck);
+// Synchroniser périodiquement les analytics
+setInterval(async () => {
+    if (window.licenseService?.syncLocalAnalytics && window.currentUser) {
+        await window.licenseService.syncLocalAnalytics();
     }
-    
-    console.groupEnd();
-    
-    return {
-        user: window.currentUser,
-        hasLicenseService: !!window.licenseService,
-        storedEmail: getStoredUserEmail(),
-        canAccess: authManager.hasAccess()
-    };
-};
+}, 5 * 60 * 1000); // Toutes les 5 minutes
 
 // === DÉMARRAGE AUTOMATIQUE ===
 
-// Lancer la vérification au chargement
-console.log('[License Check] 🚀 Script de vérification de licence chargé');
+console.log('[License Check] 🚀 Script de vérification de licence chargé (avec DB)');
 
-// Démarrer la vérification dès que possible
+// Lancer la vérification au chargement
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', checkUserLicense);
 } else {
-    // DOM déjà chargé, démarrer immédiatement
+    // DOM déjà chargé, démarrer après un court délai
     setTimeout(checkUserLicense, 100);
 }
 
-// Message d'instructions pour les développeurs
+// Message d'instructions
 console.log(`
-🎯 LICENSE CHECK EMAILSORTPRO INITIALISÉ
+🎯 LICENSE CHECK EMAILSORTPRO - VERSION BASE DE DONNÉES
 
 📋 Fonctions disponibles:
    - checkUserLicense() - Vérifier la licence utilisateur
-   - debugLicenseCheck() - Informations de debug
+   - debugLicenseCheck() - Informations de debug complètes
    - authManager - Gestionnaire d'authentification
 
-⚙️ Mode de fonctionnement:
-   - Production: Authentification complète requise
+💾 Base de données:
+   - Connexion via Supabase
+   - Tables: users, companies, licenses, analytics_events
+   - Synchronisation automatique des analytics
 
-🔒 Rôles supportés:
-   - super_admin: Accès complet à tout
-   - company_admin: Gestion de sa société (vianney.hastings@hotmail.fr par défaut)
+🔐 Rôles supportés:
+   - super_admin: Accès complet
+   - admin: Gestion de sa société (vianney.hastings@hotmail.fr)
    - user: Utilisation normale
 
 💡 Pour déboguer: debugLicenseCheck()
 `);
 
-console.log('[License Check] ✅ Système de vérification de licence EmailSortPro prêt');
+console.log('[License Check] ✅ Système prêt avec intégration base de données');
