@@ -1,4 +1,4 @@
-// LicenseService.js - Service de gestion des licences simplifié
+// LicenseService.js - Service de gestion des licences avec authentification email
 
 class LicenseService {
     constructor() {
@@ -32,6 +32,13 @@ class LicenseService {
             this.initialized = true;
 
             console.log('[LicenseService] ✅ Initialisé');
+            
+            // Tester la connexion
+            const { data, error } = await this.supabase.auth.getSession();
+            if (!error) {
+                console.log('[LicenseService] Session existante:', !!data.session);
+            }
+            
             return true;
         } catch (error) {
             console.error('[LicenseService] ❌ Erreur initialisation:', error);
@@ -49,6 +56,39 @@ class LicenseService {
         });
     }
 
+    // Authentification directe avec email (sans mot de passe pour le moment)
+    async authenticateWithEmail(email) {
+        if (!this.initialized) await this.initialize();
+        if (!this.supabase) return { valid: false, error: 'Service non initialisé' };
+
+        try {
+            // Pour l'instant, on simule une authentification en créant/récupérant l'utilisateur
+            // Dans un cas réel, vous devriez utiliser Magic Link ou OTP
+            const userResult = await this.checkUserLicense(email);
+            
+            if (userResult.valid && userResult.user) {
+                // Stocker l'email comme authentification temporaire
+                localStorage.setItem('emailsortpro_user_email', email);
+                
+                // Tracker l'événement de connexion dans analytics_events
+                await this.trackAnalyticsEvent('user_login', {
+                    email: email,
+                    timestamp: new Date().toISOString(),
+                    source: 'email_auth'
+                });
+            }
+            
+            return userResult;
+        } catch (error) {
+            console.error('[LicenseService] Erreur authentification:', error);
+            return {
+                valid: false,
+                error: error.message,
+                status: 'error'
+            };
+        }
+    }
+
     // Vérifier la licence d'un utilisateur
     async checkUserLicense(email) {
         if (!this.initialized) await this.initialize();
@@ -63,16 +103,22 @@ class LicenseService {
                 }
             }
 
-            // Rechercher ou créer l'utilisateur
+            // Nettoyer l'email
+            const cleanEmail = email.toLowerCase().trim();
+
+            // Rechercher l'utilisateur
             let { data: user, error } = await this.supabase
                 .from('users')
-                .select('*, company:companies(*)')
-                .eq('email', email.toLowerCase())
+                .select(`
+                    *,
+                    company:companies(*)
+                `)
+                .eq('email', cleanEmail)
                 .single();
 
             if (error && error.code === 'PGRST116') {
                 // Utilisateur n'existe pas, le créer
-                user = await this.createNewUser(email);
+                user = await this.createNewUser(cleanEmail);
             } else if (error) {
                 throw error;
             }
@@ -83,20 +129,41 @@ class LicenseService {
             // Vérifier le statut de la licence
             const licenseStatus = this.evaluateLicenseStatus(user);
 
+            // Récupérer les licences associées
+            const { data: licenses } = await this.supabase
+                .from('licenses')
+                .select('*')
+                .or(`company_id.eq.${user.company_id},user_id.eq.${user.id}`)
+                .eq('status', 'active');
+
             // Mettre en cache
             this.licenseCache = {
-                email: email,
+                email: cleanEmail,
                 timestamp: Date.now(),
                 result: {
                     valid: licenseStatus.valid,
                     status: licenseStatus.status,
                     user: user,
+                    licenses: licenses || [],
                     message: licenseStatus.message,
                     daysRemaining: licenseStatus.daysRemaining
                 }
             };
 
             this.currentUser = user;
+            
+            // Lier aux analytics
+            if (window.analyticsManager) {
+                window.analyticsManager.onAuthSuccess('supabase', {
+                    id: user.id,
+                    email: user.email,
+                    name: user.name || user.email.split('@')[0],
+                    displayName: user.name,
+                    mail: user.email,
+                    userPrincipalName: user.email
+                });
+            }
+            
             return this.licenseCache.result;
 
         } catch (error) {
@@ -123,71 +190,88 @@ class LicenseService {
 
         const isPersonalEmail = this.isPersonalEmailDomain(domain);
 
+        // Si email personnel et pas de société, créer une société individuelle
+        let companyId = company?.id;
+        if (isPersonalEmail && !company) {
+            const newCompany = await this.createPersonalCompany(email);
+            companyId = newCompany.id;
+        }
+
         const newUser = {
             email: email.toLowerCase(),
             name: name,
-            company_id: company?.id || null,
-            role: isPersonalEmail ? 'admin' : 'user', // Admin si email personnel
+            company_id: companyId,
+            role: isPersonalEmail ? 'admin' : 'user',
             license_status: 'trial',
-            license_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 jours
-            first_login_at: new Date()
+            license_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            first_login_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
         };
 
         const { data, error } = await this.supabase
             .from('users')
             .insert([newUser])
-            .select('*, company:companies(*)')
+            .select(`
+                *,
+                company:companies(*)
+            `)
             .single();
 
         if (error) throw error;
 
-        // Si email personnel et pas de société, créer une société individuelle
-        if (isPersonalEmail && !company) {
-            await this.createPersonalCompany(data.id, email);
+        // Créer une licence trial si société créée
+        if (companyId && isPersonalEmail) {
+            await this.createTrialLicense(data.id, companyId);
         }
 
         return data;
     }
 
     // Créer une société pour un particulier
-    async createPersonalCompany(userId, email) {
+    async createPersonalCompany(email) {
         const companyName = `Personnel - ${email}`;
         
-        const { data: company, error: companyError } = await this.supabase
+        const { data: company, error } = await this.supabase
             .from('companies')
             .insert([{
                 name: companyName,
-                domain: email // Utiliser l'email comme domaine unique
+                domain: email, // Utiliser l'email comme domaine unique
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
             }])
             .select()
             .single();
 
-        if (companyError) {
-            console.error('[LicenseService] Erreur création société:', companyError);
-            return;
+        if (error) {
+            console.error('[LicenseService] Erreur création société:', error);
+            throw error;
         }
 
-        // Mettre à jour l'utilisateur avec la société
-        await this.supabase
-            .from('users')
-            .update({ 
-                company_id: company.id,
-                role: 'admin' // Admin de sa propre société
-            })
-            .eq('id', userId);
+        return company;
+    }
 
-        // Créer une licence trial
-        await this.supabase
+    // Créer une licence trial
+    async createTrialLicense(userId, companyId) {
+        const { error } = await this.supabase
             .from('licenses')
             .insert([{
-                company_id: company.id,
+                company_id: companyId,
                 user_id: userId,
                 type: 'trial',
                 seats: 1,
                 used_seats: 1,
                 status: 'active',
-                expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                price: 0,
+                starts_at: new Date().toISOString(),
+                expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
             }]);
+
+        if (error) {
+            console.error('[LicenseService] Erreur création licence trial:', error);
+        }
     }
 
     // Évaluer le statut de la licence
@@ -239,7 +323,10 @@ class LicenseService {
         try {
             await this.supabase
                 .from('users')
-                .update({ last_login_at: new Date() })
+                .update({ 
+                    last_login_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                })
                 .eq('id', userId);
         } catch (error) {
             console.warn('[LicenseService] Erreur mise à jour login:', error);
@@ -278,6 +365,25 @@ class LicenseService {
         this.licenseCache = null;
     }
 
+    // === TRACKING ANALYTICS ===
+    
+    async trackAnalyticsEvent(eventType, eventData = {}) {
+        if (!this.currentUser || !this.supabase) return;
+
+        try {
+            await this.supabase
+                .from('analytics_events')
+                .insert([{
+                    user_id: this.currentUser.id,
+                    event_type: eventType,
+                    event_data: eventData,
+                    created_at: new Date().toISOString()
+                }]);
+        } catch (error) {
+            console.warn('[LicenseService] Erreur tracking analytics:', error);
+        }
+    }
+
     // === MÉTHODES ADMIN ===
 
     // Obtenir tous les utilisateurs de la société
@@ -300,6 +406,27 @@ class LicenseService {
         }
     }
 
+    // Récupérer tous les événements analytics pour l'utilisateur
+    async getUserAnalytics(userId = null) {
+        try {
+            const targetUserId = userId || this.currentUser?.id;
+            if (!targetUserId) return [];
+
+            const { data, error } = await this.supabase
+                .from('analytics_events')
+                .select('*')
+                .eq('user_id', targetUserId)
+                .order('created_at', { ascending: false })
+                .limit(100);
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('[LicenseService] Erreur récupération analytics:', error);
+            return [];
+        }
+    }
+
     // Mettre à jour le statut d'un utilisateur
     async updateUserLicense(userId, status, expiresAt = null) {
         if (!this.isAdmin()) {
@@ -309,7 +436,7 @@ class LicenseService {
         try {
             const updateData = {
                 license_status: status,
-                updated_at: new Date()
+                updated_at: new Date().toISOString()
             };
 
             if (expiresAt) {
@@ -326,6 +453,13 @@ class LicenseService {
 
             // Invalider le cache
             this.invalidateCache();
+
+            // Tracker l'événement
+            await this.trackAnalyticsEvent('license_updated', {
+                target_user_id: userId,
+                new_status: status,
+                updated_by: this.currentUser.email
+            });
 
             return { success: true };
         } catch (error) {
@@ -359,7 +493,7 @@ class LicenseService {
                     .update({
                         company_id: this.currentUser.company_id,
                         license_status: 'active',
-                        updated_at: new Date()
+                        updated_at: new Date().toISOString()
                     })
                     .eq('id', existingUser.id);
 
@@ -373,11 +507,19 @@ class LicenseService {
                         name: email.split('@')[0],
                         company_id: this.currentUser.company_id,
                         role: 'user',
-                        license_status: 'active'
+                        license_status: 'active',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
                     }]);
 
                 if (error) throw error;
             }
+
+            // Tracker l'événement
+            await this.trackAnalyticsEvent('user_added_to_company', {
+                added_email: email,
+                added_by: this.currentUser.email
+            });
 
             return { success: true };
         } catch (error) {
@@ -386,26 +528,84 @@ class LicenseService {
         }
     }
 
-    // === MÉTHODES ANALYTICS ===
-
-    // Enregistrer un événement analytics
-    async trackEvent(eventType, eventData = {}) {
-        if (!this.currentUser) return;
+    // === CONNEXION AVEC ANALYTICS EXISTANT ===
+    
+    // Synchroniser les événements du système analytics local avec la base
+    async syncLocalAnalytics() {
+        if (!this.currentUser || !window.analyticsManager) return;
 
         try {
-            await this.supabase
-                .from('analytics_events')
-                .insert([{
+            const analyticsData = window.analyticsManager.getAnalyticsData();
+            const events = analyticsData.events || [];
+            
+            // Filtrer les événements récents non synchronisés
+            const lastSyncKey = 'emailsortpro_last_analytics_sync';
+            const lastSync = localStorage.getItem(lastSyncKey);
+            const lastSyncDate = lastSync ? new Date(lastSync) : new Date(0);
+            
+            const eventsToSync = events.filter(event => {
+                const eventDate = new Date(event.timestamp);
+                return eventDate > lastSyncDate;
+            });
+
+            if (eventsToSync.length > 0) {
+                console.log(`[LicenseService] Synchronisation de ${eventsToSync.length} événements analytics`);
+                
+                // Préparer les événements pour l'insertion
+                const analyticsEvents = eventsToSync.map(event => ({
                     user_id: this.currentUser.id,
-                    event_type: eventType,
+                    event_type: event.type,
                     event_data: {
-                        ...eventData,
-                        email: this.currentUser.email,
-                        company_id: this.currentUser.company_id
+                        ...event.data,
+                        local_timestamp: event.timestamp,
+                        session_id: event.sessionId
+                    },
+                    created_at: event.timestamp
+                }));
+
+                // Insérer par batch de 100
+                for (let i = 0; i < analyticsEvents.length; i += 100) {
+                    const batch = analyticsEvents.slice(i, i + 100);
+                    const { error } = await this.supabase
+                        .from('analytics_events')
+                        .insert(batch);
+                    
+                    if (error) {
+                        console.error('[LicenseService] Erreur sync batch:', error);
                     }
-                }]);
+                }
+
+                // Mettre à jour la date de dernière synchronisation
+                localStorage.setItem(lastSyncKey, new Date().toISOString());
+            }
         } catch (error) {
-            console.warn('[LicenseService] Erreur tracking:', error);
+            console.error('[LicenseService] Erreur synchronisation analytics:', error);
+        }
+    }
+
+    // Déconnecter l'utilisateur
+    async logout() {
+        try {
+            // Tracker l'événement de déconnexion
+            if (this.currentUser) {
+                await this.trackAnalyticsEvent('user_logout', {
+                    email: this.currentUser.email
+                });
+            }
+
+            // Nettoyer les données locales
+            this.currentUser = null;
+            this.licenseCache = null;
+            localStorage.removeItem('emailsortpro_user_email');
+            
+            // Si on a une session Supabase, la fermer
+            if (this.supabase) {
+                await this.supabase.auth.signOut();
+            }
+
+            console.log('[LicenseService] Déconnexion réussie');
+        } catch (error) {
+            console.error('[LicenseService] Erreur déconnexion:', error);
         }
     }
 }
@@ -413,4 +613,4 @@ class LicenseService {
 // Créer l'instance globale
 window.licenseService = new LicenseService();
 
-console.log('✅ LicenseService chargé');
+console.log('✅ LicenseService chargé avec support base de données');
