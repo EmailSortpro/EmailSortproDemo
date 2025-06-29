@@ -3,433 +3,2093 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analytics Test - EmailSortPro</title>
+    <title>Administration - EmailSortPro</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        * {
             margin: 0;
-            padding: 20px;
-            background: #f5f5f5;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .container {
-            max-width: 800px;
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f8fafc;
+            color: #1a202c;
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
             margin: 0 auto;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .user-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+        
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .tabs {
+            display: flex;
             background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .status {
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
-        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
-        .test-section {
-            margin: 20px 0;
-            padding: 20px;
-            border: 1px solid #ddd;
             border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            overflow: hidden;
         }
-        button {
-            background: #007bff;
+        
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 1rem 2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+            font-weight: 500;
+        }
+        
+        .tab-btn.active {
+            background: #f7fafc;
+            border-bottom-color: #667eea;
+            color: #667eea;
+        }
+        
+        .tab-btn:hover {
+            background: #f7fafc;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #2d3748;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            color: #718096;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        
+        tr:hover {
+            background: #f7fafc;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-active {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status-trial {
+            background: #fef5e7;
+            color: #c05621;
+        }
+        
+        .status-expired {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        .status-blocked {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .btn {
+            background: #667eea;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
             cursor: pointer;
-            margin: 5px;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
         }
-        button:hover { background: #0056b3; }
-        button:disabled { background: #6c757d; cursor: not-allowed; }
-        pre {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            overflow-x: auto;
-            font-size: 12px;
+        
+        .btn:hover {
+            background: #5a67d8;
         }
-        .log-area {
-            height: 200px;
-            overflow-y: auto;
-            background: #2d3748;
-            color: #e2e8f0;
-            padding: 15px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 12px;
+        
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+        
+        .btn-danger {
+            background: #e53e3e;
+        }
+        
+        .btn-danger:hover {
+            background: #c53030;
+        }
+        
+        .btn-success {
+            background: #38a169;
+        }
+        
+        .btn-success:hover {
+            background: #2f855a;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #4a5568;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 8px;
+            max-width: 600px;
+            width: 90%;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #718096;
+        }
+        
+        .close:hover {
+            color: #4a5568;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #718096;
+        }
+        
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+        
+        .success {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .search-container {
+            position: relative;
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #718096;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .payment-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .payment-amount {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .super-admin-only {
+            display: none;
+        }
+        
+        .company-badge {
+            background: #e6fffa;
+            color: #234e52;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filters {
+                flex-direction: column;
+            }
+            
+            .search-container {
+                min-width: auto;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                📧 EmailSortPro Admin
+            </div>
+            <div class="user-info">
+                <div class="user-badge" id="userBadge">
+                    Chargement...
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    Déconnexion
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteneur principal -->
     <div class="container">
-        <h1>🧪 Analytics Test - Configuration Netlify</h1>
-        <p>Test de connexion sécurisé pour EmailSortPro</p>
+        <!-- Message d'erreur/succès -->
+        <div id="alertContainer"></div>
 
-        <!-- Status général -->
-        <div id="globalStatus" class="status info">
-            🔄 Initialisation en cours...
+        <!-- État de chargement -->
+        <div id="loadingState" class="loading">
+            <div>🔄 Chargement des données d'administration...</div>
         </div>
 
-        <!-- Test 1: Fonction Netlify -->
-        <div class="test-section">
-            <h3>📡 Test 1: Fonction Netlify</h3>
-            <div id="netlifyStatus" class="status warning">⏳ En attente</div>
-            <button onclick="testNetlifyFunction()">Tester la fonction</button>
-            <button onclick="showNetlifyInstructions()">Voir les instructions</button>
-            <pre id="netlifyResult"></pre>
-        </div>
+        <!-- Interface principale -->
+        <div id="mainInterface" style="display: none;">
+            <!-- Onglets -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('dashboard')">Tableau de bord</button>
+                <button class="tab-btn" onclick="switchTab('licenses')">Licences</button>
+                <button class="tab-btn" onclick="switchTab('users')">Utilisateurs</button>
+                <button class="tab-btn" onclick="switchTab('payments')">Paiements</button>
+                <button class="tab-btn super-admin-only" onclick="switchTab('companies')">Sociétés</button>
+                <button class="tab-btn super-admin-only" onclick="switchTab('system')">Système</button>
+            </div>
 
-        <!-- Test 2: Configuration Supabase -->
-        <div class="test-section">
-            <h3>🗄️ Test 2: Configuration Supabase</h3>
-            <div id="supabaseStatus" class="status warning">⏳ En attente</div>
-            <button onclick="testSupabaseConfig()" disabled id="testSupabaseBtn">Tester Supabase</button>
-            <pre id="supabaseResult"></pre>
-        </div>
+            <!-- Contenu des onglets -->
+            
+            <!-- Dashboard -->
+            <div id="dashboard" class="tab-content active">
+                <div class="stats-grid" id="statsGrid">
+                    <!-- Stats générées dynamiquement -->
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">Activité récente</h3>
+                    <div id="recentActivity">
+                        <!-- Activité générée dynamiquement -->
+                    </div>
+                </div>
+            </div>
 
-        <!-- Test 3: Connexion Base -->
-        <div class="test-section">
-            <h3>🔌 Test 3: Connexion Base de Données</h3>
-            <div id="dbStatus" class="status warning">⏳ En attente</div>
-            <button onclick="testDatabaseConnection()" disabled id="testDbBtn">Tester la DB</button>
-            <pre id="dbResult"></pre>
-        </div>
+            <!-- Licences -->
+            <div id="licenses" class="tab-content">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 class="card-title">Gestion des licences</h3>
+                        <button class="btn" onclick="showAddLicenseModal()">
+                            + Nouvelle licence
+                        </button>
+                    </div>
+                    
+                    <div class="filters">
+                        <div class="search-container">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" class="search-input" placeholder="Rechercher par société, utilisateur..." id="licenseSearch">
+                        </div>
+                        <select class="form-input" style="width: auto;" id="licenseStatusFilter">
+                            <option value="">Tous les statuts</option>
+                            <option value="active">Actif</option>
+                            <option value="trial">Essai</option>
+                            <option value="expired">Expiré</option>
+                            <option value="suspended">Suspendu</option>
+                        </select>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table id="licensesTable">
+                            <thead>
+                                <tr>
+                                    <th>Société</th>
+                                    <th>Type</th>
+                                    <th>Statut</th>
+                                    <th>Sièges</th>
+                                    <th>Expiration</th>
+                                    <th>Prix</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Données générées dynamiquement -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
 
-        <!-- Logs en temps réel -->
-        <div class="test-section">
-            <h3>📋 Logs en temps réel</h3>
-            <div id="logArea" class="log-area"></div>
-            <button onclick="clearLogs()">Effacer</button>
-            <button onclick="runFullDiagnostic()">Diagnostic complet</button>
-        </div>
+            <!-- Utilisateurs -->
+            <div id="users" class="tab-content">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 class="card-title">Gestion des utilisateurs</h3>
+                        <button class="btn" onclick="showAddUserModal()">
+                            + Nouvel utilisateur
+                        </button>
+                    </div>
+                    
+                    <div class="filters">
+                        <div class="search-container">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" class="search-input" placeholder="Rechercher par email, nom..." id="userSearch">
+                        </div>
+                        <select class="form-input" style="width: auto;" id="userRoleFilter">
+                            <option value="">Tous les rôles</option>
+                            <option value="user">Utilisateur</option>
+                            <option value="company_admin">Admin société</option>
+                            <option value="super_admin">Super admin</option>
+                        </select>
+                        <select class="form-input" style="width: auto;" id="userStatusFilter">
+                            <option value="">Tous les statuts</option>
+                            <option value="active">Actif</option>
+                            <option value="trial">Essai</option>
+                            <option value="blocked">Bloqué</option>
+                            <option value="expired">Expiré</option>
+                        </select>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>Utilisateur</th>
+                                    <th>Société</th>
+                                    <th>Rôle</th>
+                                    <th>Statut</th>
+                                    <th>Dernière connexion</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Données générées dynamiquement -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
 
-        <!-- Instructions -->
-        <div id="instructions" class="test-section" style="display: none;">
-            <h3>📚 Instructions de configuration</h3>
-            <div class="status info">
-                <strong>Étapes pour configurer Netlify:</strong>
-                <ol>
-                    <li>Aller sur votre dashboard Netlify</li>
-                    <li>Sélectionner votre site</li>
-                    <li>Aller dans "Site settings" → "Environment variables"</li>
-                    <li>Ajouter ces variables:
-                        <ul>
-                            <li><code>SUPABASE_URL</code> = votre URL Supabase</li>
-                            <li><code>SUPABASE_ANON_KEY</code> = votre clé anonyme Supabase</li>
-                        </ul>
-                    </li>
-                    <li>Redéployer votre site</li>
-                    <li>Vérifier que le fichier <code>netlify/functions/get-supabase-config.js</code> existe</li>
-                </ol>
+            <!-- Paiements -->
+            <div id="payments" class="tab-content">
+                <div class="card">
+                    <h3 class="card-title">Gestion des paiements</h3>
+                    
+                    <div class="filters">
+                        <div class="search-container">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" class="search-input" placeholder="Rechercher par société..." id="paymentSearch">
+                        </div>
+                        <select class="form-input" style="width: auto;" id="paymentStatusFilter">
+                            <option value="">Tous les statuts</option>
+                            <option value="pending">En attente</option>
+                            <option value="paid">Payé</option>
+                            <option value="failed">Échec</option>
+                            <option value="refunded">Remboursé</option>
+                        </select>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table id="paymentsTable">
+                            <thead>
+                                <tr>
+                                    <th>Société</th>
+                                    <th>Montant</th>
+                                    <th>Statut</th>
+                                    <th>Date création</th>
+                                    <th>Date expiration</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Données générées dynamiquement -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sociétés (Super admin seulement) -->
+            <div id="companies" class="tab-content">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 class="card-title">Gestion des sociétés</h3>
+                        <button class="btn" onclick="showAddCompanyModal()">
+                            + Nouvelle société
+                        </button>
+                    </div>
+                    
+                    <div class="filters">
+                        <div class="search-container">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" class="search-input" placeholder="Rechercher par nom, domaine..." id="companySearch">
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table id="companiesTable">
+                            <thead>
+                                <tr>
+                                    <th>Société</th>
+                                    <th>Domaine</th>
+                                    <th>Utilisateurs</th>
+                                    <th>Licences actives</th>
+                                    <th>Création</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Données générées dynamiquement -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Système (Super admin seulement) -->
+            <div id="system" class="tab-content">
+                <div class="card">
+                    <h3 class="card-title">Administration système</h3>
+                    
+                    <div style="margin-bottom: 2rem;">
+                        <h4>Connexions actives</h4>
+                        <div class="table-container">
+                            <table id="activeConnectionsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Utilisateur</th>
+                                        <th>Société</th>
+                                        <th>IP</th>
+                                        <th>Dernière activité</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Données générées dynamiquement -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4>Actions système</h4>
+                        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                            <button class="btn btn-secondary" onclick="exportData()">
+                                📊 Exporter les données
+                            </button>
+                            <button class="btn btn-secondary" onclick="viewSystemLogs()">
+                                📋 Logs système
+                            </button>
+                            <button class="btn btn-danger" onclick="systemMaintenance()">
+                                🔧 Maintenance
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Supabase CDN -->
+    <!-- Modals -->
+    
+    <!-- Modal Licence -->
+    <div id="licenseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="licenseModalTitle">Nouvelle licence</h3>
+                <button class="close" onclick="closeLicenseModal()">&times;</button>
+            </div>
+            <form id="licenseForm">
+                <div class="form-group">
+                    <label class="form-label">Société</label>
+                    <select class="form-input" id="licenseCompany" required>
+                        <option value="">Sélectionner une société</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Type de licence</label>
+                    <select class="form-input" id="licenseType" required>
+                        <option value="trial">Essai (15 jours)</option>
+                        <option value="basic">Basic</option>
+                        <option value="premium">Premium</option>
+                        <option value="enterprise">Enterprise</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nombre de sièges</label>
+                    <input type="number" class="form-input" id="licenseSeats" min="1" value="1" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Prix (€ HT)</label>
+                    <input type="number" class="form-input" id="licensePrice" step="0.01" value="9.90" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Date d'expiration</label>
+                    <input type="date" class="form-input" id="licenseExpiration" required>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeLicenseModal()">
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn">
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Utilisateur -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="userModalTitle">Nouvel utilisateur</h3>
+                <button class="close" onclick="closeUserModal()">&times;</button>
+            </div>
+            <form id="userForm">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="userEmail" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nom</label>
+                    <input type="text" class="form-input" id="userName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Société</label>
+                    <select class="form-input" id="userCompany" required>
+                        <option value="">Sélectionner une société</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Rôle</label>
+                    <select class="form-input" id="userRole" required>
+                        <option value="user">Utilisateur</option>
+                        <option value="company_admin">Admin société</option>
+                        <option value="super_admin">Super admin</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeUserModal()">
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn">
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Société -->
+    <div id="companyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Nouvelle société</h3>
+                <button class="close" onclick="closeCompanyModal()">&times;</button>
+            </div>
+            <form id="companyForm">
+                <div class="form-group">
+                    <label class="form-label">Nom de la société</label>
+                    <input type="text" class="form-input" id="companyName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Domaine</label>
+                    <input type="text" class="form-input" id="companyDomain" required 
+                           placeholder="exemple.com">
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeCompanyModal()">
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn">
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Paiement -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Traitement du paiement</h3>
+                <button class="close" onclick="closePaymentModal()">&times;</button>
+            </div>
+            <div id="paymentContent">
+                <div id="stripePayment">
+                    <div class="form-group">
+                        <label class="form-label">Montant à payer</label>
+                        <div class="payment-amount" id="paymentAmount">9.90 € HT</div>
+                    </div>
+                    <div id="stripe-card-element" style="padding: 1rem; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 1rem;">
+                        <!-- Stripe Elements sera injecté ici -->
+                    </div>
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">
+                            Annuler
+                        </button>
+                        <button type="button" class="btn" id="payButton">
+                            Payer maintenant
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://js.stripe.com/v3/"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./config-supabase.js"></script>
+    <script src="./license-check.js"></script>
 
     <script>
-        // État global
-        let netlifyWorking = false;
-        let supabaseConfig = null;
+        // Variables globales
+        let currentUser = null;
         let supabaseClient = null;
+        let stripe = null;
+        let cardElement = null;
+        let currentCompanyId = null;
+        let isLoading = false;
 
-        // Logging
-        function log(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString();
-            const logArea = document.getElementById('logArea');
-            const colors = {
-                info: '#e2e8f0',
-                success: '#68d391',
-                error: '#fc8181',
-                warning: '#f6e05e'
-            };
+        // Configuration Stripe (sandbox)
+        const STRIPE_PUBLIC_KEY = 'pk_test_51234567890abcdef'; // À remplacer par votre clé Stripe
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('[Admin] 🚀 Initialisation interface admin...');
             
-            logArea.innerHTML += `<div style="color: ${colors[type]}">[${timestamp}] ${message}</div>`;
-            logArea.scrollTop = logArea.scrollHeight;
-            console.log(`[Analytics Test] ${message}`);
-        }
-
-        function clearLogs() {
-            document.getElementById('logArea').innerHTML = '';
-        }
-
-        function updateStatus(elementId, message, type) {
-            const element = document.getElementById(elementId);
-            element.textContent = message;
-            element.className = `status ${type}`;
-        }
-
-        // Test 1: Fonction Netlify
-        async function testNetlifyFunction() {
-            log('🧪 Test de la fonction Netlify...', 'info');
-            updateStatus('netlifyStatus', '🔄 Test en cours...', 'warning');
-
             try {
-                const response = await fetch('/.netlify/functions/get-supabase-config', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const result = {
-                    status: response.status,
-                    statusText: response.statusText,
-                    headers: Object.fromEntries(response.headers.entries()),
-                    url: response.url
-                };
-
-                if (response.ok) {
-                    const data = await response.json();
-                    result.data = {
-                        hasUrl: !!data.url,
-                        hasAnonKey: !!data.anonKey,
-                        urlValid: data.url && data.url.includes('supabase.co'),
-                        keyValid: data.anonKey && data.anonKey.length > 100,
-                        timestamp: data.timestamp
-                    };
-
-                    supabaseConfig = data;
-                    netlifyWorking = true;
-                    
-                    updateStatus('netlifyStatus', '✅ Fonction Netlify OK', 'success');
-                    log('✅ Fonction Netlify fonctionne correctement', 'success');
-                    
-                    // Activer le test Supabase
-                    document.getElementById('testSupabaseBtn').disabled = false;
-                    
-                } else {
-                    const errorText = await response.text();
-                    result.error = errorText;
-                    updateStatus('netlifyStatus', `❌ Erreur ${response.status}`, 'error');
-                    log(`❌ Fonction Netlify échoue: ${response.status} - ${errorText}`, 'error');
-                }
-
-                document.getElementById('netlifyResult').textContent = JSON.stringify(result, null, 2);
-
+                // Attendre la vérification de licence
+                await waitForLicenseCheck();
+                
+                // Initialiser Supabase
+                await initializeSupabase();
+                
+                // Vérifier les permissions admin
+                await checkAdminPermissions();
+                
+                // Initialiser Stripe
+                initializeStripe();
+                
+                // Charger les données
+                await loadAdminData();
+                
+                // Cacher le loading
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('mainInterface').style.display = 'block';
+                
+                console.log('[Admin] ✅ Interface admin prête');
+                
             } catch (error) {
-                const errorResult = {
-                    error: error.message,
-                    type: 'NetworkError',
-                    timestamp: new Date().toISOString()
-                };
-
-                updateStatus('netlifyStatus', '❌ Fonction inaccessible', 'error');
-                log(`❌ Erreur réseau: ${error.message}`, 'error');
-                document.getElementById('netlifyResult').textContent = JSON.stringify(errorResult, null, 2);
-            }
-        }
-
-        // Test 2: Configuration Supabase
-        async function testSupabaseConfig() {
-            if (!netlifyWorking || !supabaseConfig) {
-                log('⚠️ Testez d\'abord la fonction Netlify', 'warning');
-                return;
-            }
-
-            log('🧪 Test de la configuration Supabase...', 'info');
-            updateStatus('supabaseStatus', '🔄 Test en cours...', 'warning');
-
-            try {
-                // Validation des données
-                const validation = {
-                    hasUrl: !!supabaseConfig.url,
-                    hasAnonKey: !!supabaseConfig.anonKey,
-                    urlFormat: supabaseConfig.url && supabaseConfig.url.startsWith('https://'),
-                    urlSupabase: supabaseConfig.url && supabaseConfig.url.includes('supabase.co'),
-                    keyLength: supabaseConfig.anonKey && supabaseConfig.anonKey.length > 100
-                };
-
-                const allValid = Object.values(validation).every(v => v === true);
-
-                if (allValid) {
-                    // Créer le client Supabase
-                    supabaseClient = window.supabase.createClient(
-                        supabaseConfig.url,
-                        supabaseConfig.anonKey,
-                        {
-                            auth: {
-                                autoRefreshToken: false,
-                                persistSession: false
-                            }
-                        }
-                    );
-
-                    updateStatus('supabaseStatus', '✅ Configuration Supabase OK', 'success');
-                    log('✅ Configuration Supabase valide', 'success');
-                    
-                    // Activer le test de DB
-                    document.getElementById('testDbBtn').disabled = false;
-
-                } else {
-                    updateStatus('supabaseStatus', '❌ Configuration invalide', 'error');
-                    log('❌ Configuration Supabase invalide', 'error');
-                }
-
-                const result = {
-                    validation: validation,
-                    config: {
-                        url: supabaseConfig.url ? supabaseConfig.url.substring(0, 50) + '...' : null,
-                        keyLength: supabaseConfig.anonKey ? supabaseConfig.anonKey.length : 0
-                    }
-                };
-
-                document.getElementById('supabaseResult').textContent = JSON.stringify(result, null, 2);
-
-            } catch (error) {
-                updateStatus('supabaseStatus', '❌ Erreur configuration', 'error');
-                log(`❌ Erreur configuration: ${error.message}`, 'error');
-                
-                document.getElementById('supabaseResult').textContent = JSON.stringify({
-                    error: error.message,
-                    stack: error.stack
-                }, null, 2);
-            }
-        }
-
-        // Test 3: Connexion Base de Données
-        async function testDatabaseConnection() {
-            if (!supabaseClient) {
-                log('⚠️ Testez d\'abord la configuration Supabase', 'warning');
-                return;
-            }
-
-            log('🧪 Test de connexion à la base de données...', 'info');
-            updateStatus('dbStatus', '🔄 Connexion en cours...', 'warning');
-
-            try {
-                // Test 1: Session auth
-                const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
-                
-                const tests = {
-                    session: {
-                        success: !sessionError || !sessionError.message.includes('Invalid API key'),
-                        error: sessionError?.message
-                    }
-                };
-
-                // Test 2: Requête simple sur une table
-                try {
-                    const { data: userData, error: userError } = await supabaseClient
-                        .from('users')
-                        .select('count', { count: 'exact', head: true });
-
-                    tests.usersTable = {
-                        success: !userError,
-                        error: userError?.message,
-                        code: userError?.code
-                    };
-                } catch (tableError) {
-                    tests.usersTable = {
-                        success: false,
-                        error: tableError.message
-                    };
-                }
-
-                // Test 3: Permissions
-                try {
-                    const { data: companyData, error: companyError } = await supabaseClient
-                        .from('companies')
-                        .select('count', { count: 'exact', head: true });
-
-                    tests.companiesTable = {
-                        success: !companyError,
-                        error: companyError?.message,
-                        code: companyError?.code
-                    };
-                } catch (compError) {
-                    tests.companiesTable = {
-                        success: false,
-                        error: compError.message
-                    };
-                }
-
-                // Évaluation globale
-                const tablesWorking = tests.usersTable.success && tests.companiesTable.success;
-                const apiWorking = tests.session.success;
-
-                if (apiWorking && tablesWorking) {
-                    updateStatus('dbStatus', '✅ Base de données OK', 'success');
-                    log('✅ Connexion base de données réussie', 'success');
-                    updateStatus('globalStatus', '🎉 Tous les tests réussis ! Prêt pour analytics.html', 'success');
-                } else if (apiWorking) {
-                    updateStatus('dbStatus', '⚠️ API OK, tables manquantes', 'warning');
-                    log('⚠️ API fonctionne mais schéma de base incomplet', 'warning');
-                } else {
-                    updateStatus('dbStatus', '❌ Connexion échouée', 'error');
-                    log('❌ Connexion base de données échouée', 'error');
-                }
-
-                document.getElementById('dbResult').textContent = JSON.stringify(tests, null, 2);
-
-            } catch (error) {
-                updateStatus('dbStatus', '❌ Erreur critique', 'error');
-                log(`❌ Erreur critique DB: ${error.message}`, 'error');
-                
-                document.getElementById('dbResult').textContent = JSON.stringify({
-                    error: error.message,
-                    type: 'CriticalError'
-                }, null, 2);
-            }
-        }
-
-        // Diagnostic complet
-        async function runFullDiagnostic() {
-            log('🚀 Lancement du diagnostic complet...', 'info');
-            clearLogs();
-            
-            // Reset statuts
-            updateStatus('netlifyStatus', '⏳ En attente', 'warning');
-            updateStatus('supabaseStatus', '⏳ En attente', 'warning');
-            updateStatus('dbStatus', '⏳ En attente', 'warning');
-            updateStatus('globalStatus', '🔄 Diagnostic en cours...', 'warning');
-
-            // Exécution séquentielle
-            await testNetlifyFunction();
-            
-            if (netlifyWorking) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                await testSupabaseConfig();
-                
-                if (supabaseClient) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    await testDatabaseConnection();
-                }
-            }
-
-            log('🏁 Diagnostic terminé', 'info');
-        }
-
-        function showNetlifyInstructions() {
-            const instructions = document.getElementById('instructions');
-            instructions.style.display = instructions.style.display === 'none' ? 'block' : 'none';
-        }
-
-        // Auto-start
-        window.addEventListener('load', () => {
-            log('📱 Analytics Test chargé', 'info');
-            log('🌍 Environnement: ' + window.location.hostname, 'info');
-            
-            if (window.location.hostname.includes('netlify.app')) {
-                log('🔧 Netlify détecté - Test automatique dans 2s', 'info');
-                setTimeout(runFullDiagnostic, 2000);
-            } else {
-                log('🏠 Environnement local détecté', 'info');
+                console.error('[Admin] ❌ Erreur initialisation:', error);
+                showError('Erreur d\'initialisation: ' + error.message);
             }
         });
 
-        // Fonctions utilitaires globales
-        window.testNetlify = testNetlifyFunction;
-        window.fullDiag = runFullDiagnostic;
+        // Attendre la vérification de licence
+        async function waitForLicenseCheck() {
+            let attempts = 0;
+            while (!window.currentUser && attempts < 100) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!window.currentUser) {
+                throw new Error('Utilisateur non authentifié');
+            }
+            
+            currentUser = window.currentUser;
+            console.log('[Admin] ✅ Utilisateur authentifié:', currentUser.email);
+        }
 
-        console.log('🧪 Analytics Test chargé - Utilisez testNetlify() ou fullDiag() dans la console');
+        // Initialiser Supabase
+        async function initializeSupabase() {
+            if (!window.supabaseConfigPromise) {
+                throw new Error('Configuration Supabase non disponible');
+            }
+            
+            const config = await window.supabaseConfigPromise;
+            const supabaseConfig = config.getConfig();
+            
+            supabaseClient = window.supabase.createClient(
+                supabaseConfig.url,
+                supabaseConfig.anonKey
+            );
+            
+            console.log('[Admin] ✅ Supabase initialisé');
+        }
+
+        // Vérifier les permissions admin
+        async function checkAdminPermissions() {
+            const userRole = currentUser.role;
+            
+            if (userRole !== 'company_admin' && userRole !== 'super_admin') {
+                throw new Error('Accès refusé: permissions administrateur requises');
+            }
+            
+            // Stocker l'ID de la société pour les admins de société
+            if (userRole === 'company_admin') {
+                currentCompanyId = currentUser.company_id;
+            }
+            
+            // Afficher/masquer les éléments super admin
+            const superAdminElements = document.querySelectorAll('.super-admin-only');
+            superAdminElements.forEach(el => {
+                el.style.display = userRole === 'super_admin' ? 'block' : 'none';
+            });
+            
+            // Mettre à jour le badge utilisateur
+            const userBadge = document.getElementById('userBadge');
+            const roleName = userRole === 'super_admin' ? 'Super Admin' : 'Admin';
+            userBadge.textContent = `${currentUser.name || currentUser.email} (${roleName})`;
+            
+            console.log('[Admin] ✅ Permissions vérifiées:', userRole);
+        }
+
+        // Initialiser Stripe
+        function initializeStripe() {
+            try {
+                stripe = Stripe(STRIPE_PUBLIC_KEY);
+                const elements = stripe.elements();
+                cardElement = elements.create('card');
+                console.log('[Admin] ✅ Stripe initialisé');
+            } catch (error) {
+                console.warn('[Admin] ⚠️ Stripe non disponible:', error.message);
+            }
+        }
+
+        // Charger les données d'administration
+        async function loadAdminData() {
+            setLoading(true);
+            
+            try {
+                // Charger les statistiques
+                await loadDashboardStats();
+                
+                // Charger les données des tables
+                await loadLicenses();
+                await loadUsers();
+                await loadPayments();
+                
+                if (currentUser.role === 'super_admin') {
+                    await loadCompanies();
+                    await loadActiveConnections();
+                }
+                
+            } catch (error) {
+                console.error('[Admin] Erreur chargement données:', error);
+                showError('Erreur lors du chargement des données');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Charger les statistiques du dashboard
+        async function loadDashboardStats() {
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = '';
+            
+            try {
+                let statsQuery = supabaseClient.from('licenses').select('*');
+                if (currentCompanyId) {
+                    statsQuery = statsQuery.eq('company_id', currentCompanyId);
+                }
+                
+                const { data: licenses } = await statsQuery;
+                
+                const activeLicenses = licenses?.filter(l => l.status === 'active').length || 0;
+                const trialLicenses = licenses?.filter(l => l.status === 'trial').length || 0;
+                const expiredLicenses = licenses?.filter(l => l.status === 'expired').length || 0;
+                const totalRevenue = licenses?.reduce((sum, l) => sum + (parseFloat(l.price) || 0), 0) || 0;
+                
+                const stats = [
+                    { label: 'Licences actives', value: activeLicenses, icon: '✅' },
+                    { label: 'Essais en cours', value: trialLicenses, icon: '🔄' },
+                    { label: 'Licences expirées', value: expiredLicenses, icon: '⏰' },
+                    { label: 'Revenus totaux', value: `${totalRevenue.toFixed(2)} €`, icon: '💰' }
+                ];
+                
+                stats.forEach(stat => {
+                    const statCard = document.createElement('div');
+                    statCard.className = 'stat-card';
+                    statCard.innerHTML = `
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">${stat.icon}</div>
+                        <div class="stat-number">${stat.value}</div>
+                        <div class="stat-label">${stat.label}</div>
+                    `;
+                    statsGrid.appendChild(statCard);
+                });
+                
+            } catch (error) {
+                console.error('[Admin] Erreur stats:', error);
+            }
+        }
+
+        // Charger les licences
+        async function loadLicenses() {
+            const tbody = document.querySelector('#licensesTable tbody');
+            tbody.innerHTML = '<tr><td colspan="7" class="loading">Chargement...</td></tr>';
+            
+            try {
+                let query = supabaseClient
+                    .from('licenses')
+                    .select(`
+                        *,
+                        company:companies(*),
+                        user:users(*)
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                if (currentCompanyId) {
+                    query = query.eq('company_id', currentCompanyId);
+                }
+                
+                const { data: licenses, error } = await query;
+                
+                if (error) throw error;
+                
+                tbody.innerHTML = '';
+                
+                if (!licenses || licenses.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #718096;">Aucune licence trouvée</td></tr>';
+                    return;
+                }
+                
+                licenses.forEach(license => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <div>${license.company?.name || 'N/A'}</div>
+                            <div class="company-badge">${license.company?.domain || 'N/A'}</div>
+                        </td>
+                        <td><span class="status-badge">${license.type}</span></td>
+                        <td><span class="status-badge status-${license.status}">${getStatusLabel(license.status)}</span></td>
+                        <td>${license.used_seats || 0} / ${license.seats || 1}</td>
+                        <td>${license.expires_at ? new Date(license.expires_at).toLocaleDateString() : 'N/A'}</td>
+                        <td class="payment-amount">${parseFloat(license.price || 0).toFixed(2)} €</td>
+                        <td>
+                            <div class="actions">
+                                <button class="btn btn-secondary" onclick="editLicense('${license.id}')">Modifier</button>
+                                ${license.status === 'active' ? 
+                                    `<button class="btn btn-danger" onclick="suspendLicense('${license.id}')">Suspendre</button>` :
+                                    `<button class="btn btn-success" onclick="activateLicense('${license.id}')">Activer</button>`
+                                }
+                                ${license.status === 'trial' || license.status === 'expired' ? 
+                                    `<button class="btn" onclick="createPayment('${license.id}')">Paiement</button>` : ''
+                                }
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+            } catch (error) {
+                console.error('[Admin] Erreur chargement licences:', error);
+                tbody.innerHTML = '<tr><td colspan="7" class="error">Erreur de chargement</td></tr>';
+            }
+        }
+
+        // Charger les utilisateurs
+        async function loadUsers() {
+            const tbody = document.querySelector('#usersTable tbody');
+            tbody.innerHTML = '<tr><td colspan="6" class="loading">Chargement...</td></tr>';
+            
+            try {
+                let query = supabaseClient
+                    .from('users')
+                    .select(`
+                        *,
+                        company:companies(*)
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                if (currentCompanyId) {
+                    query = query.eq('company_id', currentCompanyId);
+                }
+                
+                const { data: users, error } = await query;
+                
+                if (error) throw error;
+                
+                tbody.innerHTML = '';
+                
+                if (!users || users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #718096;">Aucun utilisateur trouvé</td></tr>';
+                    return;
+                }
+                
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <div style="font-weight: 600;">${user.name || user.email}</div>
+                            <div style="font-size: 0.875rem; color: #718096;">${user.email}</div>
+                        </td>
+                        <td>
+                            <div>${user.company?.name || 'N/A'}</div>
+                            <div class="company-badge">${user.company?.domain || 'N/A'}</div>
+                        </td>
+                        <td><span class="status-badge">${getRoleLabel(user.role)}</span></td>
+                        <td><span class="status-badge status-${user.license_status}">${getStatusLabel(user.license_status)}</span></td>
+                        <td>${user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : 'Jamais'}</td>
+                        <td>
+                            <div class="actions">
+                                <button class="btn btn-secondary" onclick="editUser('${user.id}')">Modifier</button>
+                                ${user.license_status === 'active' ? 
+                                    `<button class="btn btn-danger" onclick="blockUser('${user.id}')">Bloquer</button>` :
+                                    `<button class="btn btn-success" onclick="unblockUser('${user.id}')">Débloquer</button>`
+                                }
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+            } catch (error) {
+                console.error('[Admin] Erreur chargement utilisateurs:', error);
+                tbody.innerHTML = '<tr><td colspan="6" class="error">Erreur de chargement</td></tr>';
+            }
+        }
+
+        // Charger les paiements
+        async function loadPayments() {
+            const tbody = document.querySelector('#paymentsTable tbody');
+            tbody.innerHTML = '<tr><td colspan="6" class="loading">Chargement...</td></tr>';
+            
+            try {
+                // Simuler des données de paiement car nous n'avons pas encore la table payments
+                const payments = [
+                    {
+                        id: '1',
+                        company_name: 'Demo Company',
+                        amount: 9.90,
+                        status: 'pending',
+                        created_at: new Date().toISOString(),
+                        expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
+                    }
+                ];
+                
+                tbody.innerHTML = '';
+                
+                payments.forEach(payment => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${payment.company_name}</td>
+                        <td class="payment-amount">${payment.amount.toFixed(2)} € HT</td>
+                        <td><span class="status-badge status-${payment.status}">${getPaymentStatusLabel(payment.status)}</span></td>
+                        <td>${new Date(payment.created_at).toLocaleDateString()}</td>
+                        <td>${new Date(payment.expires_at).toLocaleDateString()}</td>
+                        <td>
+                            <div class="actions">
+                                ${payment.status === 'pending' ? 
+                                    `<button class="btn" onclick="processPayment('${payment.id}')">Traiter</button>` : ''
+                                }
+                                <button class="btn btn-secondary" onclick="viewPaymentDetails('${payment.id}')">Détails</button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+            } catch (error) {
+                console.error('[Admin] Erreur chargement paiements:', error);
+                tbody.innerHTML = '<tr><td colspan="6" class="error">Erreur de chargement</td></tr>';
+            }
+        }
+
+        // Charger les sociétés (super admin seulement)
+        async function loadCompanies() {
+            if (currentUser.role !== 'super_admin') return;
+            
+            const tbody = document.querySelector('#companiesTable tbody');
+            tbody.innerHTML = '<tr><td colspan="6" class="loading">Chargement...</td></tr>';
+            
+            try {
+                const { data: companies, error } = await supabaseClient
+                    .from('companies')
+                    .select(`
+                        *,
+                        users:users(count),
+                        licenses:licenses(count)
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                tbody.innerHTML = '';
+                
+                if (!companies || companies.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #718096;">Aucune société trouvée</td></tr>';
+                    return;
+                }
+                
+                companies.forEach(company => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <div style="font-weight: 600;">${company.name}</div>
+                        </td>
+                        <td>
+                            <div class="company-badge">${company.domain}</div>
+                        </td>
+                        <td>${company.users?.[0]?.count || 0}</td>
+                        <td>${company.licenses?.[0]?.count || 0}</td>
+                        <td>${new Date(company.created_at).toLocaleDateString()}</td>
+                        <td>
+                            <div class="actions">
+                                <button class="btn btn-secondary" onclick="editCompany('${company.id}')">Modifier</button>
+                                <button class="btn btn-danger" onclick="deleteCompany('${company.id}')">Supprimer</button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+            } catch (error) {
+                console.error('[Admin] Erreur chargement sociétés:', error);
+                tbody.innerHTML = '<tr><td colspan="6" class="error">Erreur de chargement</td></tr>';
+            }
+        }
+
+        // Charger les connexions actives (super admin seulement)
+        async function loadActiveConnections() {
+            if (currentUser.role !== 'super_admin') return;
+            
+            const tbody = document.querySelector('#activeConnectionsTable tbody');
+            tbody.innerHTML = '<tr><td colspan="5" class="loading">Chargement...</td></tr>';
+            
+            try {
+                // Simuler des connexions actives
+                const connections = [
+                    {
+                        user_email: 'admin@demo.com',
+                        company_name: 'Demo Company',
+                        ip_address: '192.168.1.100',
+                        last_activity: new Date().toISOString()
+                    }
+                ];
+                
+                tbody.innerHTML = '';
+                
+                connections.forEach(connection => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${connection.user_email}</td>
+                        <td>${connection.company_name}</td>
+                        <td>${connection.ip_address}</td>
+                        <td>${new Date(connection.last_activity).toLocaleString()}</td>
+                        <td>
+                            <div class="actions">
+                                <button class="btn btn-danger" onclick="disconnectUser('${connection.user_email}')">Déconnecter</button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+            } catch (error) {
+                console.error('[Admin] Erreur chargement connexions:', error);
+                tbody.innerHTML = '<tr><td colspan="5" class="error">Erreur de chargement</td></tr>';
+            }
+        }
+
+        // Fonctions utilitaires
+        function getStatusLabel(status) {
+            const labels = {
+                active: 'Actif',
+                trial: 'Essai',
+                expired: 'Expiré',
+                blocked: 'Bloqué',
+                suspended: 'Suspendu',
+                cancelled: 'Annulé'
+            };
+            return labels[status] || status;
+        }
+
+        function getRoleLabel(role) {
+            const labels = {
+                user: 'Utilisateur',
+                company_admin: 'Admin société',
+                super_admin: 'Super admin'
+            };
+            return labels[role] || role;
+        }
+
+        function getPaymentStatusLabel(status) {
+            const labels = {
+                pending: 'En attente',
+                paid: 'Payé',
+                failed: 'Échec',
+                refunded: 'Remboursé'
+            };
+            return labels[status] || status;
+        }
+
+        // Gestion des onglets
+        function switchTab(tabName) {
+            // Désactiver tous les onglets
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Activer l'onglet sélectionné
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+            
+            // Recharger les données si nécessaire
+            switch(tabName) {
+                case 'dashboard':
+                    loadDashboardStats();
+                    break;
+                case 'licenses':
+                    loadLicenses();
+                    break;
+                case 'users':
+                    loadUsers();
+                    break;
+                case 'payments':
+                    loadPayments();
+                    break;
+                case 'companies':
+                    loadCompanies();
+                    break;
+                case 'system':
+                    loadActiveConnections();
+                    break;
+            }
+        }
+
+        // Gestion des modals
+        function showAddLicenseModal() {
+            document.getElementById('licenseModalTitle').textContent = 'Nouvelle licence';
+            document.getElementById('licenseForm').reset();
+            loadCompaniesForSelect('licenseCompany');
+            document.getElementById('licenseModal').style.display = 'block';
+        }
+
+        function closeLicenseModal() {
+            document.getElementById('licenseModal').style.display = 'none';
+        }
+
+        function showAddUserModal() {
+            document.getElementById('userModalTitle').textContent = 'Nouvel utilisateur';
+            document.getElementById('userForm').reset();
+            loadCompaniesForSelect('userCompany');
+            document.getElementById('userModal').style.display = 'block';
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').style.display = 'none';
+        }
+
+        function showAddCompanyModal() {
+            document.getElementById('companyForm').reset();
+            document.getElementById('companyModal').style.display = 'block';
+        }
+
+        function closeCompanyModal() {
+            document.getElementById('companyModal').style.display = 'none';
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').style.display = 'none';
+        }
+
+        // Charger les sociétés pour les selects
+        async function loadCompaniesForSelect(selectId) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Chargement...</option>';
+            
+            try {
+                let query = supabaseClient.from('companies').select('*').order('name');
+                
+                if (currentCompanyId) {
+                    query = query.eq('id', currentCompanyId);
+                }
+                
+                const { data: companies, error } = await query;
+                
+                if (error) throw error;
+                
+                select.innerHTML = '<option value="">Sélectionner une société</option>';
+                
+                companies.forEach(company => {
+                    const option = document.createElement('option');
+                    option.value = company.id;
+                    option.textContent = `${company.name} (${company.domain})`;
+                    select.appendChild(option);
+                });
+                
+            } catch (error) {
+                console.error('Erreur chargement sociétés:', error);
+                select.innerHTML = '<option value="">Erreur de chargement</option>';
+            }
+        }
+
+        // Actions sur les licences
+        async function editLicense(licenseId) {
+            // TODO: Implémenter l'édition de licence
+            console.log('Edit license:', licenseId);
+        }
+
+        async function suspendLicense(licenseId) {
+            if (!confirm('Êtes-vous sûr de vouloir suspendre cette licence ?')) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('licenses')
+                    .update({ status: 'suspended' })
+                    .eq('id', licenseId);
+                
+                if (error) throw error;
+                
+                showSuccess('Licence suspendue avec succès');
+                loadLicenses();
+                
+            } catch (error) {
+                console.error('Erreur suspension licence:', error);
+                showError('Erreur lors de la suspension de la licence');
+            }
+        }
+
+        async function activateLicense(licenseId) {
+            try {
+                const { error } = await supabaseClient
+                    .from('licenses')
+                    .update({ status: 'active' })
+                    .eq('id', licenseId);
+                
+                if (error) throw error;
+                
+                showSuccess('Licence activée avec succès');
+                loadLicenses();
+                
+            } catch (error) {
+                console.error('Erreur activation licence:', error);
+                showError('Erreur lors de l\'activation de la licence');
+            }
+        }
+
+        // Actions sur les utilisateurs
+        async function editUser(userId) {
+            // TODO: Implémenter l'édition d'utilisateur
+            console.log('Edit user:', userId);
+        }
+
+        async function blockUser(userId) {
+            if (!confirm('Êtes-vous sûr de vouloir bloquer cet utilisateur ?')) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('users')
+                    .update({ license_status: 'blocked' })
+                    .eq('id', userId);
+                
+                if (error) throw error;
+                
+                showSuccess('Utilisateur bloqué avec succès');
+                loadUsers();
+                
+            } catch (error) {
+                console.error('Erreur blocage utilisateur:', error);
+                showError('Erreur lors du blocage de l\'utilisateur');
+            }
+        }
+
+        async function unblockUser(userId) {
+            try {
+                const { error } = await supabaseClient
+                    .from('users')
+                    .update({ license_status: 'active' })
+                    .eq('id', userId);
+                
+                if (error) throw error;
+                
+                showSuccess('Utilisateur débloqué avec succès');
+                loadUsers();
+                
+            } catch (error) {
+                console.error('Erreur déblocage utilisateur:', error);
+                showError('Erreur lors du déblocage de l\'utilisateur');
+            }
+        }
+
+        // Gestion des paiements
+        function createPayment(licenseId) {
+            document.getElementById('paymentModal').style.display = 'block';
+            
+            if (cardElement && !cardElement._mounted) {
+                cardElement.mount('#stripe-card-element');
+            }
+            
+            document.getElementById('payButton').onclick = () => processStripePayment(licenseId);
+        }
+
+        function processPayment(paymentId) {
+            // TODO: Traiter un paiement spécifique
+            console.log('Process payment:', paymentId);
+        }
+
+        function viewPaymentDetails(paymentId) {
+            // TODO: Afficher les détails d'un paiement
+            console.log('View payment details:', paymentId);
+        }
+
+        async function processStripePayment(licenseId) {
+            if (!stripe || !cardElement) {
+                showError('Stripe non disponible');
+                return;
+            }
+            
+            setLoading(true);
+            
+            try {
+                // Créer un payment intent côté serveur
+                const response = await fetch('/.netlify/functions/create-payment-intent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        amount: 990, // 9.90€ en centimes
+                        currency: 'eur',
+                        licenseId: licenseId
+                    })
+                });
+                
+                const { client_secret } = await response.json();
+                
+                // Confirmer le paiement
+                const { error } = await stripe.confirmCardPayment(client_secret, {
+                    payment_method: {
+                        card: cardElement,
+                        billing_details: {
+                            name: currentUser.name || currentUser.email,
+                            email: currentUser.email
+                        }
+                    }
+                });
+                
+                if (error) {
+                    throw new Error(error.message);
+                } else {
+                    showSuccess('Paiement effectué avec succès');
+                    closePaymentModal();
+                    loadLicenses();
+                    loadPayments();
+                }
+                
+            } catch (error) {
+                console.error('Erreur paiement:', error);
+                showError('Erreur lors du paiement: ' + error.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Actions système (super admin)
+        function exportData() {
+            // TODO: Implémenter l'export de données
+            console.log('Export data');
+        }
+
+        function viewSystemLogs() {
+            // TODO: Afficher les logs système
+            console.log('View system logs');
+        }
+
+        function systemMaintenance() {
+            // TODO: Mode maintenance
+            console.log('System maintenance');
+        }
+
+        function disconnectUser(userEmail) {
+            if (!confirm(`Déconnecter l'utilisateur ${userEmail} ?`)) return;
+            
+            // TODO: Implémenter la déconnexion forcée
+            console.log('Disconnect user:', userEmail);
+        }
+
+        // Gestion des formulaires
+        document.getElementById('licenseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const licenseData = {
+                company_id: formData.get('company'),
+                type: formData.get('type'),
+                seats: parseInt(formData.get('seats')),
+                price: parseFloat(formData.get('price')),
+                expires_at: formData.get('expiration'),
+                status: 'active'
+            };
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('licenses')
+                    .insert([licenseData]);
+                
+                if (error) throw error;
+                
+                showSuccess('Licence créée avec succès');
+                closeLicenseModal();
+                loadLicenses();
+                
+            } catch (error) {
+                console.error('Erreur création licence:', error);
+                showError('Erreur lors de la création de la licence');
+            }
+        });
+
+        document.getElementById('userForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const userData = {
+                email: formData.get('email'),
+                name: formData.get('name'),
+                company_id: formData.get('company'),
+                role: formData.get('role'),
+                license_status: 'active'
+            };
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('users')
+                    .insert([userData]);
+                
+                if (error) throw error;
+                
+                showSuccess('Utilisateur créé avec succès');
+                closeUserModal();
+                loadUsers();
+                
+            } catch (error) {
+                console.error('Erreur création utilisateur:', error);
+                showError('Erreur lors de la création de l\'utilisateur');
+            }
+        });
+
+        document.getElementById('companyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const companyData = {
+                name: formData.get('name'),
+                domain: formData.get('domain')
+            };
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('companies')
+                    .insert([companyData]);
+                
+                if (error) throw error;
+                
+                showSuccess('Société créée avec succès');
+                closeCompanyModal();
+                loadCompanies();
+                
+            } catch (error) {
+                console.error('Erreur création société:', error);
+                showError('Erreur lors de la création de la société');
+            }
+        });
+
+        // Fonctions utilitaires UI
+        function setLoading(loading) {
+            isLoading = loading;
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.disabled = loading;
+            });
+        }
+
+        function showError(message) {
+            const alertContainer = document.getElementById('alertContainer');
+            alertContainer.innerHTML = `<div class="error">${message}</div>`;
+            setTimeout(() => {
+                alertContainer.innerHTML = '';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const alertContainer = document.getElementById('alertContainer');
+            alertContainer.innerHTML = `<div class="success">${message}</div>`;
+            setTimeout(() => {
+                alertContainer.innerHTML = '';
+            }, 5000);
+        }
+
+        // Fonction de déconnexion
+        async function logout() {
+            try {
+                if (window.authManager && window.authManager.logout) {
+                    await window.authManager.logout();
+                } else {
+                    // Nettoyage manuel
+                    localStorage.removeItem('emailsortpro_user_email');
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Erreur déconnexion:', error);
+                window.location.href = '/';
+            }
+        }
+
+        // Filtres et recherche
+        document.getElementById('licenseSearch')?.addEventListener('input', filterLicenses);
+        document.getElementById('licenseStatusFilter')?.addEventListener('change', filterLicenses);
+        document.getElementById('userSearch')?.addEventListener('input', filterUsers);
+        document.getElementById('userRoleFilter')?.addEventListener('change', filterUsers);
+        document.getElementById('userStatusFilter')?.addEventListener('change', filterUsers);
+        document.getElementById('paymentSearch')?.addEventListener('input', filterPayments);
+        document.getElementById('paymentStatusFilter')?.addEventListener('change', filterPayments);
+        document.getElementById('companySearch')?.addEventListener('input', filterCompanies);
+
+        function filterLicenses() {
+            const searchTerm = document.getElementById('licenseSearch').value.toLowerCase();
+            const statusFilter = document.getElementById('licenseStatusFilter').value;
+            const rows = document.querySelectorAll('#licensesTable tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const statusCell = row.querySelector('.status-badge');
+                const matchesSearch = text.includes(searchTerm);
+                const matchesStatus = !statusFilter || (statusCell && statusCell.classList.contains(`status-${statusFilter}`));
+                
+                row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+            });
+        }
+
+        function filterUsers() {
+            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+            const roleFilter = document.getElementById('userRoleFilter').value;
+            const statusFilter = document.getElementById('userStatusFilter').value;
+            const rows = document.querySelectorAll('#usersTable tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const statusCells = row.querySelectorAll('.status-badge');
+                const matchesSearch = text.includes(searchTerm);
+                
+                let matchesRole = !roleFilter;
+                let matchesStatus = !statusFilter;
+                
+                statusCells.forEach(cell => {
+                    if (!matchesRole && cell.textContent.toLowerCase().includes(roleFilter)) {
+                        matchesRole = true;
+                    }
+                    if (!matchesStatus && cell.classList.contains(`status-${statusFilter}`)) {
+                        matchesStatus = true;
+                    }
+                });
+                
+                row.style.display = matchesSearch && matchesRole && matchesStatus ? '' : 'none';
+            });
+        }
+
+        function filterPayments() {
+            const searchTerm = document.getElementById('paymentSearch').value.toLowerCase();
+            const statusFilter = document.getElementById('paymentStatusFilter').value;
+            const rows = document.querySelectorAll('#paymentsTable tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const statusCell = row.querySelector('.status-badge');
+                const matchesSearch = text.includes(searchTerm);
+                const matchesStatus = !statusFilter || (statusCell && statusCell.classList.contains(`status-${statusFilter}`));
+                
+                row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+            });
+        }
+
+        function filterCompanies() {
+            const searchTerm = document.getElementById('companySearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#companiesTable tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        }
+
+        // Gestion des modals - fermeture avec Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const modals = document.querySelectorAll('.modal');
+                modals.forEach(modal => {
+                    if (modal.style.display === 'block') {
+                        modal.style.display = 'none';
+                    }
+                });
+            }
+        });
+
+        // Fermeture des modals en cliquant à l'extérieur
+        window.addEventListener('click', (e) => {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+
+        // Auto-refresh des données toutes les 5 minutes
+        setInterval(() => {
+            if (!isLoading && document.getElementById('mainInterface').style.display !== 'none') {
+                console.log('[Admin] 🔄 Actualisation automatique des données...');
+                
+                // Recharger seulement l'onglet actif
+                const activeTab = document.querySelector('.tab-content.active');
+                if (activeTab) {
+                    switch(activeTab.id) {
+                        case 'dashboard':
+                            loadDashboardStats();
+                            break;
+                        case 'licenses':
+                            loadLicenses();
+                            break;
+                        case 'users':
+                            loadUsers();
+                            break;
+                        case 'payments':
+                            loadPayments();
+                            break;
+                        case 'companies':
+                            loadCompanies();
+                            break;
+                        case 'system':
+                            loadActiveConnections();
+                            break;
+                    }
+                }
+            }
+        }, 5 * 60 * 1000); // 5 minutes
+
+        // Gestion des erreurs Supabase
+        window.addEventListener('unhandledrejection', (event) => {
+            if (event.reason?.message?.includes('JWT')) {
+                console.warn('[Admin] ⚠️ Token JWT expiré, tentative de reconnexion...');
+                // Recharger la page pour relancer l'authentification
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            }
+        });
+
+        // Functions de gestion avancée des licences
+        async function extendTrial(licenseId, days = 15) {
+            try {
+                const newExpiration = new Date();
+                newExpiration.setDate(newExpiration.getDate() + days);
+                
+                const { error } = await supabaseClient
+                    .from('licenses')
+                    .update({ 
+                        expires_at: newExpiration.toISOString(),
+                        status: 'trial'
+                    })
+                    .eq('id', licenseId);
+                
+                if (error) throw error;
+                
+                showSuccess(`Période d'essai prolongée de ${days} jours`);
+                loadLicenses();
+                
+            } catch (error) {
+                console.error('Erreur prolongation essai:', error);
+                showError('Erreur lors de la prolongation de l\'essai');
+            }
+        }
+
+        // Fonctions de gestion des notifications
+        async function sendLicenseExpirationNotification(userId, daysRemaining) {
+            try {
+                // Envoyer une notification de bientôt expiration
+                await supabaseClient
+                    .from('notifications')
+                    .insert([{
+                        user_id: userId,
+                        type: 'license_expiration',
+                        title: 'Licence bientôt expirée',
+                        message: `Votre licence expire dans ${daysRemaining} jours. Renouvelez maintenant pour éviter toute interruption de service.`,
+                        created_at: new Date().toISOString()
+                    }]);
+                
+                console.log(`[Admin] Notification envoyée pour expiration dans ${daysRemaining} jours`);
+                
+            } catch (error) {
+                console.error('Erreur envoi notification:', error);
+            }
+        }
+
+        // Vérification automatique des expirations
+        async function checkLicenseExpirations() {
+            try {
+                const thirtyDaysFromNow = new Date();
+                thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+                
+                const { data: expiringLicenses } = await supabaseClient
+                    .from('licenses')
+                    .select(`
+                        *,
+                        user:users(*),
+                        company:companies(*)
+                    `)
+                    .eq('status', 'active')
+                    .lt('expires_at', thirtyDaysFromNow.toISOString());
+                
+                expiringLicenses?.forEach(license => {
+                    const expirationDate = new Date(license.expires_at);
+                    const daysRemaining = Math.ceil((expirationDate - new Date()) / (1000 * 60 * 60 * 24));
+                    
+                    if (daysRemaining > 0 && daysRemaining <= 30) {
+                        sendLicenseExpirationNotification(license.user_id, daysRemaining);
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Erreur vérification expirations:', error);
+            }
+        }
+
+        // Lancer la vérification des expirations au démarrage
+        setTimeout(checkLicenseExpirations, 5000);
+
+        // Fonctions d'analytics avancées
+        async function getAdvancedStats() {
+            try {
+                const [
+                    licensesResult,
+                    usersResult,
+                    companiesResult,
+                    analyticsResult
+                ] = await Promise.all([
+                    supabaseClient.from('licenses').select('*'),
+                    supabaseClient.from('users').select('*'),
+                    supabaseClient.from('companies').select('*'),
+                    supabaseClient.from('analytics_events').select('*')
+                        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+                ]);
+                
+                const licenses = licensesResult.data || [];
+                const users = usersResult.data || [];
+                const companies = companiesResult.data || [];
+                const analytics = analyticsResult.data || [];
+                
+                return {
+                    licenses: {
+                        total: licenses.length,
+                        active: licenses.filter(l => l.status === 'active').length,
+                        trial: licenses.filter(l => l.status === 'trial').length,
+                        expired: licenses.filter(l => l.status === 'expired').length,
+                        revenue: licenses.reduce((sum, l) => sum + (parseFloat(l.price) || 0), 0)
+                    },
+                    users: {
+                        total: users.length,
+                        active: users.filter(u => u.license_status === 'active').length,
+                        admins: users.filter(u => u.role !== 'user').length,
+                        newThisMonth: users.filter(u => 
+                            new Date(u.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+                        ).length
+                    },
+                    companies: {
+                        total: companies.length,
+                        withActiveLicenses: companies.filter(c => 
+                            licenses.some(l => l.company_id === c.id && l.status === 'active')
+                        ).length
+                    },
+                    analytics: {
+                        events: analytics.length,
+                        uniqueUsers: new Set(analytics.map(a => a.user_id)).size,
+                        loginEvents: analytics.filter(a => a.event_type === 'user_login').length
+                    }
+                };
+                
+            } catch (error) {
+                console.error('Erreur stats avancées:', error);
+                return null;
+            }
+        }
+
+        // Fonction de debug pour l'admin
+        window.adminDebug = function() {
+            console.group('=== ADMIN DEBUG ===');
+            console.log('Current User:', currentUser);
+            console.log('Company ID:', currentCompanyId);
+            console.log('Supabase Client:', !!supabaseClient);
+            console.log('Stripe:', !!stripe);
+            console.log('Is Loading:', isLoading);
+            
+            console.log('Permissions:');
+            console.log('  Is Admin:', currentUser?.role === 'company_admin' || currentUser?.role === 'super_admin');
+            console.log('  Is Super Admin:', currentUser?.role === 'super_admin');
+            console.log('  Can Manage All Companies:', currentUser?.role === 'super_admin');
+            
+            console.log('UI State:');
+            console.log('  Active Tab:', document.querySelector('.tab-content.active')?.id);
+            console.log('  Loading State Visible:', document.getElementById('loadingState').style.display !== 'none');
+            console.log('  Main Interface Visible:', document.getElementById('mainInterface').style.display !== 'none');
+            
+            getAdvancedStats().then(stats => {
+                console.log('Advanced Stats:', stats);
+            });
+            
+            console.groupEnd();
+            
+            return {
+                user: currentUser,
+                companyId: currentCompanyId,
+                hasSupabase: !!supabaseClient,
+                hasStripe: !!stripe,
+                isLoading: isLoading,
+                permissions: {
+                    isAdmin: currentUser?.role === 'company_admin' || currentUser?.role === 'super_admin',
+                    isSuperAdmin: currentUser?.role === 'super_admin'
+                }
+            };
+        };
+
+        // Message de bienvenue
+        console.log(`
+🎯 EMAILSORTPRO ADMIN INTERFACE v2.0
+
+👤 Utilisateur: ${currentUser?.email || 'En attente...'}
+🏢 Société: ${currentUser?.company?.name || 'En attente...'}
+🔐 Rôle: ${currentUser?.role || 'En attente...'}
+
+📋 Fonctions disponibles:
+   - adminDebug() - Informations de debug complètes
+   - checkLicenseExpirations() - Vérifier les expirations
+   - getAdvancedStats() - Statistiques avancées
+
+🎛️ Interface:
+   - Tableau de bord avec stats en temps réel
+   - Gestion complète des licences et utilisateurs
+   - Intégration Stripe pour les paiements
+   - Filtres et recherche avancés
+   - Actions système pour super admins
+
+⚡ Auto-refresh toutes les 5 minutes
+🔄 Actualisation manuelle avec F5
+        `);
+
+        console.log('[Admin] ✅ Interface d\'administration EmailSortPro prête');
     </script>
 </body>
 </html>
