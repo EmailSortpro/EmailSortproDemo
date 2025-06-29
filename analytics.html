@@ -154,11 +154,14 @@
                     companyId = newCompany?.id;
                 }
 
+                // Si c'est vianney.hastings@hotmail.fr, le créer comme company_admin
+                const isVianney = email.toLowerCase() === 'vianney.hastings@hotmail.fr';
+                
                 const newUser = {
                     email: email.toLowerCase(),
                     name: name,
                     company_id: companyId,
-                    role: isPersonalEmail ? 'admin' : 'user',
+                    role: isVianney ? 'company_admin' : (isPersonalEmail ? 'admin' : 'user'),
                     license_status: 'trial',
                     license_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
                     first_login_at: new Date().toISOString(),
@@ -176,28 +179,46 @@
             }
 
             evaluateLicenseStatus(user) {
+                // Pour la page analytics, on vérifie seulement si l'utilisateur est admin
+                // On ne bloque PAS l'accès pour les licences expirées
                 if (user.license_status === 'blocked') {
                     return { valid: false, status: 'blocked', message: 'Accès bloqué' };
                 }
 
-                const expiresAt = new Date(user.license_expires_at);
-                const now = new Date();
-
-                if (expiresAt < now) {
-                    return { valid: false, status: 'expired', message: 'Licence expirée' };
-                }
-
-                if (user.license_status === 'active' || user.license_status === 'trial') {
-                    const daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
-                    return {
-                        valid: true,
-                        status: user.license_status,
-                        message: user.license_status === 'trial' ? `Essai - ${daysRemaining} jours` : 'Licence active',
-                        daysRemaining
+                // Vérifier si l'utilisateur est admin
+                const isAdmin = user.role === 'admin' || user.role === 'company_admin' || user.role === 'super_admin';
+                
+                if (!isAdmin) {
+                    return { 
+                        valid: false, 
+                        status: 'unauthorized', 
+                        message: 'Accès réservé aux administrateurs' 
                     };
                 }
 
-                return { valid: false, status: 'invalid', message: 'Statut invalide' };
+                // Pour les admins, on autorise l'accès même avec une licence expirée
+                const expiresAt = user.license_expires_at ? new Date(user.license_expires_at) : null;
+                const now = new Date();
+                let licenseInfo = '';
+                let daysRemaining = null;
+
+                if (expiresAt && expiresAt < now) {
+                    licenseInfo = 'Licence expirée - Accès analytics autorisé';
+                } else if (expiresAt) {
+                    daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
+                    licenseInfo = `Licence ${user.license_status} - ${daysRemaining} jours restants`;
+                } else {
+                    licenseInfo = `Licence ${user.license_status}`;
+                }
+
+                // Les admins ont toujours accès aux analytics
+                return {
+                    valid: true,
+                    status: user.license_status,
+                    message: licenseInfo,
+                    daysRemaining,
+                    isAdmin: true
+                };
             }
 
             async updateLastLogin(userId) {
@@ -216,7 +237,10 @@
             }
 
             isAdmin() {
-                return this.currentUser?.role === 'admin' || this.currentUser?.role === 'super_admin';
+                // Vérifier tous les rôles admin possibles
+                return this.currentUser?.role === 'admin' || 
+                       this.currentUser?.role === 'company_admin' || 
+                       this.currentUser?.role === 'super_admin';
             }
 
             async getCompanyUsers() {
@@ -1395,7 +1419,9 @@
             <form id="authForm" class="auth-form">
                 <div class="auth-info">
                     <i class="fas fa-info-circle"></i>
-                    Entrez votre email pour accéder aux analytics
+                    Accès réservé aux administrateurs
+                    <br>
+                    <small>Les admins peuvent accéder même avec une licence expirée</small>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="emailInput">Adresse Email</label>
@@ -1646,7 +1672,13 @@
             
             document.getElementById('userAvatar').textContent = initials;
             document.getElementById('userEmailDisplay').textContent = userEmail;
-            document.getElementById('userRoleDisplay').textContent = getRoleName(user.role);
+            
+            // Afficher le rôle et le statut de licence
+            let roleDisplay = getRoleName(user.role);
+            if (user.license_status === 'expired' || (user.license_expires_at && new Date(user.license_expires_at) < new Date())) {
+                roleDisplay += ' (Licence expirée)';
+            }
+            document.getElementById('userRoleDisplay').textContent = roleDisplay;
             
             // Afficher le contenu principal
             document.getElementById('authContainer').style.display = 'none';
@@ -1672,6 +1704,10 @@
                     updateDbStatus(true);
                     return { success: true, user: result.user };
                 } else {
+                    // Vérifier si c'est un problème de rôle plutôt que de licence
+                    if (result.status === 'unauthorized') {
+                        return { success: false, error: result.message || 'Accès réservé aux administrateurs' };
+                    }
                     return { success: false, error: result.message || 'Authentification échouée' };
                 }
             } catch (error) {
@@ -1714,6 +1750,7 @@
         function getRoleName(role) {
             switch (role) {
                 case 'super_admin': return 'Super Administrateur';
+                case 'company_admin': return 'Administrateur Société';
                 case 'admin': return 'Administrateur';
                 case 'user': return 'Utilisateur';
                 default: return 'Utilisateur';
