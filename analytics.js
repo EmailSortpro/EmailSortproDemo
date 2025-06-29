@@ -1,662 +1,1420 @@
-// AnalyticsManager.js - Gestion des analytics pour EmailSortPro
-// Version corrigée sans boucle infinie
+// analytics.js - Module Analytics Complet pour EmailSortPro v2.0
+// Tracking des emails utilisateurs, fréquence et coûts de scan
 
 class AnalyticsManager {
     constructor() {
-        this.supabase = null;
-        this.currentUser = null;
-        this.companies = [];
-        this.users = [];
-        this.analyticsEvents = [];
+        this.storageKey = 'emailsortpro_analytics';
+        this.sessionKey = 'emailsortpro_session';
         this.initialized = false;
-        this.tablesExist = false;
-        this.isLoadingData = false; // Flag pour éviter les appels multiples
-    }
-
-    // === INITIALISATION ===
-    async initialize() {
-        if (this.initialized) return true;
-
-        try {
-            console.log('[AnalyticsManager] Initialisation...');
-            
-            // Vérifier la disponibilité de Supabase
-            if (!window.supabase) {
-                throw new Error('Supabase non disponible');
-            }
-
-            // Configuration Supabase
-            const SUPABASE_URL = 'https://oxyiamruvyliueecpaam.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94eWlhbXJ1dnlsaXVlZWNwYWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MDM0MTgsImV4cCI6MjA2NTk3OTQxOH0.Wy_jbUB7D5Bly-rZB6oc2bXUHzZQ8MivDL4vdM1jcE0';
-
-            this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-            // Vérifier les tables
-            await this.checkTablesExistence();
-
-            this.initialized = true;
-            console.log('[AnalyticsManager] ✅ Initialisé avec succès');
-            
-            return true;
-        } catch (error) {
-            console.error('[AnalyticsManager] ❌ Erreur initialisation:', error);
-            
-            this.initialized = true;
-            this.tablesExist = false;
-            return false;
-        }
-    }
-
-    async checkTablesExistence() {
-        try {
-            const requiredTables = ['users', 'companies'];
-            const results = {};
-
-            for (const table of requiredTables) {
-                try {
-                    const { error } = await this.supabase
-                        .from(table)
-                        .select('*', { count: 'exact', head: true })
-                        .limit(0);
-
-                    results[table] = !error;
-                } catch (error) {
-                    results[table] = false;
-                }
-            }
-
-            this.tablesExist = Object.values(results).every(exists => exists);
-            
-            if (this.tablesExist) {
-                console.log('[AnalyticsManager] ✅ Tables vérifiées et accessibles');
-            } else {
-                console.warn('[AnalyticsManager] ⚠️ Certaines tables non accessibles');
-            }
-        } catch (error) {
-            console.warn('[AnalyticsManager] ⚠️ Erreur vérification tables:', error);
-            this.tablesExist = false;
-        }
-    }
-
-    // === CHARGEMENT DES DONNÉES (CORRIGÉ) ===
-    async loadData() {
-        // Éviter les appels multiples simultanés
-        if (this.isLoadingData) {
-            console.log('[Analytics] Chargement déjà en cours, annulation');
-            return;
-        }
-
-        this.isLoadingData = true;
-
-        try {
-            if (!this.initialized) await this.initialize();
-
-            if (!this.tablesExist) {
-                console.error('[AnalyticsManager] Tables non disponibles - pas de données');
-                this.companies = [];
-                this.users = [];
-                this.analyticsEvents = [];
-                return;
-            }
-            
-            // Récupérer l'utilisateur actuel depuis le contexte global
-            if (window.currentUser) {
-                this.currentUser = window.currentUser;
-            }
-
-            const userRole = this.currentUser?.role || 'user';
-            
-            if (userRole === 'super_admin') {
-                // Super admin : accès à toutes les données
-                await this.loadAllCompanies();
-                await this.loadAllUsers();
-                await this.loadAllAnalytics();
-            } else if (userRole === 'company_admin') {
-                // Admin : accès aux données de sa société uniquement
-                const companyId = this.currentUser.company_id;
-                await this.loadCompanyData(companyId);
-            } else {
-                // Utilisateur normal : accès limité
-                await this.loadUserData(this.currentUser?.id);
-            }
-
-            console.log('[AnalyticsManager] ✅ Données chargées avec succès');
-        } catch (error) {
-            console.error('[AnalyticsManager] Erreur lors du chargement des données:', error);
-            // En cas d'erreur, initialiser avec des tableaux vides
-            this.companies = [];
-            this.users = [];
-            this.analyticsEvents = [];
-        } finally {
-            this.isLoadingData = false;
-        }
-    }
-
-    // === CHARGEMENT DEPUIS LA BASE DE DONNÉES ===
-    async loadAllCompanies() {
-        try {
-            const { data, error } = await this.supabase
-                .from('companies')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            this.companies = data || [];
-            console.log('[AnalyticsManager] ✅ Sociétés chargées:', this.companies.length);
-        } catch (error) {
-            console.error('[AnalyticsManager] Erreur chargement sociétés:', error);
-            this.companies = [];
-        }
-    }
-
-    async loadAllUsers() {
-        try {
-            // Charger les utilisateurs avec requête simplifiée
-            const { data: users, error } = await this.supabase
-                .from('users')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-
-            // Charger les sociétés et associer
-            const { data: companies } = await this.supabase
-                .from('companies')
-                .select('*');
-
-            const companiesMap = {};
-            companies?.forEach(company => {
-                companiesMap[company.id] = company;
-            });
-
-            // Associer les sociétés aux utilisateurs
-            users.forEach(user => {
-                if (user.company_id && companiesMap[user.company_id]) {
-                    user.company = companiesMap[user.company_id];
-                }
-            });
-
-            this.users = users || [];
-            console.log('[AnalyticsManager] ✅ Utilisateurs chargés:', this.users.length);
-        } catch (error) {
-            console.error('[AnalyticsManager] Erreur chargement utilisateurs:', error);
-            this.users = [];
-        }
-    }
-
-    async loadAllAnalytics() {
-        try {
-            // Tenter de charger les analytics si la table existe
-            const { data, error } = await this.supabase
-                .from('analytics_events')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(100);
-
-            if (error) {
-                // Si la table n'existe pas, créer des données simulées basées sur les vrais utilisateurs
-                this.generateSimulatedAnalytics();
-            } else {
-                this.analyticsEvents = data || [];
-            }
-            
-            console.log('[AnalyticsManager] ✅ Analytics chargés:', this.analyticsEvents.length, 'événements');
-        } catch (error) {
-            console.warn('[AnalyticsManager] Table analytics_events non disponible, génération de données simulées');
-            this.generateSimulatedAnalytics();
-        }
-    }
-
-    async loadCompanyData(companyId) {
-        try {
-            // Utilisateurs de la société
-            const { data: users, error: usersError } = await this.supabase
-                .from('users')
-                .select('*')
-                .eq('company_id', companyId)
-                .order('created_at', { ascending: false });
-
-            if (usersError) throw usersError;
-
-            // Charger la société
-            const { data: company } = await this.supabase
-                .from('companies')
-                .select('*')
-                .eq('id', companyId)
-                .single();
-
-            // Associer la société aux utilisateurs
-            users.forEach(user => {
-                user.company = company;
-            });
-
-            this.users = users || [];
-            this.companies = company ? [company] : [];
-
-            // Analytics simulés pour la société
-            this.generateSimulatedAnalytics();
-
-            console.log('[AnalyticsManager] ✅ Données société chargées:', companyId);
-        } catch (error) {
-            console.error('[AnalyticsManager] Erreur chargement données société:', error);
-            this.users = [];
-            this.companies = [];
-            this.analyticsEvents = [];
-        }
-    }
-
-    async loadUserData(userId) {
-        try {
-            // Pour un utilisateur normal, données limitées
-            this.generateSimulatedAnalytics();
-            console.log('[AnalyticsManager] ✅ Données utilisateur chargées:', userId);
-        } catch (error) {
-            console.error('[AnalyticsManager] Erreur chargement données utilisateur:', error);
-            this.analyticsEvents = [];
-        }
-    }
-
-    // === GÉNÉRATION DE DONNÉES ANALYTICS SIMULÉES ===
-    generateSimulatedAnalytics() {
-        if (!this.users || this.users.length === 0) {
-            this.analyticsEvents = [];
-            return;
-        }
-
-        const eventTypes = ['page_view', 'feature_use', 'export_data', 'user_login', 'report_generated', 'search_performed'];
-        const now = new Date();
+        this.currentSession = null;
+        this.analytics = this.loadAnalytics();
         
-        this.analyticsEvents = [];
-        
-        // Générer des événements basés sur les vrais utilisateurs
-        for (let i = 0; i < Math.min(50, this.users.length * 10); i++) {
-            const daysAgo = Math.floor(Math.random() * 30);
-            const eventDate = new Date(now);
-            eventDate.setDate(eventDate.getDate() - daysAgo);
-            
-            const randomUser = this.users[Math.floor(Math.random() * this.users.length)];
-            
-            this.analyticsEvents.push({
-                id: `simulated-event-${i}`,
-                user_id: randomUser.id,
-                users: randomUser,
-                event_type: eventTypes[Math.floor(Math.random() * eventTypes.length)],
-                event_data: { 
-                    simulated: true, 
-                    value: Math.random() * 100,
-                    user_email: randomUser.email,
-                    company: randomUser.company?.name
-                },
-                created_at: eventDate.toISOString()
-            });
-        }
-
-        // Trier par date décroissante
-        this.analyticsEvents.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        
-        console.log('[AnalyticsManager] 📊 Données analytics simulées générées:', this.analyticsEvents.length, 'événements');
-    }
-
-    // === STATISTIQUES ===
-    getGlobalStats() {
-        const now = new Date();
-        
-        return {
-            totalCompanies: this.companies.length,
-            totalUsers: this.users.length,
-            activeUsers: this.users.filter(u => 
-                u.license_status === 'active' || 
-                u.license_status === 'trial'
-            ).length,
-            blockedUsers: this.users.filter(u => u.license_status === 'blocked').length,
-            totalEvents: this.analyticsEvents.length,
-            eventsToday: this.analyticsEvents.filter(e => {
-                const eventDate = new Date(e.created_at);
-                return eventDate.toDateString() === now.toDateString();
-            }).length
+        // Configuration des coûts (en centimes d'euros)
+        this.costs = {
+            emailScan: 0.5,        // 0.5 centime par email scanné
+            aiAnalysis: 2,         // 2 centimes par analyse IA
+            taskGeneration: 1,     // 1 centime par tâche générée
+            domainOrganization: 3  // 3 centimes par organisation de domaine
         };
-    }
-
-    getCompanyStats(companyId) {
-        const companyUsers = this.users.filter(u => u.company_id === companyId);
-        const userIds = companyUsers.map(u => u.id);
-        const companyEvents = this.analyticsEvents.filter(e => userIds.includes(e.user_id));
-
-        return {
-            totalUsers: companyUsers.length,
-            activeUsers: companyUsers.filter(u => 
-                u.license_status === 'active' || 
-                u.license_status === 'trial'
-            ).length,
-            blockedUsers: companyUsers.filter(u => u.license_status === 'blocked').length,
-            totalEvents: companyEvents.length
-        };
-    }
-
-    getUserStats(userId) {
-        const userEvents = this.analyticsEvents.filter(e => e.user_id === userId);
         
-        return {
-            totalEvents: userEvents.length,
-            eventTypes: [...new Set(userEvents.map(e => e.event_type))],
-            lastActivity: userEvents.length > 0 ? userEvents[0].created_at : null
-        };
+        console.log('[Analytics] Manager initialized v2.0');
+        this.initializeSession();
     }
 
-    // === MÉTHODES DE COMPATIBILITÉ ===
-    getAnalyticsData() {
-        const stats = this.getGlobalStats();
+    // === GESTION DES SESSIONS ===
+    initializeSession() {
+        const sessionId = this.generateSessionId();
+        const timestamp = new Date().toISOString();
+        const userAgent = navigator.userAgent;
+        const domain = window.location.hostname;
         
-        return {
-            scanStats: {
-                totalScans: stats.totalEvents,
-                successfulScans: Math.floor(stats.totalEvents * 0.95),
-                failedScans: Math.floor(stats.totalEvents * 0.05),
-                avgScanTime: 2.3
-            },
-            userStats: {
-                totalUsers: stats.totalUsers,
-                activeUsers: stats.activeUsers,
-                newUsersThisMonth: Math.floor(stats.totalUsers * 0.1),
-                blockedUsers: stats.blockedUsers
-            },
-            systemStats: {
-                uptime: '99.9%',
-                responseTime: '120ms',
-                errorRate: '0.1%',
-                tablesAvailable: this.tablesExist
-            },
-            companies: this.companies,
-            users: this.users,
-            events: this.analyticsEvents,
-            dataSource: this.tablesExist ? 'database' : 'unavailable'
+        this.currentSession = {
+            sessionId: sessionId,
+            startTime: timestamp,
+            domain: domain,
+            userAgent: userAgent,
+            actions: [],
+            errors: [],
+            emailStats: null,
+            authProvider: null,
+            userInfo: null,
+            costs: {
+                total: 0,
+                breakdown: {}
+            }
         };
+
+        // Sauvegarder la session courante
+        sessionStorage.setItem(this.sessionKey, JSON.stringify(this.currentSession));
+        
+        // Enregistrer le démarrage de session
+        this.trackEvent('session_start', {
+            domain: domain,
+            userAgent: userAgent.substring(0, 100),
+            timestamp: timestamp
+        });
+
+        console.log('[Analytics] Session initialized:', sessionId);
     }
 
-    // === TRACKING D'ÉVÉNEMENTS ===
-    async trackEvent(eventType, eventData = {}) {
-        if (!this.currentUser) return;
+    generateSessionId() {
+        return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    // === TRACKING DES ÉVÉNEMENTS ===
+    trackEvent(eventType, eventData = {}) {
+        if (!this.currentSession) {
+            this.initializeSession();
+        }
 
         const event = {
-            id: `event-${Date.now()}`,
-            user_id: this.currentUser.id,
-            event_type: eventType,
-            event_data: eventData,
-            created_at: new Date().toISOString()
+            type: eventType,
+            timestamp: new Date().toISOString(),
+            data: eventData,
+            sessionId: this.currentSession.sessionId,
+            userEmail: this.currentSession.userInfo?.email || 'anonymous'
         };
 
-        // Ajouter à la liste locale
-        this.analyticsEvents.unshift(event);
+        // Ajouter à la session courante
+        this.currentSession.actions.push(event);
+        sessionStorage.setItem(this.sessionKey, JSON.stringify(this.currentSession));
 
-        // Sauvegarder en base si possible
-        if (this.tablesExist && this.supabase) {
-            try {
-                await this.supabase
-                    .from('analytics_events')
-                    .insert([{
-                        user_id: this.currentUser.id,
-                        event_type: eventType,
-                        event_data: eventData
-                    }]);
-            } catch (error) {
-                console.warn('[AnalyticsManager] Erreur sauvegarde événement:', error);
+        // Ajouter aux analytics persistantes
+        if (!this.analytics.events) {
+            this.analytics.events = [];
+        }
+        this.analytics.events.push(event);
+
+        // Maintenir seulement les 5000 derniers événements pour plus d'historique
+        if (this.analytics.events.length > 5000) {
+            this.analytics.events = this.analytics.events.slice(-5000);
+        }
+
+        this.saveAnalytics();
+        console.log('[Analytics] Event tracked:', eventType, eventData);
+    }
+
+    // === TRACKING SPÉCIFIQUE EMAILSORTPRO ===
+    trackAuthentication(provider, userInfo) {
+        this.currentSession.authProvider = provider;
+        this.currentSession.userInfo = {
+            name: userInfo.name || userInfo.displayName,
+            email: userInfo.email || userInfo.mail || userInfo.userPrincipalName,
+            domain: userInfo.email ? userInfo.email.split('@')[1] : 'unknown',
+            id: userInfo.id || null
+        };
+
+        this.trackEvent('auth_success', {
+            provider: provider,
+            userEmail: this.currentSession.userInfo.email,
+            userDomain: this.currentSession.userInfo.domain,
+            userName: this.currentSession.userInfo.name
+        });
+
+        // Mettre à jour les stats utilisateurs par email
+        this.updateUserStatsByEmail();
+    }
+
+    trackPageVisit(pageName) {
+        this.trackEvent('page_visit', {
+            page: pageName,
+            userEmail: this.currentSession.userInfo?.email || 'anonymous',
+            timestamp: new Date().toISOString()
+        });
+    }
+
+    trackEmailScan(emailCount, errors = []) {
+        const userEmail = this.currentSession.userInfo?.email || 'anonymous';
+        const scanCost = emailCount * this.costs.emailScan;
+        
+        const scanData = {
+            emailCount: emailCount,
+            errorCount: errors.length,
+            domain: window.location.hostname,
+            userEmail: userEmail,
+            cost: scanCost,
+            timestamp: new Date().toISOString()
+        };
+
+        if (errors.length > 0) {
+            scanData.errors = errors;
+            errors.forEach(error => this.trackError('scan_error', error));
+        }
+
+        this.trackEvent('email_scan', scanData);
+        
+        // Mettre à jour les coûts de la session
+        this.updateSessionCost('emailScan', scanCost);
+        
+        // Mettre à jour les stats de scan par utilisateur
+        this.updateScanStatsByUser(emailCount, scanCost);
+    }
+
+    trackAIAnalysis(analysisType, itemCount) {
+        const userEmail = this.currentSession.userInfo?.email || 'anonymous';
+        const analysisCost = itemCount * this.costs.aiAnalysis;
+        
+        this.trackEvent('ai_analysis', {
+            type: analysisType,
+            itemCount: itemCount,
+            userEmail: userEmail,
+            cost: analysisCost,
+            timestamp: new Date().toISOString()
+        });
+        
+        this.updateSessionCost('aiAnalysis', analysisCost);
+    }
+
+    trackTaskGeneration(taskCount, categories = []) {
+        const userEmail = this.currentSession.userInfo?.email || 'anonymous';
+        const taskCost = taskCount * this.costs.taskGeneration;
+        
+        this.trackEvent('task_generation', {
+            taskCount: taskCount,
+            categories: categories,
+            userEmail: userEmail,
+            cost: taskCost,
+            timestamp: new Date().toISOString()
+        });
+        
+        this.updateSessionCost('taskGeneration', taskCost);
+    }
+
+    trackDomainOrganization(domainCount, emailCount) {
+        const userEmail = this.currentSession.userInfo?.email || 'anonymous';
+        const orgCost = domainCount * this.costs.domainOrganization;
+        
+        this.trackEvent('domain_organization', {
+            domainCount: domainCount,
+            emailCount: emailCount,
+            userEmail: userEmail,
+            cost: orgCost,
+            timestamp: new Date().toISOString()
+        });
+        
+        this.updateSessionCost('domainOrganization', orgCost);
+    }
+
+    trackError(errorType, errorData) {
+        const error = {
+            type: errorType,
+            message: errorData.message || errorData,
+            stack: errorData.stack,
+            timestamp: new Date().toISOString(),
+            page: window.location.pathname,
+            userAgent: navigator.userAgent.substring(0, 100),
+            userEmail: this.currentSession.userInfo?.email || 'anonymous'
+        };
+
+        if (this.currentSession) {
+            this.currentSession.errors.push(error);
+            sessionStorage.setItem(this.sessionKey, JSON.stringify(this.currentSession));
+        }
+
+        this.trackEvent('error', error);
+    }
+
+    // === MISE À JOUR DES STATISTIQUES ===
+    updateUserStatsByEmail() {
+        if (!this.currentSession.userInfo?.email) return;
+
+        const userEmail = this.currentSession.userInfo.email;
+        
+        if (!this.analytics.userStatsByEmail) {
+            this.analytics.userStatsByEmail = {};
+        }
+
+        if (!this.analytics.userStatsByEmail[userEmail]) {
+            this.analytics.userStatsByEmail[userEmail] = {
+                name: this.currentSession.userInfo.name,
+                domain: this.currentSession.userInfo.domain,
+                firstSeen: new Date().toISOString(),
+                lastAccess: null,
+                totalSessions: 0,
+                totalScans: 0,
+                totalEmailsScanned: 0,
+                totalCost: 0,
+                providers: {},
+                scanHistory: [],
+                costBreakdown: {
+                    emailScan: 0,
+                    aiAnalysis: 0,
+                    taskGeneration: 0,
+                    domainOrganization: 0
+                }
+            };
+        }
+
+        const userStats = this.analytics.userStatsByEmail[userEmail];
+        userStats.lastAccess = new Date().toISOString();
+        userStats.totalSessions++;
+        
+        const provider = this.currentSession.authProvider;
+        if (!userStats.providers[provider]) {
+            userStats.providers[provider] = 0;
+        }
+        userStats.providers[provider]++;
+
+        this.saveAnalytics();
+    }
+
+    updateScanStatsByUser(emailCount, cost) {
+        if (!this.currentSession.userInfo?.email) return;
+        
+        const userEmail = this.currentSession.userInfo.email;
+        const userStats = this.analytics.userStatsByEmail[userEmail];
+        
+        if (userStats) {
+            userStats.totalScans++;
+            userStats.totalEmailsScanned += emailCount;
+            userStats.totalCost += cost;
+            userStats.costBreakdown.emailScan += cost;
+            
+            // Ajouter à l'historique de scan (garder les 100 derniers)
+            userStats.scanHistory.push({
+                date: new Date().toISOString(),
+                emailCount: emailCount,
+                cost: cost
+            });
+            
+            if (userStats.scanHistory.length > 100) {
+                userStats.scanHistory = userStats.scanHistory.slice(-100);
             }
         }
 
-        console.log('[AnalyticsManager] 📊 Événement tracké:', eventType);
+        // Mettre à jour les stats globales de scan
+        if (!this.analytics.scanStats) {
+            this.analytics.scanStats = {
+                totalScans: 0,
+                totalEmails: 0,
+                totalCost: 0,
+                averageEmailsPerScan: 0,
+                scansByDay: {},
+                scansByUser: {}
+            };
+        }
+
+        this.analytics.scanStats.totalScans++;
+        this.analytics.scanStats.totalEmails += emailCount;
+        this.analytics.scanStats.totalCost += cost;
+        this.analytics.scanStats.averageEmailsPerScan = 
+            Math.round(this.analytics.scanStats.totalEmails / this.analytics.scanStats.totalScans);
+
+        // Stats par jour
+        const today = new Date().toISOString().split('T')[0];
+        if (!this.analytics.scanStats.scansByDay[today]) {
+            this.analytics.scanStats.scansByDay[today] = { 
+                scans: 0, 
+                emails: 0, 
+                cost: 0,
+                users: new Set()
+            };
+        }
+        this.analytics.scanStats.scansByDay[today].scans++;
+        this.analytics.scanStats.scansByDay[today].emails += emailCount;
+        this.analytics.scanStats.scansByDay[today].cost += cost;
+        this.analytics.scanStats.scansByDay[today].users.add(userEmail);
+
+        // Convertir Set en Array pour la sauvegarde
+        this.analytics.scanStats.scansByDay[today].users = 
+            Array.from(this.analytics.scanStats.scansByDay[today].users);
+
+        this.saveAnalytics();
     }
 
-    // === MÉTHODES POUR APP.JS COMPATIBILITY ===
-    trackAuthentication(provider, userInfo) {
-        console.log('[Analytics] Tracking authentication:', provider, userInfo?.email);
-        return this.trackEvent('user_authentication', {
-            provider: provider,
-            email: userInfo?.email,
-            name: userInfo?.displayName || userInfo?.name,
-            company: userInfo?.company
-        });
-    }
-
-    onError(errorType, errorData) {
-        console.log('[Analytics] Tracking error:', errorType);
-        return this.trackEvent('error_occurred', {
-            errorType: errorType,
-            ...errorData
-        });
-    }
-
-    // === MÉTHODES DE FILTRAGES ===
-    filterUsersByCompany(companyId) {
-        return this.users.filter(u => u.company_id === companyId);
-    }
-
-    filterUsersByStatus(status) {
-        return this.users.filter(u => u.license_status === status);
-    }
-
-    filterEventsByUser(userId) {
-        return this.analyticsEvents.filter(e => e.user_id === userId);
-    }
-
-    filterEventsByType(eventType) {
-        return this.analyticsEvents.filter(e => e.event_type === eventType);
-    }
-
-    filterEventsByDateRange(startDate, endDate) {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
+    updateSessionCost(costType, amount) {
+        if (!this.currentSession.costs.breakdown[costType]) {
+            this.currentSession.costs.breakdown[costType] = 0;
+        }
         
-        return this.analyticsEvents.filter(e => {
-            const eventDate = new Date(e.created_at);
-            return eventDate >= start && eventDate <= end;
-        });
+        this.currentSession.costs.breakdown[costType] += amount;
+        this.currentSession.costs.total += amount;
+        
+        sessionStorage.setItem(this.sessionKey, JSON.stringify(this.currentSession));
+        
+        // Mettre à jour le coût total de l'utilisateur
+        if (this.currentSession.userInfo?.email) {
+            const userEmail = this.currentSession.userInfo.email;
+            if (this.analytics.userStatsByEmail[userEmail]) {
+                this.analytics.userStatsByEmail[userEmail].totalCost += amount;
+                this.analytics.userStatsByEmail[userEmail].costBreakdown[costType] += amount;
+            }
+        }
+        
+        this.saveAnalytics();
     }
 
-    // === MÉTHODES D'EXPORT ===
-    exportUsersCSV() {
-        const headers = ['Email', 'Nom', 'Société', 'Rôle', 'Statut', 'Dernière connexion'];
-        const rows = this.users.map(user => [
-            user.email,
-            user.name || '',
-            user.company?.name || '',
-            user.role || 'user',
-            user.license_status || '',
-            user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : ''
-        ]);
-
-        return this.generateCSV([headers, ...rows]);
-    }
-
-    exportEventsCSV() {
-        const headers = ['Date', 'Utilisateur', 'Type d\'événement', 'Données'];
-        const rows = this.analyticsEvents.map(event => [
-            new Date(event.created_at).toLocaleString(),
-            event.users?.email || event.user_id,
-            event.event_type,
-            JSON.stringify(event.event_data)
-        ]);
-
-        return this.generateCSV([headers, ...rows]);
-    }
-
-    generateCSV(data) {
-        return data.map(row => 
-            row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
-        ).join('\n');
-    }
-
-    // === MÉTHODES DE RECHERCHE ===
-    searchUsers(query) {
-        const searchTerm = query.toLowerCase();
-        return this.users.filter(user => 
-            user.email.toLowerCase().includes(searchTerm) ||
-            (user.name && user.name.toLowerCase().includes(searchTerm)) ||
-            (user.company?.name && user.company.name.toLowerCase().includes(searchTerm))
-        );
-    }
-
-    searchCompanies(query) {
-        const searchTerm = query.toLowerCase();
-        return this.companies.filter(company => 
-            company.name.toLowerCase().includes(searchTerm) ||
-            (company.domain && company.domain.toLowerCase().includes(searchTerm))
-        );
-    }
-
-    // === MÉTHODES D'ACCÈS AUX DONNÉES ===
-    getAllUsers() {
-        return this.users;
-    }
-
-    getAllCompanies() {
-        return this.companies;
-    }
-
-    // === MÉTHODES DE DIAGNOSTIC ===
-    getDiagnosticInfo() {
+    // === STOCKAGE ET RÉCUPÉRATION ===
+    loadAnalytics() {
+        try {
+            const data = localStorage.getItem(this.storageKey);
+            if (data) {
+                return JSON.parse(data);
+            }
+        } catch (error) {
+            console.warn('[Analytics] Error loading analytics:', error);
+        }
+        
         return {
-            initialized: this.initialized,
-            tablesExist: this.tablesExist,
-            currentUser: this.currentUser ? {
-                email: this.currentUser.email,
-                role: this.currentUser.role,
-                company: this.currentUser.company?.name
-            } : null,
-            dataLoaded: {
-                companies: this.companies.length,
-                users: this.users.length,
-                events: this.analyticsEvents.length
+            events: [],
+            userStats: {}, // Ancienne structure par domaine (legacy)
+            userStatsByEmail: {}, // Nouvelle structure par email
+            scanStats: {
+                totalScans: 0,
+                totalEmails: 0,
+                totalCost: 0,
+                averageEmailsPerScan: 0,
+                scansByDay: {},
+                scansByUser: {}
             },
-            dataSource: this.tablesExist ? 'database' : 'unavailable',
-            isLoadingData: this.isLoadingData
+            createdAt: new Date().toISOString()
         };
+    }
+
+    saveAnalytics() {
+        try {
+            this.analytics.lastUpdated = new Date().toISOString();
+            localStorage.setItem(this.storageKey, JSON.stringify(this.analytics));
+        } catch (error) {
+            console.warn('[Analytics] Error saving analytics:', error);
+        }
+    }
+
+    // === MÉTHODES D'ANALYSE ===
+    getAnalyticsData() {
+        return {
+            ...this.analytics,
+            currentSession: this.currentSession
+        };
+    }
+
+    getUsersByEmail() {
+        const users = {};
+        
+        Object.keys(this.analytics.userStatsByEmail || {}).forEach(email => {
+            const stats = this.analytics.userStatsByEmail[email];
+            users[email] = {
+                name: stats.name,
+                domain: stats.domain,
+                firstSeen: stats.firstSeen,
+                lastAccess: stats.lastAccess,
+                totalSessions: stats.totalSessions,
+                totalScans: stats.totalScans,
+                totalEmailsScanned: stats.totalEmailsScanned,
+                totalCost: stats.totalCost,
+                averageEmailsPerScan: stats.totalScans > 0 ? 
+                    Math.round(stats.totalEmailsScanned / stats.totalScans) : 0,
+                providers: stats.providers,
+                costBreakdown: stats.costBreakdown,
+                scanHistory: stats.scanHistory
+            };
+        });
+
+        return users;
+    }
+
+    getTopUsers(limit = 10) {
+        const users = this.getUsersByEmail();
+        
+        return Object.entries(users)
+            .sort(([,a], [,b]) => b.totalScans - a.totalScans)
+            .slice(0, limit)
+            .map(([email, stats]) => ({
+                email,
+                ...stats
+            }));
+    }
+
+    getUserCostAnalysis() {
+        const users = this.getUsersByEmail();
+        const analysis = {
+            totalRevenue: 0,
+            averageRevenuePerUser: 0,
+            userCount: 0,
+            costBreakdown: {
+                emailScan: 0,
+                aiAnalysis: 0,
+                taskGeneration: 0,
+                domainOrganization: 0
+            },
+            topSpenders: []
+        };
+        
+        const userCosts = [];
+        
+        Object.entries(users).forEach(([email, stats]) => {
+            analysis.totalRevenue += stats.totalCost;
+            analysis.userCount++;
+            
+            Object.keys(stats.costBreakdown).forEach(type => {
+                analysis.costBreakdown[type] += stats.costBreakdown[type];
+            });
+            
+            userCosts.push({
+                email,
+                name: stats.name,
+                totalCost: stats.totalCost,
+                costBreakdown: stats.costBreakdown
+            });
+        });
+        
+        if (analysis.userCount > 0) {
+            analysis.averageRevenuePerUser = analysis.totalRevenue / analysis.userCount;
+        }
+        
+        analysis.topSpenders = userCosts
+            .sort((a, b) => b.totalCost - a.totalCost)
+            .slice(0, 10);
+        
+        return analysis;
+    }
+
+    getPageUsageStats() {
+        const pages = {};
+        
+        (this.analytics.events || [])
+            .filter(event => event.type === 'page_visit')
+            .forEach(event => {
+                const page = event.data.page;
+                if (!pages[page]) {
+                    pages[page] = { visits: 0, lastVisit: null, users: new Set() };
+                }
+                pages[page].visits++;
+                pages[page].lastVisit = event.timestamp;
+                pages[page].users.add(event.userEmail);
+            });
+
+        // Convertir les Sets en Arrays et calculer les utilisateurs uniques
+        Object.keys(pages).forEach(page => {
+            pages[page].uniqueUsers = pages[page].users.size;
+            pages[page].users = Array.from(pages[page].users);
+        });
+
+        return pages;
+    }
+
+    getErrorStats() {
+        const errors = {};
+        
+        (this.analytics.events || [])
+            .filter(event => event.type === 'error')
+            .forEach(event => {
+                const errorType = event.data.type || 'unknown';
+                if (!errors[errorType]) {
+                    errors[errorType] = { 
+                        count: 0, 
+                        lastOccurrence: null, 
+                        messages: [],
+                        affectedUsers: new Set()
+                    };
+                }
+                errors[errorType].count++;
+                errors[errorType].lastOccurrence = event.timestamp;
+                errors[errorType].affectedUsers.add(event.userEmail);
+                
+                if (event.data.message && !errors[errorType].messages.includes(event.data.message)) {
+                    errors[errorType].messages.push(event.data.message);
+                }
+            });
+
+        // Convertir les Sets en Arrays
+        Object.keys(errors).forEach(errorType => {
+            errors[errorType].affectedUsersCount = errors[errorType].affectedUsers.size;
+            errors[errorType].affectedUsers = Array.from(errors[errorType].affectedUsers);
+        });
+
+        return errors;
+    }
+
+    getScanFrequency() {
+        const scans = (this.analytics.events || [])
+            .filter(event => event.type === 'email_scan')
+            .map(event => ({
+                date: event.timestamp.split('T')[0],
+                emailCount: event.data.emailCount,
+                cost: event.data.cost,
+                userEmail: event.userEmail,
+                timestamp: event.timestamp
+            }));
+
+        // Grouper par date
+        const scansByDate = {};
+        scans.forEach(scan => {
+            if (!scansByDate[scan.date]) {
+                scansByDate[scan.date] = { 
+                    count: 0, 
+                    totalEmails: 0, 
+                    totalCost: 0,
+                    users: new Set()
+                };
+            }
+            scansByDate[scan.date].count++;
+            scansByDate[scan.date].totalEmails += scan.emailCount;
+            scansByDate[scan.date].totalCost += scan.cost || 0;
+            scansByDate[scan.date].users.add(scan.userEmail);
+        });
+
+        // Convertir les Sets en Arrays et calculer les moyennes
+        Object.keys(scansByDate).forEach(date => {
+            const stats = scansByDate[date];
+            stats.uniqueUsers = stats.users.size;
+            stats.users = Array.from(stats.users);
+            stats.averageEmailsPerScan = Math.round(stats.totalEmails / stats.count);
+            stats.averageCostPerScan = stats.totalCost / stats.count;
+        });
+
+        return scansByDate;
+    }
+
+    getRecentActivity(hours = 24) {
+        const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+        
+        return (this.analytics.events || [])
+            .filter(event => event.timestamp > cutoff)
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    }
+
+    // === EXPORT ET NETTOYAGE ===
+    exportAnalytics() {
+        const exportData = {
+            ...this.analytics,
+            exportedAt: new Date().toISOString(),
+            version: '2.0',
+            summary: {
+                totalUsers: Object.keys(this.analytics.userStatsByEmail || {}).length,
+                totalScans: this.analytics.scanStats?.totalScans || 0,
+                totalRevenue: this.getUserCostAnalysis().totalRevenue,
+                topUsers: this.getTopUsers(5)
+            }
+        };
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+            type: 'application/json'
+        });
+        
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `emailsortpro-analytics-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        
+        URL.revokeObjectURL(url);
+    }
+
+    clearAnalytics() {
+        this.analytics = {
+            events: [],
+            userStats: {},
+            userStatsByEmail: {},
+            scanStats: {
+                totalScans: 0,
+                totalEmails: 0,
+                totalCost: 0,
+                averageEmailsPerScan: 0,
+                scansByDay: {},
+                scansByUser: {}
+            },
+            createdAt: new Date().toISOString()
+        };
+        
+        localStorage.removeItem(this.storageKey);
+        sessionStorage.removeItem(this.sessionKey);
+        
+        console.log('[Analytics] Analytics data cleared');
+    }
+
+    // === MÉTHODES POUR L'INTÉGRATION ===
+    // Ces méthodes doivent être appelées depuis les autres modules
+
+    // À appeler depuis PageManager.js
+    onPageLoad(pageName) {
+        this.trackPageVisit(pageName);
+    }
+
+    // À appeler depuis AuthService.js et GoogleAuthService.js
+    onAuthSuccess(provider, userInfo) {
+        this.trackAuthentication(provider, userInfo);
+    }
+
+    // À appeler depuis EmailScanner.js
+    onEmailScanComplete(emailCount, errors = []) {
+        this.trackEmailScan(emailCount, errors);
+    }
+
+    // À appeler depuis AITaskAnalyzer.js
+    onAIAnalysis(analysisType, itemCount) {
+        this.trackAIAnalysis(analysisType, itemCount);
+    }
+
+    // À appeler depuis TaskManager.js
+    onTasksGenerated(taskCount, categories = []) {
+        this.trackTaskGeneration(taskCount, categories);
+    }
+
+    // À appeler depuis UIManager.js pour les erreurs
+    onError(errorType, errorData) {
+        this.trackError(errorType, errorData);
+    }
+
+    // À appeler depuis DomainOrganizer.js
+    onDomainOrganization(domainCount, emailCount) {
+        this.trackDomainOrganization(domainCount, emailCount);
     }
 }
 
-// === CRÉATION D'INSTANCES GLOBALES ===
-window.analyticsManager = new AnalyticsManager();
+// === MODULE ANALYTICS POUR LA PAGE ===
+class AnalyticsModule {
+    constructor() {
+        this.container = null;
+        this.refreshInterval = null;
+        this.analytics = window.analyticsManager || new AnalyticsManager();
+    }
 
-// Module d'affichage pour compatibilité
-const analyticsModule = {
-    render: function() {
-        console.log('[AnalyticsModule] Rendu des analytics...');
+    render() {
+        console.log('[AnalyticsModule] Rendering analytics page...');
         
-        const container = document.getElementById('pageContent');
-        if (!container) {
-            console.warn('[AnalyticsModule] Container pageContent non trouvé');
+        const pageContent = document.getElementById('pageContent');
+        if (!pageContent) {
+            console.error('[AnalyticsModule] Page content container not found');
             return;
         }
 
-        const data = window.analyticsManager.getAnalyticsData();
-        const stats = window.analyticsManager.getGlobalStats();
+        this.container = document.createElement('div');
+        this.container.className = 'analytics-container';
+        this.container.innerHTML = this.getAnalyticsHTML();
+        
+        pageContent.innerHTML = '';
+        pageContent.appendChild(this.container);
+        
+        // Initialiser les événements
+        this.initializeEvents();
+        
+        // Charger les données
+        this.loadAnalyticsData();
+        
+        // Auto-refresh toutes les 30 secondes
+        this.startAutoRefresh();
+        
+        console.log('[AnalyticsModule] Analytics page rendered');
+    }
 
-        container.innerHTML = `
-            <div style="padding: 20px; background: white; border-radius: 8px; margin-bottom: 20px;">
-                <h3 style="margin-bottom: 16px; color: #1f2937;">
-                    📊 Aperçu des Analytics 
-                    <span style="font-size: 0.75rem; background: ${data.dataSource === 'database' ? '#dcfce7' : '#fef3c7'}; color: ${data.dataSource === 'database' ? '#16a34a' : '#d97706'}; padding: 4px 8px; border-radius: 12px; margin-left: 8px;">
-                        ${data.dataSource === 'database' ? 'Données réelles' : 'Base non disponible'}
-                    </span>
-                </h3>
-                
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
-                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #4F46E5;">
-                        <div style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">${stats.totalUsers}</div>
-                        <div style="font-size: 0.875rem; color: #64748b;">Utilisateurs total</div>
-                    </div>
-                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #16a34a;">
-                        <div style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">${stats.activeUsers}</div>
-                        <div style="font-size: 0.875rem; color: #64748b;">Utilisateurs actifs</div>
-                    </div>
-                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #dc2626;">
-                        <div style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">${stats.blockedUsers}</div>
-                        <div style="font-size: 0.875rem; color: #64748b;">Utilisateurs bloqués</div>
-                    </div>
-                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #f59e0b;">
-                        <div style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">${stats.totalEvents}</div>
-                        <div style="font-size: 0.875rem; color: #64748b;">Événements trackés</div>
+    getAnalyticsHTML() {
+        return `
+            <div class="analytics-page">
+                <div class="analytics-header">
+                    <h1><i class="fas fa-chart-line"></i> Analytics EmailSortPro</h1>
+                    <div class="analytics-actions">
+                        <button id="refreshAnalytics" class="btn-secondary">
+                            <i class="fas fa-sync"></i> Actualiser
+                        </button>
+                        <button id="exportAnalytics" class="btn-secondary">
+                            <i class="fas fa-download"></i> Exporter
+                        </button>
+                        <button id="clearAnalytics" class="btn-danger">
+                            <i class="fas fa-trash"></i> Vider
+                        </button>
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                    <div>
-                        <h4 style="margin-bottom: 12px; color: #1f2937;">Sociétés (${data.companies.length})</h4>
-                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; max-height: 200px; overflow-y: auto;">
-                            ${data.companies.length === 0 ? 
-                                '<div style="color: #64748b; text-align: center; padding: 20px;">Aucune société</div>' :
-                                data.companies.slice(0, 5).map(company => `
-                                    <div style="padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                                        <strong>${company.name}</strong><br>
-                                        <small style="color: #64748b;">${company.domain || 'Aucun domaine'}</small>
-                                    </div>
-                                `).join('')
-                            }
-                            ${data.companies.length > 5 ? 
-                                `<div style="padding: 8px 0; color: #64748b; font-style: italic;">... et ${data.companies.length - 5} autres</div>` : ''
-                            }
+                <div class="analytics-grid">
+                    <!-- Statistiques générales -->
+                    <div class="analytics-card overview-card">
+                        <h3><i class="fas fa-tachometer-alt"></i> Vue d'ensemble</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-number" id="totalUsers">-</div>
+                                <div class="stat-label">Utilisateurs</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" id="totalScans">-</div>
+                                <div class="stat-label">Scans effectués</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" id="totalEmails">-</div>
+                                <div class="stat-label">Emails analysés</div>
+                            </div>
+                            <div class="stat-item highlight">
+                                <div class="stat-number" id="totalRevenue">-</div>
+                                <div class="stat-label">Revenus (€)</div>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Top utilisateurs -->
+                    <div class="analytics-card users-card">
+                        <h3><i class="fas fa-users"></i> Top Utilisateurs</h3>
+                        <div id="topUsersChart" class="chart-container">
+                            <div class="loading">Chargement...</div>
+                        </div>
+                    </div>
+
+                    <!-- Analyse des coûts -->
+                    <div class="analytics-card costs-card">
+                        <h3><i class="fas fa-euro-sign"></i> Analyse des Coûts</h3>
+                        <div id="costsChart" class="chart-container">
+                            <div class="loading">Chargement...</div>
+                        </div>
+                    </div>
+
+                    <!-- Fréquence des scans -->
+                    <div class="analytics-card scans-card">
+                        <h3><i class="fas fa-search"></i> Fréquence des scans</h3>
+                        <div id="scansChart" class="chart-container">
+                            <div class="loading">Chargement...</div>
+                        </div>
+                    </div>
+
+                    <!-- Détail par utilisateur -->
+                    <div class="analytics-card user-details-card">
+                        <h3><i class="fas fa-user-chart"></i> Détail par Utilisateur</h3>
+                        <div id="userDetailsTable" class="table-container">
+                            <div class="loading">Chargement...</div>
+                        </div>
+                    </div>
+
+                    <!-- Activité récente -->
+                    <div class="analytics-card activity-card">
+                        <h3><i class="fas fa-clock"></i> Activité récente</h3>
+                        <div id="recentActivity" class="activity-list">
+                            <div class="loading">Chargement...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <style>
+                .analytics-page {
+                    padding: 20px;
+                    max-width: 1400px;
+                    margin: 0 auto;
+                }
+
+                .analytics-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 30px;
+                    padding-bottom: 20px;
+                    border-bottom: 2px solid #e2e8f0;
+                }
+
+                .analytics-header h1 {
+                    color: #1f2937;
+                    font-size: 2rem;
+                    font-weight: 600;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+
+                .analytics-actions {
+                    display: flex;
+                    gap: 12px;
+                }
+
+                .btn-secondary, .btn-danger {
+                    padding: 10px 16px;
+                    border: none;
+                    border-radius: 8px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    transition: all 0.2s ease;
+                }
+
+                .btn-secondary {
+                    background: #f1f5f9;
+                    color: #475569;
+                    border: 1px solid #e2e8f0;
+                }
+
+                .btn-secondary:hover {
+                    background: #e2e8f0;
+                    border-color: #cbd5e1;
+                }
+
+                .btn-danger {
+                    background: #fef2f2;
+                    color: #dc2626;
+                    border: 1px solid #fecaca;
+                }
+
+                .btn-danger:hover {
+                    background: #fee2e2;
+                    border-color: #fca5a5;
+                }
+
+                .analytics-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+                    gap: 24px;
+                }
+
+                .analytics-card {
+                    background: white;
+                    border-radius: 12px;
+                    padding: 24px;
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                    border: 1px solid #e2e8f0;
+                }
+
+                .analytics-card h3 {
+                    color: #1f2937;
+                    font-size: 1.25rem;
+                    font-weight: 600;
+                    margin-bottom: 20px;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+
+                .overview-card {
+                    grid-column: 1 / -1;
+                }
+
+                .user-details-card {
+                    grid-column: 1 / -1;
+                }
+
+                .stats-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                    gap: 20px;
+                }
+
+                .stat-item {
+                    text-align: center;
+                    padding: 20px;
+                    background: #f8fafc;
+                    border-radius: 8px;
+                }
+
+                .stat-item.highlight {
+                    background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+                    color: white;
+                }
+
+                .stat-item.highlight .stat-label {
+                    color: rgba(255, 255, 255, 0.9);
+                }
+
+                .stat-number {
+                    font-size: 2rem;
+                    font-weight: 700;
+                    color: #4F46E5;
+                    margin-bottom: 8px;
+                }
+
+                .stat-item.highlight .stat-number {
+                    color: white;
+                }
+
+                .stat-label {
+                    font-size: 0.875rem;
+                    color: #64748b;
+                    font-weight: 500;
+                }
+
+                .chart-container {
+                    min-height: 200px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .table-container {
+                    overflow-x: auto;
+                }
+
+                .user-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 0.875rem;
+                }
+
+                .user-table th {
+                    background: #f8fafc;
+                    padding: 12px;
+                    text-align: left;
+                    font-weight: 600;
+                    color: #475569;
+                    border-bottom: 2px solid #e2e8f0;
+                }
+
+                .user-table td {
+                    padding: 12px;
+                    border-bottom: 1px solid #f1f5f9;
+                }
+
+                .user-table tr:hover {
+                    background: #f8fafc;
+                }
+
+                .loading {
+                    color: #64748b;
+                    font-style: italic;
+                }
+
+                .activity-list {
+                    max-height: 300px;
+                    overflow-y: auto;
+                }
+
+                .activity-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 12px 0;
+                    border-bottom: 1px solid #f1f5f9;
+                }
+
+                .activity-item:last-child {
+                    border-bottom: none;
+                }
+
+                .activity-icon {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 14px;
+                    flex-shrink: 0;
+                }
+
+                .activity-icon.session { background: #dbeafe; color: #1d4ed8; }
+                .activity-icon.scan { background: #dcfce7; color: #16a34a; }
+                .activity-icon.error { background: #fef2f2; color: #dc2626; }
+                .activity-icon.page { background: #fef3c7; color: #d97706; }
+
+                .activity-content {
+                    flex: 1;
+                }
+
+                .activity-title {
+                    font-weight: 500;
+                    color: #1f2937;
+                    margin-bottom: 4px;
+                }
+
+                .activity-details {
+                    font-size: 0.875rem;
+                    color: #64748b;
+                }
+
+                .activity-time {
+                    font-size: 0.75rem;
+                    color: #94a3b8;
+                    white-space: nowrap;
+                }
+
+                .chart-simple {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+
+                .chart-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+
+                .chart-bar {
+                    flex: 1;
+                    height: 8px;
+                    background: #f1f5f9;
+                    border-radius: 4px;
+                    overflow: hidden;
+                }
+
+                .chart-fill {
+                    height: 100%;
+                    background: linear-gradient(90deg, #4F46E5, #6366F1);
+                    border-radius: 4px;
+                    transition: width 0.3s ease;
+                }
+
+                .chart-label {
+                    min-width: 200px;
+                    font-size: 0.875rem;
+                    color: #1f2937;
+                    font-weight: 500;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+
+                .chart-value {
+                    min-width: 60px;
+                    text-align: right;
+                    font-size: 0.875rem;
+                    color: #64748b;
+                    font-weight: 500;
+                }
+
+                .cost-breakdown {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                    margin-top: 16px;
+                }
+
+                .cost-item {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 8px 12px;
+                    background: #f8fafc;
+                    border-radius: 6px;
+                }
+
+                .cost-label {
+                    font-weight: 500;
+                    color: #475569;
+                }
+
+                .cost-value {
+                    font-weight: 600;
+                    color: #1f2937;
+                }
+
+                @media (max-width: 768px) {
+                    .analytics-grid {
+                        grid-template-columns: 1fr;
+                    }
                     
-                    <div>
-                        <h4 style="margin-bottom: 12px; color: #1f2937;">Utilisateurs récents</h4>
-                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; max-height: 200px; overflow-y: auto;">
-                            ${data.users.length === 0 ? 
-                                '<div style="color: #64748b; text-align: center; padding: 20px;">Aucun utilisateur</div>' :
-                                data.users.slice(0, 5).map(user => `
-                                    <div style="padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-                                        <strong>${user.email}</strong><br>
-                                        <small style="color: #64748b;">
-                                            ${user.company?.name || 'Sans société'} • 
-                                            ${user.license_status === 'active' ? '✅ Actif' : 
-                                              user.license_status === 'blocked' ? '❌ Bloqué' : '⏳ Essai'}
-                                        </small>
-                                    </div>
-                                `).join('')
-                            }
-                            ${data.users.length > 5 ? 
-                                `<div style="padding: 8px 0; color: #64748b; font-style: italic;">... et ${data.users.length - 5} autres</div>` : ''
-                            }
-                        </div>
-                    </div>
-                </div>
+                    .analytics-header {
+                        flex-direction: column;
+                        gap: 16px;
+                        align-items: stretch;
+                    }
+                    
+                    .analytics-actions {
+                        justify-content: center;
+                    }
+                    
+                    .stats-grid {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
+                    
+                    .chart-label {
+                        min-width: 120px;
+                        font-size: 0.75rem;
+                    }
+                    
+                    .user-table {
+                        font-size: 0.75rem;
+                    }
+                    
+                    .user-table th,
+                    .user-table td {
+                        padding: 8px;
+                    }
+                }
+            </style>
+        `;
+    }
 
-                ${data.dataSource === 'unavailable' ? `
-                    <div style="margin-top: 20px; padding: 12px; background: #fee2e2; border: 1px solid #fecaca; border-radius: 6px;">
-                        <div style="display: flex; align-items: center; gap: 8px; color: #991b1b;">
-                            <i class="fas fa-exclamation-circle"></i>
-                            <strong>Base de données non disponible</strong>
+    initializeEvents() {
+        // Bouton refresh
+        const refreshBtn = document.getElementById('refreshAnalytics');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                this.loadAnalyticsData();
+            });
+        }
+
+        // Bouton export
+        const exportBtn = document.getElementById('exportAnalytics');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                this.analytics.exportAnalytics();
+            });
+        }
+
+        // Bouton clear
+        const clearBtn = document.getElementById('clearAnalytics');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                if (confirm('Êtes-vous sûr de vouloir supprimer toutes les données analytics ?')) {
+                    this.analytics.clearAnalytics();
+                    this.loadAnalyticsData();
+                }
+            });
+        }
+    }
+
+    loadAnalyticsData() {
+        console.log('[AnalyticsModule] Loading analytics data...');
+        
+        const data = this.analytics.getAnalyticsData();
+        
+        // Statistiques générales
+        this.updateOverviewStats(data);
+        
+        // Top utilisateurs
+        this.updateTopUsersChart(data);
+        
+        // Analyse des coûts
+        this.updateCostsChart(data);
+        
+        // Fréquence des scans
+        this.updateScansChart(data);
+        
+        // Détail par utilisateur
+        this.updateUserDetailsTable(data);
+        
+        // Activité récente
+        this.updateRecentActivity(data);
+    }
+
+    updateOverviewStats(data) {
+        const users = Object.keys(data.userStatsByEmail || {});
+        const costAnalysis = this.analytics.getUserCostAnalysis();
+        
+        document.getElementById('totalUsers').textContent = users.length.toLocaleString();
+        document.getElementById('totalScans').textContent = (data.scanStats?.totalScans || 0).toLocaleString();
+        document.getElementById('totalEmails').textContent = (data.scanStats?.totalEmails || 0).toLocaleString();
+        document.getElementById('totalRevenue').textContent = 
+            (costAnalysis.totalRevenue / 100).toFixed(2) + ' €';
+    }
+
+    updateTopUsersChart(data) {
+        const container = document.getElementById('topUsersChart');
+        const topUsers = this.analytics.getTopUsers(5);
+        
+        if (topUsers.length === 0) {
+            container.innerHTML = '<div class="loading">Aucune donnée utilisateur</div>';
+            return;
+        }
+
+        const maxScans = Math.max(...topUsers.map(user => user.totalScans));
+        
+        container.innerHTML = `
+            <div class="chart-simple">
+                ${topUsers.map(user => `
+                    <div class="chart-item">
+                        <div class="chart-label" title="${user.email}">${user.email}</div>
+                        <div class="chart-bar">
+                            <div class="chart-fill" style="width: ${(user.totalScans / maxScans) * 100}%"></div>
                         </div>
-                        <p style="color: #991b1b; margin: 4px 0 0 0; font-size: 0.875rem;">
-                            Les tables requises ne sont pas accessibles. Vérifiez votre configuration Supabase.
-                        </p>
+                        <div class="chart-value">${user.totalScans} scans</div>
                     </div>
-                ` : ''}
+                `).join('')}
             </div>
         `;
-
-        console.log('[AnalyticsModule] ✅ Rendu terminé');
     }
-};
 
-window.analyticsModule = analyticsModule;
+    updateCostsChart(data) {
+        const container = document.getElementById('costsChart');
+        const costAnalysis = this.analytics.getUserCostAnalysis();
+        
+        if (costAnalysis.userCount === 0) {
+            container.innerHTML = '<div class="loading">Aucune donnée de coût</div>';
+            return;
+        }
 
-// Initialisation automatique
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[Analytics] Initialisation du manager...');
-    await window.analyticsManager.initialize();
-    // Pas d'appel automatique à loadData pour éviter les conflits
-    console.log('[Analytics] ✅ Manager initialisé');
-});
+        const costBreakdown = costAnalysis.costBreakdown;
+        const total = Object.values(costBreakdown).reduce((sum, val) => sum + val, 0);
+        
+        container.innerHTML = `
+            <div class="cost-breakdown">
+                <div class="cost-item">
+                    <span class="cost-label">Scan d'emails</span>
+                    <span class="cost-value">${(costBreakdown.emailScan / 100).toFixed(2)} €</span>
+                </div>
+                <div class="cost-item">
+                    <span class="cost-label">Analyse IA</span>
+                    <span class="cost-value">${(costBreakdown.aiAnalysis / 100).toFixed(2)} €</span>
+                </div>
+                <div class="cost-item">
+                    <span class="cost-label">Génération de tâches</span>
+                    <span class="cost-value">${(costBreakdown.taskGeneration / 100).toFixed(2)} €</span>
+                </div>
+                <div class="cost-item">
+                    <span class="cost-label">Organisation par domaine</span>
+                    <span class="cost-value">${(costBreakdown.domainOrganization / 100).toFixed(2)} €</span>
+                </div>
+                <div class="cost-item" style="background: #4F46E5; color: white; margin-top: 8px;">
+                    <span class="cost-label">Total</span>
+                    <span class="cost-value">${(total / 100).toFixed(2)} €</span>
+                </div>
+            </div>
+            <div style="margin-top: 16px; text-align: center; color: #64748b; font-size: 0.875rem;">
+                Revenu moyen par utilisateur: ${(costAnalysis.averageRevenuePerUser / 100).toFixed(2)} €
+            </div>
+        `;
+    }
 
-// Fonction de diagnostic
-window.debugAnalyticsManager = function() {
-    console.group('🔍 DEBUG ANALYTICS MANAGER');
-    const info = window.analyticsManager.getDiagnosticInfo();
-    console.log('Manager info:', info);
-    console.groupEnd();
-    return info;
-};
+    updateScansChart(data) {
+        const container = document.getElementById('scansChart');
+        const scansByDate = this.analytics.getScanFrequency();
+        
+        if (Object.keys(scansByDate).length === 0) {
+            container.innerHTML = '<div class="loading">Aucun scan effectué</div>';
+            return;
+        }
 
-console.log('[Analytics] ✅ AnalyticsManager chargé (version corrigée)');
-console.log('[Analytics] 💡 Utilisez window.analyticsManager pour accéder aux données');
-console.log('[Analytics] 🔍 Utilisez debugAnalyticsManager() pour le diagnostic');
+        const sortedDates = Object.entries(scansByDate)
+            .sort(([a], [b]) => b.localeCompare(a))
+            .slice(0, 7); // Derniers 7 jours
+        
+        const maxScans = Math.max(...sortedDates.map(([,stats]) => stats.count));
+        
+        container.innerHTML = `
+            <div class="chart-simple">
+                ${sortedDates.map(([date, stats]) => `
+                    <div class="chart-item">
+                        <div class="chart-label">${new Date(date).toLocaleDateString()}</div>
+                        <div class="chart-bar">
+                            <div class="chart-fill" style="width: ${(stats.count / maxScans) * 100}%"></div>
+                        </div>
+                        <div class="chart-value">${stats.count} (${(stats.totalCost / 100).toFixed(2)}€)</div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    updateUserDetailsTable(data) {
+        const container = document.getElementById('userDetailsTable');
+        const users = this.analytics.getUsersByEmail();
+        
+        if (Object.keys(users).length === 0) {
+            container.innerHTML = '<div class="loading">Aucune donnée utilisateur</div>';
+            return;
+        }
+
+        const sortedUsers = Object.entries(users)
+            .sort(([,a], [,b]) => b.totalCost - a.totalCost);
+        
+        container.innerHTML = `
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Nom</th>
+                        <th>Sessions</th>
+                        <th>Scans</th>
+                        <th>Emails</th>
+                        <th>Moy./Scan</th>
+                        <th>Coût Total</th>
+                        <th>Dernière Activité</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${sortedUsers.map(([email, stats]) => `
+                        <tr>
+                            <td>${email}</td>
+                            <td>${stats.name || '-'}</td>
+                            <td>${stats.totalSessions}</td>
+                            <td>${stats.totalScans}</td>
+                            <td>${stats.totalEmailsScanned}</td>
+                            <td>${stats.averageEmailsPerScan}</td>
+                            <td style="font-weight: 600; color: #4F46E5;">
+                                ${(stats.totalCost / 100).toFixed(2)} €
+                            </td>
+                            <td>${new Date(stats.lastAccess).toLocaleDateString()}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    updateRecentActivity(data) {
+        const container = document.getElementById('recentActivity');
+        const recentEvents = this.analytics.getRecentActivity(24);
+        
+        if (recentEvents.length === 0) {
+            container.innerHTML = '<div class="loading">Aucune activité récente</div>';
+            return;
+        }
+
+        const getActivityIcon = (eventType) => {
+            switch (eventType) {
+                case 'session_start': return { class: 'session', icon: 'fa-sign-in-alt' };
+                case 'email_scan': return { class: 'scan', icon: 'fa-search' };
+                case 'error': return { class: 'error', icon: 'fa-exclamation-triangle' };
+                case 'page_visit': return { class: 'page', icon: 'fa-file-alt' };
+                default: return { class: 'session', icon: 'fa-circle' };
+            }
+        };
+
+        const getActivityTitle = (event) => {
+            switch (event.type) {
+                case 'session_start': return 'Nouvelle session';
+                case 'email_scan': return `Scan de ${event.data.emailCount} emails (${(event.data.cost / 100).toFixed(2)}€)`;
+                case 'error': return `Erreur: ${event.data.type}`;
+                case 'page_visit': return `Visite page: ${event.data.page}`;
+                case 'auth_success': return `Connexion ${event.data.provider}`;
+                default: return event.type;
+            }
+        };
+
+        container.innerHTML = `
+            ${recentEvents.slice(0, 20).map(event => {
+                const icon = getActivityIcon(event.type);
+                const title = getActivityTitle(event);
+                const time = new Date(event.timestamp).toLocaleString();
+                
+                return `
+                    <div class="activity-item">
+                        <div class="activity-icon ${icon.class}">
+                            <i class="fas ${icon.icon}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">${title}</div>
+                            <div class="activity-details">
+                                ${event.userEmail || 'Anonyme'} - 
+                                ${event.data.userEmail || event.data.userName || ''}
+                            </div>
+                        </div>
+                        <div class="activity-time">${time}</div>
+                    </div>
+                `;
+            }).join('')}
+        `;
+    }
+
+    startAutoRefresh() {
+        this.refreshInterval = setInterval(() => {
+            this.loadAnalyticsData();
+        }, 30000); // Refresh toutes les 30 secondes
+    }
+
+    hide() {
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval);
+            this.refreshInterval = null;
+        }
+        
+        if (this.container) {
+            this.container.style.display = 'none';
+        }
+    }
+
+    destroy() {
+        this.hide();
+        
+        if (this.container && this.container.parentNode) {
+            this.container.parentNode.removeChild(this.container);
+        }
+        
+        this.container = null;
+    }
+}
+
+// Créer l'instance globale de l'analytics manager
+if (!window.analyticsManager) {
+    window.analyticsManager = new AnalyticsManager();
+    console.log('[Analytics] Global AnalyticsManager created v2.0');
+}
+
+// Créer le module analytics global
+window.analyticsModule = new AnalyticsModule();
+
+console.log('[Analytics] ✅ Analytics module loaded successfully v2.0 - Email tracking & Cost analysis');
