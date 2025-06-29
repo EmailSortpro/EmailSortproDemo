@@ -1,6 +1,13 @@
 // config-supabase.js - Configuration Supabase pour EmailSortPro
 // Version corrigée avec support des variables d'environnement Netlify
 
+// Charger Supabase depuis CDN si pas déjà disponible
+if (typeof window.supabase === 'undefined') {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    document.head.appendChild(script);
+}
+
 class SupabaseConfig {
     constructor() {
         this.config = null;
