@@ -1,5 +1,5 @@
-// app.js - Application EmailSortPro avec intégration Analytics et License - CORRIGÉ v5.2
-// Version corrigée avec gestion d'erreurs améliorée et système de licence
+// app.js - Application EmailSortPro CORRIGÉ v5.3
+// Version corrigée avec gestion robuste du LicenseService
 
 class App {
     constructor() {
@@ -14,8 +14,10 @@ class App {
         this.netlifyDomain = 'coruscating-dodol-f30e8d.netlify.app';
         this.isNetlifyEnv = window.location.hostname.includes('netlify.app');
         this.licenseCheckPending = false;
+        this.licenseCheckAttempts = 0;
+        this.maxLicenseCheckAttempts = 20; // 2 secondes max
         
-        console.log('[App] Constructor - EmailSortPro v5.2 with license verification...');
+        console.log('[App] Constructor - EmailSortPro v5.3 with improved license handling...');
         console.log('[App] Environment:', this.isNetlifyEnv ? 'Netlify' : 'Local');
         console.log('[App] Domain:', window.location.hostname);
         
@@ -143,22 +145,30 @@ class App {
     }
 
     // =====================================
-    // GESTION DE LA VÉRIFICATION DE LICENCE
+    // GESTION AMÉLIORÉE DE LA VÉRIFICATION DE LICENCE
     // =====================================
     async waitForLicenseCheck() {
         console.log('[App] Waiting for license check completion...');
         
-        // Vérifier d'abord si licenseService est disponible
+        // Vérifier d'abord si licenseService existe
         if (!window.licenseService) {
-            console.warn('[App] LicenseService not available, creating fallback...');
-            this.createLicenseServiceFallback();
+            console.warn('[App] LicenseService not available, creating emergency fallback...');
+            this.createEmergencyLicenseService();
+        }
+        
+        // Si le service de licence n'est pas initialisé, l'initialiser
+        if (window.licenseService && !window.licenseService.initialized) {
+            console.log('[App] Initializing license service...');
+            try {
+                await window.licenseService.initialize();
+            } catch (licenseInitError) {
+                console.error('[App] License service initialization failed:', licenseInitError);
+                // Continuer avec le service existant (qui peut être en mode fallback)
+            }
         }
         
         // Attendre que la vérification de licence soit terminée
-        let attempts = 0;
-        const maxAttempts = 100; // 10 secondes max
-        
-        while (attempts < maxAttempts) {
+        while (this.licenseCheckAttempts < this.maxLicenseCheckAttempts) {
             // Vérifier si l'utilisateur est authentifié via le système de licence
             if (window.currentUser && window.licenseStatus) {
                 console.log('[App] ✅ License check completed successfully');
@@ -173,76 +183,88 @@ class App {
                 console.log('[App] License check in progress...');
             }
             
+            this.licenseCheckAttempts++;
             await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
         }
         
-        // Si aucune licence trouvée après le délai, vérifier s'il y a une erreur
+        // Si aucune licence trouvée après le délai
         if (!window.currentUser) {
-            console.warn('[App] No license found after waiting - user may need to authenticate');
+            console.warn('[App] No license found after waiting - proceeding with authentication flow');
             // Ne pas bloquer l'initialisation, laisser le système d'auth prendre le relais
         }
     }
 
-    createLicenseServiceFallback() {
-        console.log('[App] Creating license service fallback...');
+    createEmergencyLicenseService() {
+        console.log('[App] Creating emergency license service...');
         
         window.licenseService = {
-            initialized: false,
+            initialized: true,
+            isFallback: true,
+            isEmergency: true,
             currentUser: null,
             
-            initialize: async function() {
-                console.warn('[LicenseService] Fallback: initialize called');
-                this.initialized = true;
+            async initialize() {
+                console.log('[EmergencyLicenseService] Initialize called');
                 return true;
             },
             
-            authenticateWithEmail: async function(email) {
-                console.warn('[LicenseService] Fallback: authenticateWithEmail called for', email);
+            async authenticateWithEmail(email) {
+                console.log('[EmergencyLicenseService] Authenticating:', email);
+                
+                const user = {
+                    id: Date.now(),
+                    email: email.toLowerCase(),
+                    name: email.split('@')[0],
+                    role: 'user',
+                    license_status: 'trial',
+                    license_expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+                    company: { 
+                        name: 'Demo Company',
+                        domain: email.split('@')[1]
+                    },
+                    company_id: Date.now() + 1,
+                    created_at: new Date().toISOString()
+                };
+                
+                this.currentUser = user;
+                
                 return {
                     valid: true,
                     status: 'trial',
-                    user: {
-                        email: email,
-                        name: email.split('@')[0],
-                        role: 'user',
-                        license_status: 'trial',
-                        license_expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-                        company: { name: 'Demo Company' }
-                    },
+                    user: user,
                     daysRemaining: 15,
-                    message: 'Service de licence en mode simulation'
+                    message: 'Service de licence d\'urgence - Mode simulation'
                 };
             },
             
-            getCurrentUser: function() {
+            getCurrentUser() {
                 return this.currentUser;
             },
             
-            isAdmin: function() {
+            isAdmin() {
                 return true;
             },
             
-            logout: async function() {
-                console.warn('[LicenseService] Fallback: logout called');
+            async logout() {
+                console.log('[EmergencyLicenseService] Logout called');
                 this.currentUser = null;
             },
             
-            trackAnalyticsEvent: async function(eventType, eventData) {
-                console.warn('[LicenseService] Fallback: trackAnalyticsEvent called', eventType, eventData);
+            async trackAnalyticsEvent(eventType, eventData) {
+                console.log('[EmergencyLicenseService] Analytics event:', eventType, eventData);
             },
             
-            debug: async function() {
+            async debug() {
                 return {
-                    initialized: this.initialized,
-                    fallback: true,
-                    message: 'Service de licence en mode simulation'
+                    initialized: true,
+                    fallbackMode: true,
+                    emergencyMode: true,
+                    message: 'Service de licence d\'urgence activé'
                 };
             }
         };
         
-        window.licenseService._isFallback = true;
-        console.log('[App] ✅ License service fallback created');
+        console.log('[App] ✅ Emergency license service created');
     }
 
     detectProvider() {
@@ -1935,7 +1957,8 @@ class App {
                 activeProvider: this.activeProvider,
                 currentPage: this.currentPage,
                 isInitialized: !this.isInitializing,
-                initAttempts: this.initializationAttempts
+                initAttempts: this.initializationAttempts,
+                licenseCheckAttempts: this.licenseCheckAttempts
             },
             user: this.user ? {
                 name: this.user.displayName || this.user.name,
@@ -1952,7 +1975,8 @@ class App {
                 } : null,
                 licenseStatus: window.licenseStatus,
                 licenseService: !!window.licenseService,
-                fallback: window.licenseService?._isFallback || false
+                fallback: window.licenseService?._isFallback || window.licenseService?.isFallback || false,
+                emergency: window.licenseService?.isEmergency || false
             },
             analytics: {
                 available: !!window.analyticsManager,
@@ -1975,7 +1999,8 @@ class App {
                 licenseService: window.licenseService ? {
                     available: true,
                     initialized: window.licenseService.initialized,
-                    isFallback: window.licenseService._isFallback || false
+                    isFallback: window.licenseService._isFallback || window.licenseService.isFallback || false,
+                    isEmergency: window.licenseService.isEmergency || false
                 } : { available: false },
                 mailService: window.mailService ? {
                     available: true,
@@ -2040,10 +2065,24 @@ class App {
         // Test LicenseService
         try {
             if (window.licenseService && window.licenseService.initialized) {
+                const isEmergency = window.licenseService.isEmergency;
+                const isFallback = window.licenseService._isFallback || window.licenseService.isFallback;
+                
+                let status = '✅ OK';
+                let details = 'Service initialisé';
+                
+                if (isEmergency) {
+                    status = '🚨 EMERGENCY';
+                    details = 'Service d\'urgence activé';
+                } else if (isFallback) {
+                    status = '⚠️ FALLBACK';
+                    details = 'Service en mode simulation';
+                }
+                
                 tests.push({ 
                     service: 'LicenseService', 
-                    status: window.licenseService._isFallback ? '⚠️ FALLBACK' : '✅ OK', 
-                    details: window.licenseService._isFallback ? 'Service en mode simulation' : 'Service initialisé' 
+                    status: status, 
+                    details: details
                 });
             } else {
                 tests.push({ service: 'LicenseService', status: '❌ ERROR', details: 'Non initialisé' });
@@ -2240,9 +2279,9 @@ window.repairScanModule = function() {
 
 window.repairLicenseService = function() {
     console.log('[Global] Repairing license service...');
-    if (window.app && typeof window.app.createLicenseServiceFallback === 'function') {
-        window.app.createLicenseServiceFallback();
-        console.log('[Global] License service fallback created');
+    if (window.app && typeof window.app.createEmergencyLicenseService === 'function') {
+        window.app.createEmergencyLicenseService();
+        console.log('[Global] Emergency license service created');
         return true;
     } else {
         console.error('[Global] Cannot repair license service - App instance not available');
@@ -2284,7 +2323,9 @@ function checkServicesReady() {
         
         console.log('[App] Available auth services:', availableAuthServices);
         console.log('[App] Analytics available:', !!window.analyticsManager);
-        console.log('[App] License service status:', window.licenseService ? (window.licenseService._isFallback ? 'fallback' : 'available') : 'not available');
+        console.log('[App] License service status:', window.licenseService ? 
+            (window.licenseService.isEmergency ? 'emergency' : 
+             window.licenseService._isFallback || window.licenseService.isFallback ? 'fallback' : 'available') : 'not available');
         return true;
     } catch (error) {
         console.error('[App] Error checking services:', error);
@@ -2328,7 +2369,7 @@ window.addEventListener('unhandledrejection', (event) => {
 // =====================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[App] DOM loaded, creating dual provider app instance with license check...');
+    console.log('[App] DOM loaded, creating dual provider app instance with improved license handling...');
     
     try {
         document.body.classList.add('login-mode');
@@ -2441,7 +2482,7 @@ window.addEventListener('load', () => {
 // DIAGNOSTIC GLOBAL AVEC ANALYTICS ET LICENCE
 // =====================================
 window.diagnoseApp = function() {
-    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER + ANALYTICS + LICENSE - EmailSortPro v5.2');
+    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER + ANALYTICS + LICENSE - EmailSortPro v5.3');
     
     try {
         if (window.app) {
@@ -2492,7 +2533,8 @@ window.diagnoseApp = function() {
                 },
                 license: {
                     available: !!window.licenseService,
-                    fallback: window.licenseService?._isFallback || false,
+                    fallback: window.licenseService?._isFallback || window.licenseService?.isFallback || false,
+                    emergency: window.licenseService?.isEmergency || false,
                     currentUser: window.currentUser,
                     licenseStatus: window.licenseStatus
                 },
@@ -2738,11 +2780,12 @@ window.analyticsHelpers = {
     }
 };
 
-console.log('✅ App v5.2 loaded - DUAL PROVIDER (Microsoft + Google) + ANALYTICS + LICENSE VERIFICATION + FALLBACK SERVICES');
+console.log('✅ App v5.3 loaded - DUAL PROVIDER (Microsoft + Google) + ANALYTICS + IMPROVED LICENSE HANDLING + FALLBACK SERVICES');
 console.log('🔧 Fonctions globales disponibles: window.diagnoseApp(), window.testServices(), window.repairMailService(), window.repairScanModule(), window.repairLicenseService()');
 console.log('🌐 Helpers Netlify: window.netlifyHelpers');
 console.log('📊 Helpers Analytics: window.analyticsHelpers');
 console.log('📈 Analytics tracking: Email en clair, filtrage par domaine et par société');
-console.log('🔐 License verification: Service avec fallback en mode simulation');
+console.log('🔐 License verification: Service avec fallback robuste et mode d\'urgence');
 console.log('🔧 Services fallback: MailService, ScanModule, LicenseService automatiquement créés si manquants');
 console.log('⚡ Improved error handling: Évite les conflits de déclaration et gère les services manquants');
+console.log('🚨 Emergency License Service: Service d\'urgence automatique si LicenseService échoue');
