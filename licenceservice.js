@@ -1,10 +1,10 @@
-// LicenseService.js - Service de gestion des licences CORRIGÉ v3.2
-// Version spéciale pour Netlify avec authentification base de données
+// LicenseService.js - Service de gestion des licences CORRIGÉ v3.3
+// Version spéciale pour Netlify avec authentification base de données et fallback robuste
 
 (function() {
     'use strict';
     
-    console.log('[LicenseService] Loading v3.2 - Netlify optimized with database auth...');
+    console.log('[LicenseService] Loading v3.3 - Netlify optimized with enhanced fallback...');
     
     class LicenseService {
         constructor() {
@@ -16,91 +16,130 @@
             this.isFallback = false;
             this.isEmergency = false;
             this.autoAuthInProgress = false;
+            this.connectionAttempts = 0;
+            this.maxConnectionAttempts = 3;
             
-            console.log('[LicenseService] Initializing v3.2...');
+            console.log('[LicenseService] Initializing v3.3...');
             console.log('[LicenseService] Environment:', this.isNetlify ? 'Netlify' : 'Local');
             
-            // Initialisation immédiate
-            this.immediateInit();
+            // CORRECTION 1: Initialisation plus robuste
+            this.performRobustInitialization();
         }
 
-        immediateInit() {
+        async performRobustInitialization() {
             try {
-                console.log('[LicenseService] Starting immediate initialization...');
+                console.log('[LicenseService] Starting robust initialization...');
                 
                 // Marquer comme initialisé immédiatement pour éviter les blocages
                 this.initialized = true;
                 
-                // Si on est sur Netlify, essayer l'authentification automatique
+                // Essayer d'initialiser Supabase avec fallback
                 if (this.isNetlify) {
-                    this.tryNetlifyAuth();
+                    await this.tryNetlifyAuthWithFallback();
                 } else {
-                    // En local, utiliser le fallback
+                    // En local, utiliser le fallback immédiatement
                     this.enableFallbackMode();
                 }
                 
+                // Émettre l'événement de disponibilité
+                this.emitReadyEvent();
+                
             } catch (error) {
-                console.error('[LicenseService] Immediate init error:', error);
+                console.error('[LicenseService] Robust initialization error:', error);
                 this.enableFallbackMode();
+                this.emitReadyEvent();
             }
         }
 
-        async tryNetlifyAuth() {
+        async tryNetlifyAuthWithFallback() {
             try {
                 console.log('[LicenseService] Attempting Netlify authentication...');
                 
-                // Essayer d'initialiser Supabase
-                await this.initializeSupabase();
+                // Essayer d'initialiser Supabase avec timeout
+                const supabaseResult = await Promise.race([
+                    this.initializeSupabaseWithRetry(),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Supabase timeout')), 10000))
+                ]);
                 
-                // Si on a un utilisateur authentifié via les auth services, l'utiliser
-                setTimeout(() => this.checkAuthServicesForUser(), 1000);
+                if (supabaseResult) {
+                    console.log('[LicenseService] ✅ Supabase connection successful');
+                    this.isFallback = false;
+                    
+                    // Vérifier s'il y a un utilisateur authentifié via les auth services
+                    setTimeout(() => this.checkAuthServicesForUser(), 1000);
+                } else {
+                    throw new Error('Supabase initialization failed');
+                }
                 
             } catch (error) {
-                console.warn('[LicenseService] Netlify auth failed, using fallback:', error.message);
+                console.warn('[LicenseService] Netlify auth failed, enabling fallback:', error.message);
                 this.enableFallbackMode();
             }
         }
 
-        async initializeSupabase() {
-            try {
-                // Attendre que la config Supabase soit prête
-                let attempts = 0;
-                while (!window.supabaseConfig && attempts < 20) {
-                    await new Promise(resolve => setTimeout(resolve, 250));
-                    attempts++;
+        async initializeSupabaseWithRetry() {
+            while (this.connectionAttempts < this.maxConnectionAttempts) {
+                try {
+                    this.connectionAttempts++;
+                    console.log(`[LicenseService] Supabase connection attempt ${this.connectionAttempts}/${this.maxConnectionAttempts}`);
+                    
+                    // Attendre que la config Supabase soit prête
+                    await this.waitForSupabaseConfig();
+                    
+                    if (!window.supabaseConfig) {
+                        throw new Error('supabaseConfig not available');
+                    }
+
+                    // Initialiser la configuration
+                    await window.supabaseConfig.initialize();
+                    this.config = window.supabaseConfig.getConfig();
+                    
+                    if (!this.config || !this.config.url || !this.config.anonKey) {
+                        throw new Error('Invalid Supabase config');
+                    }
+
+                    // Créer le client Supabase
+                    this.supabase = window.supabase.createClient(
+                        this.config.url,
+                        this.config.anonKey,
+                        this.config.auth || {}
+                    );
+
+                    // Test rapide de connexion avec timeout
+                    const connectionTest = await Promise.race([
+                        this.supabase.auth.getSession(),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 5000))
+                    ]);
+
+                    console.log('[LicenseService] ✅ Supabase initialized successfully');
+                    return true;
+                    
+                } catch (error) {
+                    console.warn(`[LicenseService] Supabase attempt ${this.connectionAttempts} failed:`, error.message);
+                    
+                    if (this.connectionAttempts >= this.maxConnectionAttempts) {
+                        throw new Error(`Failed to connect to Supabase after ${this.maxConnectionAttempts} attempts`);
+                    }
+                    
+                    // Attendre avant le prochain essai
+                    await new Promise(resolve => setTimeout(resolve, 2000 * this.connectionAttempts));
                 }
+            }
+            
+            return false;
+        }
 
-                if (!window.supabaseConfig) {
-                    throw new Error('supabaseConfig not available');
-                }
-
-                // Initialiser la configuration
-                await window.supabaseConfig.initialize();
-                this.config = window.supabaseConfig.getConfig();
-                
-                if (!this.config || !this.config.url || !this.config.anonKey) {
-                    throw new Error('Invalid Supabase config');
-                }
-
-                // Créer le client Supabase
-                this.supabase = window.supabase.createClient(
-                    this.config.url,
-                    this.config.anonKey,
-                    this.config.auth || {}
-                );
-
-                // Test rapide de connexion
-                const { error } = await this.supabase.auth.getSession();
-                if (error && !error.message.includes('session')) {
-                    throw error;
-                }
-
-                console.log('[LicenseService] ✅ Supabase initialized successfully');
-                this.isFallback = false;
-                
-            } catch (error) {
-                console.warn('[LicenseService] Supabase initialization failed:', error.message);
-                throw error;
+        async waitForSupabaseConfig() {
+            let attempts = 0;
+            const maxAttempts = 30; // 3 secondes max
+            
+            while (!window.supabaseConfig && !window.initializeSupabaseConfig && attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!window.supabaseConfig && !window.initializeSupabaseConfig) {
+                throw new Error('Supabase config functions not available');
             }
         }
 
@@ -139,6 +178,23 @@
             console.log('[LicenseService] ✅ Fallback mode enabled');
         }
 
+        emitReadyEvent() {
+            // Marquer comme prêt
+            window.licenseServiceReady = true;
+            
+            // Émettre l'événement personnalisé
+            setTimeout(() => {
+                try {
+                    window.dispatchEvent(new CustomEvent('licenseServiceReady', {
+                        detail: { service: this }
+                    }));
+                    console.log('[LicenseService] ✅ Ready event emitted');
+                } catch (eventError) {
+                    console.warn('[LicenseService] Error emitting ready event:', eventError);
+                }
+            }, 100);
+        }
+
         // === MÉTHODES PUBLIQUES ===
 
         async initialize() {
@@ -160,9 +216,11 @@
                 let result;
                 
                 if (this.isFallback || !this.supabase) {
+                    console.log('[LicenseService] Using fallback authentication');
                     result = this.authenticateWithEmailFallback(email);
                 } else {
                     try {
+                        console.log('[LicenseService] Using Supabase authentication');
                         result = await this.authenticateWithSupabase(email);
                     } catch (error) {
                         console.warn('[LicenseService] Supabase auth failed, using fallback:', error.message);
@@ -170,7 +228,7 @@
                     }
                 }
                 
-                // Marquer les variables globales
+                // CORRECTION 2: Marquer les variables globales et émettre l'événement
                 if (result && result.valid && result.user) {
                     window.currentUser = result.user;
                     window.licenseStatus = {
@@ -186,17 +244,40 @@
                         daysRemaining: result.daysRemaining
                     });
                     
-                    // Émettre un événement pour notifier l'app
-                    window.dispatchEvent(new CustomEvent('userAuthenticated', {
-                        detail: { user: result.user, status: result }
-                    }));
+                    // CORRECTION 3: Émettre un événement pour notifier l'app
+                    try {
+                        window.dispatchEvent(new CustomEvent('userAuthenticated', {
+                            detail: { user: result.user, status: result }
+                        }));
+                        console.log('[LicenseService] ✅ userAuthenticated event emitted');
+                    } catch (eventError) {
+                        console.error('[LicenseService] Error emitting userAuthenticated event:', eventError);
+                    }
                 }
                 
                 return result;
                 
             } catch (error) {
                 console.error('[LicenseService] Authentication error:', error);
-                return this.authenticateWithEmailFallback(email);
+                
+                // En cas d'erreur, utiliser le fallback
+                const fallbackResult = this.authenticateWithEmailFallback(email);
+                
+                // Émettre l'événement même en fallback
+                if (fallbackResult && fallbackResult.valid) {
+                    window.currentUser = fallbackResult.user;
+                    window.licenseStatus = fallbackResult;
+                    
+                    try {
+                        window.dispatchEvent(new CustomEvent('userAuthenticated', {
+                            detail: { user: fallbackResult.user, status: fallbackResult }
+                        }));
+                    } catch (eventError) {
+                        console.error('[LicenseService] Error emitting fallback event:', eventError);
+                    }
+                }
+                
+                return fallbackResult;
             } finally {
                 this.autoAuthInProgress = false;
             }
@@ -210,62 +291,68 @@
             const cleanEmail = email.toLowerCase().trim();
             console.log('[LicenseService] Supabase authentication for:', cleanEmail);
             
-            // Récupérer l'utilisateur avec sa société
-            let { data: user, error } = await this.supabase
-                .from('users')
-                .select(`
-                    *,
-                    company:companies(*)
-                `)
-                .eq('email', cleanEmail)
-                .single();
+            try {
+                // Récupérer l'utilisateur avec sa société
+                let { data: user, error } = await this.supabase
+                    .from('users')
+                    .select(`
+                        *,
+                        company:companies(*)
+                    `)
+                    .eq('email', cleanEmail)
+                    .single();
 
-            if (error && error.code !== 'PGRST116') { // PGRST116 = not found
-                throw error;
+                if (error && error.code !== 'PGRST116') { // PGRST116 = not found
+                    throw error;
+                }
+
+                if (!user) {
+                    console.log('[LicenseService] User not found, creating new user:', cleanEmail);
+                    user = await this.createNewUser(cleanEmail);
+                }
+
+                // Mettre à jour last_login
+                const { error: updateError } = await this.supabase
+                    .from('users')
+                    .update({ 
+                        last_login_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', user.id);
+
+                if (updateError) {
+                    console.warn('[LicenseService] Failed to update last_login:', updateError);
+                }
+
+                this.currentUser = user;
+                const licenseStatus = this.evaluateLicenseStatus(user);
+                
+                // Tracker la connexion
+                await this.trackAnalyticsEvent('user_login', {
+                    email: cleanEmail,
+                    timestamp: new Date().toISOString(),
+                    license_status: licenseStatus.status
+                });
+
+                console.log('[LicenseService] ✅ Supabase authentication successful:', {
+                    email: user.email,
+                    status: licenseStatus.status,
+                    company: user.company?.name
+                });
+
+                return {
+                    valid: licenseStatus.valid,
+                    status: licenseStatus.status,
+                    user: user,
+                    message: licenseStatus.message,
+                    daysRemaining: licenseStatus.daysRemaining,
+                    adminContact: licenseStatus.adminContact
+                };
+                
+            } catch (supabaseError) {
+                console.error('[LicenseService] Supabase authentication error:', supabaseError);
+                throw supabaseError;
             }
-
-            if (!user) {
-                console.log('[LicenseService] User not found, creating new user:', cleanEmail);
-                user = await this.createNewUser(cleanEmail);
-            }
-
-            // Mettre à jour last_login
-            const { error: updateError } = await this.supabase
-                .from('users')
-                .update({ 
-                    last_login_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', user.id);
-
-            if (updateError) {
-                console.warn('[LicenseService] Failed to update last_login:', updateError);
-            }
-
-            this.currentUser = user;
-            const licenseStatus = this.evaluateLicenseStatus(user);
-            
-            // Tracker la connexion
-            await this.trackAnalyticsEvent('user_login', {
-                email: cleanEmail,
-                timestamp: new Date().toISOString(),
-                license_status: licenseStatus.status
-            });
-
-            console.log('[LicenseService] ✅ Supabase authentication successful:', {
-                email: user.email,
-                status: licenseStatus.status,
-                company: user.company?.name
-            });
-
-            return {
-                valid: licenseStatus.valid,
-                status: licenseStatus.status,
-                user: user,
-                message: licenseStatus.message,
-                daysRemaining: licenseStatus.daysRemaining,
-                adminContact: licenseStatus.adminContact
-            };
         }
 
         authenticateWithEmailFallback(email) {
@@ -301,7 +388,7 @@
                 valid: true,
                 status: 'trial',
                 user: user,
-                message: `Période d'essai - ${daysRemaining} jours restants ${this.isFallback ? '(Mode simulation)' : ''}`,
+                message: `Période d'essai - ${daysRemaining} jours restants ${this.isFallback ? '(Mode fallback)' : ''}`,
                 daysRemaining: daysRemaining,
                 fallback: this.isFallback
             };
@@ -536,13 +623,15 @@
         // === DEBUG ===
 
         async debug() {
-            console.group('[LicenseService] Debug Info v3.2');
+            console.group('[LicenseService] Debug Info v3.3');
             console.log('Initialized:', this.initialized);
             console.log('Fallback Mode:', this.isFallback);
+            console.log('Emergency Mode:', this.isEmergency);
             console.log('Is Netlify:', this.isNetlify);
             console.log('Current User:', this.currentUser);
             console.log('Has Supabase:', !!this.supabase);
             console.log('Auto Auth In Progress:', this.autoAuthInProgress);
+            console.log('Connection Attempts:', this.connectionAttempts);
             
             if (this.currentUser) {
                 const licenseStatus = this.evaluateLicenseStatus(this.currentUser);
@@ -567,11 +656,14 @@
             return {
                 initialized: this.initialized,
                 fallbackMode: this.isFallback,
+                emergencyMode: this.isEmergency,
                 isNetlify: this.isNetlify,
                 hasSupabase: !!this.supabase,
                 currentUser: this.currentUser,
                 isAdmin: this.isAdmin(),
-                autoAuthInProgress: this.autoAuthInProgress
+                autoAuthInProgress: this.autoAuthInProgress,
+                connectionAttempts: this.connectionAttempts,
+                maxConnectionAttempts: this.maxConnectionAttempts
             };
         }
     }
@@ -589,20 +681,10 @@
         const licenseService = new LicenseService();
         window.licenseService = licenseService;
         
-        console.log('[LicenseService] ✅ Global instance created successfully v3.2');
+        console.log('[LicenseService] ✅ Global instance created successfully v3.3');
         
         // Exposer pour debug
         window.debugLicense = () => licenseService.debug();
-        
-        // Marquer comme disponible immédiatement
-        window.licenseServiceReady = true;
-        
-        // Émettre un événement personnalisé
-        setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('licenseServiceReady', {
-                detail: { service: licenseService }
-            }));
-        }, 100);
         
     } catch (error) {
         console.error('[LicenseService] ❌ Failed to create global instance:', error);
@@ -614,6 +696,7 @@
             isEmergency: true,
             currentUser: null,
             autoAuthInProgress: false,
+            connectionAttempts: 0,
             
             async initialize() {
                 return true;
@@ -631,6 +714,18 @@
                 this.currentUser = user;
                 window.currentUser = user;
                 window.licenseStatus = { status: 'trial', valid: true, daysRemaining: 15 };
+                
+                // Émettre l'événement
+                setTimeout(() => {
+                    try {
+                        window.dispatchEvent(new CustomEvent('userAuthenticated', {
+                            detail: { user: user, status: { valid: true, status: 'trial', daysRemaining: 15 } }
+                        }));
+                    } catch (e) {
+                        console.error('[EmergencyLicenseService] Event emission error:', e);
+                    }
+                }, 100);
+                
                 return {
                     valid: true,
                     status: 'trial',
@@ -658,11 +753,22 @@
             }
         };
         
+        // Marquer comme prêt et émettre l'événement
         window.licenseServiceReady = true;
+        setTimeout(() => {
+            try {
+                window.dispatchEvent(new CustomEvent('licenseServiceReady', {
+                    detail: { service: window.licenseService }
+                }));
+            } catch (e) {
+                console.error('[LicenseService] Emergency event emission error:', e);
+            }
+        }, 100);
+        
         console.log('[LicenseService] 🚨 Emergency service created');
     }
 
-    console.log('[LicenseService] ✅ Service loaded and ready v3.2 - Netlify optimized');
+    console.log('[LicenseService] ✅ Service loaded and ready v3.3 - Enhanced fallback support');
 
 })();
 
