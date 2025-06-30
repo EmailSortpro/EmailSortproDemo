@@ -1,0 +1,24 @@
+{
+  "name": "emailsortpro-netlify-functions",
+  "version": "1.0.0",
+  "description": "Netlify Functions for EmailSortPro Analytics",
+  "main": "index.js",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "netlify",
+    "functions",
+    "emailsortpro",
+    "analytics",
+    "supabase"
+  ],
+  "author": "EmailSortPro Team",
+  "license": "MIT"
+}
