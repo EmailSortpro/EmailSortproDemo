@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Configuration Supabase</title>
+    
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f8fafc;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #1f2937;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .test-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #374151;
+        }
+        
+        .test-result {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-family: monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+        }
+        
+        .error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        
+        .warning {
+            background: #fef3c7;
+            color: #d97706;
+            border: 1px solid #fde68a;
+        }
+        
+        .info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+        
+        button {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        
+        button:hover {
+            background: #4338ca;
+        }
+        
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            color: #6b7280;
+            font-style: italic;
+        }
+        
+        .code-block {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.875rem;
+            margin-top: 10px;
+        }
+        
+        .fix-instructions {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .fix-instructions h3 {
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        
+        .fix-instructions ol {
+            margin-left: 20px;
+            color: #4b5563;
+        }
+        
+        .fix-instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .fix-instructions code {
+            background: #e5e7eb;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test de Configuration Supabase</h1>
+    
+    <!-- Test 1: Configuration Netlify Function -->
+    <div class="test-section">
+        <div class="test-title">1. Test de la Fonction Netlify</div>
+        <button onclick="testNetlifyFunction()">Tester la fonction</button>
+        <div id="netlifyResult" class="test-result loading" style="display: none;">
+            En cours de test...
+        </div>
+    </div>
+    
+    <!-- Test 2: Connexion Supabase -->
+    <div class="test-section">
+        <div class="test-title">2. Test de Connexion Supabase</div>
+        <button onclick="testSupabaseConnection()">Tester la connexion</button>
+        <div id="supabaseResult" class="test-result loading" style="display: none;">
+            En cours de test...
+        </div>
+    </div>
+    
+    <!-- Test 3: Test de requête -->
+    <div class="test-section">
+        <div class="test-title">3. Test de Requête à la Base de Données</div>
+        <button onclick="testDatabaseQuery()">Tester une requête</button>
+        <div id="queryResult" class="test-result loading" style="display: none;">
+            En cours de test...
+        </div>
+    </div>
+    
+    <!-- Test 4: Variables d'environnement -->
+    <div class="test-section">
+        <div class="test-title">4. Vérification des Variables d'Environnement</div>
+        <button onclick="checkEnvironment()">Vérifier l'environnement</button>
+        <div id="envResult" class="test-result loading" style="display: none;">
+            En cours de vérification...
+        </div>
+    </div>
+    
+    <!-- Instructions de correction -->
+    <div id="fixInstructions" class="fix-instructions" style="display: none;">
+        <h3>🛠️ Instructions pour corriger le problème</h3>
+        <div id="fixContent"></div>
+    </div>
+
+    <script>
+        let supabaseClient = null;
+        let configData = null;
+        
+        async function testNetlifyFunction() {
+            const resultDiv = document.getElementById('netlifyResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'test-result loading';
+            resultDiv.textContent = 'Test de la fonction Netlify en cours...';
+            
+            try {
+                const response = await fetch('/.netlify/functions/get-supabase-config');
+                const responseText = await response.text();
+                
+                if (!response.ok) {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.textContent = `❌ Erreur ${response.status}: ${responseText}`;
+                    showFixInstructions('netlify-error', response.status, responseText);
+                    return;
+                }
+                
+                try {
+                    configData = JSON.parse(responseText);
+                    
+                    // Vérifier la structure de la réponse
+                    if (!configData.url || !configData.anonKey) {
+                        resultDiv.className = 'test-result error';
+                        resultDiv.textContent = '❌ Configuration incomplète:\n' + JSON.stringify(configData, null, 2);
+                        showFixInstructions('incomplete-config', null, configData);
+                        return;
+                    }
+                    
+                    // Masquer les informations sensibles
+                    const maskedConfig = {
+                        url: configData.url,
+                        anonKey: configData.anonKey.substring(0, 20) + '...' + configData.anonKey.substring(configData.anonKey.length - 10),
+                        keyLength: configData.anonKey.length,
+                        timestamp: configData.timestamp
+                    };
+                    
+                    resultDiv.className = 'test-result success';
+                    resultDiv.textContent = '✅ Fonction Netlify OK\n' + JSON.stringify(maskedConfig, null, 2);
+                    
+                } catch (parseError) {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.textContent = '❌ Erreur de parsing JSON:\n' + parseError.message + '\n\nRéponse brute:\n' + responseText;
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = '❌ Erreur réseau:\n' + error.message;
+                showFixInstructions('network-error', null, error);
+            }
+        }
+        
+        async function testSupabaseConnection() {
+            const resultDiv = document.getElementById('supabaseResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'test-result loading';
+            resultDiv.textContent = 'Test de connexion Supabase en cours...';
+            
+            if (!configData) {
+                resultDiv.className = 'test-result warning';
+                resultDiv.textContent = '⚠️ Veuillez d\'abord tester la fonction Netlify';
+                return;
+            }
+            
+            try {
+                // Créer le client Supabase
+                supabaseClient = window.supabase.createClient(
+                    configData.url,
+                    configData.anonKey,
+                    {
+                        auth: {
+                            autoRefreshToken: true,
+                            persistSession: true,
+                            detectSessionInUrl: false
+                        }
+                    }
+                );
+                
+                // Tester une requête simple
+                const { data, error } = await supabaseClient
+                    .from('users')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.textContent = `❌ Erreur Supabase:\n${error.message}\n\nCode: ${error.code}\nDetails: ${error.details}`;
+                    showFixInstructions('supabase-error', error.code, error);
+                } else {
+                    resultDiv.className = 'test-result success';
+                    resultDiv.textContent = '✅ Connexion Supabase réussie!';
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = '❌ Erreur lors de la création du client:\n' + error.message;
+                showFixInstructions('client-error', null, error);
+            }
+        }
+        
+        async function testDatabaseQuery() {
+            const resultDiv = document.getElementById('queryResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'test-result loading';
+            resultDiv.textContent = 'Test de requête en cours...';
+            
+            if (!supabaseClient) {
+                resultDiv.className = 'test-result warning';
+                resultDiv.textContent = '⚠️ Veuillez d\'abord tester la connexion Supabase';
+                return;
+            }
+            
+            try {
+                // Test 1: Compter les users
+                const { count: userCount, error: userError } = await supabaseClient
+                    .from('users')
+                    .select('*', { count: 'exact', head: true });
+                
+                // Test 2: Récupérer un user
+                const { data: users, error: fetchError } = await supabaseClient
+                    .from('users')
+                    .select('id, email, role')
+                    .limit(1);
+                
+                // Test 3: Lister les tables (via information_schema si accessible)
+                const { data: tables, error: tablesError } = await supabaseClient
+                    .from('users')
+                    .select('*')
+                    .limit(0);
+                
+                let resultText = 'Résultats des tests:\n\n';
+                
+                if (userError) {
+                    resultText += `❌ Erreur comptage users: ${userError.message}\n`;
+                } else {
+                    resultText += `✅ Nombre d'utilisateurs: ${userCount || 0}\n`;
+                }
+                
+                if (fetchError) {
+                    resultText += `❌ Erreur récupération user: ${fetchError.message}\n`;
+                } else {
+                    resultText += `✅ Données récupérées: ${users ? users.length : 0} user(s)\n`;
+                    if (users && users.length > 0) {
+                        resultText += `   Exemple: ${JSON.stringify(users[0], null, 2)}\n`;
+                    }
+                }
+                
+                resultDiv.className = (userError || fetchError) ? 'test-result warning' : 'test-result success';
+                resultDiv.textContent = resultText;
+                
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = '❌ Erreur lors des requêtes:\n' + error.message;
+            }
+        }
+        
+        async function checkEnvironment() {
+            const resultDiv = document.getElementById('envResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'test-result info';
+            
+            const envInfo = {
+                location: {
+                    hostname: window.location.hostname,
+                    protocol: window.location.protocol,
+                    pathname: window.location.pathname,
+                    isNetlify: window.location.hostname.includes('netlify'),
+                    isLocalhost: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                },
+                browser: {
+                    userAgent: navigator.userAgent.substring(0, 100) + '...',
+                    language: navigator.language
+                },
+                timestamp: new Date().toISOString()
+            };
+            
+            resultDiv.textContent = 'ℹ️ Informations d\'environnement:\n' + JSON.stringify(envInfo, null, 2);
+        }
+        
+        function showFixInstructions(errorType, errorCode, errorDetails) {
+            const instructionsDiv = document.getElementById('fixInstructions');
+            const contentDiv = document.getElementById('fixContent');
+            
+            instructionsDiv.style.display = 'block';
+            
+            let content = '';
+            
+            switch(errorType) {
+                case 'netlify-error':
+                    if (errorCode === 500) {
+                        content = `
+                            <ol>
+                                <li>Connectez-vous à votre dashboard Netlify</li>
+                                <li>Allez dans <code>Site settings > Environment variables</code></li>
+                                <li>Vérifiez que ces variables sont définies :
+                                    <ul>
+                                        <li><code>VITE_SUPABASE_URL</code> : L'URL de votre projet Supabase (ex: https://xxxxx.supabase.co)</li>
+                                        <li><code>VITE_SUPABASE_ANON_KEY</code> : La clé publique "anon" de Supabase</li>
+                                    </ul>
+                                </li>
+                                <li>⚠️ Important : Assurez-vous qu'il n'y a pas d'espaces ou de retours à la ligne dans les valeurs</li>
+                                <li>Redéployez votre site après avoir ajouté/modifié les variables</li>
+                            </ol>
+                            <div class="code-block">
+                            # Pour trouver vos clés Supabase :
+                            1. Connectez-vous à app.supabase.com
+                            2. Sélectionnez votre projet
+                            3. Allez dans Settings > API
+                            4. Copiez :
+                               - Project URL → VITE_SUPABASE_URL
+                               - anon public → VITE_SUPABASE_ANON_KEY
+                            </div>
+                        `;
+                    }
+                    break;
+                    
+                case 'supabase-error':
+                    if (errorCode === 'PGRST301') {
+                        content = `
+                            <p>L'erreur indique que la clé API est invalide. Vérifiez :</p>
+                            <ol>
+                                <li>La clé <code>VITE_SUPABASE_ANON_KEY</code> est bien la clé "anon" (publique) et non la clé "service_role"</li>
+                                <li>La clé a été copiée entièrement (elle fait environ 200+ caractères)</li>
+                                <li>Il n'y a pas d'espaces ou de caractères invisibles</li>
+                                <li>La clé correspond bien au projet dont l'URL est dans <code>VITE_SUPABASE_URL</code></li>
+                            </ol>
+                            <div class="code-block">
+                            # Format attendu de la clé anon :
+                            eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS...
+                            (200+ caractères au total)
+                            </div>
+                        `;
+                    }
+                    break;
+                    
+                case 'incomplete-config':
+                    content = `
+                        <p>La configuration retournée par Netlify est incomplète. Debug info :</p>
+                        <div class="code-block">${JSON.stringify(errorDetails, null, 2)}</div>
+                        <p>Assurez-vous que les variables d'environnement sont bien définies dans Netlify.</p>
+                    `;
+                    break;
+                    
+                default:
+                    content = `
+                        <p>Erreur détectée :</p>
+                        <div class="code-block">${JSON.stringify(errorDetails, null, 2)}</div>
+                    `;
+            }
+            
+            contentDiv.innerHTML = content;
+        }
+        
+        // Test automatique au chargement
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Page de test Supabase chargée');
+        });
+    </script>
+</body>
+</html>
