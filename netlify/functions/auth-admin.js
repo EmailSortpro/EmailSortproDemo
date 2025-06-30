@@ -1,22 +1,59 @@
 // netlify/functions/auth-admin.js
 // Fonction Netlify pour authentification et gestion des administrateurs
 
-const { createClient } = require('@supabase/supabase-js');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+// Vérification de l'environnement d'exécution
+console.log('[Auth Admin] Function starting...');
+
+let createClient, bcrypt, jwt;
+
+try {
+    // Import dynamique pour gérer les différents environnements
+    if (typeof require !== 'undefined') {
+        // Environnement Node.js (Netlify Functions)
+        ({ createClient } = require('@supabase/supabase-js'));
+        bcrypt = require('bcryptjs');
+        jwt = require('jsonwebtoken');
+    } else {
+        // Fallback pour les environnements où require n'est pas disponible
+        throw new Error('Environment not supported for functions');
+    }
+} catch (error) {
+    console.error('[Auth Admin] Import error:', error);
+    // Utiliser exports simples si les imports échouent
+}
 
 // Configuration Supabase (utilise les variables d'environnement)
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Utilise la clé service pour l'admin
 const jwtSecret = process.env.JWT_SECRET || 'votre-secret-jwt-super-secure';
 
+console.log('[Auth Admin] Environment check:', {
+    hasUrl: !!supabaseUrl,
+    hasServiceKey: !!supabaseServiceKey,
+    hasJwtSecret: !!jwtSecret
+});
+
 if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('Variables d\'environnement Supabase manquantes');
+    console.error('[Auth Admin] Variables d\'environnement Supabase manquantes');
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+let supabase = null;
+if (supabaseUrl && supabaseServiceKey && createClient) {
+    try {
+        supabase = createClient(supabaseUrl, supabaseServiceKey);
+        console.log('[Auth Admin] Supabase client initialized');
+    } catch (error) {
+        console.error('[Auth Admin] Supabase initialization error:', error);
+    }
+}
 
 exports.handler = async (event, context) => {
+    console.log('[Auth Admin] Function called:', {
+        method: event.httpMethod,
+        path: event.path,
+        hasBody: !!event.body
+    });
+
     // Configuration CORS
     const headers = {
         'Access-Control-Allow-Origin': '*',
@@ -27,6 +64,7 @@ exports.handler = async (event, context) => {
 
     // Gérer les requêtes OPTIONS (CORS preflight)
     if (event.httpMethod === 'OPTIONS') {
+        console.log('[Auth Admin] Handling CORS preflight');
         return {
             statusCode: 200,
             headers,
@@ -36,6 +74,7 @@ exports.handler = async (event, context) => {
 
     // Seulement les requêtes POST sont acceptées
     if (event.httpMethod !== 'POST') {
+        console.log('[Auth Admin] Method not allowed:', event.httpMethod);
         return {
             statusCode: 405,
             headers,
@@ -43,11 +82,51 @@ exports.handler = async (event, context) => {
         };
     }
 
-    try {
-        const body = JSON.parse(event.body);
-        const { action } = body;
+    // Vérifier les dépendances
+    if (!supabase) {
+        console.error('[Auth Admin] Supabase not initialized');
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ 
+                success: false, 
+                message: 'Service de base de données indisponible',
+                error: 'SUPABASE_NOT_INITIALIZED'
+            })
+        };
+    }
 
-        console.log('[Auth Admin] Action:', action);
+    if (!bcrypt || !jwt) {
+        console.error('[Auth Admin] Dependencies missing:', { bcrypt: !!bcrypt, jwt: !!jwt });
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ 
+                success: false, 
+                message: 'Dépendances manquantes',
+                error: 'DEPENDENCIES_MISSING'
+            })
+        };
+    }
+
+    try {
+        let body;
+        try {
+            body = JSON.parse(event.body || '{}');
+        } catch (parseError) {
+            console.error('[Auth Admin] JSON parse error:', parseError);
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ 
+                    success: false, 
+                    message: 'Corps de requête JSON invalide' 
+                })
+            };
+        }
+
+        const { action } = body;
+        console.log('[Auth Admin] Processing action:', action);
 
         switch (action) {
             case 'login':
@@ -63,25 +142,27 @@ exports.handler = async (event, context) => {
                 return await handleGetUserStats(body, headers);
                 
             default:
+                console.log('[Auth Admin] Unknown action:', action);
                 return {
                     statusCode: 400,
                     headers,
                     body: JSON.stringify({ 
                         success: false, 
-                        message: 'Action non reconnue' 
+                        message: 'Action non reconnue: ' + action 
                     })
                 };
         }
 
     } catch (error) {
-        console.error('[Auth Admin] Erreur:', error);
+        console.error('[Auth Admin] Handler error:', error);
         return {
             statusCode: 500,
             headers,
             body: JSON.stringify({ 
                 success: false, 
                 message: 'Erreur serveur interne',
-                error: error.message 
+                error: error.message,
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
             })
         };
     }
