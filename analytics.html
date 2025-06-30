@@ -357,12 +357,13 @@
                 <div class="form-group">
                     <label class="form-label">Email</label>
                     <input type="email" class="form-input" id="loginEmail" required 
-                           placeholder="votre-email@domaine.com">
+                           placeholder="votre-email@domaine.com"
+                           value="vianney.hastings@hotmail.fr">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Mot de passe</label>
-                    <input type="password" class="form-input" id="loginPassword" required
-                           placeholder="Votre mot de passe">
+                    <label class="form-label">Mot de passe (optionnel)</label>
+                    <input type="password" class="form-input" id="loginPassword"
+                           placeholder="Laissez vide pour connexion rapide">
                 </div>
                 <button type="submit" class="btn-primary" id="loginBtn">
                     Se connecter
@@ -744,6 +745,11 @@
             try {
                 if (supabaseClient) {
                     await loadRealData();
+                    
+                    // Si pas de données, charger aussi les licences
+                    if (allUsers.length === 0) {
+                        await loadLicenseData();
+                    }
                 } else {
                     loadDemoData();
                 }
@@ -757,6 +763,87 @@
                 showAlert('Erreur lors du chargement des données', 'error');
             } finally {
                 document.getElementById('loadingState').style.display = 'none';
+            }
+        }
+        
+        async function loadLicenseData() {
+            try {
+                console.log('[Data] Chargement des données de licence...');
+                
+                // Récupérer tous les utilisateurs avec leurs licences
+                const { data: users, error: usersError } = await supabaseClient
+                    .from('users')
+                    .select(`
+                        *,
+                        company:companies(*)
+                    `)
+                    .order('last_login_at', { ascending: false, nullsFirst: false });
+                
+                if (usersError) {
+                    console.error('[Data] Erreur chargement users:', usersError);
+                    return;
+                }
+                
+                console.log(`[Data] ${users?.length || 0} utilisateurs trouvés dans la base`);
+                
+                // Créer des statistiques à partir des utilisateurs
+                const domainStats = {};
+                
+                users?.forEach(user => {
+                    const domain = user.company?.domain || user.email.split('@')[1];
+                    
+                    if (!domainStats[domain]) {
+                        domainStats[domain] = {
+                            domain: domain,
+                            users: [],
+                            adminEmail: null,
+                            companyName: user.company?.name || domain
+                        };
+                    }
+                    
+                    domainStats[domain].users.push({
+                        email: user.email,
+                        name: user.name,
+                        role: user.role,
+                        licenseStatus: user.license_status,
+                        lastLogin: user.last_login_at,
+                        firstLogin: user.first_login_at
+                    });
+                    
+                    // Identifier l'admin du domaine
+                    if (user.role === 'company_admin' || user.role === 'super_admin') {
+                        domainStats[domain].adminEmail = user.email;
+                    }
+                });
+                
+                // Convertir en tableaux pour l'affichage
+                allDomains = Object.values(domainStats).map(domain => ({
+                    domain: domain.domain,
+                    userCount: domain.users.length,
+                    emailCount: 0, // Pas de stats d'emails depuis cette table
+                    lastActivity: domain.users[0]?.lastLogin || new Date().toISOString(),
+                    admin: domain.adminEmail || domain.users[0]?.email || 'N/A',
+                    status: domain.users.some(u => u.licenseStatus === 'active' || u.licenseStatus === 'trial') ? 'active' : 'inactive',
+                    companyName: domain.companyName
+                }));
+                
+                allUsers = users.map(user => ({
+                    email: user.email,
+                    name: user.name || user.email.split('@')[0],
+                    domain: user.company?.domain || user.email.split('@')[1],
+                    emailCount: 0, // Sera mis à jour par les analytics events
+                    sessionCount: 0, // Sera mis à jour par les analytics events
+                    firstSeen: user.first_login_at || user.created_at,
+                    lastActivity: user.last_login_at || user.updated_at,
+                    licenseStatus: user.license_status,
+                    role: user.role,
+                    company: user.company?.name
+                }));
+                
+                console.log(`[Data] Données de licence chargées: ${allDomains.length} domaines, ${allUsers.length} utilisateurs`);
+                
+            } catch (error) {
+                console.error('[Data] Erreur chargement licences:', error);
             }
         }
 
