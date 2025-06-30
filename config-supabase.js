@@ -1,4 +1,4 @@
-// config-supabase.js - Configuration Supabase sécurisée avec fallback - CORRIGÉ
+// config-supabase.js - Configuration Supabase sécurisée sans clés en dur
 class SupabaseConfig {
     constructor() {
         this.config = null;
@@ -6,7 +6,7 @@ class SupabaseConfig {
         this.fallbackUsed = false;
         this.retryCount = 0;
         this.maxRetries = 3;
-        console.log('[SupabaseConfig] Initializing with enhanced error handling v2.0...');
+        console.log('[SupabaseConfig] Initializing with enhanced security v3.0...');
     }
 
     async initialize() {
@@ -25,8 +25,8 @@ class SupabaseConfig {
         } catch (error) {
             console.error('[SupabaseConfig] ❌ Primary loading failed:', error.message);
             
-            // Essayer le fallback
-            await this.tryFallbackConfig();
+            // PAS de fallback avec clés en dur - sécurité prioritaire
+            throw new Error(`Configuration Supabase failed: ${error.message}. Veuillez vérifier les variables d'environnement Netlify.`);
         }
     }
 
@@ -94,44 +94,6 @@ class SupabaseConfig {
         this.initialized = true;
         this.fallbackUsed = false;
         console.log('[SupabaseConfig] ✅ Configuration loaded securely from Netlify');
-    }
-
-    async tryFallbackConfig() {
-        console.warn('[SupabaseConfig] Trying fallback configuration...');
-        
-        const hostname = window.location.hostname;
-        const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-        const isNetlify = hostname.includes('netlify.app');
-        
-        try {
-            // Configuration pour développement et test
-            if (isLocalhost || isNetlify) {
-                console.log('[SupabaseConfig] Using fallback configuration');
-                
-                // Configuration de test sécurisée
-                this.config = {
-                    url: 'https://tbinqovmwwwoxthmlbpu.supabase.co',
-                    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiaW5xb3Ztd3d3b3h0aG1sYnB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUxMzE4OTQsImV4cCI6MjA1MDcwNzg5NH0.Q9z-Pj-HVgPGbxCjF-QD_CQyI0o7cREE-F5xkJO_6gs',
-                    auth: {
-                        autoRefreshToken: true,
-                        persistSession: true,
-                        detectSessionInUrl: false,
-                        storage: window.localStorage
-                    }
-                };
-                
-                this.initialized = true;
-                this.fallbackUsed = true;
-                console.log('[SupabaseConfig] ✅ Fallback configuration activated');
-                return;
-            }
-            
-            throw new Error('No fallback configuration available for this environment');
-            
-        } catch (fallbackError) {
-            console.error('[SupabaseConfig] ❌ Fallback failed:', fallbackError);
-            throw new Error(`Configuration failed: Netlify Functions unavailable | Fallback: ${fallbackError.message}`);
-        }
     }
 
     validateConfig(configData) {
@@ -321,6 +283,47 @@ class SupabaseConfig {
             hasSupabaseLibrary: typeof window.supabase !== 'undefined'
         };
     }
+
+    // === MÉTHODE POUR DÉVELOPPEMENT LOCAL SEULEMENT ===
+    
+    async initializeForDevelopment() {
+        // Cette méthode est uniquement pour le développement local
+        // Elle ne doit JAMAIS être utilisée en production
+        
+        if (window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1')) {
+            throw new Error('Development initialization only allowed on localhost');
+        }
+        
+        console.warn('[SupabaseConfig] ⚠️ DEVELOPMENT MODE - Using environment variables if available');
+        
+        // En développement, essayer de lire les variables d'environnement depuis process.env si disponible
+        // (Nécessite un bundler comme Vite qui expose les variables VITE_*)
+        if (typeof process !== 'undefined' && process.env) {
+            const devUrl = process.env.VITE_SUPABASE_URL;
+            const devKey = process.env.VITE_SUPABASE_ANON_KEY;
+            
+            if (devUrl && devKey) {
+                console.log('[SupabaseConfig] Using development environment variables');
+                
+                this.config = {
+                    url: devUrl,
+                    anonKey: devKey,
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: true,
+                        detectSessionInUrl: false,
+                        storage: window.localStorage
+                    }
+                };
+                
+                this.initialized = true;
+                this.fallbackUsed = true;
+                return;
+            }
+        }
+        
+        throw new Error('No development configuration available. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
+    }
 }
 
 // Créer une instance unique
@@ -333,6 +336,17 @@ window.initializeSupabaseConfig = async () => {
         return window.supabaseConfig;
     } catch (error) {
         console.error('[SupabaseConfig] Initialization failed:', error);
+        
+        // En développement, essayer la méthode de développement
+        if (window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1')) {
+            try {
+                console.log('[SupabaseConfig] Attempting development initialization...');
+                await window.supabaseConfig.initializeForDevelopment();
+                return window.supabaseConfig;
+            } catch (devError) {
+                console.error('[SupabaseConfig] Development initialization failed:', devError);
+            }
+        }
         
         // Essayer un retry automatique
         try {
@@ -375,4 +389,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-console.log('[SupabaseConfig] ✅ Configuration system loaded v2.0');
+console.log('[SupabaseConfig] ✅ Configuration system loaded v3.0 - SECURE (no hardcoded secrets)');
