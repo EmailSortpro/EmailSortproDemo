@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administration - EmailSortPro</title>
+    <title>Analytics Admin - EmailSortPro</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
             background: #f8fafc;
@@ -18,6 +22,114 @@
             line-height: 1.6;
         }
         
+        /* Login Screen */
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .login-form {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-form h1 {
+            text-align: center;
+            margin-bottom: 8px;
+            color: #1f2937;
+            font-size: 1.5rem;
+        }
+
+        .login-form p {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #4338ca;
+        }
+
+        .btn-primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .success-message {
+            background: #f0fdf4;
+            color: #16a34a;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .new-user-form {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        /* Main App */
+        .app-container {
+            display: none;
+        }
+
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -70,59 +182,7 @@
             margin: 0 auto;
             padding: 2rem;
         }
-        
-        .tabs {
-            display: flex;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-            overflow: hidden;
-        }
-        
-        .tab-btn {
-            background: none;
-            border: none;
-            padding: 1rem 2rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-bottom: 3px solid transparent;
-            font-weight: 500;
-        }
-        
-        .tab-btn.active {
-            background: #f7fafc;
-            border-bottom-color: #667eea;
-            color: #667eea;
-        }
-        
-        .tab-btn:hover {
-            background: #f7fafc;
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        .card {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: #2d3748;
-        }
-        
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -150,7 +210,25 @@
             font-size: 0.875rem;
             margin-top: 0.5rem;
         }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
         
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
         .table-container {
             overflow-x: auto;
         }
@@ -159,9 +237,6 @@
             width: 100%;
             border-collapse: collapse;
             background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
         th, td {
@@ -179,168 +254,33 @@
         tr:hover {
             background: #f7fafc;
         }
-        
-        .status-badge {
-            padding: 0.25rem 0.75rem;
+
+        .domain-badge {
+            background: #e6fffa;
+            color: #234e52;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+
+        .user-count {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 0.25rem 0.5rem;
             border-radius: 12px;
             font-size: 0.75rem;
             font-weight: 600;
-            text-transform: uppercase;
         }
-        
-        .status-active {
-            background: #c6f6d5;
-            color: #22543d;
-        }
-        
-        .status-trial {
-            background: #fef5e7;
-            color: #c05621;
-        }
-        
-        .status-expired {
-            background: #fed7d7;
-            color: #c53030;
-        }
-        
-        .status-blocked {
-            background: #e2e8f0;
-            color: #4a5568;
-        }
-        
-        .btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.875rem;
-            transition: all 0.2s;
-            text-decoration: none;
-            display: inline-block;
-        }
-        
-        .btn:hover {
-            background: #5a67d8;
-        }
-        
-        .btn-secondary {
-            background: #e2e8f0;
-            color: #4a5568;
-        }
-        
-        .btn-secondary:hover {
-            background: #cbd5e0;
-        }
-        
-        .btn-danger {
-            background: #e53e3e;
-        }
-        
-        .btn-danger:hover {
-            background: #c53030;
-        }
-        
-        .btn-success {
-            background: #38a169;
-        }
-        
-        .btn-success:hover {
-            background: #2f855a;
-        }
-        
-        .form-group {
-            margin-bottom: 1rem;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: #4a5568;
-        }
-        
-        .form-input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            font-size: 1rem;
-        }
-        
-        .form-input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-        }
-        
-        .modal-content {
-            background: white;
-            margin: 5% auto;
-            padding: 2rem;
-            border-radius: 8px;
-            max-width: 600px;
-            width: 90%;
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-        
-        .modal-title {
-            font-size: 1.25rem;
+
+        .email-count {
+            background: #dcfce7;
+            color: #166534;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
             font-weight: 600;
         }
-        
-        .close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #718096;
-        }
-        
-        .close:hover {
-            color: #4a5568;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            color: #718096;
-        }
-        
-        .error {
-            background: #fed7d7;
-            color: #c53030;
-            padding: 1rem;
-            border-radius: 6px;
-            margin-bottom: 1rem;
-        }
-        
-        .success {
-            background: #c6f6d5;
-            color: #22543d;
-            padding: 1rem;
-            border-radius: 6px;
-            margin-bottom: 1rem;
-        }
-        
+
         .filters {
             display: flex;
             gap: 1rem;
@@ -369,35 +309,72 @@
             transform: translateY(-50%);
             color: #718096;
         }
-        
-        .actions {
-            display: flex;
-            gap: 0.5rem;
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
         }
         
-        .payment-status {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+        .btn:hover {
+            background: #5a67d8;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
         }
         
-        .payment-amount {
-            font-weight: 600;
-            color: #2d3748;
+        .btn-secondary:hover {
+            background: #cbd5e0;
         }
-        
-        .super-admin-only {
-            display: none;
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #718096;
         }
-        
-        .company-badge {
-            background: #e6fffa;
-            color: #234e52;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
         }
-        
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
@@ -406,10 +383,6 @@
             .header-content {
                 flex-direction: column;
                 gap: 1rem;
-            }
-            
-            .tabs {
-                flex-direction: column;
             }
             
             .stats-grid {
@@ -427,1399 +400,671 @@
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="header-content">
-            <div class="logo">
-                📧 EmailSortPro Admin
+    <!-- Login Screen -->
+    <div id="loginContainer" class="login-container">
+        <div class="login-form">
+            <h1>📧 Analytics Admin</h1>
+            <p>EmailSortPro - Accès administrateur</p>
+            
+            <div id="alertContainer"></div>
+            
+            <!-- Login Form -->
+            <div id="loginForm">
+                <form id="authForm">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="loginEmail" required 
+                               placeholder="votre-email@domaine.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Mot de passe</label>
+                        <input type="password" class="form-input" id="loginPassword" required
+                               placeholder="Votre mot de passe">
+                    </div>
+                    <button type="submit" class="btn-primary" id="loginBtn">
+                        Se connecter
+                    </button>
+                </form>
             </div>
-            <div class="user-info">
-                <div class="user-badge" id="userBadge">
-                    Chargement...
+
+            <!-- New User Form -->
+            <div id="newUserForm" style="display: none;">
+                <div class="new-user-form">
+                    <h3>Première connexion</h3>
+                    <p>Créez votre mot de passe administrateur</p>
+                    <form id="setupForm">
+                        <div class="form-group">
+                            <label class="form-label">Votre nom</label>
+                            <input type="text" class="form-input" id="setupName" required
+                                   placeholder="Nom complet">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Mot de passe</label>
+                            <input type="password" class="form-input" id="setupPassword" required
+                                   placeholder="Choisissez un mot de passe sécurisé" minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Confirmez le mot de passe</label>
+                            <input type="password" class="form-input" id="setupPasswordConfirm" required
+                                   placeholder="Confirmez votre mot de passe">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nom de votre société</label>
+                            <input type="text" class="form-input" id="setupCompany" required
+                                   placeholder="Nom de votre entreprise">
+                        </div>
+                        <button type="submit" class="btn-primary" id="setupBtn">
+                            Créer mon compte admin
+                        </button>
+                        <button type="button" class="btn-secondary" onclick="showLoginForm()" 
+                                style="width: 100%; margin-top: 12px;">
+                            Retour à la connexion
+                        </button>
+                    </form>
                 </div>
-                <button class="logout-btn" onclick="logout()">
-                    Déconnexion
+            </div>
+
+            <div style="text-align: center; margin-top: 24px;">
+                <button type="button" class="btn-secondary" onclick="showNewUserForm()">
+                    Première connexion ?
                 </button>
             </div>
         </div>
-    </header>
+    </div>
 
-    <!-- Conteneur principal -->
-    <div class="container">
-        <!-- Message d'erreur/succès -->
-        <div id="alertContainer"></div>
+    <!-- Main Application -->
+    <div id="appContainer" class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    📧 EmailSortPro Analytics
+                </div>
+                <div class="user-info">
+                    <div class="user-badge" id="userBadge">
+                        Chargement...
+                    </div>
+                    <button class="logout-btn" onclick="logout()">
+                        Déconnexion
+                    </button>
+                </div>
+            </div>
+        </header>
 
-        <!-- État de chargement -->
-        <div id="loadingState" class="loading">
-            <div>🔄 Chargement des données d'administration...</div>
-        </div>
+        <!-- Main Content -->
+        <div class="container">
+            <div id="appAlertContainer"></div>
 
-        <!-- Interface principale -->
-        <div id="mainInterface" style="display: none;">
-            <!-- Onglets -->
-            <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('dashboard')">Tableau de bord</button>
-                <button class="tab-btn" onclick="switchTab('licenses')">Licences</button>
-                <button class="tab-btn" onclick="switchTab('users')">Utilisateurs</button>
-                <button class="tab-btn" onclick="switchTab('payments')">Paiements</button>
-                <button class="tab-btn super-admin-only" onclick="switchTab('companies')">Sociétés</button>
-                <button class="tab-btn super-admin-only" onclick="switchTab('system')">Système</button>
+            <!-- Statistics -->
+            <div class="stats-grid" id="statsGrid">
+                <!-- Stats will be loaded here -->
             </div>
 
-            <!-- Contenu des onglets -->
-            
-            <!-- Dashboard -->
-            <div id="dashboard" class="tab-content active">
-                <div class="stats-grid" id="statsGrid">
-                    <!-- Stats générées dynamiquement -->
+            <!-- Domain Overview -->
+            <div class="card">
+                <h3 class="card-title">
+                    <i class="fas fa-globe"></i>
+                    Domaines utilisant EmailSortPro
+                </h3>
+                
+                <div class="filters">
+                    <div class="search-container">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" placeholder="Rechercher un domaine..." 
+                               id="domainSearch" onkeyup="filterDomains()">
+                    </div>
+                    <button class="btn" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i> Actualiser
+                    </button>
                 </div>
                 
-                <div class="card">
-                    <h3 class="card-title">Activité récente</h3>
-                    <div id="recentActivity">
-                        <!-- Activité générée dynamiquement -->
-                    </div>
+                <div class="table-container">
+                    <table id="domainsTable">
+                        <thead>
+                            <tr>
+                                <th>Domaine</th>
+                                <th>Utilisateurs</th>
+                                <th>Emails scannés</th>
+                                <th>Dernière activité</th>
+                                <th>Administrateur</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody id="domainsTableBody">
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <!-- Licences -->
-            <div id="licenses" class="tab-content">
-                <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <h3 class="card-title">Gestion des licences</h3>
-                        <button class="btn" onclick="showAddLicenseModal()">
-                            + Nouvelle licence
-                        </button>
+            <!-- Users by Email -->
+            <div class="card">
+                <h3 class="card-title">
+                    <i class="fas fa-users"></i>
+                    Utilisateurs par Email
+                </h3>
+                
+                <div class="filters">
+                    <div class="search-container">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" placeholder="Rechercher un utilisateur..." 
+                               id="userSearch" onkeyup="filterUsers()">
                     </div>
-                    
-                    <div class="filters">
-                        <div class="search-container">
-                            <span class="search-icon">🔍</span>
-                            <input type="text" class="search-input" placeholder="Rechercher par société, utilisateur..." id="licenseSearch">
-                        </div>
-                        <select class="form-input" style="width: auto;" id="licenseStatusFilter">
-                            <option value="">Tous les statuts</option>
-                            <option value="active">Actif</option>
-                            <option value="trial">Essai</option>
-                            <option value="expired">Expiré</option>
-                            <option value="suspended">Suspendu</option>
-                        </select>
-                    </div>
-                    
-                    <div class="table-container">
-                        <table id="licensesTable">
-                            <thead>
-                                <tr>
-                                    <th>Société</th>
-                                    <th>Type</th>
-                                    <th>Statut</th>
-                                    <th>Sièges</th>
-                                    <th>Expiration</th>
-                                    <th>Prix</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Données générées dynamiquement -->
-                            </tbody>
-                        </table>
-                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Nom</th>
+                                <th>Domaine</th>
+                                <th>Emails scannés</th>
+                                <th>Sessions</th>
+                                <th>Première utilisation</th>
+                                <th>Dernière activité</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <!-- Utilisateurs -->
-            <div id="users" class="tab-content">
-                <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <h3 class="card-title">Gestion des utilisateurs</h3>
-                        <button class="btn" onclick="showAddUserModal()">
-                            + Nouvel utilisateur
-                        </button>
-                    </div>
-                    
-                    <div class="filters">
-                        <div class="search-container">
-                            <span class="search-icon">🔍</span>
-                            <input type="text" class="search-input" placeholder="Rechercher par email, nom..." id="userSearch">
-                        </div>
-                        <select class="form-input" style="width: auto;" id="userRoleFilter">
-                            <option value="">Tous les rôles</option>
-                            <option value="user">Utilisateur</option>
-                            <option value="company_admin">Admin société</option>
-                            <option value="super_admin">Super admin</option>
-                        </select>
-                        <select class="form-input" style="width: auto;" id="userStatusFilter">
-                            <option value="">Tous les statuts</option>
-                            <option value="active">Actif</option>
-                            <option value="trial">Essai</option>
-                            <option value="blocked">Bloqué</option>
-                            <option value="expired">Expiré</option>
-                        </select>
-                    </div>
-                    
-                    <div class="table-container">
-                        <table id="usersTable">
-                            <thead>
-                                <tr>
-                                    <th>Utilisateur</th>
-                                    <th>Société</th>
-                                    <th>Rôle</th>
-                                    <th>Statut</th>
-                                    <th>Dernière connexion</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Données générées dynamiquement -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Paiements -->
-            <div id="payments" class="tab-content">
-                <div class="card">
-                    <h3 class="card-title">Gestion des paiements</h3>
-                    
-                    <div class="filters">
-                        <div class="search-container">
-                            <span class="search-icon">🔍</span>
-                            <input type="text" class="search-input" placeholder="Rechercher par société..." id="paymentSearch">
-                        </div>
-                        <select class="form-input" style="width: auto;" id="paymentStatusFilter">
-                            <option value="">Tous les statuts</option>
-                            <option value="pending">En attente</option>
-                            <option value="paid">Payé</option>
-                            <option value="failed">Échec</option>
-                            <option value="refunded">Remboursé</option>
-                        </select>
-                    </div>
-                    
-                    <div class="table-container">
-                        <table id="paymentsTable">
-                            <thead>
-                                <tr>
-                                    <th>Société</th>
-                                    <th>Montant</th>
-                                    <th>Statut</th>
-                                    <th>Date création</th>
-                                    <th>Date expiration</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Données générées dynamiquement -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sociétés (Super admin seulement) -->
-            <div id="companies" class="tab-content">
-                <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <h3 class="card-title">Gestion des sociétés</h3>
-                        <button class="btn" onclick="showAddCompanyModal()">
-                            + Nouvelle société
-                        </button>
-                    </div>
-                    
-                    <div class="filters">
-                        <div class="search-container">
-                            <span class="search-icon">🔍</span>
-                            <input type="text" class="search-input" placeholder="Rechercher par nom, domaine..." id="companySearch">
-                        </div>
-                    </div>
-                    
-                    <div class="table-container">
-                        <table id="companiesTable">
-                            <thead>
-                                <tr>
-                                    <th>Société</th>
-                                    <th>Domaine</th>
-                                    <th>Utilisateurs</th>
-                                    <th>Licences actives</th>
-                                    <th>Création</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Données générées dynamiquement -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Système (Super admin seulement) -->
-            <div id="system" class="tab-content">
-                <div class="card">
-                    <h3 class="card-title">Administration système</h3>
-                    
-                    <div style="margin-bottom: 2rem;">
-                        <h4>Connexions actives</h4>
-                        <div class="table-container">
-                            <table id="activeConnectionsTable">
-                                <thead>
-                                    <tr>
-                                        <th>Utilisateur</th>
-                                        <th>Société</th>
-                                        <th>IP</th>
-                                        <th>Dernière activité</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- Données générées dynamiquement -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <h4>Actions système</h4>
-                        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                            <button class="btn btn-secondary" onclick="exportData()">
-                                📊 Exporter les données
-                            </button>
-                            <button class="btn btn-secondary" onclick="viewSystemLogs()">
-                                📋 Logs système
-                            </button>
-                            <button class="btn btn-danger" onclick="systemMaintenance()">
-                                🔧 Maintenance
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            <!-- Loading State -->
+            <div id="loadingState" class="loading">
+                <div class="spinner"></div>
+                <div>Chargement des données...</div>
             </div>
         </div>
     </div>
 
-    <!-- Modals -->
-    
-    <!-- Modal Licence -->
-    <div id="licenseModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="licenseModalTitle">Nouvelle licence</h3>
-                <button class="close" onclick="closeLicenseModal()">&times;</button>
-            </div>
-            <form id="licenseForm">
-                <div class="form-group">
-                    <label class="form-label">Société</label>
-                    <select class="form-input" id="licenseCompany" required>
-                        <option value="">Sélectionner une société</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Type de licence</label>
-                    <select class="form-input" id="licenseType" required>
-                        <option value="trial">Essai (15 jours)</option>
-                        <option value="basic">Basic</option>
-                        <option value="premium">Premium</option>
-                        <option value="enterprise">Enterprise</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Nombre de sièges</label>
-                    <input type="number" class="form-input" id="licenseSeats" min="1" value="1" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Prix (€ HT)</label>
-                    <input type="number" class="form-input" id="licensePrice" step="0.01" value="9.90" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Date d'expiration</label>
-                    <input type="date" class="form-input" id="licenseExpiration" required>
-                </div>
-                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
-                    <button type="button" class="btn btn-secondary" onclick="closeLicenseModal()">
-                        Annuler
-                    </button>
-                    <button type="submit" class="btn">
-                        Enregistrer
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal Utilisateur -->
-    <div id="userModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="userModalTitle">Nouvel utilisateur</h3>
-                <button class="close" onclick="closeUserModal()">&times;</button>
-            </div>
-            <form id="userForm">
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-input" id="userEmail" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Nom</label>
-                    <input type="text" class="form-input" id="userName" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Société</label>
-                    <select class="form-input" id="userCompany" required>
-                        <option value="">Sélectionner une société</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Rôle</label>
-                    <select class="form-input" id="userRole" required>
-                        <option value="user">Utilisateur</option>
-                        <option value="company_admin">Admin société</option>
-                        <option value="super_admin">Super admin</option>
-                    </select>
-                </div>
-                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
-                    <button type="button" class="btn btn-secondary" onclick="closeUserModal()">
-                        Annuler
-                    </button>
-                    <button type="submit" class="btn">
-                        Enregistrer
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal Société -->
-    <div id="companyModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Nouvelle société</h3>
-                <button class="close" onclick="closeCompanyModal()">&times;</button>
-            </div>
-            <form id="companyForm">
-                <div class="form-group">
-                    <label class="form-label">Nom de la société</label>
-                    <input type="text" class="form-input" id="companyName" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Domaine</label>
-                    <input type="text" class="form-input" id="companyDomain" required 
-                           placeholder="exemple.com">
-                </div>
-                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
-                    <button type="button" class="btn btn-secondary" onclick="closeCompanyModal()">
-                        Annuler
-                    </button>
-                    <button type="submit" class="btn">
-                        Enregistrer
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal Paiement -->
-    <div id="paymentModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Traitement du paiement</h3>
-                <button class="close" onclick="closePaymentModal()">&times;</button>
-            </div>
-            <div id="paymentContent">
-                <div id="stripePayment">
-                    <div class="form-group">
-                        <label class="form-label">Montant à payer</label>
-                        <div class="payment-amount" id="paymentAmount">9.90 € HT</div>
-                    </div>
-                    <div id="stripe-card-element" style="padding: 1rem; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 1rem;">
-                        <!-- Stripe Elements sera injecté ici -->
-                    </div>
-                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-                        <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">
-                            Annuler
-                        </button>
-                        <button type="button" class="btn" id="payButton">
-                            Payer maintenant
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <script src="https://js.stripe.com/v3/"></script>
+    <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./config-supabase.js"></script>
-    <script src="./license-check.js"></script>
 
     <script>
-        // Variables globales
-        let currentUser = null;
+        // Configuration et variables globales
         let supabaseClient = null;
-        let stripe = null;
-        let cardElement = null;
-        let currentCompanyId = null;
-        let isLoading = false;
+        let currentUser = null;
+        let allDomains = [];
+        let allUsers = [];
 
-        // Configuration Stripe (sandbox)
-        const STRIPE_PUBLIC_KEY = 'pk_test_51234567890abcdef'; // À remplacer par votre clé Stripe
+        // Configuration Supabase (sera chargée depuis Netlify Functions)
+        let supabaseConfig = null;
 
-        // Initialisation
+        // === INITIALISATION ===
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('[Admin] 🚀 Initialisation interface admin...');
+            console.log('[Analytics] Initialisation...');
             
             try {
-                // Attendre la vérification de licence
-                await waitForLicenseCheck();
-                
-                // Initialiser Supabase
                 await initializeSupabase();
-                
-                // Vérifier les permissions admin
-                await checkAdminPermissions();
-                
-                // Initialiser Stripe
-                initializeStripe();
-                
-                // Charger les données
-                await loadAdminData();
-                
-                // Cacher le loading
-                document.getElementById('loadingState').style.display = 'none';
-                document.getElementById('mainInterface').style.display = 'block';
-                
-                console.log('[Admin] ✅ Interface admin prête');
-                
+                setupEventListeners();
             } catch (error) {
-                console.error('[Admin] ❌ Erreur initialisation:', error);
-                showError('Erreur d\'initialisation: ' + error.message);
+                console.error('[Analytics] Erreur initialisation:', error);
+                showAlert('Erreur de configuration. Contactez l\'administrateur.', 'error');
             }
         });
 
-        // Attendre la vérification de licence
-        async function waitForLicenseCheck() {
-            let attempts = 0;
-            while (!window.currentUser && attempts < 100) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
-            }
-            
-            if (!window.currentUser) {
-                throw new Error('Utilisateur non authentifié');
-            }
-            
-            currentUser = window.currentUser;
-            console.log('[Admin] ✅ Utilisateur authentifié:', currentUser.email);
-        }
-
-        // Initialiser Supabase
         async function initializeSupabase() {
-            if (!window.supabaseConfigPromise) {
-                throw new Error('Configuration Supabase non disponible');
-            }
-            
-            const config = await window.supabaseConfigPromise;
-            const supabaseConfig = config.getConfig();
-            
-            supabaseClient = window.supabase.createClient(
-                supabaseConfig.url,
-                supabaseConfig.anonKey
-            );
-            
-            console.log('[Admin] ✅ Supabase initialisé');
-        }
-
-        // Vérifier les permissions admin
-        async function checkAdminPermissions() {
-            const userRole = currentUser.role;
-            
-            if (userRole !== 'company_admin' && userRole !== 'super_admin') {
-                throw new Error('Accès refusé: permissions administrateur requises');
-            }
-            
-            // Stocker l'ID de la société pour les admins de société
-            if (userRole === 'company_admin') {
-                currentCompanyId = currentUser.company_id;
-            }
-            
-            // Afficher/masquer les éléments super admin
-            const superAdminElements = document.querySelectorAll('.super-admin-only');
-            superAdminElements.forEach(el => {
-                el.style.display = userRole === 'super_admin' ? 'block' : 'none';
-            });
-            
-            // Mettre à jour le badge utilisateur
-            const userBadge = document.getElementById('userBadge');
-            const roleName = userRole === 'super_admin' ? 'Super Admin' : 'Admin';
-            userBadge.textContent = `${currentUser.name || currentUser.email} (${roleName})`;
-            
-            console.log('[Admin] ✅ Permissions vérifiées:', userRole);
-        }
-
-        // Initialiser Stripe
-        function initializeStripe() {
             try {
-                stripe = Stripe(STRIPE_PUBLIC_KEY);
-                const elements = stripe.elements();
-                cardElement = elements.create('card');
-                console.log('[Admin] ✅ Stripe initialisé');
+                // Charger la configuration depuis Netlify Functions
+                const response = await fetch('/.netlify/functions/get-supabase-config');
+                if (!response.ok) {
+                    throw new Error('Configuration Supabase indisponible');
+                }
+                
+                supabaseConfig = await response.json();
+                
+                // Initialiser le client Supabase
+                supabaseClient = window.supabase.createClient(
+                    supabaseConfig.url,
+                    supabaseConfig.anonKey
+                );
+                
+                console.log('[Analytics] Supabase initialisé');
             } catch (error) {
-                console.warn('[Admin] ⚠️ Stripe non disponible:', error.message);
+                console.error('[Analytics] Erreur Supabase:', error);
+                // Mode demo avec données mockées
+                console.warn('[Analytics] Mode demo activé');
+                initializeDemoMode();
             }
         }
 
-        // Charger les données d'administration
-        async function loadAdminData() {
+        function initializeDemoMode() {
+            // Données de démonstration
+            allDomains = [
+                {
+                    domain: 'demo.com',
+                    userCount: 5,
+                    emailCount: 1250,
+                    lastActivity: new Date().toISOString(),
+                    admin: 'admin@demo.com',
+                    status: 'active'
+                },
+                {
+                    domain: 'test-company.fr',
+                    userCount: 3,
+                    emailCount: 890,
+                    lastActivity: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+                    admin: 'manager@test-company.fr',
+                    status: 'active'
+                }
+            ];
+
+            allUsers = [
+                {
+                    email: 'john@demo.com',
+                    name: 'John Doe',
+                    domain: 'demo.com',
+                    emailCount: 450,
+                    sessionCount: 12,
+                    firstUsed: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    lastActivity: new Date().toISOString()
+                },
+                {
+                    email: 'jane@demo.com',
+                    name: 'Jane Smith',
+                    domain: 'demo.com',
+                    emailCount: 380,
+                    sessionCount: 8,
+                    firstUsed: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
+                    lastActivity: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+                }
+            ];
+        }
+
+        function setupEventListeners() {
+            // Formulaire de connexion
+            document.getElementById('authForm').addEventListener('submit', handleLogin);
+            
+            // Formulaire de création de compte
+            document.getElementById('setupForm').addEventListener('submit', handleSetup);
+        }
+
+        // === AUTHENTIFICATION ===
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showAlert('Veuillez remplir tous les champs', 'error');
+                return;
+            }
+
             setLoading(true);
             
             try {
-                // Charger les statistiques
-                await loadDashboardStats();
+                const result = await authenticateUser(email, password);
                 
-                // Charger les données des tables
-                await loadLicenses();
-                await loadUsers();
-                await loadPayments();
-                
-                if (currentUser.role === 'super_admin') {
-                    await loadCompanies();
-                    await loadActiveConnections();
+                if (result.success) {
+                    currentUser = result.user;
+                    showApp();
+                    await loadDashboardData();
+                } else {
+                    showAlert(result.message || 'Email ou mot de passe incorrect', 'error');
                 }
-                
             } catch (error) {
-                console.error('[Admin] Erreur chargement données:', error);
-                showError('Erreur lors du chargement des données');
+                console.error('[Auth] Erreur connexion:', error);
+                showAlert('Erreur de connexion', 'error');
             } finally {
                 setLoading(false);
             }
         }
 
-        // Charger les statistiques du dashboard
-        async function loadDashboardStats() {
-            const statsGrid = document.getElementById('statsGrid');
-            statsGrid.innerHTML = '';
+        async function handleSetup(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value.trim();
+            const name = document.getElementById('setupName').value.trim();
+            const password = document.getElementById('setupPassword').value;
+            const passwordConfirm = document.getElementById('setupPasswordConfirm').value;
+            const company = document.getElementById('setupCompany').value.trim();
+            
+            if (!email || !name || !password || !company) {
+                showAlert('Veuillez remplir tous les champs', 'error');
+                return;
+            }
+            
+            if (password !== passwordConfirm) {
+                showAlert('Les mots de passe ne correspondent pas', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showAlert('Le mot de passe doit contenir au moins 6 caractères', 'error');
+                return;
+            }
+
+            setLoading(true);
             
             try {
-                let statsQuery = supabaseClient.from('licenses').select('*');
-                if (currentCompanyId) {
-                    statsQuery = statsQuery.eq('company_id', currentCompanyId);
+                const result = await createAdminUser(email, name, password, company);
+                
+                if (result.success) {
+                    showAlert('Compte créé avec succès ! Vous pouvez maintenant vous connecter.', 'success');
+                    showLoginForm();
+                } else {
+                    showAlert(result.message || 'Erreur lors de la création du compte', 'error');
                 }
-                
-                const { data: licenses } = await statsQuery;
-                
-                const activeLicenses = licenses?.filter(l => l.status === 'active').length || 0;
-                const trialLicenses = licenses?.filter(l => l.status === 'trial').length || 0;
-                const expiredLicenses = licenses?.filter(l => l.status === 'expired').length || 0;
-                const totalRevenue = licenses?.reduce((sum, l) => sum + (parseFloat(l.price) || 0), 0) || 0;
-                
-                const stats = [
-                    { label: 'Licences actives', value: activeLicenses, icon: '✅' },
-                    { label: 'Essais en cours', value: trialLicenses, icon: '🔄' },
-                    { label: 'Licences expirées', value: expiredLicenses, icon: '⏰' },
-                    { label: 'Revenus totaux', value: `${totalRevenue.toFixed(2)} €`, icon: '💰' }
-                ];
-                
-                stats.forEach(stat => {
-                    const statCard = document.createElement('div');
-                    statCard.className = 'stat-card';
-                    statCard.innerHTML = `
-                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">${stat.icon}</div>
-                        <div class="stat-number">${stat.value}</div>
-                        <div class="stat-label">${stat.label}</div>
-                    `;
-                    statsGrid.appendChild(statCard);
-                });
-                
             } catch (error) {
-                console.error('[Admin] Erreur stats:', error);
+                console.error('[Setup] Erreur création:', error);
+                showAlert('Erreur lors de la création du compte', 'error');
+            } finally {
+                setLoading(false);
             }
         }
 
-        // Charger les licences
-        async function loadLicenses() {
-            const tbody = document.querySelector('#licensesTable tbody');
-            tbody.innerHTML = '<tr><td colspan="7" class="loading">Chargement...</td></tr>';
-            
-            try {
-                let query = supabaseClient
-                    .from('licenses')
-                    .select(`
-                        *,
-                        company:companies(*),
-                        user:users(*)
-                    `)
-                    .order('created_at', { ascending: false });
-                
-                if (currentCompanyId) {
-                    query = query.eq('company_id', currentCompanyId);
+        async function authenticateUser(email, password) {
+            if (!supabaseClient) {
+                // Mode demo
+                if (email === 'demo@admin.com' && password === 'demo123') {
+                    return {
+                        success: true,
+                        user: {
+                            email: email,
+                            name: 'Demo Admin',
+                            company: { name: 'Demo Company', domain: 'demo.com' },
+                            role: 'company_admin'
+                        }
+                    };
                 }
-                
-                const { data: licenses, error } = await query;
-                
-                if (error) throw error;
-                
-                tbody.innerHTML = '';
-                
-                if (!licenses || licenses.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #718096;">Aucune licence trouvée</td></tr>';
-                    return;
-                }
-                
-                licenses.forEach(license => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>
-                            <div>${license.company?.name || 'N/A'}</div>
-                            <div class="company-badge">${license.company?.domain || 'N/A'}</div>
-                        </td>
-                        <td><span class="status-badge">${license.type}</span></td>
-                        <td><span class="status-badge status-${license.status}">${getStatusLabel(license.status)}</span></td>
-                        <td>${license.used_seats || 0} / ${license.seats || 1}</td>
-                        <td>${license.expires_at ? new Date(license.expires_at).toLocaleDateString() : 'N/A'}</td>
-                        <td class="payment-amount">${parseFloat(license.price || 0).toFixed(2)} €</td>
-                        <td>
-                            <div class="actions">
-                                <button class="btn btn-secondary" onclick="editLicense('${license.id}')">Modifier</button>
-                                ${license.status === 'active' ? 
-                                    `<button class="btn btn-danger" onclick="suspendLicense('${license.id}')">Suspendre</button>` :
-                                    `<button class="btn btn-success" onclick="activateLicense('${license.id}')">Activer</button>`
-                                }
-                                ${license.status === 'trial' || license.status === 'expired' ? 
-                                    `<button class="btn" onclick="createPayment('${license.id}')">Paiement</button>` : ''
-                                }
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-                
-            } catch (error) {
-                console.error('[Admin] Erreur chargement licences:', error);
-                tbody.innerHTML = '<tr><td colspan="7" class="error">Erreur de chargement</td></tr>';
+                return { success: false, message: 'Identifiants incorrects (demo: demo@admin.com / demo123)' };
             }
-        }
 
-        // Charger les utilisateurs
-        async function loadUsers() {
-            const tbody = document.querySelector('#usersTable tbody');
-            tbody.innerHTML = '<tr><td colspan="6" class="loading">Chargement...</td></tr>';
-            
             try {
-                let query = supabaseClient
+                // Hasher le mot de passe (simple pour demo - en production utiliser bcrypt)
+                const hashedPassword = btoa(password); // Base64 simple pour demo
+                
+                const { data: user, error } = await supabaseClient
                     .from('users')
                     .select(`
                         *,
                         company:companies(*)
                     `)
-                    .order('created_at', { ascending: false });
-                
-                if (currentCompanyId) {
-                    query = query.eq('company_id', currentCompanyId);
+                    .eq('email', email)
+                    .eq('password_hash', hashedPassword)
+                    .single();
+
+                if (error || !user) {
+                    return { success: false, message: 'Email ou mot de passe incorrect' };
                 }
-                
-                const { data: users, error } = await query;
-                
-                if (error) throw error;
-                
-                tbody.innerHTML = '';
-                
-                if (!users || users.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #718096;">Aucun utilisateur trouvé</td></tr>';
-                    return;
+
+                if (user.role !== 'company_admin' && user.role !== 'super_admin') {
+                    return { success: false, message: 'Accès refusé : droits administrateur requis' };
                 }
-                
-                users.forEach(user => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>
-                            <div style="font-weight: 600;">${user.name || user.email}</div>
-                            <div style="font-size: 0.875rem; color: #718096;">${user.email}</div>
-                        </td>
-                        <td>
-                            <div>${user.company?.name || 'N/A'}</div>
-                            <div class="company-badge">${user.company?.domain || 'N/A'}</div>
-                        </td>
-                        <td><span class="status-badge">${getRoleLabel(user.role)}</span></td>
-                        <td><span class="status-badge status-${user.license_status}">${getStatusLabel(user.license_status)}</span></td>
-                        <td>${user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : 'Jamais'}</td>
-                        <td>
-                            <div class="actions">
-                                <button class="btn btn-secondary" onclick="editUser('${user.id}')">Modifier</button>
-                                ${user.license_status === 'active' ? 
-                                    `<button class="btn btn-danger" onclick="blockUser('${user.id}')">Bloquer</button>` :
-                                    `<button class="btn btn-success" onclick="unblockUser('${user.id}')">Débloquer</button>`
-                                }
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
+
+                return { success: true, user: user };
                 
             } catch (error) {
-                console.error('[Admin] Erreur chargement utilisateurs:', error);
-                tbody.innerHTML = '<tr><td colspan="6" class="error">Erreur de chargement</td></tr>';
+                console.error('[Auth] Erreur authentification:', error);
+                return { success: false, message: 'Erreur de connexion' };
             }
         }
 
-        // Charger les paiements
-        async function loadPayments() {
-            const tbody = document.querySelector('#paymentsTable tbody');
-            tbody.innerHTML = '<tr><td colspan="6" class="loading">Chargement...</td></tr>';
-            
-            try {
-                // Simuler des données de paiement car nous n'avons pas encore la table payments
-                const payments = [
-                    {
-                        id: '1',
-                        company_name: 'Demo Company',
-                        amount: 9.90,
-                        status: 'pending',
-                        created_at: new Date().toISOString(),
-                        expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString()
-                    }
-                ];
-                
-                tbody.innerHTML = '';
-                
-                payments.forEach(payment => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${payment.company_name}</td>
-                        <td class="payment-amount">${payment.amount.toFixed(2)} € HT</td>
-                        <td><span class="status-badge status-${payment.status}">${getPaymentStatusLabel(payment.status)}</span></td>
-                        <td>${new Date(payment.created_at).toLocaleDateString()}</td>
-                        <td>${new Date(payment.expires_at).toLocaleDateString()}</td>
-                        <td>
-                            <div class="actions">
-                                ${payment.status === 'pending' ? 
-                                    `<button class="btn" onclick="processPayment('${payment.id}')">Traiter</button>` : ''
-                                }
-                                <button class="btn btn-secondary" onclick="viewPaymentDetails('${payment.id}')">Détails</button>
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-                
-            } catch (error) {
-                console.error('[Admin] Erreur chargement paiements:', error);
-                tbody.innerHTML = '<tr><td colspan="6" class="error">Erreur de chargement</td></tr>';
+        async function createAdminUser(email, name, password, companyName) {
+            if (!supabaseClient) {
+                return { success: false, message: 'Service indisponible en mode demo' };
             }
-        }
 
-        // Charger les sociétés (super admin seulement)
-        async function loadCompanies() {
-            if (currentUser.role !== 'super_admin') return;
-            
-            const tbody = document.querySelector('#companiesTable tbody');
-            tbody.innerHTML = '<tr><td colspan="6" class="loading">Chargement...</td></tr>';
-            
             try {
-                const { data: companies, error } = await supabaseClient
+                const domain = email.split('@')[1];
+                const hashedPassword = btoa(password); // Base64 simple pour demo
+                
+                // Vérifier si l'utilisateur existe déjà
+                const { data: existingUser } = await supabaseClient
+                    .from('users')
+                    .select('id')
+                    .eq('email', email)
+                    .single();
+
+                if (existingUser) {
+                    return { success: false, message: 'Un compte avec cet email existe déjà' };
+                }
+
+                // Créer ou récupérer la société
+                let { data: company, error: companyError } = await supabaseClient
                     .from('companies')
-                    .select(`
-                        *,
-                        users:users(count),
-                        licenses:licenses(count)
-                    `)
-                    .order('created_at', { ascending: false });
-                
-                if (error) throw error;
-                
-                tbody.innerHTML = '';
-                
-                if (!companies || companies.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #718096;">Aucune société trouvée</td></tr>';
-                    return;
+                    .select('id')
+                    .eq('domain', domain)
+                    .single();
+
+                if (!company) {
+                    const { data: newCompany, error: createCompanyError } = await supabaseClient
+                        .from('companies')
+                        .insert([{
+                            name: companyName,
+                            domain: domain
+                        }])
+                        .select()
+                        .single();
+
+                    if (createCompanyError) throw createCompanyError;
+                    company = newCompany;
                 }
-                
-                companies.forEach(company => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>
-                            <div style="font-weight: 600;">${company.name}</div>
-                        </td>
-                        <td>
-                            <div class="company-badge">${company.domain}</div>
-                        </td>
-                        <td>${company.users?.[0]?.count || 0}</td>
-                        <td>${company.licenses?.[0]?.count || 0}</td>
-                        <td>${new Date(company.created_at).toLocaleDateString()}</td>
-                        <td>
-                            <div class="actions">
-                                <button class="btn btn-secondary" onclick="editCompany('${company.id}')">Modifier</button>
-                                <button class="btn btn-danger" onclick="deleteCompany('${company.id}')">Supprimer</button>
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-                
-            } catch (error) {
-                console.error('[Admin] Erreur chargement sociétés:', error);
-                tbody.innerHTML = '<tr><td colspan="6" class="error">Erreur de chargement</td></tr>';
-            }
-        }
 
-        // Charger les connexions actives (super admin seulement)
-        async function loadActiveConnections() {
-            if (currentUser.role !== 'super_admin') return;
-            
-            const tbody = document.querySelector('#activeConnectionsTable tbody');
-            tbody.innerHTML = '<tr><td colspan="5" class="loading">Chargement...</td></tr>';
-            
-            try {
-                // Simuler des connexions actives
-                const connections = [
-                    {
-                        user_email: 'admin@demo.com',
-                        company_name: 'Demo Company',
-                        ip_address: '192.168.1.100',
-                        last_activity: new Date().toISOString()
-                    }
-                ];
-                
-                tbody.innerHTML = '';
-                
-                connections.forEach(connection => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${connection.user_email}</td>
-                        <td>${connection.company_name}</td>
-                        <td>${connection.ip_address}</td>
-                        <td>${new Date(connection.last_activity).toLocaleString()}</td>
-                        <td>
-                            <div class="actions">
-                                <button class="btn btn-danger" onclick="disconnectUser('${connection.user_email}')">Déconnecter</button>
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-                
-            } catch (error) {
-                console.error('[Admin] Erreur chargement connexions:', error);
-                tbody.innerHTML = '<tr><td colspan="5" class="error">Erreur de chargement</td></tr>';
-            }
-        }
-
-        // Fonctions utilitaires
-        function getStatusLabel(status) {
-            const labels = {
-                active: 'Actif',
-                trial: 'Essai',
-                expired: 'Expiré',
-                blocked: 'Bloqué',
-                suspended: 'Suspendu',
-                cancelled: 'Annulé'
-            };
-            return labels[status] || status;
-        }
-
-        function getRoleLabel(role) {
-            const labels = {
-                user: 'Utilisateur',
-                company_admin: 'Admin société',
-                super_admin: 'Super admin'
-            };
-            return labels[role] || role;
-        }
-
-        function getPaymentStatusLabel(status) {
-            const labels = {
-                pending: 'En attente',
-                paid: 'Payé',
-                failed: 'Échec',
-                refunded: 'Remboursé'
-            };
-            return labels[status] || status;
-        }
-
-        // Gestion des onglets
-        function switchTab(tabName) {
-            // Désactiver tous les onglets
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            
-            // Activer l'onglet sélectionné
-            event.target.classList.add('active');
-            document.getElementById(tabName).classList.add('active');
-            
-            // Recharger les données si nécessaire
-            switch(tabName) {
-                case 'dashboard':
-                    loadDashboardStats();
-                    break;
-                case 'licenses':
-                    loadLicenses();
-                    break;
-                case 'users':
-                    loadUsers();
-                    break;
-                case 'payments':
-                    loadPayments();
-                    break;
-                case 'companies':
-                    loadCompanies();
-                    break;
-                case 'system':
-                    loadActiveConnections();
-                    break;
-            }
-        }
-
-        // Gestion des modals
-        function showAddLicenseModal() {
-            document.getElementById('licenseModalTitle').textContent = 'Nouvelle licence';
-            document.getElementById('licenseForm').reset();
-            loadCompaniesForSelect('licenseCompany');
-            document.getElementById('licenseModal').style.display = 'block';
-        }
-
-        function closeLicenseModal() {
-            document.getElementById('licenseModal').style.display = 'none';
-        }
-
-        function showAddUserModal() {
-            document.getElementById('userModalTitle').textContent = 'Nouvel utilisateur';
-            document.getElementById('userForm').reset();
-            loadCompaniesForSelect('userCompany');
-            document.getElementById('userModal').style.display = 'block';
-        }
-
-        function closeUserModal() {
-            document.getElementById('userModal').style.display = 'none';
-        }
-
-        function showAddCompanyModal() {
-            document.getElementById('companyForm').reset();
-            document.getElementById('companyModal').style.display = 'block';
-        }
-
-        function closeCompanyModal() {
-            document.getElementById('companyModal').style.display = 'none';
-        }
-
-        function closePaymentModal() {
-            document.getElementById('paymentModal').style.display = 'none';
-        }
-
-        // Charger les sociétés pour les selects
-        async function loadCompaniesForSelect(selectId) {
-            const select = document.getElementById(selectId);
-            select.innerHTML = '<option value="">Chargement...</option>';
-            
-            try {
-                let query = supabaseClient.from('companies').select('*').order('name');
-                
-                if (currentCompanyId) {
-                    query = query.eq('id', currentCompanyId);
-                }
-                
-                const { data: companies, error } = await query;
-                
-                if (error) throw error;
-                
-                select.innerHTML = '<option value="">Sélectionner une société</option>';
-                
-                companies.forEach(company => {
-                    const option = document.createElement('option');
-                    option.value = company.id;
-                    option.textContent = `${company.name} (${company.domain})`;
-                    select.appendChild(option);
-                });
-                
-            } catch (error) {
-                console.error('Erreur chargement sociétés:', error);
-                select.innerHTML = '<option value="">Erreur de chargement</option>';
-            }
-        }
-
-        // Actions sur les licences
-        async function editLicense(licenseId) {
-            // TODO: Implémenter l'édition de licence
-            console.log('Edit license:', licenseId);
-        }
-
-        async function suspendLicense(licenseId) {
-            if (!confirm('Êtes-vous sûr de vouloir suspendre cette licence ?')) return;
-            
-            try {
-                const { error } = await supabaseClient
-                    .from('licenses')
-                    .update({ status: 'suspended' })
-                    .eq('id', licenseId);
-                
-                if (error) throw error;
-                
-                showSuccess('Licence suspendue avec succès');
-                loadLicenses();
-                
-            } catch (error) {
-                console.error('Erreur suspension licence:', error);
-                showError('Erreur lors de la suspension de la licence');
-            }
-        }
-
-        async function activateLicense(licenseId) {
-            try {
-                const { error } = await supabaseClient
-                    .from('licenses')
-                    .update({ status: 'active' })
-                    .eq('id', licenseId);
-                
-                if (error) throw error;
-                
-                showSuccess('Licence activée avec succès');
-                loadLicenses();
-                
-            } catch (error) {
-                console.error('Erreur activation licence:', error);
-                showError('Erreur lors de l\'activation de la licence');
-            }
-        }
-
-        // Actions sur les utilisateurs
-        async function editUser(userId) {
-            // TODO: Implémenter l'édition d'utilisateur
-            console.log('Edit user:', userId);
-        }
-
-        async function blockUser(userId) {
-            if (!confirm('Êtes-vous sûr de vouloir bloquer cet utilisateur ?')) return;
-            
-            try {
-                const { error } = await supabaseClient
+                // Créer l'utilisateur admin
+                const { data: newUser, error: userError } = await supabaseClient
                     .from('users')
-                    .update({ license_status: 'blocked' })
-                    .eq('id', userId);
-                
-                if (error) throw error;
-                
-                showSuccess('Utilisateur bloqué avec succès');
-                loadUsers();
+                    .insert([{
+                        email: email,
+                        name: name,
+                        company_id: company.id,
+                        role: 'company_admin',
+                        license_status: 'active',
+                        password_hash: hashedPassword,
+                        created_at: new Date().toISOString()
+                    }])
+                    .select()
+                    .single();
+
+                if (userError) throw userError;
+
+                return { success: true, user: newUser };
                 
             } catch (error) {
-                console.error('Erreur blocage utilisateur:', error);
-                showError('Erreur lors du blocage de l\'utilisateur');
+                console.error('[Setup] Erreur création utilisateur:', error);
+                return { success: false, message: 'Erreur lors de la création du compte' };
             }
         }
 
-        async function unblockUser(userId) {
-            try {
-                const { error } = await supabaseClient
-                    .from('users')
-                    .update({ license_status: 'active' })
-                    .eq('id', userId);
-                
-                if (error) throw error;
-                
-                showSuccess('Utilisateur débloqué avec succès');
-                loadUsers();
-                
-            } catch (error) {
-                console.error('Erreur déblocage utilisateur:', error);
-                showError('Erreur lors du déblocage de l\'utilisateur');
-            }
+        // === INTERFACE ===
+        function showApp() {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            
+            // Mettre à jour le badge utilisateur
+            const userBadge = document.getElementById('userBadge');
+            const roleName = currentUser.role === 'super_admin' ? 'Super Admin' : 'Admin';
+            userBadge.textContent = `${currentUser.name || currentUser.email} (${roleName})`;
         }
 
-        // Gestion des paiements
-        function createPayment(licenseId) {
-            document.getElementById('paymentModal').style.display = 'block';
-            
-            if (cardElement && !cardElement._mounted) {
-                cardElement.mount('#stripe-card-element');
-            }
-            
-            document.getElementById('payButton').onclick = () => processStripePayment(licenseId);
+        function showLoginForm() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('newUserForm').style.display = 'none';
         }
 
-        function processPayment(paymentId) {
-            // TODO: Traiter un paiement spécifique
-            console.log('Process payment:', paymentId);
+        function showNewUserForm() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('newUserForm').style.display = 'block';
         }
 
-        function viewPaymentDetails(paymentId) {
-            // TODO: Afficher les détails d'un paiement
-            console.log('View payment details:', paymentId);
+        function showAlert(message, type = 'error') {
+            const container = document.getElementById('alertContainer') || 
+                            document.getElementById('appAlertContainer');
+            
+            if (!container) return;
+            
+            const alertClass = type === 'error' ? 'error-message' : 'success-message';
+            container.innerHTML = `<div class="${alertClass}">${message}</div>`;
+            
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
         }
 
-        async function processStripePayment(licenseId) {
-            if (!stripe || !cardElement) {
-                showError('Stripe non disponible');
-                return;
-            }
-            
-            setLoading(true);
-            
-            try {
-                // Créer un payment intent côté serveur
-                const response = await fetch('/.netlify/functions/create-payment-intent', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        amount: 990, // 9.90€ en centimes
-                        currency: 'eur',
-                        licenseId: licenseId
-                    })
-                });
-                
-                const { client_secret } = await response.json();
-                
-                // Confirmer le paiement
-                const { error } = await stripe.confirmCardPayment(client_secret, {
-                    payment_method: {
-                        card: cardElement,
-                        billing_details: {
-                            name: currentUser.name || currentUser.email,
-                            email: currentUser.email
-                        }
-                    }
-                });
-                
-                if (error) {
-                    throw new Error(error.message);
-                } else {
-                    showSuccess('Paiement effectué avec succès');
-                    closePaymentModal();
-                    loadLicenses();
-                    loadPayments();
-                }
-                
-            } catch (error) {
-                console.error('Erreur paiement:', error);
-                showError('Erreur lors du paiement: ' + error.message);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        // Actions système (super admin)
-        function exportData() {
-            // TODO: Implémenter l'export de données
-            console.log('Export data');
-        }
-
-        function viewSystemLogs() {
-            // TODO: Afficher les logs système
-            console.log('View system logs');
-        }
-
-        function systemMaintenance() {
-            // TODO: Mode maintenance
-            console.log('System maintenance');
-        }
-
-        function disconnectUser(userEmail) {
-            if (!confirm(`Déconnecter l'utilisateur ${userEmail} ?`)) return;
-            
-            // TODO: Implémenter la déconnexion forcée
-            console.log('Disconnect user:', userEmail);
-        }
-
-        // Gestion des formulaires
-        document.getElementById('licenseForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const licenseData = {
-                company_id: formData.get('company'),
-                type: formData.get('type'),
-                seats: parseInt(formData.get('seats')),
-                price: parseFloat(formData.get('price')),
-                expires_at: formData.get('expiration'),
-                status: 'active'
-            };
-            
-            try {
-                const { error } = await supabaseClient
-                    .from('licenses')
-                    .insert([licenseData]);
-                
-                if (error) throw error;
-                
-                showSuccess('Licence créée avec succès');
-                closeLicenseModal();
-                loadLicenses();
-                
-            } catch (error) {
-                console.error('Erreur création licence:', error);
-                showError('Erreur lors de la création de la licence');
-            }
-        });
-
-        document.getElementById('userForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const userData = {
-                email: formData.get('email'),
-                name: formData.get('name'),
-                company_id: formData.get('company'),
-                role: formData.get('role'),
-                license_status: 'active'
-            };
-            
-            try {
-                const { error } = await supabaseClient
-                    .from('users')
-                    .insert([userData]);
-                
-                if (error) throw error;
-                
-                showSuccess('Utilisateur créé avec succès');
-                closeUserModal();
-                loadUsers();
-                
-            } catch (error) {
-                console.error('Erreur création utilisateur:', error);
-                showError('Erreur lors de la création de l\'utilisateur');
-            }
-        });
-
-        document.getElementById('companyForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const companyData = {
-                name: formData.get('name'),
-                domain: formData.get('domain')
-            };
-            
-            try {
-                const { error } = await supabaseClient
-                    .from('companies')
-                    .insert([companyData]);
-                
-                if (error) throw error;
-                
-                showSuccess('Société créée avec succès');
-                closeCompanyModal();
-                loadCompanies();
-                
-            } catch (error) {
-                console.error('Erreur création société:', error);
-                showError('Erreur lors de la création de la société');
-            }
-        });
-
-        // Fonctions utilitaires UI
         function setLoading(loading) {
-            isLoading = loading;
             const buttons = document.querySelectorAll('button');
             buttons.forEach(btn => {
                 btn.disabled = loading;
             });
         }
 
-        function showError(message) {
-            const alertContainer = document.getElementById('alertContainer');
-            alertContainer.innerHTML = `<div class="error">${message}</div>`;
-            setTimeout(() => {
-                alertContainer.innerHTML = '';
-            }, 5000);
+        function logout() {
+            currentUser = null;
+            document.getElementById('loginContainer').style.display = 'flex';
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
         }
 
-        function showSuccess(message) {
-            const alertContainer = document.getElementById('alertContainer');
-            alertContainer.innerHTML = `<div class="success">${message}</div>`;
-            setTimeout(() => {
-                alertContainer.innerHTML = '';
-            }, 5000);
-        }
-
-        // Fonction de déconnexion
-        async function logout() {
+        // === CHARGEMENT DES DONNÉES ===
+        async function loadDashboardData() {
+            document.getElementById('loadingState').style.display = 'block';
+            
             try {
-                if (window.authManager && window.authManager.logout) {
-                    await window.authManager.logout();
+                if (supabaseClient) {
+                    await loadRealData();
                 } else {
-                    // Nettoyage manuel
-                    localStorage.removeItem('emailsortpro_user_email');
-                    window.location.href = '/';
+                    loadDemoData();
                 }
+                
+                updateStats();
+                renderDomainsTable();
+                renderUsersTable();
+                
             } catch (error) {
-                console.error('Erreur déconnexion:', error);
-                window.location.href = '/';
+                console.error('[Data] Erreur chargement:', error);
+                showAlert('Erreur lors du chargement des données', 'error');
+            } finally {
+                document.getElementById('loadingState').style.display = 'none';
             }
         }
 
-        // Filtres et recherche
-        document.getElementById('licenseSearch')?.addEventListener('input', filterLicenses);
-        document.getElementById('licenseStatusFilter')?.addEventListener('change', filterLicenses);
-        document.getElementById('userSearch')?.addEventListener('input', filterUsers);
-        document.getElementById('userRoleFilter')?.addEventListener('change', filterUsers);
-        document.getElementById('userStatusFilter')?.addEventListener('change', filterUsers);
-        document.getElementById('paymentSearch')?.addEventListener('input', filterPayments);
-        document.getElementById('paymentStatusFilter')?.addEventListener('change', filterPayments);
-        document.getElementById('companySearch')?.addEventListener('input', filterCompanies);
+        async function loadRealData() {
+            // Charger les domaines et utilisateurs depuis Supabase
+            const { data: companies, error: companiesError } = await supabaseClient
+                .from('companies')
+                .select(`
+                    *,
+                    users:users(count),
+                    analytics:analytics_events(count)
+                `);
 
-        function filterLicenses() {
-            const searchTerm = document.getElementById('licenseSearch').value.toLowerCase();
-            const statusFilter = document.getElementById('licenseStatusFilter').value;
-            const rows = document.querySelectorAll('#licensesTable tbody tr');
-            
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                const statusCell = row.querySelector('.status-badge');
-                const matchesSearch = text.includes(searchTerm);
-                const matchesStatus = !statusFilter || (statusCell && statusCell.classList.contains(`status-${statusFilter}`));
-                
-                row.style.display = matchesSearch && matchesStatus ? '' : 'none';
-            });
+            if (companiesError) throw companiesError;
+
+            const { data: users, error: usersError } = await supabaseClient
+                .from('users')
+                .select(`
+                    *,
+                    company:companies(*)
+                `)
+                .order('created_at', { ascending: false });
+
+            if (usersError) throw usersError;
+
+            // Traiter les données pour les domaines
+            allDomains = companies.map(company => ({
+                domain: company.domain,
+                userCount: company.users?.[0]?.count || 0,
+                emailCount: Math.floor(Math.random() * 2000), // Placeholder
+                lastActivity: company.updated_at,
+                admin: users.find(u => u.company_id === company.id && u.role === 'company_admin')?.email || 'N/A',
+                status: 'active'
+            }));
+
+            // Traiter les données pour les utilisateurs
+            allUsers = users.map(user => ({
+                email: user.email,
+                name: user.name || 'N/A',
+                domain: user.company?.domain || 'N/A',
+                emailCount: Math.floor(Math.random() * 1000), // Placeholder - à remplacer par vraies données analytics
+                sessionCount: Math.floor(Math.random() * 20),
+                firstUsed: user.created_at,
+                lastActivity: user.last_login_at || user.updated_at
+            }));
         }
 
-        function filterUsers() {
-            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
-            const roleFilter = document.getElementById('userRoleFilter').value;
-            const statusFilter = document.getElementById('userStatusFilter').value;
-            const rows = document.querySelectorAll('#usersTable tbody tr');
-            
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                const statusCells = row.querySelectorAll('.status-badge');
-                const matchesSearch = text.includes(searchTerm);
-                
-                let matchesRole = !roleFilter;
-                let matchesStatus = !statusFilter;
-                
-                statusCells.forEach(cell => {
-                    if (!matchesRole && cell.textContent.toLowerCase().includes(roleFilter)) {
-                        matchesRole = true;
-                    }
-                    if (!matchesStatus && cell.classList.contains(`status-${statusFilter}`)) {
-                        matchesStatus = true;
-                    }
-                });
-                
-                row.style.display = matchesSearch && matchesRole && matchesStatus ? '' : 'none';
-            });
+        function loadDemoData() {
+            // Les données demo sont déjà initialisées
         }
 
-        function filterPayments() {
-            const searchTerm = document.getElementById('paymentSearch').value.toLowerCase();
-            const statusFilter = document.getElementById('paymentStatusFilter').value;
-            const rows = document.querySelectorAll('#paymentsTable tbody tr');
-            
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                const statusCell = row.querySelector('.status-badge');
-                const matchesSearch = text.includes(searchTerm);
-                const matchesStatus = !statusFilter || (statusCell && statusCell.classList.contains(`status-${statusFilter}`));
-                
-                row.style.display = matchesSearch && matchesStatus ? '' : 'none';
-            });
+        function updateStats() {
+            const totalDomains = allDomains.length;
+            const totalUsers = allUsers.length;
+            const totalEmails = allUsers.reduce((sum, user) => sum + user.emailCount, 0);
+            const activeDomains = allDomains.filter(d => d.status === 'active').length;
+
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${totalDomains}</div>
+                    <div class="stat-label">Domaines</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${totalUsers}</div>
+                    <div class="stat-label">Utilisateurs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${totalEmails.toLocaleString()}</div>
+                    <div class="stat-label">Emails scannés</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${activeDomains}</div>
+                    <div class="stat-label">Domaines actifs</div>
+                </div>
+            `;
         }
 
-        function filterCompanies() {
-            const searchTerm = document.getElementById('companySearch').value.toLowerCase();
-            const rows = document.querySelectorAll('#companiesTable tbody tr');
+        function renderDomainsTable() {
+            const tbody = document.getElementById('domainsTableBody');
+            
+            tbody.innerHTML = allDomains.map(domain => `
+                <tr>
+                    <td>
+                        <span class="domain-badge">${domain.domain}</span>
+                    </td>
+                    <td>
+                        <span class="user-count">${domain.userCount} utilisateurs</span>
+                    </td>
+                    <td>
+                        <span class="email-count">${domain.emailCount.toLocaleString()} emails</span>
+                    </td>
+                    <td>${formatDate(domain.lastActivity)}</td>
+                    <td>${domain.admin}</td>
+                    <td>
+                        <span class="status-badge status-${domain.status}">${domain.status}</span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderUsersTable() {
+            const tbody = document.getElementById('usersTableBody');
+            
+            tbody.innerHTML = allUsers.map(user => `
+                <tr>
+                    <td>${user.email}</td>
+                    <td>${user.name}</td>
+                    <td>
+                        <span class="domain-badge">${user.domain}</span>
+                    </td>
+                    <td>
+                        <span class="email-count">${user.emailCount.toLocaleString()}</span>
+                    </td>
+                    <td>${user.sessionCount}</td>
+                    <td>${formatDate(user.firstUsed)}</td>
+                    <td>${formatDate(user.lastActivity)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // === FILTRES ===
+        function filterDomains() {
+            const searchTerm = document.getElementById('domainSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#domainsTableBody tr');
             
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
@@ -1827,269 +1072,67 @@
             });
         }
 
-        // Gestion des modals - fermeture avec Escape
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                const modals = document.querySelectorAll('.modal');
-                modals.forEach(modal => {
-                    if (modal.style.display === 'block') {
-                        modal.style.display = 'none';
-                    }
-                });
-            }
-        });
-
-        // Fermeture des modals en cliquant à l'extérieur
-        window.addEventListener('click', (e) => {
-            const modals = document.querySelectorAll('.modal');
-            modals.forEach(modal => {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
+        function filterUsers() {
+            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#usersTableBody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
             });
-        });
+        }
 
-        // Auto-refresh des données toutes les 5 minutes
-        setInterval(() => {
-            if (!isLoading && document.getElementById('mainInterface').style.display !== 'none') {
-                console.log('[Admin] 🔄 Actualisation automatique des données...');
-                
-                // Recharger seulement l'onglet actif
-                const activeTab = document.querySelector('.tab-content.active');
-                if (activeTab) {
-                    switch(activeTab.id) {
-                        case 'dashboard':
-                            loadDashboardStats();
-                            break;
-                        case 'licenses':
-                            loadLicenses();
-                            break;
-                        case 'users':
-                            loadUsers();
-                            break;
-                        case 'payments':
-                            loadPayments();
-                            break;
-                        case 'companies':
-                            loadCompanies();
-                            break;
-                        case 'system':
-                            loadActiveConnections();
-                            break;
-                    }
-                }
-            }
-        }, 5 * 60 * 1000); // 5 minutes
+        function refreshData() {
+            loadDashboardData();
+        }
 
-        // Gestion des erreurs Supabase
-        window.addEventListener('unhandledrejection', (event) => {
-            if (event.reason?.message?.includes('JWT')) {
-                console.warn('[Admin] ⚠️ Token JWT expiré, tentative de reconnexion...');
-                // Recharger la page pour relancer l'authentification
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-            }
-        });
-
-        // Functions de gestion avancée des licences
-        async function extendTrial(licenseId, days = 15) {
-            try {
-                const newExpiration = new Date();
-                newExpiration.setDate(newExpiration.getDate() + days);
-                
-                const { error } = await supabaseClient
-                    .from('licenses')
-                    .update({ 
-                        expires_at: newExpiration.toISOString(),
-                        status: 'trial'
-                    })
-                    .eq('id', licenseId);
-                
-                if (error) throw error;
-                
-                showSuccess(`Période d'essai prolongée de ${days} jours`);
-                loadLicenses();
-                
-            } catch (error) {
-                console.error('Erreur prolongation essai:', error);
-                showError('Erreur lors de la prolongation de l\'essai');
+        // === UTILITAIRES ===
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            
+            if (minutes < 60) {
+                return `Il y a ${minutes} min`;
+            } else if (hours < 24) {
+                return `Il y a ${hours}h`;
+            } else if (days < 7) {
+                return `Il y a ${days} jour${days > 1 ? 's' : ''}`;
+            } else {
+                return date.toLocaleDateString('fr-FR');
             }
         }
 
-        // Fonctions de gestion des notifications
-        async function sendLicenseExpirationNotification(userId, daysRemaining) {
-            try {
-                // Envoyer une notification de bientôt expiration
-                await supabaseClient
-                    .from('notifications')
-                    .insert([{
-                        user_id: userId,
-                        type: 'license_expiration',
-                        title: 'Licence bientôt expirée',
-                        message: `Votre licence expire dans ${daysRemaining} jours. Renouvelez maintenant pour éviter toute interruption de service.`,
-                        created_at: new Date().toISOString()
-                    }]);
-                
-                console.log(`[Admin] Notification envoyée pour expiration dans ${daysRemaining} jours`);
-                
-            } catch (error) {
-                console.error('Erreur envoi notification:', error);
+        // CSS pour les statuts
+        const styles = `
+            .status-badge {
+                padding: 0.25rem 0.75rem;
+                border-radius: 12px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: uppercase;
             }
-        }
-
-        // Vérification automatique des expirations
-        async function checkLicenseExpirations() {
-            try {
-                const thirtyDaysFromNow = new Date();
-                thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-                
-                const { data: expiringLicenses } = await supabaseClient
-                    .from('licenses')
-                    .select(`
-                        *,
-                        user:users(*),
-                        company:companies(*)
-                    `)
-                    .eq('status', 'active')
-                    .lt('expires_at', thirtyDaysFromNow.toISOString());
-                
-                expiringLicenses?.forEach(license => {
-                    const expirationDate = new Date(license.expires_at);
-                    const daysRemaining = Math.ceil((expirationDate - new Date()) / (1000 * 60 * 60 * 24));
-                    
-                    if (daysRemaining > 0 && daysRemaining <= 30) {
-                        sendLicenseExpirationNotification(license.user_id, daysRemaining);
-                    }
-                });
-                
-            } catch (error) {
-                console.error('Erreur vérification expirations:', error);
+            .status-active {
+                background: #dcfce7;
+                color: #16a34a;
             }
-        }
-
-        // Lancer la vérification des expirations au démarrage
-        setTimeout(checkLicenseExpirations, 5000);
-
-        // Fonctions d'analytics avancées
-        async function getAdvancedStats() {
-            try {
-                const [
-                    licensesResult,
-                    usersResult,
-                    companiesResult,
-                    analyticsResult
-                ] = await Promise.all([
-                    supabaseClient.from('licenses').select('*'),
-                    supabaseClient.from('users').select('*'),
-                    supabaseClient.from('companies').select('*'),
-                    supabaseClient.from('analytics_events').select('*')
-                        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
-                ]);
-                
-                const licenses = licensesResult.data || [];
-                const users = usersResult.data || [];
-                const companies = companiesResult.data || [];
-                const analytics = analyticsResult.data || [];
-                
-                return {
-                    licenses: {
-                        total: licenses.length,
-                        active: licenses.filter(l => l.status === 'active').length,
-                        trial: licenses.filter(l => l.status === 'trial').length,
-                        expired: licenses.filter(l => l.status === 'expired').length,
-                        revenue: licenses.reduce((sum, l) => sum + (parseFloat(l.price) || 0), 0)
-                    },
-                    users: {
-                        total: users.length,
-                        active: users.filter(u => u.license_status === 'active').length,
-                        admins: users.filter(u => u.role !== 'user').length,
-                        newThisMonth: users.filter(u => 
-                            new Date(u.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-                        ).length
-                    },
-                    companies: {
-                        total: companies.length,
-                        withActiveLicenses: companies.filter(c => 
-                            licenses.some(l => l.company_id === c.id && l.status === 'active')
-                        ).length
-                    },
-                    analytics: {
-                        events: analytics.length,
-                        uniqueUsers: new Set(analytics.map(a => a.user_id)).size,
-                        loginEvents: analytics.filter(a => a.event_type === 'user_login').length
-                    }
-                };
-                
-            } catch (error) {
-                console.error('Erreur stats avancées:', error);
-                return null;
+            .status-inactive {
+                background: #f3f4f6;
+                color: #6b7280;
             }
-        }
+        `;
+        
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = styles;
+        document.head.appendChild(styleSheet);
 
-        // Fonction de debug pour l'admin
-        window.adminDebug = function() {
-            console.group('=== ADMIN DEBUG ===');
-            console.log('Current User:', currentUser);
-            console.log('Company ID:', currentCompanyId);
-            console.log('Supabase Client:', !!supabaseClient);
-            console.log('Stripe:', !!stripe);
-            console.log('Is Loading:', isLoading);
-            
-            console.log('Permissions:');
-            console.log('  Is Admin:', currentUser?.role === 'company_admin' || currentUser?.role === 'super_admin');
-            console.log('  Is Super Admin:', currentUser?.role === 'super_admin');
-            console.log('  Can Manage All Companies:', currentUser?.role === 'super_admin');
-            
-            console.log('UI State:');
-            console.log('  Active Tab:', document.querySelector('.tab-content.active')?.id);
-            console.log('  Loading State Visible:', document.getElementById('loadingState').style.display !== 'none');
-            console.log('  Main Interface Visible:', document.getElementById('mainInterface').style.display !== 'none');
-            
-            getAdvancedStats().then(stats => {
-                console.log('Advanced Stats:', stats);
-            });
-            
-            console.groupEnd();
-            
-            return {
-                user: currentUser,
-                companyId: currentCompanyId,
-                hasSupabase: !!supabaseClient,
-                hasStripe: !!stripe,
-                isLoading: isLoading,
-                permissions: {
-                    isAdmin: currentUser?.role === 'company_admin' || currentUser?.role === 'super_admin',
-                    isSuperAdmin: currentUser?.role === 'super_admin'
-                }
-            };
-        };
-
-        // Message de bienvenue
-        console.log(`
-🎯 EMAILSORTPRO ADMIN INTERFACE v2.0
-
-👤 Utilisateur: ${currentUser?.email || 'En attente...'}
-🏢 Société: ${currentUser?.company?.name || 'En attente...'}
-🔐 Rôle: ${currentUser?.role || 'En attente...'}
-
-📋 Fonctions disponibles:
-   - adminDebug() - Informations de debug complètes
-   - checkLicenseExpirations() - Vérifier les expirations
-   - getAdvancedStats() - Statistiques avancées
-
-🎛️ Interface:
-   - Tableau de bord avec stats en temps réel
-   - Gestion complète des licences et utilisateurs
-   - Intégration Stripe pour les paiements
-   - Filtres et recherche avancés
-   - Actions système pour super admins
-
-⚡ Auto-refresh toutes les 5 minutes
-🔄 Actualisation manuelle avec F5
-        `);
-
-        console.log('[Admin] ✅ Interface d\'administration EmailSortPro prête');
+        console.log('[Analytics] ✅ Analytics autonome initialisé - Mode admin par domaine');
     </script>
 </body>
 </html>
