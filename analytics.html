@@ -1577,9 +1577,13 @@
                 const hasTrialUsers = domain.users.some(u => u.license_status === 'trial');
                 const displayStatus = hasTrialUsers ? 'trial' : status;
                 
+                // Ne pas afficher les domaines personnels comme des sociétés
+                const isPersonalDomain = PERSONAL_DOMAINS.includes(domain.domain.toLowerCase());
+                const displayCompanyName = isPersonalDomain ? 'Particuliers' : domain.companyName;
+                
                 return `
                     <tr>
-                        <td><strong>${domain.companyName}</strong></td>
+                        <td><strong>${displayCompanyName}</strong></td>
                         <td><span class="domain-badge">${domain.domain}</span></td>
                         <td><span class="user-count">${domain.users.length} utilisateurs</span></td>
                         <td>${domain.adminEmail || '-'}</td>
@@ -1606,6 +1610,9 @@
                 const userTypeClass = user.userType === 'professional' ? 'type-professional' : 'type-personal';
                 const userTypeLabel = user.userType === 'professional' ? '🏢 Pro' : '👤 Particulier';
                 
+                // Affichage société selon le type d'utilisateur
+                const displayCompany = user.userType === 'personal' ? '-' : (user.company?.name || 'Sans société');
+                
                 return `
                     <tr data-company="${user.company?.name || 'Sans société'}" data-user-type="${user.userType}">
                         <td>
@@ -1613,7 +1620,7 @@
                             <small style="color: #6b7280;">${user.email}</small><br>
                             <span class="user-type-badge ${userTypeClass}">${userTypeLabel}</span>
                         </td>
-                        <td>${user.company?.name || 'Sans société'}</td>
+                        <td>${displayCompany}</td>
                         <td><span class="email-count">${user.emailsScanned.toLocaleString()}</span></td>
                         <td>${user.avgScansPerDay.toFixed(1)}</td>
                         <td><span class="frequency-badge ${frequencyClass}">${frequencyLabel}</span></td>
@@ -1647,6 +1654,9 @@
                 const userTypeClass = user.userType === 'professional' ? 'type-professional' : 'type-personal';
                 const userTypeLabel = user.userType === 'professional' ? '🏢 Pro' : '👤 Particulier';
                 
+                // Affichage société selon le type d'utilisateur
+                const displayCompany = user.userType === 'personal' ? '-' : (user.company?.name || 'Sans société');
+                
                 return `
                     <tr data-user-id="${user.id}" data-company="${user.company?.name || 'Sans société'}" data-user-type="${user.userType}" data-status="${user.license_status}">
                         <td>
@@ -1654,7 +1664,7 @@
                             <small style="color: #6b7280;">${user.email}</small>
                         </td>
                         <td><span class="user-type-badge ${userTypeClass}">${userTypeLabel}</span></td>
-                        <td>${user.company?.name || 'Sans société'}</td>
+                        <td>${displayCompany}</td>
                         <td><span class="license-badge ${licenseClass}">${user.license_status || 'unknown'}</span></td>
                         <td>${formatDateOnly(user.licenseStartDate)}</td>
                         <td>
@@ -1731,7 +1741,7 @@
                             <strong>${user.name || user.email}</strong><br>
                             <small style="color: #6b7280;">${user.email}</small>
                         </td>
-                        <td>${user.company?.name || 'Sans société'}</td>
+                        <td>${user.userType === 'personal' ? '-' : (user.company?.name || 'Sans société')}</td>
                         <td><span class="license-badge ${getPaymentStatusClass(paymentStatus)}">${paymentStatus}</span></td>
                         <td>
                             <strong>${monthlyAmount.toFixed(2)}€ HT</strong>
@@ -2195,7 +2205,7 @@
             content.innerHTML = `
                 <div style="margin-bottom: 1rem;">
                     <h4>${user.name || user.email}</h4>
-                    <p style="color: #6b7280;">${user.company?.name || 'Aucune société'}</p>
+                    <p style="color: #6b7280;">${user.userType === 'personal' ? 'Particulier' : (user.company?.name || 'Aucune société')}</p>
                 </div>
                 
                 <div class="form-group">
@@ -2335,7 +2345,7 @@
             content.innerHTML = `
                 <div style="margin-bottom: 1rem;">
                     <h4>${user.name || user.email}</h4>
-                    <p style="color: #6b7280;">${user.company?.name || 'Aucune société'}</p>
+                    <p style="color: #6b7280;">${user.userType === 'personal' ? 'Particulier' : (user.company?.name || 'Aucune société')}</p>
                 </div>
                 
                 <div class="payment-info">
@@ -2412,6 +2422,10 @@
                 <div style="margin-bottom: 1rem;">
                     <h4>Information de Paiement</h4>
                     <p style="color: #6b7280;">${user.name || user.email}</p>
+                    ${user.userType === 'personal' ? 
+                        '<small style="color: #6b7280;">Particulier</small>' : 
+                        `<small style="color: #6b7280;">${user.company?.name || 'Aucune société'}</small>`
+                    }
                 </div>
                 
                 <div class="payment-info">
