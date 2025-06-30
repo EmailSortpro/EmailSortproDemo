@@ -577,33 +577,48 @@
             setLoading(true);
             
             try {
-                if (supabaseClient) {
-                    // Authentification Supabase
-                    const { data, error } = await supabaseClient.auth.signInWithPassword({
+                // Utiliser la fonction Netlify pour l'authentification
+                console.log('[Auth] Tentative de connexion pour:', email);
+                
+                const response = await fetch('/.netlify/functions/auth-admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'login',
                         email: email,
                         password: password
-                    });
+                    })
+                });
 
-                    if (error) throw error;
+                console.log('[Auth] Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('[Auth] Error response:', errorText);
+                    throw new Error('Erreur serveur: ' + response.status);
+                }
 
-                    // Vérifier le rôle de l'utilisateur
-                    const { data: user } = await supabaseClient
-                        .from('users')
-                        .select('*, company:companies(*)')
-                        .eq('email', email)
-                        .single();
-
-                    if (!user || (user.role !== 'company_admin' && user.role !== 'super_admin')) {
-                        await supabaseClient.auth.signOut();
-                        throw new Error('Accès non autorisé. Rôle administrateur requis.');
-                    }
-
-                    currentUser = user;
+                const result = await response.json();
+                console.log('[Auth] Login result:', result);
+                
+                if (result.success) {
+                    currentUser = result.user;
+                    sessionStorage.setItem('emailsortpro_session_token', result.session_token);
                     showApp();
                     await loadDashboardData();
-                    
                 } else {
-                    // Mode demo
+                    throw new Error(result.message || 'Identifiants incorrects');
+                }
+                
+            } catch (error) {
+                console.error('[Auth] Erreur connexion:', error);
+                
+                // Si la fonction Netlify n'est pas disponible, utiliser le mode demo
+                if (error.message.includes('404') || error.message.includes('Failed to fetch')) {
+                    console.warn('[Auth] Fonction Netlify non disponible, mode demo activé');
+                    
                     if (email === 'demo@admin.com' && password === 'demo123') {
                         currentUser = {
                             email: email,
@@ -614,12 +629,11 @@
                         showApp();
                         loadDemoData();
                     } else {
-                        throw new Error('Identifiants incorrects (demo: demo@admin.com / demo123)');
+                        showAlert('Mode demo: utilisez demo@admin.com / demo123', 'error');
                     }
+                } else {
+                    showAlert(error.message || 'Erreur de connexion', 'error');
                 }
-            } catch (error) {
-                console.error('[Auth] Erreur connexion:', error);
-                showAlert(error.message || 'Erreur de connexion', 'error');
             } finally {
                 setLoading(false);
             }
@@ -693,114 +707,69 @@
 
         async function loadRealData() {
             try {
-                // Déterminer la portée des données selon le rôle
-                let companyFilter = '';
-                if (currentUser.role === 'company_admin') {
-                    companyFilter = currentUser.company_id;
-                }
-
-                // Charger les événements analytics
-                let analyticsQuery = supabaseClient
-                    .from('analytics_events')
-                    .select('*');
+                // Charger les statistiques par domaine via Netlify Function
+                console.log('[Data] Chargement des données via Netlify Function...');
                 
-                if (companyFilter) {
-                    analyticsQuery = analyticsQuery.eq('company_id', companyFilter);
-                }
+                const token = sessionStorage.getItem('emailsortpro_session_token');
                 
-                const { data: events } = await analyticsQuery;
-
-                // Calculer les statistiques par domaine
-                const domainStats = {};
-                const userStats = {};
-
-                events?.forEach(event => {
-                    // Stats par domaine
-                    const domain = event.user_domain || 'unknown';
-                    if (!domainStats[domain]) {
-                        domainStats[domain] = {
-                            domain: domain,
-                            users: new Set(),
-                            totalEmails: 0,
-                            lastActivity: null,
-                            adminEmail: null
-                        };
-                    }
-                    
-                    if (event.user_email) {
-                        domainStats[domain].users.add(event.user_email);
-                    }
-                    
-                    if (event.event_type === 'email_scan' && event.event_data?.emailCount) {
-                        domainStats[domain].totalEmails += event.event_data.emailCount;
-                    }
-                    
-                    if (!domainStats[domain].lastActivity || 
-                        new Date(event.created_at) > new Date(domainStats[domain].lastActivity)) {
-                        domainStats[domain].lastActivity = event.created_at;
-                    }
-
-                    // Stats par utilisateur
-                    if (event.user_email) {
-                        if (!userStats[event.user_email]) {
-                            userStats[event.user_email] = {
-                                email: event.user_email,
-                                name: event.user_name || 'N/A',
-                                domain: domain,
-                                totalEmails: 0,
-                                sessions: new Set(),
-                                firstSeen: event.created_at,
-                                lastActivity: event.created_at
-                            };
-                        }
-                        
-                        if (event.session_id) {
-                            userStats[event.user_email].sessions.add(event.session_id);
-                        }
-                        
-                        if (event.event_type === 'email_scan' && event.event_data?.emailCount) {
-                            userStats[event.user_email].totalEmails += event.event_data.emailCount;
-                        }
-                        
-                        if (new Date(event.created_at) > new Date(userStats[event.user_email].lastActivity)) {
-                            userStats[event.user_email].lastActivity = event.created_at;
-                        }
-                        
-                        if (new Date(event.created_at) < new Date(userStats[event.user_email].firstSeen)) {
-                            userStats[event.user_email].firstSeen = event.created_at;
-                        }
-                    }
+                // Charger les stats de domaine
+                const domainsResponse = await fetch('/.netlify/functions/auth-admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    },
+                    body: JSON.stringify({
+                        action: 'get_domain_stats',
+                        email: currentUser?.email
+                    })
                 });
 
-                // Convertir en tableaux
-                allDomains = Object.values(domainStats).map(domain => ({
-                    ...domain,
-                    userCount: domain.users.size,
-                    emailCount: domain.totalEmails,
-                    admin: Array.from(domain.users)[0] || 'N/A',
-                    status: 'active'
-                }));
-
-                allUsers = Object.values(userStats).map(user => ({
-                    ...user,
-                    sessionCount: user.sessions.size
-                }));
-
-                // Récupérer les admins depuis la table users
-                const { data: admins } = await supabaseClient
-                    .from('users')
-                    .select('email, company:companies(domain)')
-                    .in('role', ['company_admin', 'super_admin']);
-
-                admins?.forEach(admin => {
-                    const domain = allDomains.find(d => d.domain === admin.company?.domain);
-                    if (domain) {
-                        domain.admin = admin.email;
+                if (domainsResponse.ok) {
+                    const domainsResult = await domainsResponse.json();
+                    if (domainsResult.success) {
+                        allDomains = domainsResult.domains.map(domain => ({
+                            domain: domain.domain,
+                            userCount: domain.total_users || 0,
+                            emailCount: domain.total_emails_scanned || 0,
+                            lastActivity: domain.last_activity,
+                            admin: domain.admin_email || 'N/A',
+                            status: 'active'
+                        }));
                     }
+                }
+
+                // Charger les stats utilisateur
+                const usersResponse = await fetch('/.netlify/functions/auth-admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    },
+                    body: JSON.stringify({
+                        action: 'get_user_stats',
+                        email: currentUser?.email
+                    })
                 });
+
+                if (usersResponse.ok) {
+                    const usersResult = await usersResponse.json();
+                    if (usersResult.success) {
+                        allUsers = usersResult.users.map(user => ({
+                            email: user.email,
+                            name: user.name || 'N/A',
+                            domain: user.domain,
+                            emailCount: user.total_emails_scanned || 0,
+                            sessionCount: user.total_sessions || 0,
+                            firstSeen: user.first_seen,
+                            lastActivity: user.last_activity
+                        }));
+                    }
+                }
 
             } catch (error) {
-                console.error('[Data] Erreur chargement données réelles:', error);
+                console.error('[Data] Erreur chargement données:', error);
+                // Fallback vers les données demo
                 loadDemoData();
             }
         }
