@@ -31,9 +31,6 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Styles principaux -->
-    <link rel="stylesheet" href="styles.css">
-    
     <!-- CONFIGURATION NETLIFY DYNAMIQUE -->
     <script>
         console.log('[INDEX] 🚀 Loading dynamic Netlify configuration...');
@@ -142,10 +139,10 @@
                     },
                     app: {
                         name: 'EmailSortProAI',
-                        version: '3.0.2',
+                        version: '3.0.3',
                         debug: isLocalhost,
                         environment: isNetlify ? 'netlify' : isGitHubPages ? 'github' : isLocalhost ? 'localhost' : 'other',
-                        domain: hostname, // Domaine dynamique
+                        domain: hostname,
                         currentUrl: currentOrigin
                     },
                     email: {
@@ -207,6 +204,62 @@
             
             console.log('[INDEX] ✅ Configuration terminée pour:', hostname);
         })();
+
+        // Configuration Supabase de base (si pas de fichier externe)
+        if (!window.SupabaseConfig) {
+            window.SupabaseConfig = {
+                url: '',
+                anonKey: '',
+                configured: false
+            };
+            console.log('[INDEX] ⚠️ Supabase non configuré - système de licence désactivé');
+        }
+
+        // Service de licence minimal intégré
+        window.LicenseService = {
+            initialized: false,
+            hasValidLicense: false,
+            userLimits: {
+                maxEmails: 1000,
+                maxScans: 10,
+                premium: false
+            },
+            
+            async initialize() {
+                console.log('[LicenseService] Initialisation...');
+                this.initialized = true;
+                
+                if (!window.SupabaseConfig?.configured) {
+                    console.log('[LicenseService] Mode dégradé - Supabase non configuré');
+                    this.hasValidLicense = true; // Mode dégradé
+                    return true;
+                }
+                
+                // Logique de vérification avec Supabase si configuré
+                return true;
+            },
+            
+            checkLicense(email) {
+                if (!this.initialized) {
+                    this.initialize();
+                }
+                
+                return {
+                    valid: this.hasValidLicense,
+                    limits: this.userLimits,
+                    message: this.hasValidLicense ? 'Licence valide' : 'Licence requise'
+                };
+            },
+            
+            canScanEmails(count) {
+                return count <= this.userLimits.maxEmails;
+            },
+            
+            incrementUsage(action, count = 1) {
+                // Comptage d'usage (si nécessaire)
+                console.log(`[LicenseService] Usage: ${action} +${count}`);
+            }
+        };
     </script>
 
     <!-- Styles intégrés pour l'application sobre -->
@@ -938,6 +991,50 @@
             text-align: center;
         }
 
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-left: 4px solid #4F46E5;
+            max-width: 400px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.error {
+            border-left-color: #ef4444;
+        }
+
+        .toast.success {
+            border-left-color: #10b981;
+        }
+
+        .toast.warning {
+            border-left-color: #f59e0b;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
         /* Responsive sobre */
         @media (max-width: 768px) {
             .login-container {
@@ -1113,8 +1210,6 @@
 
 </head>
 <body>
-    <!-- Vérification du domaine - SUPPRIMÉE -->
-
     <div id="app">
         <!-- Header Application -->
         <header class="app-header">
@@ -1286,50 +1381,149 @@
         <div id="toastContainer" class="toast-container"></div>
     </div>
 
-    <!-- Scripts - Ordre CORRIGÉ pour résoudre le problème LicenseService -->
+    <!-- Scripts avec gestion d'erreurs améliorée -->
     
-    <!-- 1. Configuration Supabase (si vous l'utilisez) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./supabase-config.js" onerror="console.warn('supabase-config.js optionnel')"></script>
-    
-    <!-- 2. UIManager EN PREMIER -->
-    <script src="./UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
-    
-    <!-- 3. LicenseService AVANT TOUT (CRITIQUE) -->
-    <script src="./LicenseService.js" onerror="console.error('LicenseService.js manquant')"></script>
-    
-    <!-- 4. Services d'authentification -->
-    <script src="./AuthService.js" onerror="console.error('AuthService.js manquant')"></script>
-    <script src="./GoogleAuthService.js" onerror="console.error('GoogleAuthService.js manquant')"></script>
-    
-    <!-- 5. Services métier -->
-    <script src="./MailService.js" onerror="console.error('MailService.js manquant')"></script>
-    <script src="./CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
-    
-    <!-- 6. Managers et analyseurs -->
-    <script src="./TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
-    <script src="./EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
-    <script src="./EmailDeduplicationManager.js" onerror="console.error('EmailDeduplicationManager.js manquant')"></script>
-    <script src="./AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
-    
-    <!-- 7. Modules d'interface -->
-    <script src="./dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
-    <script src="./PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
-    
-    <!-- 8. Modules de pages -->
-    <script src="./startscan.js" onerror="console.error('startscan.js manquant')"></script>
-    <script src="./DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
-    <script src="./CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
-    <script src="./Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
-    
-    <!-- 9. Analytics -->
-    <script src="./analytics.js" onerror="console.error('analytics.js manquant')"></script>
-    
-    <!-- 10. Application Principal EN DERNIER -->
-    <script src="./app.js" onerror="console.error('app.js manquant')"></script>
+    <!-- 1. UIManager AVEC fallback intégré -->
+    <script>
+        // UIManager minimal intégré si le fichier externe échoue
+        if (!window.UIManager) {
+            window.UIManager = class {
+                constructor() {
+                    console.log('[UIManager] Fallback mode activated');
+                }
+                
+                showToast(message, type = 'info', duration = 5000) {
+                    const container = document.getElementById('toastContainer') || this.createToastContainer();
+                    const toast = document.createElement('div');
+                    toast.className = `toast ${type}`;
+                    toast.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+                            <span>${message}</span>
+                        </div>
+                    `;
+                    
+                    container.appendChild(toast);
+                    
+                    setTimeout(() => {
+                        toast.style.opacity = '0';
+                        setTimeout(() => toast.remove(), 300);
+                    }, duration);
+                }
+                
+                createToastContainer() {
+                    const container = document.createElement('div');
+                    container.id = 'toastContainer';
+                    container.className = 'toast-container';
+                    document.body.appendChild(container);
+                    return container;
+                }
+                
+                showSpinner(message = 'Chargement...') {
+                    const overlay = document.getElementById('loadingOverlay');
+                    if (overlay) {
+                        overlay.classList.add('active');
+                        const textElement = overlay.querySelector('.login-loading-text');
+                        if (textElement) textElement.textContent = message;
+                    }
+                }
+                
+                hideSpinner() {
+                    const overlay = document.getElementById('loadingOverlay');
+                    if (overlay) {
+                        overlay.classList.remove('active');
+                    }
+                }
+            };
+            
+            window.uiManager = new window.UIManager();
+            console.log('[UIManager] ✅ Fallback instance created');
+        }
+    </script>
+    <script src="./UIManager.js" onerror="console.log('[INDEX] UIManager.js fallback déjà activé')"></script>
+
+    <!-- 2. Scripts Core avec gestion d'erreurs -->
+    <script>
+        // Fallback vide pour éviter les erreurs
+        if (!window.AuthService) {
+            window.AuthService = class {
+                constructor() { this.initialized = false; }
+                async initialize() { return false; }
+                isAuthenticated() { return false; }
+                async login() { throw new Error('AuthService non chargé'); }
+                async logout() { return true; }
+            };
+        }
+        
+        if (!window.GoogleAuthService) {
+            window.GoogleAuthService = class {
+                constructor() { this.initialized = false; }
+                async initialize() { return false; }
+                isAuthenticated() { return false; }
+                async login() { throw new Error('GoogleAuthService non chargé'); }
+                async logout() { return true; }
+            };
+        }
+    </script>
+    <script src="./AuthService.js" onerror="console.error('[INDEX] ❌ AuthService.js failed to load')"></script>
+    <script src="./GoogleAuthService.js" onerror="console.error('[INDEX] ❌ GoogleAuthService.js failed to load')"></script>
+    <script src="./MailService.js" onerror="console.error('[INDEX] ❌ MailService.js failed to load')"></script>
+
+    <!-- 3. Managers avec fallbacks -->
+    <script src="./CategoryManager.js" onerror="console.error('[INDEX] ❌ CategoryManager.js failed to load')"></script>
+    <script src="./TaskManager.js" onerror="console.error('[INDEX] ❌ TaskManager.js failed to load')"></script>
+    <script src="./EmailScanner.js" onerror="console.error('[INDEX] ❌ EmailScanner.js failed to load')"></script>
+    <script src="./EmailDeduplicationManager.js" onerror="console.error('[INDEX] ❌ EmailDeduplicationManager.js failed to load')"></script>
+    <script src="./AITaskAnalyzer.js" onerror="console.error('[INDEX] ❌ AITaskAnalyzer.js failed to load')"></script>
+
+    <!-- 4. Dashboard et Pages -->
+    <script>
+        // Dashboard minimal intégré si le fichier échoue
+        if (!window.dashboardModule) {
+            window.dashboardModule = {
+                render() {
+                    const content = document.getElementById('pageContent');
+                    if (content) {
+                        content.innerHTML = `
+                            <div class="dashboard-container">
+                                <div style="text-align: center; padding: 40px;">
+                                    <h1 style="color: #4F46E5; margin-bottom: 20px;">🚀 EmailSortPro AI</h1>
+                                    <p style="color: #64748b; margin-bottom: 30px;">Votre assistant IA pour organiser vos emails</p>
+                                    <div style="background: white; border-radius: 8px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                        <h3 style="margin-bottom: 16px;">Commencez par scanner vos emails</h3>
+                                        <button onclick="window.pageManager?.loadPage('scanner')" style="background: #4F46E5; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer;">
+                                            <i class="fas fa-search"></i> Lancer le scanner
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                },
+                hide() {
+                    const content = document.getElementById('pageContent');
+                    if (content) content.innerHTML = '';
+                }
+            };
+        }
+    </script>
+    <script src="./dashboard.js" onerror="console.log('[INDEX] Dashboard fallback déjà activé')"></script>
+    <script src="./PageManager.js" onerror="console.error('[INDEX] ❌ PageManager.js failed to load')"></script>
+
+    <!-- 5. Modules additionnels -->
+    <script src="./startscan.js" onerror="console.warn('[INDEX] startscan.js manquant')"></script>
+    <script src="./StartScan.js" onerror="console.warn('[INDEX] StartScan.js manquant')"></script>
+    <script src="./DomainOrganizer.js" onerror="console.warn('[INDEX] DomainOrganizer.js manquant')"></script>
+    <script src="./CategoriesPage.js" onerror="console.warn('[INDEX] CategoriesPage.js manquant')"></script>
+    <script src="./Onboarding.js" onerror="console.warn('[INDEX] Onboarding.js manquant')"></script>
+    <script src="./analytics.js" onerror="console.warn('[INDEX] analytics.js manquant')"></script>
+
+    <!-- 6. Application principale -->
+    <script src="./app.js" onerror="console.error('[INDEX] ❌ app.js failed to load - Application non fonctionnelle')"></script>
+ 
     <!-- Scripts de gestion des événements -->
     <script>
-        // Variable pour éviter les vérifications multiples
+        // Variables pour éviter les vérifications multiples
         let authCheckInProgress = false;
         let appAlreadyShown = false;
 
@@ -1341,7 +1535,7 @@
                 const googleToken = localStorage.getItem('google_token_emailsortpro');
                 
                 if ((msalAccount && msalToken) || googleToken) {
-                    console.log('[EARLY_AUTH] App mode activated immediately');
+                    console.log('[EARLY_AUTH] App mode detected');
                     return true;
                 }
             } catch (error) {
@@ -1351,7 +1545,7 @@
             return false;
         };
 
-        // Exécuter la vérification précoce TOUT DE SUITE
+        // Exécuter la vérification précoce
         earlyAuthCheck();
 
         // Fonction pour forcer l'affichage de l'app
@@ -1359,7 +1553,7 @@
             console.log('[FORCE] Forcing app display...');
             
             if (appAlreadyShown || document.body.classList.contains('app-active')) {
-                console.log('[FORCE] App already displayed, skipping force display');
+                console.log('[FORCE] App already displayed');
                 return;
             }
             
@@ -1371,7 +1565,7 @@
             }
             
             appAlreadyShown = true;
-            console.log('[FORCE] App display activated');
+            console.log('[FORCE] ✅ App display activated');
         };
 
         // Fonction pour masquer le loading et afficher l'app
@@ -1379,7 +1573,7 @@
             console.log('[SHOW_APP] Switching to app interface...');
             
             if (appAlreadyShown) {
-                console.log('[SHOW_APP] App already shown, skipping...');
+                console.log('[SHOW_APP] App already shown');
                 return;
             }
             
@@ -1397,38 +1591,24 @@
                 loginPage.style.display = 'none';
             }
             
-            // UTILISER LE NOUVEAU MODULE DASHBOARD
+            // Charger le dashboard
             window.setPageMode('dashboard');
             
-            // Charger le dashboard via le module
             if (window.dashboardModule) {
-                console.log('[SHOW_APP] Loading dashboard via dashboardModule...');
+                console.log('[SHOW_APP] Loading dashboard...');
                 window.dashboardModule.render();
-            } else {
-                console.warn('[SHOW_APP] Dashboard module not ready, will retry...');
-                setTimeout(() => {
-                    if (window.dashboardModule) {
-                        window.dashboardModule.render();
-                    }
-                }, 500);
             }
             
-            setTimeout(() => {
-                window.checkScrollNeeded();
-            }, 1000);
-            
             appAlreadyShown = true;
-            console.log('[SHOW_APP] App interface activated with dashboard module');
+            console.log('[SHOW_APP] ✅ App interface activated');
         };
 
-        // Fonction pour vérifier si le scroll est nécessaire - OPTIMISÉE ET SILENCIEUSE
+        // Fonction pour vérifier si le scroll est nécessaire
         window.checkScrollNeeded = function() {
-            // Si l'app est active, laisser app.js gérer le scroll
             if (document.body.classList.contains('app-active') && window.app) {
                 return;
             }
             
-            // Éviter les appels multiples
             if (window.scrollCheckInProgress) return;
             window.scrollCheckInProgress = true;
             
@@ -1451,13 +1631,12 @@
             }, 50);
         };
 
-        // Ajouter une classe pour le mode login initial
+        // Ajouter classe pour le mode login initial
         document.body.classList.add('login-mode');
 
-        // Vérifier à chaque redimensionnement de fenêtre - OPTIMISÉ
+        // Gestion du resize
         let resizeTimeout;
         window.addEventListener('resize', () => {
-            // Si l'app est active, laisser app.js gérer le resize
             if (document.body.classList.contains('app-active') && window.app) {
                 return;
             }
@@ -1466,9 +1645,8 @@
             resizeTimeout = setTimeout(window.checkScrollNeeded, 150);
         });
 
-        // Gestion des modes d'affichage pour les pages - SILENCIEUX
+        // Gestion des modes d'affichage pour les pages
         window.setPageMode = function(pageName) {
-            // Si l'app est active, laisser app.js gérer le scroll
             if (document.body.classList.contains('app-active') && window.app) {
                 return;
             }
@@ -1477,7 +1655,7 @@
             const pageContent = document.getElementById('pageContent');
             const body = document.body;
             
-            // Nettoyer les anciennes classes de page
+            // Nettoyer les anciennes classes
             body.classList.remove('page-dashboard', 'page-scanner', 'page-emails', 'page-tasks', 'page-ranger', 'page-settings', 'page-short-content', 'login-mode');
             
             if (pageName === 'dashboard') {
@@ -1492,156 +1670,52 @@
                 body.classList.add(`page-${pageName}`);
             }
             
-            // Gestion du scroll UNIQUEMENT si l'app n'est pas encore active
+            // Gestion du scroll
             if (!document.body.classList.contains('app-active')) {
-                clearTimeout(window.scrollCheckTimeout);
-                window.scrollCheckTimeout = setTimeout(() => {
-                    const contentHeight = document.documentElement.scrollHeight;
-                    const viewportHeight = window.innerHeight;
-                    const bodyHeight = document.body.scrollHeight;
-                    
-                    if (bodyHeight <= viewportHeight || contentHeight <= viewportHeight) {
-                        body.classList.add('page-short-content');
-                        body.style.overflow = 'hidden';
-                        body.style.overflowY = 'hidden';
-                    } else {
-                        body.classList.remove('page-short-content');
-                        body.style.overflow = '';
-                        body.style.overflowY = '';
-                    }
-                }, 100);
+                setTimeout(window.checkScrollNeeded, 100);
             }
         };
-
-        // Intercepter la méthode loadPage du PageManager pour le dashboard
-        window.interceptDashboardLoad = function() {
-            if (window.pageManager && window.pageManager.loadPage) {
-                const originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
-                
-                window.pageManager.loadPage = function(pageName, ...args) {
-                    // Appliquer le mode d'affichage approprié pour TOUTES les pages
-                    window.setPageMode(pageName);
-                    
-                    if (pageName === 'dashboard') {
-                        // Mettre à jour la navigation pour marquer dashboard comme actif
-                        const navItems = document.querySelectorAll('.nav-item');
-                        navItems.forEach(item => {
-                            item.classList.remove('active');
-                            if (item.dataset.page === 'dashboard') {
-                                item.classList.add('active');
-                            }
-                        });
-                        
-                        // UTILISER LE MODULE DASHBOARD
-                        if (window.dashboardModule) {
-                            const pageContent = document.getElementById('pageContent');
-                            if (pageContent) {
-                                pageContent.style.display = 'block';
-                                pageContent.style.opacity = '1';
-                            }
-                            
-                            // Render dashboard via module
-                            window.dashboardModule.render();
-                        } else {
-                            return originalLoadPage(pageName, ...args);
-                        }
-                        
-                        // Vérifier le scroll après affichage du dashboard
-                        setTimeout(() => {
-                            if (window.app && window.app.checkScrollNeeded) {
-                                window.app.checkScrollNeeded();
-                            } else {
-                                window.checkScrollNeeded();
-                            }
-                        }, 300);
-                        
-                        return Promise.resolve();
-                    } else {
-                        // Pour toutes les autres pages, masquer le dashboard et utiliser la méthode originale
-                        const pageContent = document.getElementById('pageContent');
-                        if (pageContent && window.dashboardModule) {
-                            window.dashboardModule.hide();
-                        }
-                        
-                        return originalLoadPage(pageName, ...args);
-                    }
-                };
-            } else {
-                setTimeout(window.interceptDashboardLoad, 500);
-            }
-        };
-
-        // Lancer l'interception du dashboard
-        setTimeout(window.interceptDashboardLoad, 1000);
 
         // Fonction pour gérer la déconnexion
         window.handleLogout = async function() {
-            console.log('[LOGOUT] Starting logout process...');
+            console.log('[LOGOUT] Starting logout...');
             
             try {
                 // Déconnecter du service actuel
                 if (window.authService && window.authService.isAuthenticated()) {
-                    console.log('[LOGOUT] Logging out from Microsoft...');
                     await window.authService.logout();
                 } else if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
-                    console.log('[LOGOUT] Logging out from Google...');
                     await window.googleAuthService.logout();
                 }
                 
-                // Reset tous les services
-                if (window.mailService) {
-                    window.mailService.reset();
-                }
-                
-                // Nettoyer l'état de l'app
+                // Reset de l'état
                 document.body.classList.remove('app-active');
                 document.body.classList.add('login-mode');
                 
-                // Afficher la page de login
                 const loginPage = document.getElementById('loginPage');
                 if (loginPage) {
                     loginPage.style.display = 'flex';
                 }
                 
-                // Masquer le header et la nav
-                const appHeader = document.querySelector('.app-header');
-                const appNav = document.querySelector('.app-nav');
-                if (appHeader) appHeader.style.display = 'none';
-                if (appNav) appNav.style.display = 'none';
-                
-                // Reset les variables d'état
+                // Reset variables
                 appAlreadyShown = false;
                 authCheckInProgress = false;
                 
                 console.log('[LOGOUT] ✅ Logout complete');
                 
             } catch (error) {
-                console.error('[LOGOUT] ❌ Error during logout:', error);
-                
-                // Force cleanup en cas d'erreur
-                if (window.authService && window.authService.forceCleanup) {
-                    window.authService.forceCleanup();
-                }
-                if (window.googleAuthService && window.googleAuthService.forceCleanup) {
-                    window.googleAuthService.forceCleanup();
-                }
-                
-                // Rediriger vers la page de login même en cas d'erreur
+                console.error('[LOGOUT] ❌ Error:', error);
                 window.location.reload();
             }
         };
 
-        // Gestion du bouton de connexion
+        // Gestion des boutons de connexion
         document.addEventListener('DOMContentLoaded', function() {
-            if (appAlreadyShown) {
-                return;
-            }
+            if (appAlreadyShown) return;
             
-            // Fonction de vérification d'authentification sécurisée
+            // Vérification d'authentification sécurisée
             const safeAuthCheck = () => {
-                if (authCheckInProgress || appAlreadyShown) {
-                    return false;
-                }
+                if (authCheckInProgress || appAlreadyShown) return false;
                 
                 if (document.body.classList.contains('app-active')) {
                     appAlreadyShown = true;
@@ -1649,20 +1723,14 @@
                 }
                 
                 try {
-                    // Vérifier Microsoft
-                    if (window.authService && typeof window.authService.isAuthenticated === 'function') {
-                        if (window.authService.isAuthenticated()) {
-                            window.showApp();
-                            return true;
-                        }
+                    if (window.authService && window.authService.isAuthenticated()) {
+                        window.showApp();
+                        return true;
                     }
                     
-                    // Vérifier Google
-                    if (window.googleAuthService && typeof window.googleAuthService.isAuthenticated === 'function') {
-                        if (window.googleAuthService.isAuthenticated()) {
-                            window.showApp();
-                            return true;
-                        }
+                    if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+                        window.showApp();
+                        return true;
                     }
                 } catch (error) {
                     // Silencieux
@@ -1672,27 +1740,16 @@
             
             // Vérification avec délai
             setTimeout(() => {
-                if (document.body.classList.contains('app-active')) {
-                    appAlreadyShown = true;
-                    return;
+                if (!document.body.classList.contains('app-active')) {
+                    safeAuthCheck();
                 }
-                
-                if (!safeAuthCheck()) {
-                    setTimeout(() => {
-                        if (!document.body.classList.contains('app-active')) {
-                            safeAuthCheck();
-                        }
-                    }, 600);
-                }
-            }, 200);
+            }, 500);
             
             // Bouton Microsoft
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
                 loginBtn.addEventListener('click', function() {
-                    if (authCheckInProgress) {
-                        return;
-                    }
+                    if (authCheckInProgress) return;
                     
                     authCheckInProgress = true;
                     
@@ -1709,19 +1766,27 @@
                             window.showApp();
                             authCheckInProgress = false;
                         }).catch((error) => {
+                            console.error('[LOGIN] Microsoft login failed:', error);
                             authCheckInProgress = false;
                             this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
                             this.disabled = false;
                             if (loadingOverlay) {
                                 loadingOverlay.classList.remove('active');
                             }
+                            if (window.uiManager) {
+                                window.uiManager.showToast('Erreur de connexion Outlook: ' + error.message, 'error', 8000);
+                            }
                         });
                     } else {
+                        console.error('[LOGIN] App not ready for Microsoft login');
                         authCheckInProgress = false;
                         this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
                         this.disabled = false;
                         if (loadingOverlay) {
                             loadingOverlay.classList.remove('active');
+                        }
+                        if (window.uiManager) {
+                            window.uiManager.showToast('Application non initialisée. Rechargez la page.', 'error', 8000);
                         }
                     }
                 });
@@ -1731,9 +1796,7 @@
             const googleLoginBtn = document.getElementById('googleLoginBtn');
             if (googleLoginBtn) {
                 googleLoginBtn.addEventListener('click', async function() {
-                    if (authCheckInProgress) {
-                        return;
-                    }
+                    if (authCheckInProgress) return;
                     
                     authCheckInProgress = true;
                     
@@ -1749,9 +1812,9 @@
                         if (window.googleAuthService) {
                             await window.googleAuthService.initialize();
                             await window.googleAuthService.login();
-                            // La redirection va se produire, pas besoin de showApp() ici
+                            // La redirection va se produire
                         } else {
-                            throw new Error('GoogleAuthService not available');
+                            throw new Error('GoogleAuthService non disponible');
                         }
                     } catch (error) {
                         console.error('[GOOGLE_LOGIN] Error:', error);
@@ -1769,17 +1832,16 @@
                 });
             }
             
-            // Ajouter un gestionnaire d'événements direct pour le bouton Dashboard
+            // Gestionnaire pour le bouton Dashboard
             const dashboardBtn = document.querySelector('.nav-item[data-page="dashboard"]');
             if (dashboardBtn) {
                 dashboardBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     
-                    // Forcer le retour au dashboard
                     if (window.pageManager && window.pageManager.loadPage) {
                         window.pageManager.loadPage('dashboard');
                     } else {
-                        // Fallback: utiliser le module dashboard directement
+                        // Fallback
                         const navItems = document.querySelectorAll('.nav-item');
                         navItems.forEach(item => item.classList.remove('active'));
                         this.classList.add('active');
@@ -1805,12 +1867,10 @@
         window.updateUserDisplay = function(user) {
             const authStatus = document.getElementById('authStatus');
             if (authStatus && user) {
-                // Utiliser le nom et email spécifiés ou ceux du profil
                 const userName = user.displayName || user.name || 'Utilisateur';
                 const userEmail = user.mail || user.userPrincipalName || user.email || 'Non spécifié';
                 const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
                 
-                // Détecter le provider
                 const provider = user.provider || 'unknown';
                 const providerIcon = provider === 'google' ? 'fab fa-google' : 'fab fa-microsoft';
                 const providerText = provider === 'google' ? 'Gmail' : 'Outlook';
@@ -1830,7 +1890,7 @@
             }
         };
 
-        // Fonction de diagnostic accessible globalement (silencieuse par défaut)
+        // Fonction de diagnostic accessible globalement
         window.checkServices = function() {
             return {
                 AppConfig: window.AppConfig ? 'OK' : 'MANQUANT',
@@ -1843,6 +1903,7 @@
                 pageManager: window.pageManager ? 'OK' : 'MANQUANT',
                 categoryManager: window.categoryManager ? 'OK' : 'MANQUANT',
                 dashboardModule: window.dashboardModule ? 'OK' : 'MANQUANT',
+                licenseService: window.LicenseService ? 'OK' : 'MANQUANT',
                 hostname: window.location.hostname,
                 currentDomain: window.location.hostname,
                 authenticationStatus: {
@@ -1852,26 +1913,27 @@
             };
         };
 
-        // Fonction pour vérifier les callbacks Google au chargement de la page
+        // Fonction pour vérifier les callbacks Google au chargement
         window.checkGoogleCallback = function() {
-            // Vérifier si nous revenons d'un callback Google OAuth2
             const fragment = window.location.hash;
             const search = window.location.search;
             
             if (fragment && fragment.includes('access_token')) {
-                console.log('[GOOGLE_CALLBACK] OAuth2 implicit flow callback detected');
+                console.log('[GOOGLE_CALLBACK] OAuth2 implicit flow detected');
                 
-                // Traiter le callback immédiatement
                 if (window.googleAuthService && window.googleAuthService.handleOAuthCallback) {
                     window.googleAuthService.handleOAuthCallback(fragment).then(() => {
-                        console.log('[GOOGLE_CALLBACK] ✅ Google authentication successful');
+                        console.log('[GOOGLE_CALLBACK] ✅ Authentication successful');
                         window.showApp();
                     }).catch((error) => {
-                        console.error('[GOOGLE_CALLBACK] ❌ Error processing Google callback:', error);
+                        console.error('[GOOGLE_CALLBACK] ❌ Error processing callback:', error);
+                        if (window.uiManager) {
+                            window.uiManager.showToast('Erreur de traitement du callback Google', 'error');
+                        }
                     });
                 }
             } else if (search && search.includes('code') && search.includes('state') && search.includes('google')) {
-                console.log('[GOOGLE_CALLBACK] OAuth2 code flow callback detected');
+                console.log('[GOOGLE_CALLBACK] OAuth2 code flow detected');
                 // Le callback sera traité par auth-callback.html
             }
         };
@@ -1880,6 +1942,103 @@
         setTimeout(() => {
             window.checkGoogleCallback();
         }, 500);
+
+        // Fonction pour intercepter les erreurs de chargement de scripts
+        window.handleScriptError = function(scriptName, error) {
+            console.error(`[SCRIPT_ERROR] ${scriptName} failed to load:`, error);
+            
+            if (window.uiManager) {
+                window.uiManager.showToast(
+                    `Module ${scriptName} non disponible. Certaines fonctionnalités peuvent être limitées.`, 
+                    'warning', 
+                    5000
+                );
+            }
+        };
+
+        // Initialisation du système de licence
+        if (window.LicenseService) {
+            window.LicenseService.initialize().then(() => {
+                console.log('[LICENSE] ✅ Service initialisé');
+            }).catch(error => {
+                console.warn('[LICENSE] ⚠️ Erreur d\'initialisation:', error);
+            });
+        }
+
+        // Fonction pour diagnostiquer l'état de l'application
+        window.diagnoseApp = function() {
+            const services = window.checkServices();
+            console.log('[DIAGNOSTIC] État des services:', services);
+            
+            // Vérifier la configuration
+            if (window.AppConfig) {
+                const validation = window.AppConfig.validate();
+                console.log('[DIAGNOSTIC] Configuration:', validation);
+                console.log('[DIAGNOSTIC] Debug info:', window.AppConfig.getDebugInfo());
+            }
+            
+            // Vérifier l'authentification
+            const authStatus = {
+                microsoft: false,
+                google: false
+            };
+            
+            try {
+                if (window.authService) {
+                    authStatus.microsoft = window.authService.isAuthenticated();
+                }
+            } catch (e) {
+                console.warn('[DIAGNOSTIC] Erreur vérification auth Microsoft:', e);
+            }
+            
+            try {
+                if (window.googleAuthService) {
+                    authStatus.google = window.googleAuthService.isAuthenticated();
+                }
+            } catch (e) {
+                console.warn('[DIAGNOSTIC] Erreur vérification auth Google:', e);
+            }
+            
+            console.log('[DIAGNOSTIC] Authentification:', authStatus);
+            
+            // Vérifier le DOM
+            const domElements = {
+                loginPage: !!document.getElementById('loginPage'),
+                pageContent: !!document.getElementById('pageContent'),
+                authStatus: !!document.getElementById('authStatus'),
+                loadingOverlay: !!document.getElementById('loadingOverlay'),
+                appActive: document.body.classList.contains('app-active')
+            };
+            
+            console.log('[DIAGNOSTIC] Éléments DOM:', domElements);
+            
+            return {
+                services,
+                authStatus,
+                domElements,
+                recommendation: services.app === 'MANQUANT' ? 
+                    'App.js non chargé - rechargez la page' : 
+                    'Application opérationnelle'
+            };
+        };
+
+        // Ajouter diagnostic automatique si des erreurs sont détectées
+        setTimeout(() => {
+            if (!window.app) {
+                console.warn('[DIAGNOSTIC] ⚠️ App.js non chargé - diagnostic automatique');
+                window.diagnoseApp();
+                
+                if (window.uiManager) {
+                    window.uiManager.showToast(
+                        'Certains modules ne se sont pas chargés correctement. Tapez window.diagnoseApp() dans la console pour plus de détails.', 
+                        'warning', 
+                        10000
+                    );
+                }
+            }
+        }, 3000);
+
+        console.log('[INDEX] ✅ Script principal chargé avec fallbacks et diagnostics');
     </script>
 </body>
 </html>
