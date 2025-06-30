@@ -1053,6 +1053,8 @@
             'icloud.com', 'protonmail.com', 'aol.com', 'msn.com', 'free.fr',
             'orange.fr', 'wanadoo.fr', 'laposte.net', 'sfr.fr', 'bbox.fr'
         ];
+        
+        console.log(`[Config] Prix unitaire par défaut: ${MONTHLY_PRICE}€ HT/mois`);
 
         // === INITIALISATION ===
         document.addEventListener('DOMContentLoaded', async () => {
@@ -1419,6 +1421,14 @@
                 const now = new Date();
                 const daysUntilExpiry = Math.ceil((licenseEndDate - now) / (1000 * 60 * 60 * 24));
                 
+                // Corriger le statut de licence basé sur l'expiration réelle
+                let actualLicenseStatus = user.license_status;
+                if (daysUntilExpiry < 0 && user.license_status === 'active') {
+                    actualLicenseStatus = 'expired';
+                } else if (daysUntilExpiry < 0 && user.license_status === 'trial') {
+                    actualLicenseStatus = 'expired';
+                }
+                
                 return {
                     ...user,
                     emailsScanned,
@@ -1429,7 +1439,9 @@
                     licenseEndDate,
                     daysUntilExpiry,
                     scanFrequency: getScanFrequency(avgScansPerDay),
-                    userType: getUserType(user.email, user.company)
+                    userType: getUserType(user.email, user.company),
+                    license_status: actualLicenseStatus, // Utiliser le statut corrigé
+                    originalLicenseStatus: user.license_status // Garder l'original pour référence
                 };
             });
             
@@ -1509,7 +1521,7 @@
             const yearlyRevenue = monthlyRevenue * 12;
             
             const unpaidUsers = allUsers.filter(u => 
-                u.license_status === 'expired' && u.daysUntilExpiry < 0
+                u.license_status === 'expired' || (u.daysUntilExpiry < 0 && u.license_status !== 'blocked')
             ).length;
             
             const trialUsers = allUsers.filter(u => u.license_status === 'trial').length;
@@ -1683,22 +1695,49 @@
                 return;
             }
 
-            tbody.innerHTML = allUsers.map(user => {
+            // Filtrer pour afficher tous les utilisateurs avec information de paiement
+            let usersToShow = allUsers;
+            
+            // Si on est dans un filtre spécifique, appliquer le filtre
+            const paymentStatusFilter = document.getElementById('paymentStatusFilter')?.value;
+            if (paymentStatusFilter) {
+                usersToShow = allUsers.filter(user => {
+                    const paymentStatus = getPaymentStatus(user);
+                    switch(paymentStatusFilter) {
+                        case 'trial':
+                            return paymentStatus === 'Essai gratuit';
+                        case 'paid':
+                            return paymentStatus === 'Payé';
+                        case 'unpaid':
+                            return paymentStatus === 'Impayé' || paymentStatus === 'En retard';
+                        case 'overdue':
+                            return paymentStatus === 'En retard';
+                        default:
+                            return true;
+                    }
+                });
+            }
+
+            tbody.innerHTML = usersToShow.map(user => {
                 const paymentStatus = getPaymentStatus(user);
-                const monthlyAmount = user.license_status === 'active' ? MONTHLY_PRICE : 0;
+                const monthlyAmount = calculateMonthlyAmount(user);
                 const adminContact = getAdminContact(user);
                 const overdueDays = user.daysUntilExpiry < 0 ? Math.abs(user.daysUntilExpiry) : 0;
+                const overdueAmount = calculateOverdueAmount(user, overdueDays);
                 
                 return `
-                    <tr>
+                    <tr data-payment-status="${paymentStatus.toLowerCase()}" data-company="${user.company?.name || 'Sans société'}">
                         <td>
                             <strong>${user.name || user.email}</strong><br>
                             <small style="color: #6b7280;">${user.email}</small>
                         </td>
-                        <td>${user.company?.name || '-'}</td>
+                        <td>${user.company?.name || 'Sans société'}</td>
                         <td><span class="license-badge ${getPaymentStatusClass(paymentStatus)}">${paymentStatus}</span></td>
-                        <td><strong>${monthlyAmount.toFixed(2)}€</strong></td>
-                        <td>${formatDate(user.licenseEndDate)}</td>
+                        <td>
+                            <strong>${monthlyAmount.toFixed(2)}€ HT</strong>
+                            ${overdueAmount > 0 ? `<br><small style="color: #dc2626;">Dû: ${overdueAmount.toFixed(2)}€</small>` : ''}
+                        </td>
+                        <td>${formatDateOnly(user.licenseEndDate)}</td>
                         <td>
                             ${overdueDays > 0 ? 
                                 `<span class="license-badge license-expired">${overdueDays} jours</span>` : 
@@ -1714,8 +1753,8 @@
                         <td>
                             <div class="edit-actions">
                                 ${canEditUser(user) ? 
-                                    `<button class="btn-primary" onclick="openPaymentModal('${user.id}')">Gérer</button>` :
-                                    `<button class="btn-secondary" onclick="openUserPaymentModal('${user.id}')">Voir</button>`
+                                    `<button class="btn-primary" onclick="openPaymentModal('${user.id}')" title="Gérer paiements">Gérer</button>` :
+                                    `<button class="btn-secondary" onclick="openUserPaymentModal('${user.id}')" title="Voir informations">Voir</button>`
                                 }
                             </div>
                         </td>
@@ -1739,10 +1778,30 @@
         }
 
         function getPaymentStatus(user) {
-            if (user.license_status === 'trial') return 'Essai gratuit';
-            if (user.license_status === 'active') return 'Payé';
+            if (user.license_status === 'trial' && user.daysUntilExpiry > 0) return 'Essai gratuit';
+            if (user.license_status === 'active' && user.daysUntilExpiry > 0) return 'Payé';
             if (user.daysUntilExpiry < 0) return 'En retard';
+            if (user.license_status === 'expired') return 'En retard';
             return 'Impayé';
+        }
+
+        function calculateMonthlyAmount(user) {
+            // Montant de base selon le statut
+            if (user.license_status === 'active' || user.license_status === 'expired') {
+                return MONTHLY_PRICE;
+            }
+            if (user.license_status === 'trial') {
+                return 0; // Essai gratuit
+            }
+            return MONTHLY_PRICE; // Par défaut
+        }
+
+        function calculateOverdueAmount(user, overdueDays) {
+            if (overdueDays <= 0) return 0;
+            
+            // Calculer le nombre de mois en retard
+            const monthsOverdue = Math.ceil(overdueDays / 30);
+            return monthsOverdue * MONTHLY_PRICE;
         }
 
         function getPaymentStatusClass(status) {
@@ -1934,8 +1993,30 @@
             
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
+                const rowPaymentStatus = row.getAttribute('data-payment-status');
+                const rowCompany = row.getAttribute('data-company');
+                
                 const matchesSearch = text.includes(searchTerm);
-                const matchesStatus = !statusFilter || text.includes(statusFilter.toLowerCase());
+                
+                let matchesStatus = true;
+                if (statusFilter) {
+                    switch(statusFilter) {
+                        case 'trial':
+                            matchesStatus = rowPaymentStatus === 'essai gratuit';
+                            break;
+                        case 'paid':
+                            matchesStatus = rowPaymentStatus === 'payé';
+                            break;
+                        case 'unpaid':
+                            matchesStatus = rowPaymentStatus === 'impayé' || rowPaymentStatus === 'en retard';
+                            break;
+                        case 'overdue':
+                            matchesStatus = rowPaymentStatus === 'en retard';
+                            break;
+                        default:
+                            matchesStatus = true;
+                    }
+                }
                 
                 row.style.display = matchesSearch && matchesStatus ? '' : 'none';
             });
