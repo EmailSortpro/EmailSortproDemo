@@ -759,14 +759,15 @@
 
         async function authenticateUser(email, password) {
             if (!supabaseClient) {
-                // Mode demo
+                // Mode demo pour tests locaux
                 if (email === 'demo@admin.com' && password === 'demo123') {
                     return {
                         success: true,
                         user: {
                             email: email,
                             name: 'Demo Admin',
-                            company: { name: 'Demo Company', domain: 'demo.com' },
+                            company_name: 'Demo Company',
+                            company_domain: 'demo.com',
                             role: 'company_admin'
                         }
                     };
@@ -775,32 +776,38 @@
             }
 
             try {
-                // Hasher le mot de passe (simple pour demo - en production utiliser bcrypt)
-                const hashedPassword = btoa(password); // Base64 simple pour demo
+                // Utiliser la fonction Netlify pour l'authentification
+                const response = await fetch('/.netlify/functions/auth-admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'login',
+                        email: email,
+                        password: password
+                    })
+                });
+
+                const result = await response.json();
                 
-                const { data: user, error } = await supabaseClient
-                    .from('users')
-                    .select(`
-                        *,
-                        company:companies(*)
-                    `)
-                    .eq('email', email)
-                    .eq('password_hash', hashedPassword)
-                    .single();
-
-                if (error || !user) {
-                    return { success: false, message: 'Email ou mot de passe incorrect' };
+                if (result.success) {
+                    // Stocker le token de session
+                    sessionStorage.setItem('emailsortpro_session_token', result.session_token);
+                    return {
+                        success: true,
+                        user: result.user
+                    };
+                } else {
+                    return {
+                        success: false,
+                        message: result.message || 'Erreur d\'authentification'
+                    };
                 }
-
-                if (user.role !== 'company_admin' && user.role !== 'super_admin') {
-                    return { success: false, message: 'Accès refusé : droits administrateur requis' };
-                }
-
-                return { success: true, user: user };
                 
             } catch (error) {
-                console.error('[Auth] Erreur authentification:', error);
-                return { success: false, message: 'Erreur de connexion' };
+                console.error('[Auth] Erreur réseau:', error);
+                return { success: false, message: 'Erreur de connexion au serveur' };
             }
         }
 
@@ -810,63 +817,27 @@
             }
 
             try {
-                const domain = email.split('@')[1];
-                const hashedPassword = btoa(password); // Base64 simple pour demo
-                
-                // Vérifier si l'utilisateur existe déjà
-                const { data: existingUser } = await supabaseClient
-                    .from('users')
-                    .select('id')
-                    .eq('email', email)
-                    .single();
-
-                if (existingUser) {
-                    return { success: false, message: 'Un compte avec cet email existe déjà' };
-                }
-
-                // Créer ou récupérer la société
-                let { data: company, error: companyError } = await supabaseClient
-                    .from('companies')
-                    .select('id')
-                    .eq('domain', domain)
-                    .single();
-
-                if (!company) {
-                    const { data: newCompany, error: createCompanyError } = await supabaseClient
-                        .from('companies')
-                        .insert([{
-                            name: companyName,
-                            domain: domain
-                        }])
-                        .select()
-                        .single();
-
-                    if (createCompanyError) throw createCompanyError;
-                    company = newCompany;
-                }
-
-                // Créer l'utilisateur admin
-                const { data: newUser, error: userError } = await supabaseClient
-                    .from('users')
-                    .insert([{
+                // Utiliser la fonction Netlify pour créer l'admin
+                const response = await fetch('/.netlify/functions/auth-admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'create_admin',
                         email: email,
                         name: name,
-                        company_id: company.id,
-                        role: 'company_admin',
-                        license_status: 'active',
-                        password_hash: hashedPassword,
-                        created_at: new Date().toISOString()
-                    }])
-                    .select()
-                    .single();
+                        password: password,
+                        companyName: companyName
+                    })
+                });
 
-                if (userError) throw userError;
-
-                return { success: true, user: newUser };
+                const result = await response.json();
+                return result;
                 
             } catch (error) {
-                console.error('[Setup] Erreur création utilisateur:', error);
-                return { success: false, message: 'Erreur lors de la création du compte' };
+                console.error('[Setup] Erreur réseau:', error);
+                return { success: false, message: 'Erreur de connexion au serveur' };
             }
         }
 
@@ -878,7 +849,8 @@
             // Mettre à jour le badge utilisateur
             const userBadge = document.getElementById('userBadge');
             const roleName = currentUser.role === 'super_admin' ? 'Super Admin' : 'Admin';
-            userBadge.textContent = `${currentUser.name || currentUser.email} (${roleName})`;
+            const companyName = currentUser.company_name || currentUser.company?.name || '';
+            userBadge.textContent = `${currentUser.name || currentUser.email} (${roleName}) - ${companyName}`;
         }
 
         function showLoginForm() {
@@ -914,6 +886,7 @@
 
         function logout() {
             currentUser = null;
+            sessionStorage.removeItem('emailsortpro_session_token');
             document.getElementById('loginContainer').style.display = 'flex';
             document.getElementById('appContainer').style.display = 'none';
             document.getElementById('loginEmail').value = '';
@@ -944,51 +917,67 @@
         }
 
         async function loadRealData() {
-            // Charger les domaines et utilisateurs depuis Supabase
-            const { data: companies, error: companiesError } = await supabaseClient
-                .from('companies')
-                .select(`
-                    *,
-                    users:users(count),
-                    analytics:analytics_events(count)
-                `);
+            try {
+                // Charger les statistiques par domaine
+                const domainsResponse = await fetch('/.netlify/functions/auth-admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionStorage.getItem('emailsortpro_session_token')}`
+                    },
+                    body: JSON.stringify({
+                        action: 'get_domain_stats'
+                    })
+                });
 
-            if (companiesError) throw companiesError;
+                const domainsResult = await domainsResponse.json();
+                
+                if (domainsResult.success) {
+                    allDomains = domainsResult.domains.map(domain => ({
+                        domain: domain.domain,
+                        userCount: domain.total_users || 0,
+                        emailCount: domain.total_emails_scanned || 0,
+                        lastActivity: domain.last_activity,
+                        admin: domain.admin_email || 'N/A',
+                        status: 'active'
+                    }));
+                }
 
-            const { data: users, error: usersError } = await supabaseClient
-                .from('users')
-                .select(`
-                    *,
-                    company:companies(*)
-                `)
-                .order('created_at', { ascending: false });
+                // Charger les statistiques par utilisateur
+                const usersResponse = await fetch('/.netlify/functions/auth-admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionStorage.getItem('emailsortpro_session_token')}`
+                    },
+                    body: JSON.stringify({
+                        action: 'get_user_stats'
+                    })
+                });
 
-            if (usersError) throw usersError;
+                const usersResult = await usersResponse.json();
+                
+                if (usersResult.success) {
+                    allUsers = usersResult.users.map(user => ({
+                        email: user.email,
+                        name: user.name || 'N/A',
+                        domain: user.domain,
+                        emailCount: user.total_emails_scanned || 0,
+                        sessionCount: user.total_sessions || 0,
+                        firstUsed: user.first_seen,
+                        lastActivity: user.last_activity
+                    }));
+                }
 
-            // Traiter les données pour les domaines
-            allDomains = companies.map(company => ({
-                domain: company.domain,
-                userCount: company.users?.[0]?.count || 0,
-                emailCount: Math.floor(Math.random() * 2000), // Placeholder
-                lastActivity: company.updated_at,
-                admin: users.find(u => u.company_id === company.id && u.role === 'company_admin')?.email || 'N/A',
-                status: 'active'
-            }));
-
-            // Traiter les données pour les utilisateurs
-            allUsers = users.map(user => ({
-                email: user.email,
-                name: user.name || 'N/A',
-                domain: user.company?.domain || 'N/A',
-                emailCount: Math.floor(Math.random() * 1000), // Placeholder - à remplacer par vraies données analytics
-                sessionCount: Math.floor(Math.random() * 20),
-                firstUsed: user.created_at,
-                lastActivity: user.last_login_at || user.updated_at
-            }));
+            } catch (error) {
+                console.error('[Data] Erreur chargement données réelles:', error);
+                // Fallback vers les données demo
+                loadDemoData();
+            }
         }
 
         function loadDemoData() {
-            // Les données demo sont déjà initialisées
+            // Les données demo sont déjà initialisées dans initializeDemoMode()
         }
 
         function updateStats() {
@@ -1021,6 +1010,11 @@
         function renderDomainsTable() {
             const tbody = document.getElementById('domainsTableBody');
             
+            if (allDomains.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #718096;">Aucun domaine trouvé</td></tr>';
+                return;
+            }
+
             tbody.innerHTML = allDomains.map(domain => `
                 <tr>
                     <td>
@@ -1044,6 +1038,11 @@
         function renderUsersTable() {
             const tbody = document.getElementById('usersTableBody');
             
+            if (allUsers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #718096;">Aucun utilisateur trouvé</td></tr>';
+                return;
+            }
+
             tbody.innerHTML = allUsers.map(user => `
                 <tr>
                     <td>${user.email}</td>
