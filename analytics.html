@@ -278,6 +278,33 @@
             font-weight: 600;
         }
 
+        .license-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .license-active {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .license-trial {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .license-expired {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .license-blocked {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
         .loading {
             text-align: center;
             padding: 2rem;
@@ -342,6 +369,22 @@
             transform: translateY(-50%);
             color: #718096;
         }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-active {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        .status-inactive {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
     </style>
 </head>
 <body>
@@ -399,64 +442,27 @@
             <div class="stats-grid" id="statsGrid">
                 <div class="stat-card">
                     <div class="stat-number" id="totalUsers">-</div>
-                    <div class="stat-label">Utilisateurs</div>
+                    <div class="stat-label">Utilisateurs Actifs</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number" id="totalScans">-</div>
-                    <div class="stat-label">Scans effectués</div>
+                    <div class="stat-number" id="totalLicenses">-</div>
+                    <div class="stat-label">Licences Actives</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalDomains">-</div>
+                    <div class="stat-label">Domaines</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number" id="totalEmails">-</div>
-                    <div class="stat-label">Emails analysés</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="activeDomains">-</div>
-                    <div class="stat-label">Domaines actifs</div>
+                    <div class="stat-label">Emails Analysés</div>
                 </div>
             </div>
 
-            <!-- Domain Overview -->
-            <div class="card">
-                <h3 class="card-title">
-                    <i class="fas fa-globe"></i>
-                    Domaines utilisant EmailSortPro
-                </h3>
-                
-                <div class="filters">
-                    <div class="search-container">
-                        <span class="search-icon">🔍</span>
-                        <input type="text" class="search-input" placeholder="Rechercher un domaine..." 
-                               id="domainSearch" onkeyup="filterDomains()">
-                    </div>
-                    <button class="btn-secondary" onclick="refreshData()">
-                        <i class="fas fa-sync-alt"></i> Actualiser
-                    </button>
-                </div>
-                
-                <div class="table-container">
-                    <table id="domainsTable">
-                        <thead>
-                            <tr>
-                                <th>Domaine</th>
-                                <th>Utilisateurs</th>
-                                <th>Emails scannés</th>
-                                <th>Dernière activité</th>
-                                <th>Administrateur</th>
-                                <th>Statut</th>
-                            </tr>
-                        </thead>
-                        <tbody id="domainsTableBody">
-                            <tr><td colspan="6" style="text-align: center;">Chargement...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Users by Email -->
+            <!-- Users Overview -->
             <div class="card">
                 <h3 class="card-title">
                     <i class="fas fa-users"></i>
-                    Utilisateurs par Email
+                    Utilisateurs et Licences
                 </h3>
                 
                 <div class="filters">
@@ -465,6 +471,9 @@
                         <input type="text" class="search-input" placeholder="Rechercher un utilisateur..." 
                                id="userSearch" onkeyup="filterUsers()">
                     </div>
+                    <button class="btn-secondary" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i> Actualiser
+                    </button>
                 </div>
                 
                 <div class="table-container">
@@ -473,15 +482,49 @@
                             <tr>
                                 <th>Email</th>
                                 <th>Nom</th>
-                                <th>Domaine</th>
-                                <th>Emails scannés</th>
-                                <th>Sessions</th>
-                                <th>Première utilisation</th>
-                                <th>Dernière activité</th>
+                                <th>Société</th>
+                                <th>Rôle</th>
+                                <th>Licence</th>
+                                <th>Dernière Connexion</th>
+                                <th>Activité</th>
                             </tr>
                         </thead>
                         <tbody id="usersTableBody">
                             <tr><td colspan="7" style="text-align: center;">Chargement...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Domains Overview -->
+            <div class="card">
+                <h3 class="card-title">
+                    <i class="fas fa-globe"></i>
+                    Domaines et Sociétés
+                </h3>
+                
+                <div class="filters">
+                    <div class="search-container">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" placeholder="Rechercher un domaine..." 
+                               id="domainSearch" onkeyup="filterDomains()">
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table id="domainsTable">
+                        <thead>
+                            <tr>
+                                <th>Domaine</th>
+                                <th>Société</th>
+                                <th>Utilisateurs</th>
+                                <th>Administrateur</th>
+                                <th>Statut</th>
+                                <th>Licences Actives</th>
+                            </tr>
+                        </thead>
+                        <tbody id="domainsTableBody">
+                            <tr><td colspan="6" style="text-align: center;">Chargement...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -499,8 +542,12 @@
         // Configuration et variables globales
         let supabaseClient = null;
         let currentUser = null;
-        let allDomains = [];
         let allUsers = [];
+        let allDomains = [];
+
+        // Configuration Supabase avec vos vraies clés
+        const SUPABASE_URL = 'https://xqrwaietdwcblqpqvcqp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxcndhaWV0ZHdjYmxxcHF2Y3FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE2MjU1MzUsImV4cCI6MjA0NzIwMTUzNX0.KDXMZ-eVyfVj0mNXhHaEHs6KBSciTXc5OjMh2xMiX7o';
 
         // === INITIALISATION ===
         document.addEventListener('DOMContentLoaded', async () => {
@@ -518,35 +565,32 @@
 
         async function initializeSupabase() {
             try {
-                // D'abord essayer de charger depuis Netlify Functions
-                try {
-                    const response = await fetch('/.netlify/functions/get-supabase-config');
-                    if (response.ok) {
-                        const config = await response.json();
-                        
-                        supabaseClient = window.supabase.createClient(
-                            config.url,
-                            config.anonKey
-                        );
-                        
-                        console.log('[Analytics] Supabase initialisé via Netlify Functions');
-                        return;
-                    }
-                } catch (e) {
-                    console.warn('[Analytics] Netlify Functions non disponible, utilisation config locale');
-                }
-                
-                // Fallback: utiliser la configuration directe (pour dev/test)
-                // Remplacez ces valeurs par vos vraies clés Supabase
-                const SUPABASE_URL = 'https://xyzcompany.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5emNvbXBhbnkiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzEyMzQ1NiwiZXhwIjoxOTU4Njk5NDU2fQ.abcdefghijklmnopqrstuvwxyz123456';
-                
                 supabaseClient = window.supabase.createClient(
                     SUPABASE_URL,
-                    SUPABASE_ANON_KEY
+                    SUPABASE_ANON_KEY,
+                    {
+                        auth: {
+                            autoRefreshToken: true,
+                            persistSession: true,
+                            detectSessionInUrl: false
+                        }
+                    }
                 );
                 
-                console.log('[Analytics] Supabase initialisé avec config locale');
+                console.log('[Analytics] Supabase initialisé avec succès');
+                console.log('[Analytics] URL:', SUPABASE_URL);
+                
+                // Tester la connexion
+                const { data, error } = await supabaseClient
+                    .from('users')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) {
+                    console.error('[Analytics] Test connexion échoué:', error);
+                } else {
+                    console.log('[Analytics] Connexion Supabase OK');
+                }
                 
             } catch (error) {
                 console.error('[Analytics] Erreur Supabase:', error);
@@ -562,12 +606,11 @@
             if (!supabaseClient) return;
             
             try {
-                // Vérifier si on a un email stocké (connexion sans mot de passe)
+                // Vérifier si on a un email stocké
                 const storedEmail = localStorage.getItem('emailsortpro_admin_email');
                 if (storedEmail) {
                     console.log('[Auth] Email stocké trouvé:', storedEmail);
                     
-                    // Vérifier que l'utilisateur est toujours admin
                     const { data: user } = await supabaseClient
                         .from('users')
                         .select('*, company:companies(*)')
@@ -579,22 +622,6 @@
                         showApp();
                         await loadDashboardData();
                         return;
-                    }
-                }
-                
-                // Sinon vérifier la session Supabase Auth
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (session) {
-                    const { data: user } = await supabaseClient
-                        .from('users')
-                        .select('*, company:companies(*)')
-                        .eq('email', session.user.email)
-                        .single();
-                    
-                    if (user && (user.role === 'company_admin' || user.role === 'super_admin')) {
-                        currentUser = user;
-                        showApp();
-                        await loadDashboardData();
                     }
                 }
             } catch (error) {
@@ -617,70 +644,36 @@
             setLoading(true);
             
             try {
-                // Si pas de mot de passe, on fait une vérification simple de l'utilisateur
-                if (!password && supabaseClient) {
-                    console.log('[Auth] Vérification utilisateur sans mot de passe pour:', email);
-                    
-                    // Vérifier si l'utilisateur existe et est admin
-                    const { data: user, error } = await supabaseClient
-                        .from('users')
-                        .select('*, company:companies(*)')
-                        .eq('email', email)
-                        .single();
-                    
-                    if (error || !user) {
-                        throw new Error('Utilisateur non trouvé');
-                    }
-                    
-                    if (user.role !== 'company_admin' && user.role !== 'super_admin') {
-                        throw new Error('Accès réservé aux administrateurs');
-                    }
-                    
-                    // Connexion acceptée sans mot de passe (temporaire)
-                    currentUser = user;
-                    showApp();
-                    await loadDashboardData();
-                    
-                } else if (password && supabaseClient) {
-                    // Authentification normale avec mot de passe
-                    const { data, error } = await supabaseClient.auth.signInWithPassword({
-                        email: email,
-                        password: password
-                    });
-
-                    if (error) throw error;
-
-                    // Vérifier le rôle
-                    const { data: user } = await supabaseClient
-                        .from('users')
-                        .select('*, company:companies(*)')
-                        .eq('email', email)
-                        .single();
-
-                    if (!user || (user.role !== 'company_admin' && user.role !== 'super_admin')) {
-                        await supabaseClient.auth.signOut();
-                        throw new Error('Accès réservé aux administrateurs');
-                    }
-
-                    currentUser = user;
-                    showApp();
-                    await loadDashboardData();
-                    
-                } else {
-                    // Mode demo si pas de Supabase
-                    if (email === 'demo@admin.com') {
-                        currentUser = {
-                            email: email,
-                            name: 'Demo Admin',
-                            role: 'company_admin',
-                            company: { name: 'Demo Company' }
-                        };
-                        showApp();
-                        loadDemoData();
-                    } else {
-                        throw new Error('Connexion impossible - Vérifiez la configuration');
-                    }
+                console.log('[Auth] Tentative de connexion pour:', email);
+                
+                // Vérifier si l'utilisateur existe et est admin
+                const { data: user, error } = await supabaseClient
+                    .from('users')
+                    .select('*, company:companies(*)')
+                    .eq('email', email)
+                    .single();
+                
+                if (error || !user) {
+                    throw new Error('Utilisateur non trouvé');
                 }
+                
+                if (user.role !== 'company_admin' && user.role !== 'super_admin') {
+                    throw new Error('Accès réservé aux administrateurs');
+                }
+                
+                // Connexion acceptée
+                currentUser = user;
+                localStorage.setItem('emailsortpro_admin_email', email);
+                
+                // Mettre à jour last_login_at
+                await supabaseClient
+                    .from('users')
+                    .update({ last_login_at: new Date().toISOString() })
+                    .eq('id', user.id);
+                
+                showApp();
+                await loadDashboardData();
+                
             } catch (error) {
                 console.error('[Auth] Erreur connexion:', error);
                 showAlert(error.message || 'Erreur de connexion', 'error');
@@ -693,11 +686,6 @@
         function showApp() {
             document.getElementById('loginContainer').style.display = 'none';
             document.getElementById('appContainer').style.display = 'block';
-            
-            // Stocker l'email pour la prochaine connexion
-            if (currentUser?.email) {
-                localStorage.setItem('emailsortpro_admin_email', currentUser.email);
-            }
             
             const userBadge = document.getElementById('userBadge');
             const roleName = currentUser.role === 'super_admin' ? 'Super Admin' : 'Admin';
@@ -727,9 +715,6 @@
         }
 
         async function logout() {
-            if (supabaseClient) {
-                await supabaseClient.auth.signOut();
-            }
             currentUser = null;
             localStorage.removeItem('emailsortpro_admin_email');
             document.getElementById('loginContainer').style.display = 'flex';
@@ -743,34 +728,7 @@
             document.getElementById('loadingState').style.display = 'block';
             
             try {
-                if (supabaseClient) {
-                    await loadRealData();
-                    
-                    // Si pas de données, charger aussi les licences
-                    if (allUsers.length === 0) {
-                        await loadLicenseData();
-                    }
-                } else {
-                    loadDemoData();
-                }
-                
-                updateStats();
-                renderDomainsTable();
-                renderUsersTable();
-                
-            } catch (error) {
-                console.error('[Data] Erreur chargement:', error);
-                showAlert('Erreur lors du chargement des données', 'error');
-            } finally {
-                document.getElementById('loadingState').style.display = 'none';
-            }
-        }
-        
-        async function loadLicenseData() {
-            try {
-                console.log('[Data] Chargement des données de licence...');
-                
-                // Récupérer tous les utilisateurs avec leurs licences
+                // Charger les utilisateurs avec leurs licences
                 const { data: users, error: usersError } = await supabaseClient
                     .from('users')
                     .select(`
@@ -779,282 +737,124 @@
                     `)
                     .order('last_login_at', { ascending: false, nullsFirst: false });
                 
-                if (usersError) {
-                    console.error('[Data] Erreur chargement users:', usersError);
-                    return;
+                if (usersError) throw usersError;
+                
+                console.log(`[Data] ${users?.length || 0} utilisateurs trouvés`);
+                
+                // Charger les événements analytics pour les statistiques
+                const { data: events, error: eventsError } = await supabaseClient
+                    .from('analytics_events')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(1000);
+                
+                if (!eventsError && events) {
+                    console.log(`[Data] ${events.length} événements trouvés`);
                 }
                 
-                console.log(`[Data] ${users?.length || 0} utilisateurs trouvés dans la base`);
+                // Traiter les données
+                processData(users, events);
                 
-                // Créer des statistiques à partir des utilisateurs
-                const domainStats = {};
-                
-                users?.forEach(user => {
-                    const domain = user.company?.domain || user.email.split('@')[1];
-                    
-                    if (!domainStats[domain]) {
-                        domainStats[domain] = {
-                            domain: domain,
-                            users: [],
-                            adminEmail: null,
-                            companyName: user.company?.name || domain
-                        };
-                    }
-                    
-                    domainStats[domain].users.push({
-                        email: user.email,
-                        name: user.name,
-                        role: user.role,
-                        licenseStatus: user.license_status,
-                        lastLogin: user.last_login_at,
-                        firstLogin: user.first_login_at
-                    });
-                    
-                    // Identifier l'admin du domaine
-                    if (user.role === 'company_admin' || user.role === 'super_admin') {
-                        domainStats[domain].adminEmail = user.email;
-                    }
-                });
-                
-                // Convertir en tableaux pour l'affichage
-                allDomains = Object.values(domainStats).map(domain => ({
-                    domain: domain.domain,
-                    userCount: domain.users.length,
-                    emailCount: 0, // Pas de stats d'emails depuis cette table
-                    lastActivity: domain.users[0]?.lastLogin || new Date().toISOString(),
-                    admin: domain.adminEmail || domain.users[0]?.email || 'N/A',
-                    status: domain.users.some(u => u.licenseStatus === 'active' || u.licenseStatus === 'trial') ? 'active' : 'inactive',
-                    companyName: domain.companyName
-                }));
-                
-                allUsers = users.map(user => ({
-                    email: user.email,
-                    name: user.name || user.email.split('@')[0],
-                    domain: user.company?.domain || user.email.split('@')[1],
-                    emailCount: 0, // Sera mis à jour par les analytics events
-                    sessionCount: 0, // Sera mis à jour par les analytics events
-                    firstSeen: user.first_login_at || user.created_at,
-                    lastActivity: user.last_login_at || user.updated_at,
-                    licenseStatus: user.license_status,
-                    role: user.role,
-                    company: user.company?.name
-                }));
-                
-                console.log(`[Data] Données de licence chargées: ${allDomains.length} domaines, ${allUsers.length} utilisateurs`);
+                // Mettre à jour l'interface
+                updateStats();
+                renderUsersTable();
+                renderDomainsTable();
                 
             } catch (error) {
-                console.error('[Data] Erreur chargement licences:', error);
+                console.error('[Data] Erreur chargement:', error);
+                showAlert('Erreur lors du chargement des données', 'error');
+            } finally {
+                document.getElementById('loadingState').style.display = 'none';
             }
         }
 
-        async function loadRealData() {
-            try {
-                console.log('[Data] Chargement des données réelles depuis Supabase...');
-                
-                // Récupérer TOUS les événements analytics
-                const { data: events, error } = await supabaseClient
-                    .from('analytics_events')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-                
-                if (error) {
-                    console.error('[Data] Erreur chargement events:', error);
-                    throw error;
-                }
-                
-                console.log(`[Data] ${events?.length || 0} événements trouvés`);
-                
-                // Calculer les statistiques par domaine et utilisateur
-                const domainStats = {};
-                const userStats = {};
-                
-                events?.forEach(event => {
-                    // Stats par domaine
-                    const domain = event.user_domain || (event.user_email ? event.user_email.split('@')[1] : 'unknown');
-                    
-                    if (!domainStats[domain]) {
-                        domainStats[domain] = {
-                            domain: domain,
-                            users: new Set(),
-                            totalEmails: 0,
-                            lastActivity: null,
-                            adminEmail: null
-                        };
-                    }
-                    
+        function processData(users, events) {
+            // Créer une map des statistiques par utilisateur
+            const userStatsMap = {};
+            
+            if (events) {
+                events.forEach(event => {
                     if (event.user_email) {
-                        domainStats[domain].users.add(event.user_email);
-                    }
-                    
-                    if (event.event_type === 'email_scan' && event.event_data?.emailCount) {
-                        domainStats[domain].totalEmails += event.event_data.emailCount;
-                    }
-                    
-                    if (!domainStats[domain].lastActivity || 
-                        new Date(event.created_at) > new Date(domainStats[domain].lastActivity)) {
-                        domainStats[domain].lastActivity = event.created_at;
-                    }
-                    
-                    // Stats par utilisateur
-                    if (event.user_email) {
-                        if (!userStats[event.user_email]) {
-                            userStats[event.user_email] = {
-                                email: event.user_email,
-                                name: event.user_name || event.user_email.split('@')[0],
-                                domain: domain,
-                                totalEmails: 0,
+                        if (!userStatsMap[event.user_email]) {
+                            userStatsMap[event.user_email] = {
+                                emailsScanned: 0,
                                 sessions: new Set(),
-                                firstSeen: event.created_at,
-                                lastActivity: event.created_at,
-                                events: []
+                                lastActivity: event.created_at
                             };
                         }
                         
-                        userStats[event.user_email].events.push({
-                            type: event.event_type,
-                            timestamp: event.created_at
-                        });
+                        if (event.event_type === 'email_scan' && event.event_data?.emailCount) {
+                            userStatsMap[event.user_email].emailsScanned += event.event_data.emailCount;
+                        }
                         
                         if (event.session_id) {
-                            userStats[event.user_email].sessions.add(event.session_id);
+                            userStatsMap[event.user_email].sessions.add(event.session_id);
                         }
                         
-                        if (event.event_type === 'email_scan' && event.event_data?.emailCount) {
-                            userStats[event.user_email].totalEmails += event.event_data.emailCount;
-                        }
-                        
-                        // Mettre à jour les dates
-                        const eventDate = new Date(event.created_at);
-                        if (eventDate > new Date(userStats[event.user_email].lastActivity)) {
-                            userStats[event.user_email].lastActivity = event.created_at;
-                        }
-                        if (eventDate < new Date(userStats[event.user_email].firstSeen)) {
-                            userStats[event.user_email].firstSeen = event.created_at;
+                        if (new Date(event.created_at) > new Date(userStatsMap[event.user_email].lastActivity)) {
+                            userStatsMap[event.user_email].lastActivity = event.created_at;
                         }
                     }
                 });
-                
-                // Convertir en tableaux
-                allDomains = Object.values(domainStats).map(domain => ({
-                    domain: domain.domain,
-                    userCount: domain.users.size,
-                    emailCount: domain.totalEmails,
-                    lastActivity: domain.lastActivity,
-                    admin: Array.from(domain.users)[0] || 'N/A',
-                    status: domain.lastActivity && 
-                            (new Date() - new Date(domain.lastActivity)) < 7 * 24 * 60 * 60 * 1000 
-                            ? 'active' : 'inactive'
-                })).filter(d => d.userCount > 0); // Filtrer les domaines sans utilisateurs
-                
-                allUsers = Object.values(userStats).map(user => ({
-                    email: user.email,
-                    name: user.name,
-                    domain: user.domain,
-                    emailCount: user.totalEmails,
-                    sessionCount: user.sessions.size,
-                    firstSeen: user.firstSeen,
-                    lastActivity: user.lastActivity,
-                    totalEvents: user.events.length
-                })).sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity));
-                
-                // Essayer de récupérer les vrais admins depuis la table users
-                try {
-                    const { data: admins } = await supabaseClient
-                        .from('users')
-                        .select('email, company:companies(domain)')
-                        .in('role', ['company_admin', 'super_admin']);
-                    
-                    admins?.forEach(admin => {
-                        const domainName = admin.company?.domain || admin.email.split('@')[1];
-                        const domain = allDomains.find(d => d.domain === domainName);
-                        if (domain) {
-                            domain.admin = admin.email;
-                        }
-                    });
-                } catch (e) {
-                    console.warn('[Data] Impossible de récupérer les admins:', e);
-                }
-                
-                console.log(`[Data] Stats calculées: ${allDomains.length} domaines, ${allUsers.length} utilisateurs`);
-                
-            } catch (error) {
-                console.error('[Data] Erreur chargement données réelles:', error);
-                loadDemoData();
             }
-        }
-
-        function loadDemoData() {
-            allDomains = [
-                {
-                    domain: 'demo.com',
-                    userCount: 5,
-                    emailCount: 1250,
-                    lastActivity: new Date().toISOString(),
-                    admin: 'admin@demo.com',
-                    status: 'active'
-                },
-                {
-                    domain: 'test-company.fr',
-                    userCount: 3,
-                    emailCount: 890,
-                    lastActivity: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-                    admin: 'manager@test-company.fr',
-                    status: 'active'
+            
+            // Traiter les utilisateurs
+            allUsers = users.map(user => ({
+                ...user,
+                emailsScanned: userStatsMap[user.email]?.emailsScanned || 0,
+                sessionsCount: userStatsMap[user.email]?.sessions.size || 0,
+                lastActivity: userStatsMap[user.email]?.lastActivity || user.last_login_at || user.updated_at
+            }));
+            
+            // Créer les statistiques par domaine
+            const domainMap = {};
+            
+            users.forEach(user => {
+                const domain = user.company?.domain || user.email.split('@')[1];
+                
+                if (!domainMap[domain]) {
+                    domainMap[domain] = {
+                        domain: domain,
+                        companyName: user.company?.name || domain,
+                        users: [],
+                        adminEmail: null,
+                        activeLicenses: 0
+                    };
                 }
-            ];
-
-            allUsers = [
-                {
-                    email: 'john@demo.com',
-                    name: 'John Doe',
-                    domain: 'demo.com',
-                    emailCount: 450,
-                    sessionCount: 12,
-                    firstSeen: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-                    lastActivity: new Date().toISOString()
-                },
-                {
-                    email: 'jane@demo.com',
-                    name: 'Jane Smith',
-                    domain: 'demo.com',
-                    emailCount: 380,
-                    sessionCount: 8,
-                    firstSeen: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
-                    lastActivity: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+                
+                domainMap[domain].users.push(user);
+                
+                if (user.role === 'company_admin' || user.role === 'super_admin') {
+                    domainMap[domain].adminEmail = user.email;
                 }
-            ];
+                
+                if (user.license_status === 'active' || user.license_status === 'trial') {
+                    domainMap[domain].activeLicenses++;
+                }
+            });
+            
+            allDomains = Object.values(domainMap);
         }
 
         function updateStats() {
-            const totalDomains = allDomains.length;
-            const totalUsers = allUsers.length;
-            const totalEmails = allUsers.reduce((sum, user) => sum + user.emailCount, 0);
-            const activeDomains = allDomains.filter(d => d.status === 'active').length;
-
-            document.getElementById('totalUsers').textContent = totalUsers;
-            document.getElementById('totalScans').textContent = totalEmails.toLocaleString();
-            document.getElementById('totalEmails').textContent = totalEmails.toLocaleString();
-            document.getElementById('activeDomains').textContent = activeDomains;
-        }
-
-        function renderDomainsTable() {
-            const tbody = document.getElementById('domainsTableBody');
+            // Calculer les statistiques
+            const activeUsers = allUsers.filter(u => 
+                u.license_status === 'active' || u.license_status === 'trial'
+            ).length;
             
-            if (allDomains.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #718096;">Aucun domaine trouvé</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = allDomains.map(domain => `
-                <tr>
-                    <td><span class="domain-badge">${domain.domain}</span></td>
-                    <td><span class="user-count">${domain.userCount} utilisateurs</span></td>
-                    <td><span class="email-count">${domain.emailCount.toLocaleString()} emails</span></td>
-                    <td>${formatDate(domain.lastActivity)}</td>
-                    <td>${domain.admin}</td>
-                    <td><span class="status-badge status-${domain.status}">${domain.status}</span></td>
-                </tr>
-            `).join('');
+            const activeLicenses = allUsers.filter(u => 
+                u.license_status === 'active' || u.license_status === 'trial'
+            ).length;
+            
+            const totalDomains = allDomains.length;
+            
+            const totalEmails = allUsers.reduce((sum, user) => sum + user.emailsScanned, 0);
+            
+            // Mettre à jour l'interface
+            document.getElementById('totalUsers').textContent = activeUsers;
+            document.getElementById('totalLicenses').textContent = activeLicenses;
+            document.getElementById('totalDomains').textContent = totalDomains;
+            document.getElementById('totalEmails').textContent = totalEmails.toLocaleString();
         }
 
         function renderUsersTable() {
@@ -1065,47 +865,73 @@
                 return;
             }
 
-            tbody.innerHTML = allUsers.map(user => `
-                <tr>
-                    <td>${user.email}</td>
-                    <td>${user.name}</td>
-                    <td><span class="domain-badge">${user.domain}</span></td>
-                    <td><span class="email-count">${user.emailCount.toLocaleString()}</span></td>
-                    <td>${user.sessionCount}</td>
-                    <td>${formatDate(user.firstSeen)}</td>
-                    <td>${formatDate(user.lastActivity)}</td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = allUsers.map(user => {
+                const licenseClass = getLicenseClass(user.license_status);
+                const roleDisplay = getRoleDisplay(user.role);
+                
+                return `
+                    <tr>
+                        <td>${user.email}</td>
+                        <td>${user.name || '-'}</td>
+                        <td>${user.company?.name || '-'}</td>
+                        <td>${roleDisplay}</td>
+                        <td><span class="license-badge ${licenseClass}">${user.license_status || 'unknown'}</span></td>
+                        <td>${formatDate(user.last_login_at)}</td>
+                        <td>
+                            ${user.emailsScanned > 0 ? `<span class="email-count">${user.emailsScanned} emails</span>` : '-'}
+                            ${user.sessionsCount > 0 ? `<span class="user-count">${user.sessionsCount} sessions</span>` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
-        // === FILTRES ===
-        function filterDomains() {
-            const searchTerm = document.getElementById('domainSearch').value.toLowerCase();
-            const rows = document.querySelectorAll('#domainsTableBody tr');
+        function renderDomainsTable() {
+            const tbody = document.getElementById('domainsTableBody');
             
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
-            });
-        }
+            if (allDomains.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #718096;">Aucun domaine trouvé</td></tr>';
+                return;
+            }
 
-        function filterUsers() {
-            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
-            const rows = document.querySelectorAll('#usersTableBody tr');
-            
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
-            });
-        }
-
-        function refreshData() {
-            loadDashboardData();
+            tbody.innerHTML = allDomains.map(domain => {
+                const status = domain.activeLicenses > 0 ? 'active' : 'inactive';
+                
+                return `
+                    <tr>
+                        <td><span class="domain-badge">${domain.domain}</span></td>
+                        <td>${domain.companyName}</td>
+                        <td><span class="user-count">${domain.users.length} utilisateurs</span></td>
+                        <td>${domain.adminEmail || '-'}</td>
+                        <td><span class="status-badge status-${status}">${status}</span></td>
+                        <td><span class="license-badge license-active">${domain.activeLicenses}</span></td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         // === UTILITAIRES ===
+        function getLicenseClass(status) {
+            switch (status) {
+                case 'active': return 'license-active';
+                case 'trial': return 'license-trial';
+                case 'expired': return 'license-expired';
+                case 'blocked': return 'license-blocked';
+                default: return 'license-expired';
+            }
+        }
+
+        function getRoleDisplay(role) {
+            switch (role) {
+                case 'super_admin': return '👑 Super Admin';
+                case 'company_admin': return '👔 Admin';
+                case 'user': return '👤 Utilisateur';
+                default: return role || 'Utilisateur';
+            }
+        }
+
         function formatDate(dateString) {
-            if (!dateString) return 'N/A';
+            if (!dateString) return 'Jamais';
             
             const date = new Date(dateString);
             const now = new Date();
@@ -1126,28 +952,29 @@
             }
         }
 
-        // CSS pour les statuts
-        const styles = `
-            .status-badge {
-                padding: 0.25rem 0.75rem;
-                border-radius: 12px;
-                font-size: 0.75rem;
-                font-weight: 600;
-                text-transform: uppercase;
-            }
-            .status-active {
-                background: #dcfce7;
-                color: #16a34a;
-            }
-            .status-inactive {
-                background: #f3f4f6;
-                color: #6b7280;
-            }
-        `;
-        
-        const styleSheet = document.createElement('style');
-        styleSheet.textContent = styles;
-        document.head.appendChild(styleSheet);
+        function filterUsers() {
+            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#usersTableBody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        }
+
+        function filterDomains() {
+            const searchTerm = document.getElementById('domainSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#domainsTableBody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        }
+
+        function refreshData() {
+            loadDashboardData();
+        }
 
         console.log('[Analytics] ✅ Page analytics initialisée');
     </script>
