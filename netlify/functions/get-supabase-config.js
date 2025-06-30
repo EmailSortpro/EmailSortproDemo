@@ -25,26 +25,26 @@ exports.handler = async (event, context) => {
     }
 
     try {
-        // Récupérer les variables d'environnement
-        const supabaseUrl = process.env.SUPABASE_URL;
-        const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+        // Récupérer les variables d'environnement (avec préfixe VITE_)
+        const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+        const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
         // Vérifier que les variables sont définies
         if (!supabaseUrl || !supabaseAnonKey) {
             console.error('[get-supabase-config] Variables manquantes');
-            console.error('SUPABASE_URL définie:', !!supabaseUrl);
-            console.error('SUPABASE_ANON_KEY définie:', !!supabaseAnonKey);
+            console.error('VITE_SUPABASE_URL définie:', !!process.env.VITE_SUPABASE_URL);
+            console.error('VITE_SUPABASE_ANON_KEY définie:', !!process.env.VITE_SUPABASE_ANON_KEY);
             
             return {
                 statusCode: 500,
                 headers,
                 body: JSON.stringify({
                     error: 'Configuration manquante',
-                    message: 'Les variables SUPABASE_URL et SUPABASE_ANON_KEY doivent être définies dans Netlify',
+                    message: 'Les variables VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY doivent être définies dans Netlify',
                     instructions: [
                         '1. Allez dans Netlify Dashboard',
                         '2. Site settings > Environment variables',
-                        '3. Ajoutez SUPABASE_URL et SUPABASE_ANON_KEY',
+                        '3. Les variables doivent être nommées VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY',
                         '4. Redéployez le site'
                     ]
                 })
