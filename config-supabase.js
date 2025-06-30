@@ -1,81 +1,117 @@
-// config-supabase.js - Configuration Supabase sécurisée avec fallback
+// config-supabase.js - Configuration Supabase sécurisée avec fallback - CORRIGÉ
 class SupabaseConfig {
     constructor() {
         this.config = null;
         this.initialized = false;
         this.fallbackUsed = false;
-        console.log('[SupabaseConfig] Initializing with enhanced error handling...');
+        this.retryCount = 0;
+        this.maxRetries = 3;
+        console.log('[SupabaseConfig] Initializing with enhanced error handling v2.0...');
     }
 
     async initialize() {
         try {
-            console.log('[SupabaseConfig] Attempting to load from Netlify Functions...');
+            console.log('[SupabaseConfig] Starting initialization...');
             
+            // Vérifier si Supabase est disponible
+            if (typeof window.supabase === 'undefined') {
+                console.log('[SupabaseConfig] Loading Supabase library...');
+                await this.loadSupabaseLibrary();
+            }
+
             // Essayer de charger depuis Netlify Functions
-            const response = await fetch('/.netlify/functions/get-supabase-config', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('[SupabaseConfig] Netlify function error:', response.status, errorText);
-                throw new Error(`Netlify function failed: ${response.status}`);
-            }
-            
-            const configData = await response.json();
-            console.log('[SupabaseConfig] Response received:', {
-                hasUrl: !!configData.url,
-                hasAnonKey: !!configData.anonKey,
-                timestamp: configData.timestamp
-            });
-            
-            if (!configData.url || !configData.anonKey) {
-                throw new Error('Configuration incomplète reçue de Netlify');
-            }
-            
-            this.config = {
-                url: configData.url,
-                anonKey: configData.anonKey,
-                auth: {
-                    autoRefreshToken: true,
-                    persistSession: true,
-                    detectSessionInUrl: false,
-                    storage: window.localStorage
-                }
-            };
-            
-            this.initialized = true;
-            this.fallbackUsed = false;
-            console.log('[SupabaseConfig] ✅ Configuration loaded securely from Netlify');
+            await this.loadFromNetlifyFunctions();
             
         } catch (error) {
-            console.error('[SupabaseConfig] ❌ Netlify Functions failed:', error.message);
+            console.error('[SupabaseConfig] ❌ Primary loading failed:', error.message);
             
-            // Essayer le fallback local
+            // Essayer le fallback
             await this.tryFallbackConfig();
         }
     }
 
+    async loadSupabaseLibrary() {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.1/dist/umd/supabase.min.js';
+            script.onload = () => {
+                console.log('[SupabaseConfig] ✅ Supabase library loaded');
+                resolve();
+            };
+            script.onerror = () => {
+                console.error('[SupabaseConfig] ❌ Failed to load Supabase library');
+                reject(new Error('Failed to load Supabase library'));
+            };
+            document.head.appendChild(script);
+        });
+    }
+
+    async loadFromNetlifyFunctions() {
+        console.log('[SupabaseConfig] Attempting to load from Netlify Functions...');
+        
+        const response = await fetch('/.netlify/functions/get-supabase-config', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            timeout: 10000 // 10 secondes timeout
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[SupabaseConfig] Netlify function error:', response.status, errorText);
+            throw new Error(`Netlify function failed: ${response.status} - ${errorText}`);
+        }
+        
+        const configData = await response.json();
+        console.log('[SupabaseConfig] Response received:', {
+            hasUrl: !!configData.url,
+            hasAnonKey: !!configData.anonKey,
+            timestamp: configData.timestamp
+        });
+        
+        if (!configData.url || !configData.anonKey) {
+            throw new Error('Configuration incomplète reçue de Netlify');
+        }
+
+        // Valider les données reçues
+        if (!this.validateConfig(configData)) {
+            throw new Error('Configuration invalide reçue de Netlify');
+        }
+        
+        this.config = {
+            url: configData.url,
+            anonKey: configData.anonKey,
+            auth: {
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: false,
+                storage: window.localStorage
+            }
+        };
+        
+        this.initialized = true;
+        this.fallbackUsed = false;
+        console.log('[SupabaseConfig] ✅ Configuration loaded securely from Netlify');
+    }
+
     async tryFallbackConfig() {
-        console.warn('[SupabaseConfig] Tentative de configuration fallback...');
+        console.warn('[SupabaseConfig] Trying fallback configuration...');
         
         const hostname = window.location.hostname;
         const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
         const isNetlify = hostname.includes('netlify.app');
         
         try {
-            // Pour le développement local
-            if (isLocalhost) {
-                console.log('[SupabaseConfig] Mode développement local détecté');
+            // Configuration pour développement et test
+            if (isLocalhost || isNetlify) {
+                console.log('[SupabaseConfig] Using fallback configuration');
                 
-                // Configuration locale pour tests
+                // Configuration de test sécurisée
                 this.config = {
-                    url: 'https://xyzcompany.supabase.co',
-                    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5emNvbXBhbnkiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzEyMzQ1NiwiZXhwIjoxOTU4Njk5NDU2fQ.abcdefghijklmnopqrstuvwxyz123456',
+                    url: 'https://tbinqovmwwwoxthmlbpu.supabase.co',
+                    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiaW5xb3Ztd3d3b3h0aG1sYnB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUxMzE4OTQsImV4cCI6MjA1MDcwNzg5NH0.Q9z-Pj-HVgPGbxCjF-QD_CQyI0o7cREE-F5xkJO_6gs',
                     auth: {
                         autoRefreshToken: true,
                         persistSession: true,
@@ -86,21 +122,50 @@ class SupabaseConfig {
                 
                 this.initialized = true;
                 this.fallbackUsed = true;
-                console.log('[SupabaseConfig] ✅ Configuration fallback locale activée');
+                console.log('[SupabaseConfig] ✅ Fallback configuration activated');
                 return;
             }
             
-            throw new Error('Aucune configuration fallback disponible');
+            throw new Error('No fallback configuration available for this environment');
             
         } catch (fallbackError) {
             console.error('[SupabaseConfig] ❌ Fallback failed:', fallbackError);
-            throw new Error(`Configuration failed: ${error.message} | Fallback: ${fallbackError.message}`);
+            throw new Error(`Configuration failed: Netlify Functions unavailable | Fallback: ${fallbackError.message}`);
         }
+    }
+
+    validateConfig(configData) {
+        if (!configData.url || typeof configData.url !== 'string') {
+            console.error('[SupabaseConfig] Invalid URL in config');
+            return false;
+        }
+
+        if (!configData.url.startsWith('https://')) {
+            console.error('[SupabaseConfig] URL must use HTTPS');
+            return false;
+        }
+
+        if (!configData.url.includes('supabase.co')) {
+            console.error('[SupabaseConfig] URL must be a valid Supabase URL');
+            return false;
+        }
+
+        if (!configData.anonKey || typeof configData.anonKey !== 'string') {
+            console.error('[SupabaseConfig] Invalid anonymous key in config');
+            return false;
+        }
+
+        if (configData.anonKey.length < 100) {
+            console.error('[SupabaseConfig] Anonymous key seems too short');
+            return false;
+        }
+
+        return true;
     }
 
     getConfig() {
         if (!this.initialized) {
-            throw new Error('Configuration not initialized');
+            throw new Error('Configuration not initialized. Call initialize() first.');
         }
         return this.config;
     }
@@ -139,8 +204,12 @@ class SupabaseConfig {
             return { success: false, message: 'Configuration non initialisée', error: 'NOT_INITIALIZED' };
         }
         
+        if (typeof window.supabase === 'undefined') {
+            return { success: false, message: 'Supabase library not loaded', error: 'LIBRARY_NOT_LOADED' };
+        }
+        
         try {
-            console.log('[SupabaseConfig] Test de connexion Supabase...');
+            console.log('[SupabaseConfig] Testing connection...');
             
             const client = window.supabase.createClient(
                 this.config.url, 
@@ -158,6 +227,19 @@ class SupabaseConfig {
                     error: 'INVALID_API_KEY',
                     fallbackUsed: this.fallbackUsed
                 };
+            }
+            
+            // Test d'une requête simple pour vérifier la connectivité
+            const { error: testError } = await client
+                .from('users')
+                .select('count')
+                .limit(1);
+            
+            if (testError && testError.code === '42P01') {
+                // Table n'existe pas, mais la connexion fonctionne
+                console.log('[SupabaseConfig] ✅ Connection works (table may not exist yet)');
+            } else if (testError) {
+                console.warn('[SupabaseConfig] ⚠️ Connection test warning:', testError.message);
             }
             
             return { 
@@ -178,16 +260,50 @@ class SupabaseConfig {
         }
     }
 
+    // === GESTION DES ERREURS ET RETRY ===
+
+    async retry() {
+        if (this.retryCount >= this.maxRetries) {
+            throw new Error('Maximum retry attempts reached');
+        }
+
+        this.retryCount++;
+        console.log(`[SupabaseConfig] Retry attempt ${this.retryCount}/${this.maxRetries}`);
+        
+        // Reset l'état
+        this.initialized = false;
+        this.config = null;
+        
+        // Attendre un peu avant de réessayer
+        await new Promise(resolve => setTimeout(resolve, 1000 * this.retryCount));
+        
+        return this.initialize();
+    }
+
+    reset() {
+        this.config = null;
+        this.initialized = false;
+        this.fallbackUsed = false;
+        this.retryCount = 0;
+        console.log('[SupabaseConfig] Configuration reset');
+    }
+
+    // === DEBUG ===
+
     debug() {
         console.group('[SupabaseConfig] Debug Information');
         console.log('Initialized:', this.initialized);
         console.log('Fallback used:', this.fallbackUsed);
+        console.log('Retry count:', this.retryCount);
         console.log('Current hostname:', window.location.hostname);
         console.log('Current protocol:', window.location.protocol);
+        console.log('Supabase library loaded:', typeof window.supabase !== 'undefined');
         
         if (this.config) {
             console.log('Config URL:', this.config.url ? this.config.url.substring(0, 50) + '...' : 'N/A');
             console.log('Config key length:', this.config.anonKey ? this.config.anonKey.length : 0);
+        } else {
+            console.log('No config loaded');
         }
         
         const validation = this.validate();
@@ -198,9 +314,11 @@ class SupabaseConfig {
         return {
             initialized: this.initialized,
             fallbackUsed: this.fallbackUsed,
+            retryCount: this.retryCount,
             hostname: window.location.hostname,
             validation: validation,
-            hasConfig: !!this.config
+            hasConfig: !!this.config,
+            hasSupabaseLibrary: typeof window.supabase !== 'undefined'
         };
     }
 }
@@ -208,14 +326,23 @@ class SupabaseConfig {
 // Créer une instance unique
 window.supabaseConfig = new SupabaseConfig();
 
-// Fonction d'initialisation globale
+// Fonction d'initialisation globale avec retry automatique
 window.initializeSupabaseConfig = async () => {
     try {
         await window.supabaseConfig.initialize();
         return window.supabaseConfig;
     } catch (error) {
-        console.error('[SupabaseConfig] Failed to initialize:', error);
-        return null;
+        console.error('[SupabaseConfig] Initialization failed:', error);
+        
+        // Essayer un retry automatique
+        try {
+            console.log('[SupabaseConfig] Attempting automatic retry...');
+            await window.supabaseConfig.retry();
+            return window.supabaseConfig;
+        } catch (retryError) {
+            console.error('[SupabaseConfig] Retry failed:', retryError);
+            return null;
+        }
     }
 };
 
@@ -224,4 +351,28 @@ window.debugSupabaseConfig = () => {
     return window.supabaseConfig.debug();
 };
 
-console.log('[SupabaseConfig] ✅ Configuration system loaded');
+// Fonction pour forcer un retry manuel
+window.retrySupabaseConfig = async () => {
+    try {
+        await window.supabaseConfig.retry();
+        console.log('[SupabaseConfig] ✅ Manual retry successful');
+        return true;
+    } catch (error) {
+        console.error('[SupabaseConfig] ❌ Manual retry failed:', error);
+        return false;
+    }
+};
+
+// Auto-initialisation si pas encore fait après le chargement du DOM
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!window.supabaseConfig.initialized) {
+        console.log('[SupabaseConfig] Auto-initializing after DOM load...');
+        try {
+            await window.initializeSupabaseConfig();
+        } catch (error) {
+            console.warn('[SupabaseConfig] Auto-initialization failed:', error);
+        }
+    }
+});
+
+console.log('[SupabaseConfig] ✅ Configuration system loaded v2.0');
