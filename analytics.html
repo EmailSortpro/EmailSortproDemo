@@ -401,7 +401,7 @@
                     <label class="form-label">Email</label>
                     <input type="email" class="form-input" id="loginEmail" required 
                            placeholder="votre-email@domaine.com"
-                           value="vianney.hastings@hotmail.fr">
+                           value="">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Mot de passe (optionnel)</label>
@@ -579,10 +579,14 @@
                     throw new Error('Configuration incomplète reçue de Netlify');
                 }
                 
-                // Initialiser Supabase avec la config
+                // Nettoyer les éventuels espaces ou caractères invisibles
+                const cleanUrl = config.url.trim();
+                const cleanKey = config.anonKey.trim();
+                
+                // Initialiser Supabase avec la config nettoyée
                 supabaseClient = window.supabase.createClient(
-                    config.url,
-                    config.anonKey,
+                    cleanUrl,
+                    cleanKey,
                     {
                         auth: {
                             autoRefreshToken: true,
@@ -593,7 +597,8 @@
                 );
                 
                 console.log('[Analytics] Supabase initialisé avec succès');
-                console.log('[Analytics] URL:', config.url);
+                console.log('[Analytics] URL:', cleanUrl);
+                console.log('[Analytics] Key length:', cleanKey.length);
                 
                 // Tester la connexion
                 const { data, error } = await supabaseClient
