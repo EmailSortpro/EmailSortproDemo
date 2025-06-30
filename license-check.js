@@ -17,6 +17,13 @@ async function checkUserLicense() {
         // Charger les dépendances nécessaires
         await loadDependencies();
 
+        // Initialiser Supabase
+        const config = await window.initializeSupabaseConfig();
+        if (!config) {
+            showLicenseError('Impossible d\'initialiser la configuration');
+            return;
+        }
+
         // Initialiser le service de licence
         const initResult = await window.licenseService.initialize();
         if (!initResult) {
@@ -289,7 +296,7 @@ function showLicenseError(message = 'Accès refusé') {
 
     window.debugConnection = async function() {
         console.log('🔍 Diagnostic de connexion...');
-        const diagResult = await window.diagnoseSupabase();
+        const diagResult = await debugLicenseCheck();
         alert(`Diagnostic:\n${JSON.stringify(diagResult, null, 2)}`);
     };
 }
@@ -344,7 +351,7 @@ function getUserRoleInfo(user) {
             );
             break;
             
-        case 'admin':
+        case 'company_admin':
             permissions.push(
                 'Gestion des utilisateurs de sa société',
                 'Ajout/suppression d\'utilisateurs',
@@ -375,7 +382,7 @@ function getUserRoleInfo(user) {
 function getRoleName(role) {
     switch (role) {
         case 'super_admin': return 'Super Administrateur';
-        case 'admin': return 'Administrateur';
+        case 'company_admin': return 'Administrateur';
         case 'user': return 'Utilisateur';
         default: return 'Utilisateur';
     }
@@ -403,7 +410,7 @@ const authManager = {
     },
     
     isAdmin() {
-        return this.currentUser?.role === 'admin' || this.currentUser?.role === 'super_admin';
+        return this.currentUser?.role === 'company_admin' || this.currentUser?.role === 'super_admin';
     },
     
     isSuperAdmin() {
@@ -526,7 +533,7 @@ console.log(`
 
 🔐 Rôles supportés:
    - super_admin: Accès complet
-   - admin: Gestion de sa société (vianney.hastings@hotmail.fr)
+   - company_admin: Gestion de sa société
    - user: Utilisation normale
 
 💡 Pour déboguer: debugLicenseCheck()
