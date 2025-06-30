@@ -1,5 +1,5 @@
-// app.js - Application EmailSortPro FINAL v5.6
-// Version corrigée sans attente bloquante du LicenseService
+// app.js - Application EmailSortPro CORRIGÉ v5.7
+// Version avec intégration licence obligatoire et gestion d'erreurs améliorée
 
 class App {
     constructor() {
@@ -13,185 +13,52 @@ class App {
         this.currentPage = 'dashboard';
         this.netlifyDomain = 'coruscating-dodol-f30e8d.netlify.app';
         this.isNetlifyEnv = window.location.hostname.includes('netlify.app');
+        this.licenseCheckPassed = false;
         
-        console.log('[App] Constructor - EmailSortPro v5.6 with immediate initialization...');
+        console.log('[App] Constructor - EmailSortPro v5.7 with license integration...');
         console.log('[App] Environment:', this.isNetlifyEnv ? 'Netlify' : 'Local');
         console.log('[App] Domain:', window.location.hostname);
+        
+        // CORRECTION 1: Ne PAS créer le LicenseService ici - laisser license-check.js s'en occuper
+        console.log('[App] Waiting for license verification before initialization...');
         
         // Écouter les événements d'authentification de licence
         this.setupLicenseEventListeners();
         
         // Initialiser Analytics Manager
         this.initializeAnalytics();
-        
-        // Créer immédiatement le LicenseService d'urgence si nécessaire
-        this.ensureLicenseService();
-    }
-
-    // =====================================
-    // CRÉATION IMMÉDIATE DU LICENSESERVICE
-    // =====================================
-    ensureLicenseService() {
-        if (window.licenseService && window.licenseService.initialized) {
-            console.log('[App] LicenseService already available');
-            return;
-        }
-        
-        console.log('[App] Creating immediate LicenseService...');
-        this.createEmergencyLicenseService();
-    }
-
-    createEmergencyLicenseService() {
-        if (window.licenseService) {
-            console.log('[App] LicenseService already exists, skipping emergency creation');
-            return;
-        }
-        
-        console.log('[App] 🚨 Creating emergency LicenseService...');
-        
-        window.licenseService = {
-            initialized: true,
-            isFallback: true,
-            isEmergency: true,
-            currentUser: null,
-            autoAuthInProgress: false,
-            
-            async initialize() {
-                console.log('[EmergencyLicenseService] Initialize called');
-                return true;
-            },
-            
-            async authenticateWithEmail(email) {
-                console.log('[EmergencyLicenseService] Authenticating:', email);
-                
-                const cleanEmail = email.toLowerCase().trim();
-                const domain = cleanEmail.split('@')[1];
-                const name = cleanEmail.split('@')[0];
-                
-                const user = {
-                    id: Date.now(),
-                    email: cleanEmail,
-                    name: name,
-                    role: 'user',
-                    license_status: 'trial',
-                    license_expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-                    company: {
-                        id: Date.now() + 1,
-                        name: domain,
-                        domain: domain
-                    },
-                    company_id: Date.now() + 1,
-                    created_at: new Date().toISOString(),
-                    first_login_at: new Date().toISOString(),
-                    last_login_at: new Date().toISOString()
-                };
-                
-                this.currentUser = user;
-                window.currentUser = user;
-                window.licenseStatus = { 
-                    status: 'trial', 
-                    valid: true, 
-                    daysRemaining: 15,
-                    message: 'Période d\'essai - 15 jours restants (Mode démonstration)'
-                };
-                
-                // Émettre l'événement d'authentification
-                setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('userAuthenticated', {
-                        detail: { 
-                            user: user, 
-                            status: {
-                                valid: true,
-                                status: 'trial',
-                                daysRemaining: 15,
-                                message: 'Période d\'essai - 15 jours restants (Mode démonstration)'
-                            }
-                        }
-                    }));
-                }, 100);
-                
-                console.log('[EmergencyLicenseService] ✅ User authenticated:', cleanEmail);
-                
-                return {
-                    valid: true,
-                    status: 'trial',
-                    user: user,
-                    daysRemaining: 15,
-                    message: 'Période d\'essai - 15 jours restants (Mode démonstration)',
-                    fallback: true
-                };
-            },
-            
-            getCurrentUser() { 
-                return this.currentUser; 
-            },
-            
-            isAdmin() { 
-                return true; 
-            },
-            
-            async logout() { 
-                console.log('[EmergencyLicenseService] Logout called');
-                this.currentUser = null; 
-                window.currentUser = null;
-                window.licenseStatus = null;
-            },
-            
-            async trackAnalyticsEvent(eventType, eventData) {
-                console.log('[EmergencyLicenseService] Analytics event (simulated):', eventType, eventData);
-            },
-            
-            async debug() {
-                return {
-                    initialized: true,
-                    fallbackMode: true,
-                    isEmergency: true,
-                    hasSupabase: false,
-                    currentUser: this.currentUser,
-                    message: 'Service d\'urgence activé - Mode démonstration'
-                };
-            }
-        };
-        
-        // Marquer comme prêt
-        window.licenseServiceReady = true;
-        
-        // Émettre l'événement de disponibilité
-        setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('licenseServiceReady', {
-                detail: { service: window.licenseService }
-            }));
-        }, 50);
-        
-        console.log('[App] ✅ Emergency LicenseService created and ready');
     }
 
     // =====================================
     // ÉCOUTE DES ÉVÉNEMENTS DE LICENCE
     // =====================================
     setupLicenseEventListeners() {
-        // Écouter l'authentification utilisateur
+        // Écouter l'authentification utilisateur RÉUSSIE depuis license-check.js
         window.addEventListener('userAuthenticated', (event) => {
-            console.log('[App] User authenticated via license service:', event.detail);
+            console.log('[App] License verification successful, user authenticated:', event.detail);
             
             const { user, status } = event.detail;
             this.user = user;
             this.isAuthenticated = true;
             this.activeProvider = this.detectProvider();
+            this.licenseCheckPassed = true;
             
-            // Si l'app est en cours d'initialisation, continuer le processus
-            if (this.isInitializing) {
-                console.log('[App] Authentication received during initialization, continuing...');
-            } else {
-                // Si l'app est déjà initialisée, afficher directement l'app
-                console.log('[App] Authentication received, showing app...');
-                this.showAppWithTransition();
-            }
+            // Démarrer l'initialisation de l'app maintenant que la licence est OK
+            console.log('[App] License OK - Starting app initialization...');
+            setTimeout(() => {
+                this.init();
+            }, 500);
+        });
+        
+        // Écouter les événements de licence échouée
+        window.addEventListener('licenseCheckFailed', (event) => {
+            console.error('[App] License check failed:', event.detail);
+            this.showLicenseError(event.detail);
         });
         
         // Écouter la disponibilité du service de licence
         window.addEventListener('licenseServiceReady', (event) => {
-            console.log('[App] License service ready event received');
+            console.log('[App] License service ready');
         });
     }
 
@@ -220,7 +87,14 @@ class App {
     }
 
     async init() {
-        console.log('[App] Initializing application with immediate startup...');
+        console.log('[App] Initializing application...');
+        
+        // CORRECTION 2: Vérifier que la licence a été validée avant de continuer
+        if (!this.licenseCheckPassed) {
+            console.error('[App] ❌ Cannot initialize app without valid license');
+            this.showError('Vérification de licence requise avant l\'initialisation');
+            return;
+        }
         
         if (this.initializationPromise) {
             console.log('[App] Already initializing, waiting...');
@@ -241,13 +115,17 @@ class App {
         this.initializationAttempts++;
         
         try {
+            console.log('[App] Starting app initialization with valid license...');
+            
             // 1. Vérifier les prérequis de base
             if (!this.checkPrerequisites()) {
                 throw new Error('Prerequisites check failed');
             }
 
-            // 2. LicenseService est maintenant toujours disponible (créé dans le constructeur)
-            console.log('[App] LicenseService ready immediately');
+            // 2. Vérifier que le LicenseService est disponible et fonctionnel
+            if (!window.licenseService || !window.licenseService.initialized) {
+                throw new Error('LicenseService not properly initialized');
+            }
 
             // 3. Initialiser les services d'authentification
             console.log('[App] Initializing auth services...');
@@ -399,18 +277,18 @@ class App {
     }
 
     async ensureMailServiceReady() {
-        if (window.mailService && typeof window.mailService.getEmails === 'function') {
+        if (window.mailService && typeof window.mailService.getEmailsFromFolder === 'function') {
             console.log('[App] ✅ MailService ready');
             return true;
         }
         
         let attempts = 0;
-        while ((!window.mailService || typeof window.mailService.getEmails !== 'function') && attempts < 20) {
+        while ((!window.mailService || typeof window.mailService.getEmailsFromFolder !== 'function') && attempts < 20) {
             await new Promise(resolve => setTimeout(resolve, 100));
             attempts++;
         }
         
-        if (window.mailService && typeof window.mailService.getEmails === 'function') {
+        if (window.mailService && typeof window.mailService.getEmailsFromFolder === 'function') {
             console.log('[App] ✅ MailService ready');
             return true;
         } else {
@@ -426,7 +304,7 @@ class App {
         }
         
         const fallbackMethods = {
-            getEmails: async () => [],
+            getEmailsFromFolder: async () => [],
             getFolders: async () => [{ id: 'inbox', displayName: 'Boîte de réception', totalItemCount: 0 }],
             getEmailCount: async () => 0,
             searchEmails: async () => [],
@@ -611,17 +489,6 @@ class App {
                     this.isAuthenticated = true;
                     this.activeProvider = 'microsoft';
                     
-                    // Authentifier avec le système de licence
-                    if (window.licenseService && typeof window.licenseService.authenticateWithEmail === 'function') {
-                        console.log('[App] Authenticating with license service...');
-                        try {
-                            await window.licenseService.authenticateWithEmail(this.user.mail || this.user.email);
-                        } catch (licenseError) {
-                            console.warn('[App] License authentication failed:', licenseError);
-                            // Continuer quand même, le LicenseService gère les fallbacks
-                        }
-                    }
-                    
                     console.log('[App] ✅ Microsoft user authenticated:', this.user.displayName || this.user.mail);
                     this.showAppWithTransition();
                     return;
@@ -642,16 +509,6 @@ class App {
                     this.user.provider = 'google';
                     this.isAuthenticated = true;
                     this.activeProvider = 'google';
-                    
-                    // Authentifier avec le système de licence
-                    if (window.licenseService && typeof window.licenseService.authenticateWithEmail === 'function') {
-                        console.log('[App] Authenticating with license service...');
-                        try {
-                            await window.licenseService.authenticateWithEmail(this.user.email);
-                        } catch (licenseError) {
-                            console.warn('[App] License authentication failed:', licenseError);
-                        }
-                    }
                     
                     console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
                     this.showAppWithTransition();
@@ -689,15 +546,6 @@ class App {
                 this.user.provider = 'google';
                 this.isAuthenticated = true;
                 this.activeProvider = 'google';
-                
-                // Authentifier avec le système de licence
-                if (window.licenseService && typeof window.licenseService.authenticateWithEmail === 'function') {
-                    try {
-                        await window.licenseService.authenticateWithEmail(this.user.email);
-                    } catch (licenseError) {
-                        console.warn('[App] License authentication failed:', licenseError);
-                    }
-                }
                 
                 console.log('[App] ✅ Google callback handled successfully');
                 return true;
@@ -855,6 +703,7 @@ class App {
         this.isInitializing = false;
         this.initializationPromise = null;
         this.currentPage = 'dashboard';
+        this.licenseCheckPassed = false;
         
         // Nettoyer les variables globales
         window.currentUser = null;
@@ -991,15 +840,15 @@ class App {
                 <div class="dashboard-header">
                     <h1><i class="fas fa-tachometer-alt"></i> Tableau de bord EmailSortPro</h1>
                     <p>Bienvenue ${userInfo?.name || userInfo?.displayName || 'Utilisateur'}</p>
-                    ${isEmergencyMode ? `
-                        <div class="demo-badge">
-                            <i class="fas fa-flask"></i>
-                            Mode démonstration - Fonctionnalités complètes
-                        </div>
-                    ` : `
+                    ${!isEmergencyMode ? `
                         <div class="database-badge">
                             <i class="fas fa-database"></i>
                             Mode production - Données persistantes
+                        </div>
+                    ` : `
+                        <div class="demo-badge">
+                            <i class="fas fa-flask"></i>
+                            Mode démonstration - Fonctionnalités complètes
                         </div>
                     `}
                     ${isTrialUser ? `
@@ -1161,6 +1010,33 @@ class App {
         this.hideModernLoading();
     }
 
+    showLicenseError(errorDetail) {
+        console.error('[App] License error:', errorDetail);
+        
+        const loginPage = document.getElementById('loginPage');
+        if (loginPage) {
+            loginPage.innerHTML = `
+                <div class="login-container">
+                    <div style="max-width: 600px; margin: 0 auto; text-align: center; color: #1f2937;">
+                        <div style="font-size: 4rem; margin-bottom: 20px;">
+                            <i class="fas fa-lock" style="color: #ef4444;"></i>
+                        </div>
+                        <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Accès Refusé</h1>
+                        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 30px; border-radius: 20px; margin: 30px 0;">
+                            <p style="font-size: 1.2rem; line-height: 1.6;">${errorDetail.message || 'Licence invalide ou expirée'}</p>
+                        </div>
+                        <button onclick="location.reload()" class="login-button">
+                            <i class="fas fa-refresh"></i> Réessayer
+                        </button>
+                    </div>
+                </div>
+            `;
+            loginPage.style.display = 'flex';
+        }
+        
+        this.hideModernLoading();
+    }
+
     showConfigurationError(issues) {
         console.error('[App] Configuration error:', issues);
         
@@ -1205,7 +1081,8 @@ class App {
                 activeProvider: this.activeProvider,
                 currentPage: this.currentPage,
                 isInitialized: !this.isInitializing,
-                initAttempts: this.initializationAttempts
+                initAttempts: this.initializationAttempts,
+                licenseCheckPassed: this.licenseCheckPassed
             },
             user: this.user ? {
                 name: this.user.displayName || this.user.name,
@@ -1238,7 +1115,7 @@ class App {
     }
 
     testCriticalServices() {
-        console.group('🧪 Test des services critiques v5.6');
+        console.group('🧪 Test des services critiques v5.7');
         
         const tests = [];
         
@@ -1350,53 +1227,41 @@ function checkServicesReady() {
 // =====================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[App] DOM loaded, creating app with immediate initialization...');
+    console.log('[App] DOM loaded, waiting for license verification...');
     
     try {
         document.body.classList.add('login-mode');
         
+        // CORRECTION 3: Créer l'app mais ne pas l'initialiser immédiatement
+        // L'initialisation se fera via l'événement 'userAuthenticated' depuis license-check.js
         window.app = new App();
         
-        const waitForServices = (attempts = 0) => {
-            const maxAttempts = 50;
+        console.log('[App] App instance created, waiting for license check...');
+        
+        // CORRECTION 4: Vérifier périodiquement si license-check.js est chargé
+        let licenseCheckAttempts = 0;
+        const maxLicenseCheckAttempts = 100; // 10 secondes
+        
+        const waitForLicenseCheck = () => {
+            licenseCheckAttempts++;
             
-            try {
-                if (checkServicesReady()) {
-                    console.log('[App] All required services ready, initializing app...');
-                    
-                    setTimeout(() => {
-                        try {
-                            window.app.init();
-                        } catch (initError) {
-                            console.error('[App] Error during app initialization:', initError);
-                            if (window.app) {
-                                window.app.showError('Erreur lors de l\'initialisation: ' + initError.message);
-                            }
-                        }
-                    }, 100);
-                } else if (attempts < maxAttempts) {
-                    console.log(`[App] Waiting for services... (${attempts + 1}/${maxAttempts})`);
-                    setTimeout(() => waitForServices(attempts + 1), 100);
-                } else {
-                    console.warn('[App] Timeout waiting for services, initializing anyway...');
-                    setTimeout(() => {
-                        try {
-                            window.app.init();
-                        } catch (fallbackError) {
-                            console.error('[App] Fallback initialization failed:', fallbackError);
-                            if (window.app) {
-                                window.app.showError('Échec de l\'initialisation: ' + fallbackError.message);
-                            }
-                        }
-                    }, 100);
-                }
-            } catch (serviceCheckError) {
-                console.error('[App] Error checking services:', serviceCheckError);
-                setTimeout(() => waitForServices(attempts + 1), 200);
+            // Vérifier si license-check.js a été chargé (il expose checkUserLicense globalement)
+            if (typeof window.checkUserLicense === 'function') {
+                console.log('[App] license-check.js detected, license verification should start automatically');
+                return;
             }
+            
+            if (licenseCheckAttempts >= maxLicenseCheckAttempts) {
+                console.error('[App] license-check.js not found after 10 seconds');
+                window.app.showError('Système de licence non disponible. Veuillez recharger la page.');
+                return;
+            }
+            
+            setTimeout(waitForLicenseCheck, 100);
         };
         
-        waitForServices();
+        // Démarrer la vérification
+        setTimeout(waitForLicenseCheck, 100);
         
     } catch (domError) {
         console.error('[App] Critical error during DOM initialization:', domError);
@@ -1421,7 +1286,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // DIAGNOSTIC GLOBAL
 // =====================================
 window.diagnoseApp = function() {
-    console.group('🔍 DIAGNOSTIC APPLICATION v5.6 - IMMEDIATE STARTUP');
+    console.group('🔍 DIAGNOSTIC APPLICATION v5.7 - LICENSE INTEGRATION');
     
     try {
         if (window.app) {
@@ -1459,6 +1324,7 @@ window.diagnoseApp = function() {
             console.log('  - window.currentUser:', window.currentUser?.email || 'None');
             console.log('  - window.licenseStatus:', window.licenseStatus || 'None');
             console.log('  - window.licenseServiceReady:', window.licenseServiceReady);
+            console.log('  - window.checkUserLicense:', typeof window.checkUserLicense);
             
             return appDiag;
         } else {
@@ -1473,8 +1339,8 @@ window.diagnoseApp = function() {
     }
 };
 
-console.log('✅ App v5.6 loaded - IMMEDIATE STARTUP + EMERGENCY LICENSESERVICE');
+console.log('✅ App v5.7 loaded - LICENSE INTEGRATION CORRECTED');
 console.log('🔧 Fonctions globales: window.diagnoseApp(), window.testServices(), window.testLicenseDatabase()');
-console.log('🚨 Emergency mode: LicenseService créé immédiatement si fichier manquant');
-console.log('⚡ Startup: Plus d\'attente de 5 secondes - Initialisation immédiate');
-console.log('🧪 Demo mode: Mode démonstration complet avec licence d\'essai de 15 jours');
+console.log('🚨 License Required: App will only initialize after successful license verification');
+console.log('⚡ Flow: license-check.js → userAuthenticated event → app initialization');
+console.log('🧪 License Integration: Mandatory license check before any app functionality');
