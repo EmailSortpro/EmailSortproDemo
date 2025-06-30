@@ -425,6 +425,23 @@
             background: #d97706;
         }
 
+        .user-type-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .type-professional {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .type-personal {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+
         .btn-danger {
             background: #ef4444;
             color: white;
@@ -852,6 +869,9 @@
                             <input type="text" class="search-input" placeholder="Rechercher un utilisateur..." 
                                    id="licenseSearch" onkeyup="filterLicenses()">
                         </div>
+                        <select class="filter-select" id="licenseCompanyFilter" onchange="filterLicenses()">
+                            <option value="">Toutes les sociétés</option>
+                        </select>
                         <select class="filter-select" id="licenseStatusFilter" onchange="filterLicenses()">
                             <option value="">Tous les statuts</option>
                             <option value="active">Actif</option>
@@ -865,6 +885,17 @@
                             <option value="soon">Expire bientôt (7 jours)</option>
                             <option value="month">Expire ce mois</option>
                         </select>
+                        <select class="filter-select" id="userTypeFilter" onchange="filterLicenses()">
+                            <option value="">Tous les types</option>
+                            <option value="professional">Professionnel</option>
+                            <option value="personal">Particulier</option>
+                        </select>
+                        <select class="filter-select" id="sortFilter" onchange="sortLicenses()">
+                            <option value="name">Trier par nom</option>
+                            <option value="company">Trier par société</option>
+                            <option value="expiry">Trier par expiration</option>
+                            <option value="status">Trier par statut</option>
+                        </select>
                     </div>
                     
                     <div class="table-container">
@@ -872,6 +903,7 @@
                             <thead>
                                 <tr>
                                     <th>Utilisateur</th>
+                                    <th>Type</th>
                                     <th>Société</th>
                                     <th>Statut Licence</th>
                                     <th>Date Début</th>
@@ -881,7 +913,7 @@
                                 </tr>
                             </thead>
                             <tbody id="licensesTableBody">
-                                <tr><td colspan="7" style="text-align: center;">Chargement...</td></tr>
+                                <tr><td colspan="8" style="text-align: center;">Chargement...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1014,6 +1046,13 @@
         // Constants
         const MONTHLY_PRICE = 9.90; // €9.90 HT par mois
         const TRIAL_DAYS = 15; // 15 jours d'essai gratuit
+        
+        // Domaines considérés comme personnels
+        const PERSONAL_DOMAINS = [
+            'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com',
+            'icloud.com', 'protonmail.com', 'aol.com', 'msn.com', 'free.fr',
+            'orange.fr', 'wanadoo.fr', 'laposte.net', 'sfr.fr', 'bbox.fr'
+        ];
 
         // === INITIALISATION ===
         document.addEventListener('DOMContentLoaded', async () => {
@@ -1375,7 +1414,8 @@
                     licenseStartDate,
                     licenseEndDate,
                     daysUntilExpiry,
-                    scanFrequency: getScanFrequency(avgScansPerDay)
+                    scanFrequency: getScanFrequency(avgScansPerDay),
+                    userType: getUserType(user.email, user.company)
                 };
             });
             
@@ -1412,6 +1452,23 @@
             });
             
             allDomains = Object.values(domainMap);
+        }
+
+        function getUserType(email, company) {
+            const domain = email.split('@')[1].toLowerCase();
+            
+            // Si l'utilisateur a une société définie et ce n'est pas un domaine personnel
+            if (company && company.name && !PERSONAL_DOMAINS.includes(domain)) {
+                return 'professional';
+            }
+            
+            // Si c'est un domaine personnel connu
+            if (PERSONAL_DOMAINS.includes(domain)) {
+                return 'personal';
+            }
+            
+            // Par défaut, considérer comme professionnel si ce n'est pas un domaine personnel connu
+            return 'professional';
         }
 
         function getScanFrequency(avgScansPerDay) {
@@ -1464,8 +1521,18 @@
             if (companyFilter) {
                 const companies = [...new Set(allUsers.map(u => u.company?.name || 'Sans société').filter(Boolean))];
                 companyFilter.innerHTML = '<option value="">Toutes les sociétés</option>';
-                companies.forEach(company => {
+                companies.sort().forEach(company => {
                     companyFilter.innerHTML += `<option value="${company}">${company}</option>`;
+                });
+            }
+            
+            // Peupler le filtre des sociétés dans l'onglet licences
+            const licenseCompanyFilter = document.getElementById('licenseCompanyFilter');
+            if (licenseCompanyFilter) {
+                const companies = [...new Set(allUsers.map(u => u.company?.name || 'Sans société').filter(Boolean))];
+                licenseCompanyFilter.innerHTML = '<option value="">Toutes les sociétés</option>';
+                companies.sort().forEach(company => {
+                    licenseCompanyFilter.innerHTML += `<option value="${company}">${company}</option>`;
                 });
             }
         }
@@ -1533,29 +1600,39 @@
             const tbody = document.getElementById('licensesTableBody');
             
             if (allUsers.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #718096;">Aucun utilisateur trouvé</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #718096;">Aucun utilisateur trouvé</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = allUsers.map(user => {
+            // Tri par défaut par nom
+            const sortedUsers = [...allUsers].sort((a, b) => {
+                const nameA = (a.name || a.email).toLowerCase();
+                const nameB = (b.name || b.email).toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+
+            tbody.innerHTML = sortedUsers.map(user => {
                 const licenseClass = getLicenseClass(user.license_status);
                 const daysClass = user.daysUntilExpiry < 0 ? 'expired' : 
                                  user.daysUntilExpiry < 7 ? 'warning' : 'success';
+                const userTypeClass = user.userType === 'professional' ? 'type-professional' : 'type-personal';
+                const userTypeLabel = user.userType === 'professional' ? '🏢 Pro' : '👤 Particulier';
                 
                 return `
-                    <tr>
+                    <tr data-user-id="${user.id}">
                         <td>
                             <strong>${user.name || user.email}</strong><br>
                             <small style="color: #6b7280;">${user.email}</small>
                         </td>
+                        <td><span class="user-type-badge ${userTypeClass}">${userTypeLabel}</span></td>
                         <td>${user.company?.name || '-'}</td>
                         <td><span class="license-badge ${licenseClass}">${user.license_status || 'unknown'}</span></td>
-                        <td>${formatDate(user.licenseStartDate)}</td>
+                        <td>${formatDateOnly(user.licenseStartDate)}</td>
                         <td>
                             ${canEditUser(user) ? 
                                 `<input type="date" class="inline-edit" value="${user.licenseEndDate.toISOString().split('T')[0]}" 
                                         onchange="updateLicenseEndDate('${user.id}', this.value)">` :
-                                formatDate(user.licenseEndDate)
+                                formatDateOnly(user.licenseEndDate)
                             }
                         </td>
                         <td>
@@ -1569,8 +1646,9 @@
                         <td>
                             ${canEditUser(user) ? `
                                 <div class="edit-actions">
-                                    <button class="btn-success" onclick="extendLicense('${user.id}', 30)">+30j</button>
-                                    <button class="btn-warning" onclick="openLicenseModal('${user.id}')">Modifier</button>
+                                    <button class="btn-success" onclick="extendLicense('${user.id}', 30)" title="Prolonger 30 jours">+30j</button>
+                                    <button class="btn-warning" onclick="openLicenseModal('${user.id}')" title="Modifier licence">✏️</button>
+                                    <button class="btn-danger" onclick="confirmDeleteUser('${user.id}')" title="Supprimer utilisateur">🗑️</button>
                                 </div>
                             ` : '-'}
                         </td>
@@ -1708,6 +1786,12 @@
             }
         }
 
+        function formatDateOnly(dateString) {
+            if (!dateString) return 'Jamais';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fr-FR');
+        }
+
         // === FONCTIONS DE FILTRAGE ===
         function filterCompanies() {
             const searchTerm = document.getElementById('companySearch').value.toLowerCase();
@@ -1741,18 +1825,29 @@
 
         function filterLicenses() {
             const searchTerm = document.getElementById('licenseSearch').value.toLowerCase();
+            const companyFilter = document.getElementById('licenseCompanyFilter').value;
             const statusFilter = document.getElementById('licenseStatusFilter').value;
             const expiryFilter = document.getElementById('expiryFilter').value;
+            const userTypeFilter = document.getElementById('userTypeFilter').value;
             const rows = document.querySelectorAll('#licensesTableBody tr');
             
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
                 const matchesSearch = text.includes(searchTerm);
+                const matchesCompany = !companyFilter || text.includes(companyFilter.toLowerCase());
                 const matchesStatus = !statusFilter || text.includes(statusFilter);
+                
+                // Filtrer par type d'utilisateur
+                let matchesUserType = true;
+                if (userTypeFilter) {
+                    const userTypeLabel = userTypeFilter === 'professional' ? 'pro' : 'particulier';
+                    matchesUserType = text.includes(userTypeLabel);
+                }
                 
                 let matchesExpiry = true;
                 if (expiryFilter) {
-                    const user = allUsers.find(u => text.includes(u.email.toLowerCase()));
+                    const userId = row.getAttribute('data-user-id');
+                    const user = allUsers.find(u => u.id === userId);
                     if (user) {
                         switch(expiryFilter) {
                             case 'expired':
@@ -1768,8 +1863,49 @@
                     }
                 }
                 
-                row.style.display = matchesSearch && matchesStatus && matchesExpiry ? '' : 'none';
+                row.style.display = matchesSearch && matchesCompany && matchesStatus && matchesExpiry && matchesUserType ? '' : 'none';
             });
+        }
+
+        function sortLicenses() {
+            const sortBy = document.getElementById('sortFilter').value;
+            const tbody = document.getElementById('licensesTableBody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            rows.sort((a, b) => {
+                const userIdA = a.getAttribute('data-user-id');
+                const userIdB = b.getAttribute('data-user-id');
+                const userA = allUsers.find(u => u.id === userIdA);
+                const userB = allUsers.find(u => u.id === userIdB);
+                
+                if (!userA || !userB) return 0;
+                
+                switch(sortBy) {
+                    case 'name':
+                        const nameA = (userA.name || userA.email).toLowerCase();
+                        const nameB = (userB.name || userB.email).toLowerCase();
+                        return nameA.localeCompare(nameB);
+                    
+                    case 'company':
+                        const companyA = (userA.company?.name || 'zzz').toLowerCase();
+                        const companyB = (userB.company?.name || 'zzz').toLowerCase();
+                        return companyA.localeCompare(companyB);
+                    
+                    case 'expiry':
+                        return userA.daysUntilExpiry - userB.daysUntilExpiry;
+                    
+                    case 'status':
+                        const statusA = userA.license_status || 'zzz';
+                        const statusB = userB.license_status || 'zzz';
+                        return statusA.localeCompare(statusB);
+                    
+                    default:
+                        return 0;
+                }
+            });
+            
+            // Réorganiser les lignes
+            rows.forEach(row => tbody.appendChild(row));
         }
 
         function filterPayments() {
@@ -1786,7 +1922,62 @@
             });
         }
 
-        // === GESTION DES LICENCES ===
+        // === GESTION DES UTILISATEURS ===
+        async function confirmDeleteUser(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user || !canEditUser(user)) {
+                showAlert('Vous n\'avez pas les droits pour supprimer cet utilisateur', 'error');
+                return;
+            }
+
+            const confirmMessage = `Êtes-vous sûr de vouloir supprimer définitivement l'utilisateur ?\n\n` +
+                                  `Email: ${user.email}\n` +
+                                  `Nom: ${user.name || 'Non défini'}\n` +
+                                  `Société: ${user.company?.name || 'Aucune'}\n\n` +
+                                  `⚠️ Cette action est irréversible !`;
+
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            await deleteUser(userId);
+        }
+
+        async function deleteUser(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user || !canEditUser(user)) {
+                showAlert('Vous n\'avez pas les droits pour supprimer cet utilisateur', 'error');
+                return;
+            }
+
+            try {
+                // Supprimer d'abord les événements analytics liés à l'utilisateur
+                const { error: eventsError } = await supabaseClient
+                    .from('analytics_events')
+                    .delete()
+                    .eq('user_email', user.email);
+
+                if (eventsError) {
+                    console.warn('[Delete] Erreur suppression événements:', eventsError);
+                    // On continue malgré l'erreur pour les événements
+                }
+
+                // Supprimer l'utilisateur
+                const { error: userError } = await supabaseClient
+                    .from('users')
+                    .delete()
+                    .eq('id', userId);
+
+                if (userError) throw userError;
+
+                showAlert(`Utilisateur ${user.email} supprimé avec succès`, 'success');
+                await loadDashboardData();
+                
+            } catch (error) {
+                console.error('[Delete] Erreur suppression utilisateur:', error);
+                showAlert('Erreur lors de la suppression: ' + error.message, 'error');
+            }
+        }
         async function updateLicenseEndDate(userId, newEndDate) {
             if (!canEditUser(allUsers.find(u => u.id === userId))) {
                 showAlert('Vous n\'avez pas les droits pour modifier cette licence', 'error');
