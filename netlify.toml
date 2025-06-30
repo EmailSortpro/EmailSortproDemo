@@ -9,7 +9,7 @@
   node_bundler = "esbuild"
   
 [build.environment]
-  # Variables d'environnement pour le build (si nécessaire)
+  # Variables d'environnement pour le build
   NODE_VERSION = "18"
 
 # Redirections pour SPA
@@ -23,6 +23,12 @@
   # Redirection pour analytics.html
   from = "/analytics"
   to = "/analytics.html"
+  status = 200
+
+[[redirects]]
+  # Redirection pour les fonctions Netlify
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
   status = 200
 
 [[redirects]]
@@ -51,4 +57,3 @@
 # SUPABASE_URL=https://votre-projet.supabase.co
 # SUPABASE_ANON_KEY=votre-cle-anonyme
 # SUPABASE_SERVICE_ROLE_KEY=votre-cle-service
-# JWT_SECRET=votre-secret-jwt-super-secure
