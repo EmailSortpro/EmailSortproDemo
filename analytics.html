@@ -1519,7 +1519,7 @@
             // Peupler le filtre des sociétés dans l'onglet activité
             const companyFilter = document.getElementById('companyFilter');
             if (companyFilter) {
-                const companies = [...new Set(allUsers.map(u => u.company?.name || 'Sans société').filter(Boolean))];
+                const companies = [...new Set(allUsers.map(u => u.company?.name || 'Sans société'))];
                 companyFilter.innerHTML = '<option value="">Toutes les sociétés</option>';
                 companies.sort().forEach(company => {
                     companyFilter.innerHTML += `<option value="${company}">${company}</option>`;
@@ -1529,7 +1529,7 @@
             // Peupler le filtre des sociétés dans l'onglet licences
             const licenseCompanyFilter = document.getElementById('licenseCompanyFilter');
             if (licenseCompanyFilter) {
-                const companies = [...new Set(allUsers.map(u => u.company?.name || 'Sans société').filter(Boolean))];
+                const companies = [...new Set(allUsers.map(u => u.company?.name || 'Sans société'))];
                 licenseCompanyFilter.innerHTML = '<option value="">Toutes les sociétés</option>';
                 companies.sort().forEach(company => {
                     licenseCompanyFilter.innerHTML += `<option value="${company}">${company}</option>`;
@@ -1577,14 +1577,17 @@
                 const licenseClass = getLicenseClass(user.license_status);
                 const frequencyClass = getFrequencyClass(user.scanFrequency);
                 const frequencyLabel = getFrequencyLabel(user.scanFrequency);
+                const userTypeClass = user.userType === 'professional' ? 'type-professional' : 'type-personal';
+                const userTypeLabel = user.userType === 'professional' ? '🏢 Pro' : '👤 Particulier';
                 
                 return `
-                    <tr>
+                    <tr data-company="${user.company?.name || 'Sans société'}" data-user-type="${user.userType}">
                         <td>
                             <strong>${user.name || user.email}</strong><br>
-                            <small style="color: #6b7280;">${user.email}</small>
+                            <small style="color: #6b7280;">${user.email}</small><br>
+                            <span class="user-type-badge ${userTypeClass}">${userTypeLabel}</span>
                         </td>
-                        <td>${user.company?.name || '-'}</td>
+                        <td>${user.company?.name || 'Sans société'}</td>
                         <td><span class="email-count">${user.emailsScanned.toLocaleString()}</span></td>
                         <td>${user.avgScansPerDay.toFixed(1)}</td>
                         <td><span class="frequency-badge ${frequencyClass}">${frequencyLabel}</span></td>
@@ -1619,13 +1622,13 @@
                 const userTypeLabel = user.userType === 'professional' ? '🏢 Pro' : '👤 Particulier';
                 
                 return `
-                    <tr data-user-id="${user.id}">
+                    <tr data-user-id="${user.id}" data-company="${user.company?.name || 'Sans société'}" data-user-type="${user.userType}" data-status="${user.license_status}">
                         <td>
                             <strong>${user.name || user.email}</strong><br>
                             <small style="color: #6b7280;">${user.email}</small>
                         </td>
                         <td><span class="user-type-badge ${userTypeClass}">${userTypeLabel}</span></td>
-                        <td>${user.company?.name || '-'}</td>
+                        <td>${user.company?.name || 'Sans société'}</td>
                         <td><span class="license-badge ${licenseClass}">${user.license_status || 'unknown'}</span></td>
                         <td>${formatDateOnly(user.licenseStartDate)}</td>
                         <td>
@@ -1815,9 +1818,12 @@
             
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
+                const rowCompany = row.getAttribute('data-company');
+                const rowUserType = row.getAttribute('data-user-type');
+                
                 const matchesSearch = text.includes(searchTerm);
                 const matchesFrequency = !frequencyFilter || text.includes(getFrequencyLabel(frequencyFilter).toLowerCase());
-                const matchesCompany = !companyFilter || text.includes(companyFilter.toLowerCase());
+                const matchesCompany = !companyFilter || rowCompany === companyFilter;
                 
                 row.style.display = matchesSearch && matchesFrequency && matchesCompany ? '' : 'none';
             });
@@ -1833,16 +1839,14 @@
             
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
-                const matchesSearch = text.includes(searchTerm);
-                const matchesCompany = !companyFilter || text.includes(companyFilter.toLowerCase());
-                const matchesStatus = !statusFilter || text.includes(statusFilter);
+                const rowCompany = row.getAttribute('data-company');
+                const rowUserType = row.getAttribute('data-user-type');
+                const rowStatus = row.getAttribute('data-status');
                 
-                // Filtrer par type d'utilisateur
-                let matchesUserType = true;
-                if (userTypeFilter) {
-                    const userTypeLabel = userTypeFilter === 'professional' ? 'pro' : 'particulier';
-                    matchesUserType = text.includes(userTypeLabel);
-                }
+                const matchesSearch = text.includes(searchTerm);
+                const matchesCompany = !companyFilter || rowCompany === companyFilter;
+                const matchesStatus = !statusFilter || rowStatus === statusFilter;
+                const matchesUserType = !userTypeFilter || rowUserType === userTypeFilter;
                 
                 let matchesExpiry = true;
                 if (expiryFilter) {
