@@ -1634,7 +1634,8 @@
                         <td>
                             ${canEditUser(user) ? 
                                 `<input type="date" class="inline-edit" value="${user.licenseEndDate.toISOString().split('T')[0]}" 
-                                        onchange="updateLicenseEndDate('${user.id}', this.value)">` :
+                                        onchange="updateLicenseEndDate('${user.id}', this.value)"
+                                        min="2020-01-01" max="2030-12-31">` :
                                 formatDateOnly(user.licenseEndDate)
                             }
                         </td>
@@ -1988,23 +1989,55 @@
                 return;
             }
 
+            if (!newEndDate) {
+                showAlert('Date invalide', 'error');
+                return;
+            }
+
             try {
+                console.log(`[License] Mise à jour date expiration pour ${userId}: ${newEndDate}`);
+                
+                // Convertir la date en ISO string pour Supabase
+                const endDate = new Date(newEndDate);
+                if (isNaN(endDate.getTime())) {
+                    throw new Error('Format de date invalide');
+                }
+                
+                // Ajuster pour éviter les problèmes de timezone
+                endDate.setHours(23, 59, 59, 999);
+                const isoDate = endDate.toISOString();
+
                 const { error } = await supabaseClient
                     .from('users')
                     .update({ 
-                        license_end_date: newEndDate,
+                        license_end_date: isoDate,
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', userId);
 
-                if (error) throw error;
+                if (error) {
+                    console.error('[License] Erreur Supabase:', error);
+                    throw error;
+                }
 
+                console.log('[License] ✅ Date mise à jour avec succès');
                 showAlert('Date d\'expiration mise à jour avec succès', 'success');
+                
+                // Recharger les données pour refléter les changements
                 await loadDashboardData();
                 
             } catch (error) {
                 console.error('[License] Erreur mise à jour:', error);
                 showAlert('Erreur lors de la mise à jour: ' + error.message, 'error');
+                
+                // Restaurer la valeur précédente en cas d'erreur
+                const user = allUsers.find(u => u.id === userId);
+                if (user) {
+                    const input = document.querySelector(`input[onchange*="${userId}"]`);
+                    if (input) {
+                        input.value = user.licenseEndDate.toISOString().split('T')[0];
+                    }
+                }
             }
         }
 
@@ -2065,13 +2098,15 @@
                 <div class="form-group">
                     <label class="form-label">Date de début</label>
                     <input type="date" class="form-input" id="licenseStartDate" 
-                           value="${user.licenseStartDate.toISOString().split('T')[0]}">
+                           value="${user.licenseStartDate.toISOString().split('T')[0]}"
+                           min="2020-01-01" max="2030-12-31">
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">Date d'expiration</label>
                     <input type="date" class="form-input" id="licenseEndDate" 
-                           value="${user.licenseEndDate.toISOString().split('T')[0]}">
+                           value="${user.licenseEndDate.toISOString().split('T')[0]}"
+                           min="2020-01-01" max="2030-12-31">
                 </div>
                 
                 <div class="trial-info">
@@ -2108,18 +2143,45 @@
                 const startDate = document.getElementById('licenseStartDate').value;
                 const endDate = document.getElementById('licenseEndDate').value;
 
+                if (!status || !startDate || !endDate) {
+                    showAlert('Tous les champs sont requis', 'error');
+                    return;
+                }
+
+                console.log(`[License] Sauvegarde pour ${userId}:`, { status, startDate, endDate });
+
+                // Convertir les dates en ISO strings avec gestion timezone
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                
+                if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                    throw new Error('Format de date invalide');
+                }
+
+                if (end <= start) {
+                    throw new Error('La date d\'expiration doit être postérieure à la date de début');
+                }
+
+                // Ajuster les heures pour éviter les problèmes de timezone
+                start.setHours(0, 0, 0, 0);
+                end.setHours(23, 59, 59, 999);
+
                 const { error } = await supabaseClient
                     .from('users')
                     .update({ 
                         license_status: status,
-                        license_start_date: startDate,
-                        license_end_date: endDate,
+                        license_start_date: start.toISOString(),
+                        license_end_date: end.toISOString(),
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', userId);
 
-                if (error) throw error;
+                if (error) {
+                    console.error('[License] Erreur Supabase:', error);
+                    throw error;
+                }
 
+                console.log('[License] ✅ Licence sauvegardée avec succès');
                 showAlert('Licence mise à jour avec succès', 'success');
                 closeLicenseModal();
                 await loadDashboardData();
