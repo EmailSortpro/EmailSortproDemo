@@ -1,5 +1,5 @@
-// app.js - Application EmailSortPro avec intégration Analytics complète v4.2
-// Tracking des emails en clair et filtrage par domaine
+// app.js - Application EmailSortPro avec intégration Analytics et License - CORRIGÉ
+// Version corrigée avec gestion d'erreurs améliorée et système de licence
 
 class App {
     constructor() {
@@ -13,8 +13,9 @@ class App {
         this.currentPage = 'dashboard';
         this.netlifyDomain = 'coruscating-dodol-f30e8d.netlify.app';
         this.isNetlifyEnv = window.location.hostname.includes('netlify.app');
+        this.licenseCheckPending = false;
         
-        console.log('[App] Constructor - EmailSortPro v4.2 with analytics email tracking...');
+        console.log('[App] Constructor - EmailSortPro v5.1 with license verification...');
         console.log('[App] Environment:', this.isNetlifyEnv ? 'Netlify' : 'Local');
         console.log('[App] Domain:', window.location.hostname);
         
@@ -56,7 +57,7 @@ class App {
     }
 
     async init() {
-        console.log('[App] Initializing dual provider application...');
+        console.log('[App] Initializing dual provider application with license check...');
         
         if (this.initializationPromise) {
             console.log('[App] Already initializing, waiting...');
@@ -77,9 +78,15 @@ class App {
         this.initializationAttempts++;
         
         try {
+            // Vérifier les prérequis
             if (!this.checkPrerequisites()) {
-                return;
+                throw new Error('Prerequisites check failed');
             }
+
+            console.log('[App] Checking license status...');
+            
+            // Attendre que la vérification de licence soit terminée
+            await this.waitForLicenseCheck();
 
             console.log('[App] Initializing auth services...');
             
@@ -136,6 +143,59 @@ class App {
     }
 
     // =====================================
+    // GESTION DE LA VÉRIFICATION DE LICENCE
+    // =====================================
+    async waitForLicenseCheck() {
+        console.log('[App] Waiting for license check completion...');
+        
+        // Attendre que la vérification de licence soit terminée
+        let attempts = 0;
+        const maxAttempts = 100; // 10 secondes max
+        
+        while (attempts < maxAttempts) {
+            // Vérifier si l'utilisateur est authentifié via le système de licence
+            if (window.currentUser && window.licenseStatus) {
+                console.log('[App] ✅ License check completed successfully');
+                this.user = window.currentUser;
+                this.isAuthenticated = true;
+                this.activeProvider = this.detectProvider();
+                return;
+            }
+            
+            // Vérifier si la vérification de licence est en cours
+            if (window.isCheckingLicense) {
+                console.log('[App] License check in progress...');
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        // Si aucune licence trouvée après le délai, vérifier s'il y a une erreur
+        if (!window.currentUser) {
+            console.warn('[App] No license found after waiting - user may need to authenticate');
+            // Ne pas bloquer l'initialisation, laisser le système d'auth prendre le relais
+        }
+    }
+
+    detectProvider() {
+        if (this.user?.provider) {
+            return this.user.provider;
+        }
+        
+        // Détecter le provider basé sur l'email
+        const email = this.user?.email || this.user?.mail || '';
+        if (email.includes('@outlook.com') || email.includes('@hotmail.') || email.includes('@live.com')) {
+            return 'microsoft';
+        }
+        if (email.includes('@gmail.com') || email.includes('@googlemail.com')) {
+            return 'google';
+        }
+        
+        return 'microsoft'; // Par défaut
+    }
+
+    // =====================================
     // INITIALISATION DES MODULES CRITIQUES AVEC VERIFICATION ROBUSTE
     // =====================================
     async initializeCriticalModules() {
@@ -167,255 +227,6 @@ class App {
         
         console.log('[App] Critical modules initialized');
     }
-
-    // [Le reste des méthodes reste identique jusqu'à checkAuthenticationStatus]
-
-    // =====================================
-    // VÉRIFICATION DE L'AUTHENTIFICATION AVEC ANALYTICS
-    // =====================================
-    async checkAuthenticationStatus() {
-        console.log('[App] Checking authentication status for both providers...');
-        
-        // Vérifier d'abord s'il y a un callback Google à traiter
-        const googleCallbackHandled = await this.handleGoogleCallback();
-        if (googleCallbackHandled) {
-            this.showAppWithTransition();
-            return;
-        }
-        
-        // Vérifier Microsoft d'abord
-        if (window.authService && window.authService.isAuthenticated()) {
-            const account = window.authService.getAccount();
-            if (account) {
-                console.log('[App] Microsoft authentication found, getting user info...');
-                try {
-                    this.user = await window.authService.getUserInfo();
-                    this.user.provider = 'microsoft';
-                    this.isAuthenticated = true;
-                    this.activeProvider = 'microsoft';
-                    
-                    // ANALYTICS: Track authentication avec email en clair
-                    this.trackUserAuthentication(this.user);
-                    
-                    console.log('[App] ✅ Microsoft user authenticated:', this.user.displayName || this.user.mail);
-                    this.showAppWithTransition();
-                    return;
-                } catch (userInfoError) {
-                    console.error('[App] Error getting Microsoft user info:', userInfoError);
-                    if (userInfoError.message.includes('401') || userInfoError.message.includes('403')) {
-                        console.log('[App] Microsoft token seems invalid, clearing auth');
-                        await window.authService.reset();
-                    }
-                }
-            }
-        }
-        
-        // Vérifier Google ensuite
-        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
-            const account = window.googleAuthService.getAccount();
-            if (account) {
-                console.log('[App] Google authentication found, getting user info...');
-                try {
-                    this.user = await window.googleAuthService.getUserInfo();
-                    this.user.provider = 'google';
-                    this.isAuthenticated = true;
-                    this.activeProvider = 'google';
-                    
-                    // ANALYTICS: Track authentication avec email en clair
-                    this.trackUserAuthentication(this.user);
-                    
-                    console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
-                    this.showAppWithTransition();
-                    return;
-                } catch (userInfoError) {
-                    console.error('[App] Error getting Google user info:', userInfoError);
-                    await window.googleAuthService.reset();
-                }
-            }
-        }
-        
-        // Aucune authentification trouvée
-        console.log('[App] No valid authentication found');
-        this.showLogin();
-    }
-
-    // =====================================
-    // TRACKING ANALYTICS AVEC EMAIL EN CLAIR
-    // =====================================
-    trackUserAuthentication(user) {
-        console.log('[App] Tracking user authentication for analytics...');
-        
-        if (!window.analyticsManager || typeof window.analyticsManager.trackAuthentication !== 'function') {
-            console.warn('[App] Analytics manager not available for authentication tracking');
-            return;
-        }
-        
-        try {
-            // Préparer les données utilisateur avec email en clair
-            const userInfo = {
-                displayName: user.displayName || user.name || 'Utilisateur',
-                mail: user.mail || user.email || user.userPrincipalName,
-                userPrincipalName: user.userPrincipalName || user.email,
-                email: user.email || user.mail || user.userPrincipalName, // Email explicite
-                provider: user.provider || 'unknown',
-                // Données supplémentaires si disponibles
-                homeAccountId: user.homeAccountId,
-                localAccountId: user.localAccountId,
-                tenantId: user.tenantId
-            };
-            
-            console.log('[App] ✅ Tracking authentication with email:', {
-                email: userInfo.email,
-                name: userInfo.displayName,
-                provider: userInfo.provider
-            });
-            
-            // Appeler la méthode de tracking
-            window.analyticsManager.trackAuthentication(userInfo.provider, userInfo);
-            
-            console.log('[App] ✅ Authentication tracked successfully in analytics');
-            
-        } catch (error) {
-            console.warn('[App] Error tracking authentication:', error);
-        }
-    }
-
-    // =====================================
-    // TRACKING D'ÉVÉNEMENTS ANALYTICS
-    // =====================================
-    trackEvent(eventType, eventData = {}) {
-        if (!window.analyticsManager || typeof window.analyticsManager.trackEvent !== 'function') {
-            return;
-        }
-        
-        try {
-            // Ajouter automatiquement les infos utilisateur si disponibles
-            const enrichedData = {
-                ...eventData,
-                userEmail: this.user?.email || this.user?.mail || 'anonymous',
-                userName: this.user?.displayName || this.user?.name || 'Anonymous',
-                provider: this.activeProvider || 'unknown'
-            };
-            
-            window.analyticsManager.trackEvent(eventType, enrichedData);
-            console.log('[App] ✅ Event tracked:', eventType, enrichedData);
-        } catch (error) {
-            console.warn('[App] Error tracking event:', error);
-        }
-    }
-
-    trackPageChange(pageName) {
-        this.trackEvent('page_change', {
-            page: pageName,
-            previousPage: this.currentPage
-        });
-    }
-
-    trackError(errorType, errorData) {
-        if (!window.analyticsManager || typeof window.analyticsManager.onError !== 'function') {
-            return;
-        }
-        
-        try {
-            window.analyticsManager.onError(errorType, {
-                ...errorData,
-                userEmail: this.user?.email || this.user?.mail || 'anonymous',
-                provider: this.activeProvider || 'unknown'
-            });
-            console.log('[App] ✅ Error tracked:', errorType, errorData);
-        } catch (error) {
-            console.warn('[App] Error tracking error:', error);
-        }
-    }
-
-    // [Les autres méthodes restent identiques...]
-
-    async ensureMailServiceReady() {
-        console.log('[App] Ensuring MailService is ready...');
-        
-        if (window.mailService && typeof window.mailService.getEmails === 'function') {
-            console.log('[App] ✅ MailService already ready');
-            return true;
-        }
-        
-        // Attendre le chargement du service
-        let attempts = 0;
-        const maxAttempts = 30;
-        
-        while ((!window.mailService || typeof window.mailService.getEmails !== 'function') && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.mailService || typeof window.mailService.getEmails !== 'function') {
-            console.warn('[App] MailService not ready, creating fallback...');
-            this.createMailServiceFallback();
-            return false;
-        }
-        
-        console.log('[App] ✅ MailService ready');
-        return true;
-    }
-
-    createMailServiceFallback() {
-        console.log('[App] Creating MailService fallback...');
-        
-        if (!window.mailService) {
-            window.mailService = {};
-        }
-        
-        // Créer des méthodes fallback sécurisées
-        const fallbackMethods = {
-            getEmails: async () => {
-                console.warn('[MailService] Fallback: getEmails called - returning empty array');
-                return [];
-            },
-            
-            getFolders: async () => {
-                console.warn('[MailService] Fallback: getFolders called - returning default folders');
-                return [
-                    { id: 'inbox', displayName: 'Boîte de réception', totalItemCount: 0 },
-                    { id: 'sent', displayName: 'Éléments envoyés', totalItemCount: 0 }
-                ];
-            },
-            
-            getEmailCount: async () => {
-                console.warn('[MailService] Fallback: getEmailCount called - returning 0');
-                return 0;
-            },
-            
-            searchEmails: async () => {
-                console.warn('[MailService] Fallback: searchEmails called - returning empty array');
-                return [];
-            },
-            
-            moveToFolder: async () => {
-                console.warn('[MailService] Fallback: moveToFolder called - operation skipped');
-                return true;
-            },
-            
-            markAsRead: async () => {
-                console.warn('[MailService] Fallback: markAsRead called - operation skipped');
-                return true;
-            },
-            
-            deleteEmail: async () => {
-                console.warn('[MailService] Fallback: deleteEmail called - operation skipped');
-                return true;
-            }
-        };
-        
-        // Ajouter les méthodes manquantes
-        Object.keys(fallbackMethods).forEach(method => {
-            if (typeof window.mailService[method] !== 'function') {
-                window.mailService[method] = fallbackMethods[method];
-            }
-        });
-        
-        console.log('[App] ✅ MailService fallback created');
-    }
-
-    // [Méthodes de vérification des modules identiques...]
 
     async ensureTaskManagerReady() {
         console.log('[App] Ensuring TaskManager is ready...');
@@ -525,6 +336,92 @@ class App {
         return true;
     }
 
+    async ensureMailServiceReady() {
+        console.log('[App] Ensuring MailService is ready...');
+        
+        if (window.mailService && typeof window.mailService.getEmails === 'function') {
+            console.log('[App] ✅ MailService already ready');
+            return true;
+        }
+        
+        // Attendre le chargement du service
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while ((!window.mailService || typeof window.mailService.getEmails !== 'function') && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.mailService || typeof window.mailService.getEmails !== 'function') {
+            console.warn('[App] MailService not ready, creating fallback...');
+            this.createMailServiceFallback();
+            return false;
+        }
+        
+        console.log('[App] ✅ MailService ready');
+        return true;
+    }
+
+    createMailServiceFallback() {
+        console.log('[App] Creating MailService fallback...');
+        
+        if (!window.mailService) {
+            window.mailService = {};
+        }
+        
+        // Créer des méthodes fallback sécurisées
+        const fallbackMethods = {
+            getEmails: async () => {
+                console.warn('[MailService] Fallback: getEmails called - returning empty array');
+                return [];
+            },
+            
+            getFolders: async () => {
+                console.warn('[MailService] Fallback: getFolders called - returning default folders');
+                return [
+                    { id: 'inbox', displayName: 'Boîte de réception', totalItemCount: 0 },
+                    { id: 'sent', displayName: 'Éléments envoyés', totalItemCount: 0 }
+                ];
+            },
+            
+            getEmailCount: async () => {
+                console.warn('[MailService] Fallback: getEmailCount called - returning 0');
+                return 0;
+            },
+            
+            searchEmails: async () => {
+                console.warn('[MailService] Fallback: searchEmails called - returning empty array');
+                return [];
+            },
+            
+            moveToFolder: async () => {
+                console.warn('[MailService] Fallback: moveToFolder called - operation skipped');
+                return true;
+            },
+            
+            markAsRead: async () => {
+                console.warn('[MailService] Fallback: markAsRead called - operation skipped');
+                return true;
+            },
+            
+            deleteEmail: async () => {
+                console.warn('[MailService] Fallback: deleteEmail called - operation skipped');
+                return true;
+            }
+        };
+        
+        // Ajouter les méthodes manquantes
+        Object.keys(fallbackMethods).forEach(method => {
+            if (typeof window.mailService[method] !== 'function') {
+                window.mailService[method] = fallbackMethods[method];
+            }
+        });
+        
+        window.mailService._isFallback = true;
+        console.log('[App] ✅ MailService fallback created');
+    }
+
     async ensureScanModulesReady() {
         console.log('[App] Ensuring scan modules are ready...');
         
@@ -576,7 +473,7 @@ class App {
                                 <div>
                                     <h3>Service temporairement indisponible</h3>
                                     <p>Le scanner d'emails n'est pas disponible pour le moment. Veuillez réessayer plus tard.</p>
-                                    <button onclick="window.pageManager.loadPage('dashboard')" class="btn btn-primary">
+                                    <button onclick="window.pageManager?.loadPage('dashboard')" class="btn btn-primary">
                                         <i class="fas fa-home"></i> Retour au tableau de bord
                                     </button>
                                 </div>
@@ -594,6 +491,7 @@ class App {
             }
         };
         
+        window.minimalScanModule._isFallback = true;
         console.log('[App] ✅ Scan module fallback created');
     }
 
@@ -619,6 +517,7 @@ class App {
             }
         };
         
+        window.emailScanner._isFallback = true;
         console.log('[App] ✅ Email scanner fallback created');
     }
 
@@ -911,6 +810,171 @@ class App {
     }
 
     // =====================================
+    // VÉRIFICATION DE L'AUTHENTIFICATION AVEC ANALYTICS
+    // =====================================
+    async checkAuthenticationStatus() {
+        console.log('[App] Checking authentication status for both providers...');
+        
+        // Si l'utilisateur est déjà authentifié via le système de licence
+        if (this.isAuthenticated && this.user) {
+            console.log('[App] ✅ User already authenticated via license system:', this.user.email);
+            this.showAppWithTransition();
+            return;
+        }
+        
+        // Vérifier d'abord s'il y a un callback Google à traiter
+        const googleCallbackHandled = await this.handleGoogleCallback();
+        if (googleCallbackHandled) {
+            this.showAppWithTransition();
+            return;
+        }
+        
+        // Vérifier Microsoft d'abord
+        if (window.authService && window.authService.isAuthenticated()) {
+            const account = window.authService.getAccount();
+            if (account) {
+                console.log('[App] Microsoft authentication found, getting user info...');
+                try {
+                    this.user = await window.authService.getUserInfo();
+                    this.user.provider = 'microsoft';
+                    this.isAuthenticated = true;
+                    this.activeProvider = 'microsoft';
+                    
+                    // ANALYTICS: Track authentication avec email en clair
+                    this.trackUserAuthentication(this.user);
+                    
+                    console.log('[App] ✅ Microsoft user authenticated:', this.user.displayName || this.user.mail);
+                    this.showAppWithTransition();
+                    return;
+                } catch (userInfoError) {
+                    console.error('[App] Error getting Microsoft user info:', userInfoError);
+                    if (userInfoError.message.includes('401') || userInfoError.message.includes('403')) {
+                        console.log('[App] Microsoft token seems invalid, clearing auth');
+                        await window.authService.reset();
+                    }
+                }
+            }
+        }
+        
+        // Vérifier Google ensuite
+        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+            const account = window.googleAuthService.getAccount();
+            if (account) {
+                console.log('[App] Google authentication found, getting user info...');
+                try {
+                    this.user = await window.googleAuthService.getUserInfo();
+                    this.user.provider = 'google';
+                    this.isAuthenticated = true;
+                    this.activeProvider = 'google';
+                    
+                    // ANALYTICS: Track authentication avec email en clair
+                    this.trackUserAuthentication(this.user);
+                    
+                    console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
+                    this.showAppWithTransition();
+                    return;
+                } catch (userInfoError) {
+                    console.error('[App] Error getting Google user info:', userInfoError);
+                    await window.googleAuthService.reset();
+                }
+            }
+        }
+        
+        // Aucune authentification trouvée
+        console.log('[App] No valid authentication found');
+        this.showLogin();
+    }
+
+    // =====================================
+    // TRACKING ANALYTICS AVEC EMAIL EN CLAIR
+    // =====================================
+    trackUserAuthentication(user) {
+        console.log('[App] Tracking user authentication for analytics...');
+        
+        if (!window.analyticsManager || typeof window.analyticsManager.trackAuthentication !== 'function') {
+            console.warn('[App] Analytics manager not available for authentication tracking');
+            return;
+        }
+        
+        try {
+            // Préparer les données utilisateur avec email en clair
+            const userInfo = {
+                displayName: user.displayName || user.name || 'Utilisateur',
+                mail: user.mail || user.email || user.userPrincipalName,
+                userPrincipalName: user.userPrincipalName || user.email,
+                email: user.email || user.mail || user.userPrincipalName, // Email explicite
+                provider: user.provider || 'unknown',
+                // Données supplémentaires si disponibles
+                homeAccountId: user.homeAccountId,
+                localAccountId: user.localAccountId,
+                tenantId: user.tenantId
+            };
+            
+            console.log('[App] ✅ Tracking authentication with email:', {
+                email: userInfo.email,
+                name: userInfo.displayName,
+                provider: userInfo.provider
+            });
+            
+            // Appeler la méthode de tracking
+            window.analyticsManager.trackAuthentication(userInfo.provider, userInfo);
+            
+            console.log('[App] ✅ Authentication tracked successfully in analytics');
+            
+        } catch (error) {
+            console.warn('[App] Error tracking authentication:', error);
+        }
+    }
+
+    // =====================================
+    // TRACKING D'ÉVÉNEMENTS ANALYTICS
+    // =====================================
+    trackEvent(eventType, eventData = {}) {
+        if (!window.analyticsManager || typeof window.analyticsManager.trackEvent !== 'function') {
+            return;
+        }
+        
+        try {
+            // Ajouter automatiquement les infos utilisateur si disponibles
+            const enrichedData = {
+                ...eventData,
+                userEmail: this.user?.email || this.user?.mail || 'anonymous',
+                userName: this.user?.displayName || this.user?.name || 'Anonymous',
+                provider: this.activeProvider || 'unknown'
+            };
+            
+            window.analyticsManager.trackEvent(eventType, enrichedData);
+            console.log('[App] ✅ Event tracked:', eventType, enrichedData);
+        } catch (error) {
+            console.warn('[App] Error tracking event:', error);
+        }
+    }
+
+    trackPageChange(pageName) {
+        this.trackEvent('page_change', {
+            page: pageName,
+            previousPage: this.currentPage
+        });
+    }
+
+    trackError(errorType, errorData) {
+        if (!window.analyticsManager || typeof window.analyticsManager.onError !== 'function') {
+            return;
+        }
+        
+        try {
+            window.analyticsManager.onError(errorType, {
+                ...errorData,
+                userEmail: this.user?.email || this.user?.mail || 'anonymous',
+                provider: this.activeProvider || 'unknown'
+            });
+            console.log('[App] ✅ Error tracked:', errorType, errorData);
+        } catch (error) {
+            console.warn('[App] Error tracking error:', error);
+        }
+    }
+
+    // =====================================
     // GESTION DU CALLBACK GOOGLE OAuth2
     // =====================================
     async handleGoogleCallback() {
@@ -1011,7 +1075,7 @@ class App {
     }
 
     setupEventListeners() {
-        console.log('[App] Setting up event listeners...');
+        console.log('[App] Setting up event listeners with license checks...');
         
         // NAVIGATION CORRIGÉE AVEC ANALYTICS
         document.querySelectorAll('.nav-item').forEach(item => {
@@ -1064,42 +1128,6 @@ class App {
                 filename: event.filename,
                 lineno: event.lineno
             });
-            
-            if (event.error && event.error.message) {
-                const message = event.error.message;
-                
-                // Erreurs spécifiques
-                if (message.includes('unauthorized_client')) {
-                    if (window.uiManager) {
-                        window.uiManager.showToast(
-                            'Erreur de configuration Azure. Vérifiez votre Client ID.',
-                            'error',
-                            10000
-                        );
-                    }
-                } else if (message.includes('Cannot set properties of undefined')) {
-                    console.error('[App] DOM manipulation error detected:', message);
-                    
-                    // Essayer de diagnostiquer l'erreur
-                    if (message.includes('innerHTML')) {
-                        console.error('[App] innerHTML error - element may not exist');
-                        if (window.uiManager) {
-                            window.uiManager.showToast(
-                                'Erreur d\'affichage. Rechargement recommandé.',
-                                'warning',
-                                5000
-                            );
-                        }
-                    }
-                } else if (message.includes('is not a function')) {
-                    console.error('[App] Function call error:', message);
-                    
-                    if (message.includes('getEmails')) {
-                        console.error('[App] MailService error detected - creating fallback');
-                        this.createMailServiceFallback();
-                    }
-                }
-            }
         });
 
         window.addEventListener('unhandledrejection', (event) => {
@@ -1109,49 +1137,9 @@ class App {
             this.trackError('promise_rejection', {
                 reason: event.reason?.message || event.reason || 'Unknown rejection'
             });
-            
-            if (event.reason && event.reason.message) {
-                const message = event.reason.message;
-                
-                if (message.includes('Cannot read properties of undefined')) {
-                    if (message.includes('createTaskFromEmail')) {
-                        console.error('[App] TaskManager createTaskFromEmail error detected');
-                        
-                        if (window.uiManager) {
-                            window.uiManager.showToast(
-                                'Erreur du gestionnaire de tâches. Veuillez actualiser la page.',
-                                'warning'
-                            );
-                        }
-                    } else if (message.includes('getEmails')) {
-                        console.error('[App] MailService getEmails error detected');
-                        this.createMailServiceFallback();
-                        
-                        if (window.uiManager) {
-                            window.uiManager.showToast(
-                                'Service de messagerie indisponible. Mode dégradé activé.',
-                                'info'
-                            );
-                        }
-                    }
-                } else if (message.includes('render')) {
-                    console.error('[App] Render error detected');
-                    
-                    if (window.uiManager) {
-                        window.uiManager.showToast(
-                            'Erreur d\'affichage détectée',
-                            'warning'
-                        );
-                    }
-                }
-            }
-            
-            if (event.reason && event.reason.errorCode) {
-                console.log('[App] MSAL promise rejection:', event.reason.errorCode);
-            }
         });
 
-        console.log('[App] ✅ Event listeners set up with error handling and analytics');
+        console.log('[App] ✅ Event listeners set up with license verification');
     }
 
     // =====================================
@@ -1245,6 +1233,11 @@ class App {
             if (!confirmed) return;
             
             this.showModernLoading('Déconnexion...');
+            
+            // Déconnexion du système de licence aussi
+            if (window.licenseService?.logout) {
+                await window.licenseService.logout();
+            }
             
             // Déconnexion selon le provider actif
             if (this.activeProvider === 'microsoft' && window.authService) {
@@ -1462,7 +1455,9 @@ class App {
         this.forceAppDisplay();
         
         setTimeout(() => {
-            window.checkScrollNeeded();
+            if (window.checkScrollNeeded) {
+                window.checkScrollNeeded();
+            }
         }, 1000);
         
         console.log(`[App] ✅ Application fully displayed with ${this.activeProvider} provider`);
@@ -1477,11 +1472,23 @@ class App {
             return;
         }
         
+        // Informations utilisateur et licence
+        const userInfo = window.currentUser || this.user;
+        const licenseInfo = window.licenseStatus;
+        const isTrialUser = licenseInfo?.status === 'trial';
+        const daysRemaining = licenseInfo?.daysRemaining || 0;
+        
         pageContent.innerHTML = `
             <div class="dashboard-fallback">
                 <div class="dashboard-header">
-                    <h1><i class="fas fa-tachometer-alt"></i> Tableau de bord</h1>
-                    <p>Bienvenue dans EmailSortPro</p>
+                    <h1><i class="fas fa-tachometer-alt"></i> Tableau de bord EmailSortPro</h1>
+                    <p>Bienvenue ${userInfo?.name || userInfo?.displayName || 'Utilisateur'}</p>
+                    ${isTrialUser ? `
+                        <div class="trial-badge">
+                            <i class="fas fa-clock"></i>
+                            Période d'essai: ${daysRemaining} jour${daysRemaining !== 1 ? 's' : ''} restant${daysRemaining !== 1 ? 's' : ''}
+                        </div>
+                    ` : ''}
                 </div>
                 <div class="dashboard-content">
                     <div class="dashboard-grid">
@@ -1509,18 +1516,56 @@ class App {
                                 </button>
                             </div>
                         </div>
+                        <div class="dashboard-card">
+                            <div class="card-icon">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <div class="card-content">
+                                <h3>Analytics</h3>
+                                <p>Suivez votre productivité et vos statistiques</p>
+                                <button onclick="window.open('analytics.html', '_blank')" class="btn btn-secondary">
+                                    <i class="fas fa-external-link-alt"></i> Voir analytics
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="provider-info">
+                    <div class="status-info">
                         <div class="provider-badge ${this.activeProvider}">
                             <i class="fas fa-${this.activeProvider === 'microsoft' ? 'envelope' : 'envelope'}"></i>
                             Connecté via ${this.activeProvider === 'microsoft' ? 'Microsoft Outlook' : 'Google Gmail'}
                         </div>
+                        ${userInfo?.company?.name ? `
+                            <div class="company-badge">
+                                <i class="fas fa-building"></i>
+                                ${userInfo.company.name}
+                            </div>
+                        ` : ''}
+                        <div class="role-badge">
+                            <i class="fas fa-user"></i>
+                            ${this.getRoleName(userInfo?.role)}
+                        </div>
                     </div>
+                    ${isTrialUser && daysRemaining <= 3 ? `
+                        <div class="trial-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Attention!</strong> Votre période d'essai expire dans ${daysRemaining} jour${daysRemaining !== 1 ? 's' : ''}. 
+                            Contactez votre administrateur pour obtenir une licence complète.
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;
         
         console.log('[App] Dashboard fallback displayed');
+    }
+
+    getRoleName(role) {
+        switch (role) {
+            case 'super_admin': return 'Super Administrateur';
+            case 'company_admin': return 'Administrateur';
+            case 'user': return 'Utilisateur';
+            default: return 'Utilisateur';
+        }
     }
 
     forceAppDisplay() {
@@ -1559,6 +1604,24 @@ class App {
                 color: #1f2937;
                 margin-bottom: 0.5rem;
             }
+            .trial-badge {
+                display: inline-block;
+                background: linear-gradient(135deg, #f59e0b, #d97706);
+                color: white;
+                padding: 0.5rem 1rem;
+                border-radius: 20px;
+                font-weight: 600;
+                margin-top: 1rem;
+            }
+            .trial-warning {
+                background: #fef3c7;
+                border: 1px solid #f59e0b;
+                border-radius: 8px;
+                padding: 1rem;
+                margin-top: 2rem;
+                color: #92400e;
+                text-align: center;
+            }
             .dashboard-grid {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -1571,18 +1634,28 @@ class App {
                 padding: 2rem;
                 box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
                 text-align: center;
+                transition: transform 0.2s ease;
+            }
+            .dashboard-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
             }
             .card-icon {
                 font-size: 3rem;
                 color: #3b82f6;
                 margin-bottom: 1rem;
             }
-            .provider-info {
-                text-align: center;
+            .status-info {
+                display: flex;
+                justify-content: center;
+                gap: 1rem;
                 margin-top: 2rem;
+                flex-wrap: wrap;
             }
-            .provider-badge {
-                display: inline-block;
+            .provider-badge, .company-badge, .role-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
                 padding: 0.75rem 1.5rem;
                 border-radius: 25px;
                 font-weight: 600;
@@ -1593,6 +1666,40 @@ class App {
             }
             .provider-badge.google {
                 background: linear-gradient(135deg, #4285f4, #34a853);
+            }
+            .company-badge {
+                background: linear-gradient(135deg, #6b7280, #4b5563);
+            }
+            .role-badge {
+                background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            }
+            .btn {
+                padding: 0.75rem 1.5rem;
+                border: none;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            .btn-primary {
+                background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                color: white;
+            }
+            .btn-primary:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            }
+            .btn-secondary {
+                background: linear-gradient(135deg, #6b7280, #4b5563);
+                color: white;
+            }
+            .btn-secondary:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
             }
         `;
         
@@ -1710,15 +1817,6 @@ class App {
                                     </p>
                                 </div>
                             ` : ''}
-                            <div style="margin-top: 20px; padding: 20px; background: rgba(251, 191, 36, 0.05); border-radius: 10px;">
-                                <h4 style="margin-bottom: 10px;">Pour résoudre :</h4>
-                                <ol style="margin-left: 20px;">
-                                    <li>Cliquez sur "Configurer l'application"</li>
-                                    <li>Suivez l'assistant de configuration</li>
-                                    <li>Entrez vos Client IDs Azure et Google</li>
-                                    ${this.isNetlifyEnv ? '<li>Configurez les URLs de redirection pour Netlify</li>' : ''}
-                                </ol>
-                            </div>
                         </div>
                         <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                             <a href="setup.html" class="login-button" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white;">
@@ -1761,6 +1859,17 @@ class App {
                 email: this.user.mail || this.user.email,
                 provider: this.user.provider
             } : null,
+            license: {
+                currentUser: window.currentUser ? {
+                    email: window.currentUser.email,
+                    role: window.currentUser.role,
+                    license_status: window.currentUser.license_status,
+                    license_expires_at: window.currentUser.license_expires_at,
+                    company: window.currentUser.company?.name
+                } : null,
+                licenseStatus: window.licenseStatus,
+                licenseService: !!window.licenseService
+            },
             analytics: {
                 available: !!window.analyticsManager,
                 tracking: !!window.analyticsManager && typeof window.analyticsManager.trackEvent === 'function',
@@ -1870,6 +1979,17 @@ class App {
             }
         } catch (error) {
             tests.push({ service: 'TaskManager', status: '❌ ERROR', details: error.message });
+        }
+        
+        // Test License Service
+        try {
+            if (window.licenseService && window.licenseService.initialized) {
+                tests.push({ service: 'License Service', status: '✅ OK', details: 'Initialisé' });
+            } else {
+                tests.push({ service: 'License Service', status: '⚠️ WARNING', details: 'Non initialisé' });
+            }
+        } catch (error) {
+            tests.push({ service: 'License Service', status: '❌ ERROR', details: error.message });
         }
         
         // Test Auth Services
@@ -2012,7 +2132,7 @@ window.repairScanModule = function() {
 function checkServicesReady() {
     const requiredServices = ['uiManager'];
     const authServices = ['authService', 'googleAuthService'];
-    const optionalServices = ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule', 'analyticsManager'];
+    const optionalServices = ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule', 'analyticsManager', 'licenseService'];
     
     try {
         const missingRequired = requiredServices.filter(service => !window[service]);
@@ -2040,59 +2160,13 @@ function checkServicesReady() {
         
         console.log('[App] Available auth services:', availableAuthServices);
         console.log('[App] Analytics available:', !!window.analyticsManager);
+        console.log('[App] License service available:', !!window.licenseService);
         return true;
     } catch (error) {
         console.error('[App] Error checking services:', error);
         return false;
     }
 }
-
-window.checkServices = function() {
-    const services = {
-        required: ['uiManager', 'AppConfig'],
-        auth: ['authService', 'googleAuthService'],
-        optional: ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule', 'pageManager', 'taskManager'],
-        analytics: ['analyticsManager']
-    };
-    
-    const result = {
-        ready: true,
-        available: {},
-        missing: {},
-        errors: {}
-    };
-    
-    Object.keys(services).forEach(category => {
-        result.available[category] = [];
-        result.missing[category] = [];
-        
-        services[category].forEach(service => {
-            try {
-                if (window[service]) {
-                    result.available[category].push(service);
-                } else {
-                    result.missing[category].push(service);
-                    if (category === 'required') {
-                        result.ready = false;
-                    }
-                }
-            } catch (error) {
-                result.errors[service] = error.message;
-                result.missing[category].push(service);
-                if (category === 'required') {
-                    result.ready = false;
-                }
-            }
-        });
-    });
-    
-    // Vérification spéciale pour les services d'auth
-    if (result.available.auth.length === 0) {
-        result.ready = false;
-    }
-    
-    return result;
-};
 
 // =====================================
 // GESTION DES ERREURS GLOBALES AVEC ANALYTICS
@@ -2126,11 +2200,11 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 // =====================================
-// INITIALISATION PRINCIPALE AVEC ANALYTICS
+// INITIALISATION PRINCIPALE AVEC ANALYTICS ET LICENCE
 // =====================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[App] DOM loaded, creating dual provider app instance with analytics...');
+    console.log('[App] DOM loaded, creating dual provider app instance with license check...');
     
     try {
         document.body.classList.add('login-mode');
@@ -2142,7 +2216,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             try {
                 if (checkServicesReady()) {
-                    console.log('[App] All required services ready, initializing dual provider app with analytics...');
+                    console.log('[App] All required services ready, initializing dual provider app with license...');
                     
                     setTimeout(() => {
                         try {
@@ -2240,10 +2314,10 @@ window.addEventListener('load', () => {
 });
 
 // =====================================
-// DIAGNOSTIC GLOBAL AVEC ANALYTICS
+// DIAGNOSTIC GLOBAL AVEC ANALYTICS ET LICENCE
 // =====================================
 window.diagnoseApp = function() {
-    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER + ANALYTICS - EmailSortPro v4.2');
+    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER + ANALYTICS + LICENSE - EmailSortPro v5.1');
     
     try {
         if (window.app) {
@@ -2252,6 +2326,7 @@ window.diagnoseApp = function() {
             console.log('🌐 Environment:', appDiag.environment);
             console.log('📱 App Status:', appDiag.app);
             console.log('👤 User:', appDiag.user);
+            console.log('🔐 License:', appDiag.license);
             console.log('📊 Analytics:', appDiag.analytics);
             console.log('🛠️ Services:', appDiag.services);
             console.log('🏗️ DOM Elements:', appDiag.dom);
@@ -2272,6 +2347,13 @@ window.diagnoseApp = function() {
                 console.log('🏢 Company Stats:', window.analyticsManager.getAllCompanies().length + ' sociétés');
             }
             
+            // Diagnostic licence spécifique
+            if (window.licenseService) {
+                window.licenseService.debug().then(licenseDebug => {
+                    console.log('🔐 License Debug:', licenseDebug);
+                });
+            }
+            
             return appDiag;
         } else {
             console.log('❌ App instance not available');
@@ -2283,6 +2365,11 @@ window.diagnoseApp = function() {
                 analytics: {
                     available: !!window.analyticsManager,
                     hasData: window.analyticsManager ? !!window.analyticsManager.getGlobalStats : false
+                },
+                license: {
+                    available: !!window.licenseService,
+                    currentUser: window.currentUser,
+                    licenseStatus: window.licenseStatus
                 },
                 dom: {
                     loginPage: !!document.getElementById('loginPage'),
@@ -2307,7 +2394,7 @@ window.diagnoseApp = function() {
 };
 
 // =====================================
-// FONCTIONS D'AIDE POUR NETLIFY AVEC ANALYTICS
+// FONCTIONS D'AIDE POUR NETLIFY AVEC ANALYTICS ET LICENCE
 // =====================================
 window.netlifyHelpers = {
     checkDomain: () => {
@@ -2357,6 +2444,21 @@ window.netlifyHelpers = {
         
         console.log('Auth test results:', results);
         return results;
+    },
+    
+    testLicense: async () => {
+        if (!window.licenseService) {
+            return { available: false, error: 'License service not available' };
+        }
+        
+        try {
+            const licenseDebug = await window.licenseService.debug();
+            console.log('License test results:', licenseDebug);
+            return licenseDebug;
+        } catch (error) {
+            console.error('License test error:', error);
+            return { available: true, error: error.message };
+        }
     },
     
     testAnalytics: () => {
@@ -2511,8 +2613,11 @@ window.analyticsHelpers = {
     }
 };
 
-console.log('✅ App v4.2 loaded - DUAL PROVIDER (Microsoft + Google) + ANALYTICS INTEGRATION');
+console.log('✅ App v5.1 loaded - DUAL PROVIDER (Microsoft + Google) + ANALYTICS + LICENSE VERIFICATION');
 console.log('🔧 Fonctions globales disponibles: window.diagnoseApp(), window.testServices(), window.repairMailService(), window.repairScanModule()');
 console.log('🌐 Helpers Netlify: window.netlifyHelpers');
 console.log('📊 Helpers Analytics: window.analyticsHelpers');
 console.log('📈 Analytics tracking: Email en clair, filtrage par domaine et par société');
+console.log('🔐 License verification: Vérification à la connexion et sur chaque changement de page');
+console.log('👥 Onboarding: Processus pour nouveaux utilisateurs avec 15 jours d\'essai');
+console.log('⏰ Trial management: Avertissements d\'expiration et contact admin automatique');
