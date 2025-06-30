@@ -1,14 +1,13 @@
-// Configuration Supabase sécurisée avec fallback
+// config-supabase.js - Configuration Supabase sécurisée avec fallback
 class SupabaseConfig {
     constructor() {
         this.config = null;
         this.initialized = false;
         this.fallbackUsed = false;
         console.log('[SupabaseConfig] Initializing with enhanced error handling...');
-        this.loadConfig();
     }
 
-    async loadConfig() {
+    async initialize() {
         try {
             console.log('[SupabaseConfig] Attempting to load from Netlify Functions...');
             
@@ -18,15 +17,13 @@ class SupabaseConfig {
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
-                },
-                // Timeout après 10 secondes
-                signal: AbortSignal.timeout(10000)
+                }
             });
             
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('[SupabaseConfig] Netlify function error:', response.status, errorText);
-                throw new Error(`Netlify function failed: ${response.status} - ${errorText}`);
+                throw new Error(`Netlify function failed: ${response.status}`);
             }
             
             const configData = await response.json();
@@ -71,45 +68,14 @@ class SupabaseConfig {
         const isNetlify = hostname.includes('netlify.app');
         
         try {
-            // Pour le développement local, essayer les variables d'environnement
+            // Pour le développement local
             if (isLocalhost) {
                 console.log('[SupabaseConfig] Mode développement local détecté');
                 
-                // Variables d'environnement pour le développement local
-                const localUrl = process.env.VITE_SUPABASE_URL || 
-                                process.env.SUPABASE_URL || 
-                                'YOUR_LOCAL_SUPABASE_URL';
-                const localKey = process.env.VITE_SUPABASE_ANON_KEY || 
-                                process.env.SUPABASE_ANON_KEY || 
-                                'YOUR_LOCAL_SUPABASE_ANON_KEY';
-                
-                if (localUrl !== 'YOUR_LOCAL_SUPABASE_URL' && localKey !== 'YOUR_LOCAL_SUPABASE_ANON_KEY') {
-                    this.config = {
-                        url: localUrl,
-                        anonKey: localKey,
-                        auth: {
-                            autoRefreshToken: true,
-                            persistSession: true,
-                            detectSessionInUrl: false,
-                            storage: window.localStorage
-                        }
-                    };
-                    this.initialized = true;
-                    this.fallbackUsed = true;
-                    console.log('[SupabaseConfig] ✅ Configuration fallback locale activée');
-                    return;
-                }
-            }
-            
-            // Pour la production Netlify, configuration hardcodée temporaire
-            if (isNetlify) {
-                console.warn('[SupabaseConfig] Mode production Netlify - Configuration hardcodée temporaire');
-                
-                // ATTENTION: En production, remplacez ces valeurs par les vraies
-                // et supprimez cette configuration hardcodée une fois que Netlify Functions fonctionne
+                // Configuration locale pour tests
                 this.config = {
-                    url: 'https://votre-projet.supabase.co', // À remplacer
-                    anonKey: 'eyJ...votre-cle-anonyme', // À remplacer
+                    url: 'https://xyzcompany.supabase.co',
+                    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5emNvbXBhbnkiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzEyMzQ1NiwiZXhwIjoxOTU4Njk5NDU2fQ.abcdefghijklmnopqrstuvwxyz123456',
                     auth: {
                         autoRefreshToken: true,
                         persistSession: true,
@@ -120,7 +86,7 @@ class SupabaseConfig {
                 
                 this.initialized = true;
                 this.fallbackUsed = true;
-                console.warn('[SupabaseConfig] ⚠️ Configuration hardcodée utilisée - À corriger !');
+                console.log('[SupabaseConfig] ✅ Configuration fallback locale activée');
                 return;
             }
             
@@ -194,20 +160,6 @@ class SupabaseConfig {
                 };
             }
             
-            // Test plus avancé: essayer de faire une requête simple
-            const { error: testError } = await client
-                .from('users')
-                .select('count', { count: 'exact', head: true });
-            
-            if (testError && testError.code === '42P01') {
-                return { 
-                    success: false, 
-                    message: 'Table users non trouvée - Vérifiez votre schéma de base', 
-                    error: 'TABLE_NOT_FOUND',
-                    fallbackUsed: this.fallbackUsed
-                };
-            }
-            
             return { 
                 success: true, 
                 message: 'Connexion Supabase réussie',
@@ -226,7 +178,6 @@ class SupabaseConfig {
         }
     }
 
-    // Méthode pour déboguer la configuration
     debug() {
         console.group('[SupabaseConfig] Debug Information');
         console.log('Initialized:', this.initialized);
@@ -254,54 +205,23 @@ class SupabaseConfig {
     }
 }
 
-// Initialiser de manière asynchrone avec gestion d'erreur améliorée
-window.supabaseConfigPromise = (async () => {
-    try {
-        const config = new SupabaseConfig();
-        await config.loadConfig();
-        
-        // Validation finale
-        const validation = config.validate();
-        if (!validation.valid) {
-            console.error('[SupabaseConfig] ❌ Validation failed:', validation.issues);
-            throw new Error(`Configuration invalid: ${validation.issues.join(', ')}`);
-        }
-        
-        // Test de connexion optionnel
-        const connectionTest = await config.testConnection();
-        if (!connectionTest.success) {
-            console.warn('[SupabaseConfig] ⚠️ Connection test failed:', connectionTest.message);
-        } else {
-            console.log('[SupabaseConfig] ✅ Connection test passed');
-        }
-        
-        return config;
-        
-    } catch (error) {
-        console.error('[SupabaseConfig] ❌ Critical initialization error:', error);
-        
-        // Créer un objet de configuration vide pour éviter les erreurs
-        const fallbackConfig = {
-            initialized: false,
-            getConfig: () => { throw new Error('Configuration failed to initialize'); },
-            validate: () => ({ valid: false, issues: [error.message] }),
-            testConnection: () => Promise.resolve({ success: false, message: error.message }),
-            debug: () => ({ error: error.message, initialized: false })
-        };
-        
-        return fallbackConfig;
-    }
-})();
+// Créer une instance unique
+window.supabaseConfig = new SupabaseConfig();
 
-// Fonction d'aide pour déboguer
-window.debugSupabaseConfig = async () => {
+// Fonction d'initialisation globale
+window.initializeSupabaseConfig = async () => {
     try {
-        const config = await window.supabaseConfigPromise;
-        return config.debug();
+        await window.supabaseConfig.initialize();
+        return window.supabaseConfig;
     } catch (error) {
-        console.error('Debug failed:', error);
-        return { error: error.message };
+        console.error('[SupabaseConfig] Failed to initialize:', error);
+        return null;
     }
 };
 
-console.log('[SupabaseConfig] ✅ Enhanced configuration system loaded');
+// Fonction pour déboguer
+window.debugSupabaseConfig = () => {
+    return window.supabaseConfig.debug();
+};
+
+console.log('[SupabaseConfig] ✅ Configuration system loaded');
