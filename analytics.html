@@ -517,25 +517,39 @@
 
         async function initializeSupabase() {
             try {
-                // Charger la configuration depuis Netlify Functions
-                const response = await fetch('/.netlify/functions/get-supabase-config');
-                if (!response.ok) {
-                    throw new Error('Configuration Supabase indisponible');
+                // D'abord essayer de charger depuis Netlify Functions
+                try {
+                    const response = await fetch('/.netlify/functions/get-supabase-config');
+                    if (response.ok) {
+                        const config = await response.json();
+                        
+                        supabaseClient = window.supabase.createClient(
+                            config.url,
+                            config.anonKey
+                        );
+                        
+                        console.log('[Analytics] Supabase initialisé via Netlify Functions');
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('[Analytics] Netlify Functions non disponible, utilisation config locale');
                 }
                 
-                const config = await response.json();
+                // Fallback: utiliser la configuration directe (pour dev/test)
+                // Remplacez ces valeurs par vos vraies clés Supabase
+                const SUPABASE_URL = 'https://xyzcompany.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5emNvbXBhbnkiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzEyMzQ1NiwiZXhwIjoxOTU4Njk5NDU2fQ.abcdefghijklmnopqrstuvwxyz123456';
                 
-                // Initialiser le client Supabase
                 supabaseClient = window.supabase.createClient(
-                    config.url,
-                    config.anonKey
+                    SUPABASE_URL,
+                    SUPABASE_ANON_KEY
                 );
                 
-                console.log('[Analytics] Supabase initialisé');
+                console.log('[Analytics] Supabase initialisé avec config locale');
+                
             } catch (error) {
                 console.error('[Analytics] Erreur Supabase:', error);
-                // Continuer sans Supabase (mode demo)
-                console.warn('[Analytics] Mode demo activé');
+                supabaseClient = null;
             }
         }
 
@@ -547,9 +561,29 @@
             if (!supabaseClient) return;
             
             try {
+                // Vérifier si on a un email stocké (connexion sans mot de passe)
+                const storedEmail = localStorage.getItem('emailsortpro_admin_email');
+                if (storedEmail) {
+                    console.log('[Auth] Email stocké trouvé:', storedEmail);
+                    
+                    // Vérifier que l'utilisateur est toujours admin
+                    const { data: user } = await supabaseClient
+                        .from('users')
+                        .select('*, company:companies(*)')
+                        .eq('email', storedEmail)
+                        .single();
+                    
+                    if (user && (user.role === 'company_admin' || user.role === 'super_admin')) {
+                        currentUser = user;
+                        showApp();
+                        await loadDashboardData();
+                        return;
+                    }
+                }
+                
+                // Sinon vérifier la session Supabase Auth
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session) {
-                    // Récupérer les infos utilisateur
                     const { data: user } = await supabaseClient
                         .from('users')
                         .select('*, company:companies(*)')
@@ -574,52 +608,66 @@
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
             
+            if (!email) {
+                showAlert('Email requis', 'error');
+                return;
+            }
+            
             setLoading(true);
             
             try {
-                // Utiliser la fonction Netlify pour l'authentification
-                console.log('[Auth] Tentative de connexion pour:', email);
-                
-                const response = await fetch('/.netlify/functions/auth-admin', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'login',
-                        email: email,
-                        password: password
-                    })
-                });
-
-                console.log('[Auth] Response status:', response.status);
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('[Auth] Error response:', errorText);
-                    throw new Error('Erreur serveur: ' + response.status);
-                }
-
-                const result = await response.json();
-                console.log('[Auth] Login result:', result);
-                
-                if (result.success) {
-                    currentUser = result.user;
-                    sessionStorage.setItem('emailsortpro_session_token', result.session_token);
+                // Si pas de mot de passe, on fait une vérification simple de l'utilisateur
+                if (!password && supabaseClient) {
+                    console.log('[Auth] Vérification utilisateur sans mot de passe pour:', email);
+                    
+                    // Vérifier si l'utilisateur existe et est admin
+                    const { data: user, error } = await supabaseClient
+                        .from('users')
+                        .select('*, company:companies(*)')
+                        .eq('email', email)
+                        .single();
+                    
+                    if (error || !user) {
+                        throw new Error('Utilisateur non trouvé');
+                    }
+                    
+                    if (user.role !== 'company_admin' && user.role !== 'super_admin') {
+                        throw new Error('Accès réservé aux administrateurs');
+                    }
+                    
+                    // Connexion acceptée sans mot de passe (temporaire)
+                    currentUser = user;
                     showApp();
                     await loadDashboardData();
-                } else {
-                    throw new Error(result.message || 'Identifiants incorrects');
-                }
-                
-            } catch (error) {
-                console.error('[Auth] Erreur connexion:', error);
-                
-                // Si la fonction Netlify n'est pas disponible, utiliser le mode demo
-                if (error.message.includes('404') || error.message.includes('Failed to fetch')) {
-                    console.warn('[Auth] Fonction Netlify non disponible, mode demo activé');
                     
-                    if (email === 'demo@admin.com' && password === 'demo123') {
+                } else if (password && supabaseClient) {
+                    // Authentification normale avec mot de passe
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({
+                        email: email,
+                        password: password
+                    });
+
+                    if (error) throw error;
+
+                    // Vérifier le rôle
+                    const { data: user } = await supabaseClient
+                        .from('users')
+                        .select('*, company:companies(*)')
+                        .eq('email', email)
+                        .single();
+
+                    if (!user || (user.role !== 'company_admin' && user.role !== 'super_admin')) {
+                        await supabaseClient.auth.signOut();
+                        throw new Error('Accès réservé aux administrateurs');
+                    }
+
+                    currentUser = user;
+                    showApp();
+                    await loadDashboardData();
+                    
+                } else {
+                    // Mode demo si pas de Supabase
+                    if (email === 'demo@admin.com') {
                         currentUser = {
                             email: email,
                             name: 'Demo Admin',
@@ -629,11 +677,12 @@
                         showApp();
                         loadDemoData();
                     } else {
-                        showAlert('Mode demo: utilisez demo@admin.com / demo123', 'error');
+                        throw new Error('Connexion impossible - Vérifiez la configuration');
                     }
-                } else {
-                    showAlert(error.message || 'Erreur de connexion', 'error');
                 }
+            } catch (error) {
+                console.error('[Auth] Erreur connexion:', error);
+                showAlert(error.message || 'Erreur de connexion', 'error');
             } finally {
                 setLoading(false);
             }
@@ -643,6 +692,11 @@
         function showApp() {
             document.getElementById('loginContainer').style.display = 'none';
             document.getElementById('appContainer').style.display = 'block';
+            
+            // Stocker l'email pour la prochaine connexion
+            if (currentUser?.email) {
+                localStorage.setItem('emailsortpro_admin_email', currentUser.email);
+            }
             
             const userBadge = document.getElementById('userBadge');
             const roleName = currentUser.role === 'super_admin' ? 'Super Admin' : 'Admin';
@@ -676,6 +730,7 @@
                 await supabaseClient.auth.signOut();
             }
             currentUser = null;
+            localStorage.removeItem('emailsortpro_admin_email');
             document.getElementById('loginContainer').style.display = 'flex';
             document.getElementById('appContainer').style.display = 'none';
             document.getElementById('loginEmail').value = '';
@@ -707,69 +762,136 @@
 
         async function loadRealData() {
             try {
-                // Charger les statistiques par domaine via Netlify Function
-                console.log('[Data] Chargement des données via Netlify Function...');
+                console.log('[Data] Chargement des données réelles depuis Supabase...');
                 
-                const token = sessionStorage.getItem('emailsortpro_session_token');
+                // Récupérer TOUS les événements analytics
+                const { data: events, error } = await supabaseClient
+                    .from('analytics_events')
+                    .select('*')
+                    .order('created_at', { ascending: false });
                 
-                // Charger les stats de domaine
-                const domainsResponse = await fetch('/.netlify/functions/auth-admin', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': token ? `Bearer ${token}` : ''
-                    },
-                    body: JSON.stringify({
-                        action: 'get_domain_stats',
-                        email: currentUser?.email
-                    })
-                });
-
-                if (domainsResponse.ok) {
-                    const domainsResult = await domainsResponse.json();
-                    if (domainsResult.success) {
-                        allDomains = domainsResult.domains.map(domain => ({
-                            domain: domain.domain,
-                            userCount: domain.total_users || 0,
-                            emailCount: domain.total_emails_scanned || 0,
-                            lastActivity: domain.last_activity,
-                            admin: domain.admin_email || 'N/A',
-                            status: 'active'
-                        }));
-                    }
+                if (error) {
+                    console.error('[Data] Erreur chargement events:', error);
+                    throw error;
                 }
-
-                // Charger les stats utilisateur
-                const usersResponse = await fetch('/.netlify/functions/auth-admin', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': token ? `Bearer ${token}` : ''
-                    },
-                    body: JSON.stringify({
-                        action: 'get_user_stats',
-                        email: currentUser?.email
-                    })
-                });
-
-                if (usersResponse.ok) {
-                    const usersResult = await usersResponse.json();
-                    if (usersResult.success) {
-                        allUsers = usersResult.users.map(user => ({
-                            email: user.email,
-                            name: user.name || 'N/A',
-                            domain: user.domain,
-                            emailCount: user.total_emails_scanned || 0,
-                            sessionCount: user.total_sessions || 0,
-                            firstSeen: user.first_seen,
-                            lastActivity: user.last_activity
-                        }));
+                
+                console.log(`[Data] ${events?.length || 0} événements trouvés`);
+                
+                // Calculer les statistiques par domaine et utilisateur
+                const domainStats = {};
+                const userStats = {};
+                
+                events?.forEach(event => {
+                    // Stats par domaine
+                    const domain = event.user_domain || (event.user_email ? event.user_email.split('@')[1] : 'unknown');
+                    
+                    if (!domainStats[domain]) {
+                        domainStats[domain] = {
+                            domain: domain,
+                            users: new Set(),
+                            totalEmails: 0,
+                            lastActivity: null,
+                            adminEmail: null
+                        };
                     }
+                    
+                    if (event.user_email) {
+                        domainStats[domain].users.add(event.user_email);
+                    }
+                    
+                    if (event.event_type === 'email_scan' && event.event_data?.emailCount) {
+                        domainStats[domain].totalEmails += event.event_data.emailCount;
+                    }
+                    
+                    if (!domainStats[domain].lastActivity || 
+                        new Date(event.created_at) > new Date(domainStats[domain].lastActivity)) {
+                        domainStats[domain].lastActivity = event.created_at;
+                    }
+                    
+                    // Stats par utilisateur
+                    if (event.user_email) {
+                        if (!userStats[event.user_email]) {
+                            userStats[event.user_email] = {
+                                email: event.user_email,
+                                name: event.user_name || event.user_email.split('@')[0],
+                                domain: domain,
+                                totalEmails: 0,
+                                sessions: new Set(),
+                                firstSeen: event.created_at,
+                                lastActivity: event.created_at,
+                                events: []
+                            };
+                        }
+                        
+                        userStats[event.user_email].events.push({
+                            type: event.event_type,
+                            timestamp: event.created_at
+                        });
+                        
+                        if (event.session_id) {
+                            userStats[event.user_email].sessions.add(event.session_id);
+                        }
+                        
+                        if (event.event_type === 'email_scan' && event.event_data?.emailCount) {
+                            userStats[event.user_email].totalEmails += event.event_data.emailCount;
+                        }
+                        
+                        // Mettre à jour les dates
+                        const eventDate = new Date(event.created_at);
+                        if (eventDate > new Date(userStats[event.user_email].lastActivity)) {
+                            userStats[event.user_email].lastActivity = event.created_at;
+                        }
+                        if (eventDate < new Date(userStats[event.user_email].firstSeen)) {
+                            userStats[event.user_email].firstSeen = event.created_at;
+                        }
+                    }
+                });
+                
+                // Convertir en tableaux
+                allDomains = Object.values(domainStats).map(domain => ({
+                    domain: domain.domain,
+                    userCount: domain.users.size,
+                    emailCount: domain.totalEmails,
+                    lastActivity: domain.lastActivity,
+                    admin: Array.from(domain.users)[0] || 'N/A',
+                    status: domain.lastActivity && 
+                            (new Date() - new Date(domain.lastActivity)) < 7 * 24 * 60 * 60 * 1000 
+                            ? 'active' : 'inactive'
+                })).filter(d => d.userCount > 0); // Filtrer les domaines sans utilisateurs
+                
+                allUsers = Object.values(userStats).map(user => ({
+                    email: user.email,
+                    name: user.name,
+                    domain: user.domain,
+                    emailCount: user.totalEmails,
+                    sessionCount: user.sessions.size,
+                    firstSeen: user.firstSeen,
+                    lastActivity: user.lastActivity,
+                    totalEvents: user.events.length
+                })).sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity));
+                
+                // Essayer de récupérer les vrais admins depuis la table users
+                try {
+                    const { data: admins } = await supabaseClient
+                        .from('users')
+                        .select('email, company:companies(domain)')
+                        .in('role', ['company_admin', 'super_admin']);
+                    
+                    admins?.forEach(admin => {
+                        const domainName = admin.company?.domain || admin.email.split('@')[1];
+                        const domain = allDomains.find(d => d.domain === domainName);
+                        if (domain) {
+                            domain.admin = admin.email;
+                        }
+                    });
+                } catch (e) {
+                    console.warn('[Data] Impossible de récupérer les admins:', e);
                 }
-
+                
+                console.log(`[Data] Stats calculées: ${allDomains.length} domaines, ${allUsers.length} utilisateurs`);
+                
             } catch (error) {
-                console.error('[Data] Erreur chargement données:', error);
-                // Fallback vers les données demo
+                console.error('[Data] Erreur chargement données réelles:', error);
                 loadDemoData();
             }
         }
