@@ -1397,20 +1397,20 @@
                 });
             }
             
-            // Traiter les utilisateurs
+            // Traiter les utilisateurs avec les vraies colonnes du schéma
             allUsers = users.map(user => {
                 const stats = userStatsMap[user.email] || {};
                 const emailsScanned = stats.emailsScanned || 0;
                 const scanDays = stats.scanDays ? stats.scanDays.size : 0;
                 const avgScansPerDay = scanDays > 0 ? emailsScanned / scanDays : 0;
                 
-                // Calculer les dates de licence avec les colonnes existantes
+                // Calculer les dates de licence avec les vraies colonnes
                 const licenseStartDate = user.created_at ? new Date(user.created_at) : new Date();
                 
-                // Utiliser trial_end_date si disponible, sinon calculer
+                // Utiliser license_expires_at du schéma
                 let licenseEndDate;
-                if (user.trial_end_date) {
-                    licenseEndDate = new Date(user.trial_end_date);
+                if (user.license_expires_at) {
+                    licenseEndDate = new Date(user.license_expires_at);
                 } else {
                     // Par défaut, 15 jours après la création
                     licenseEndDate = new Date(licenseStartDate.getTime() + (TRIAL_DAYS * 24 * 60 * 60 * 1000));
@@ -1418,18 +1418,6 @@
                 
                 const now = new Date();
                 const daysUntilExpiry = Math.ceil((licenseEndDate - now) / (1000 * 60 * 60 * 24));
-                
-                // Déterminer le statut de licence basé sur les colonnes existantes
-                let licenseStatus = 'trial'; // Par défaut
-                if (user.subscription_status) {
-                    licenseStatus = user.subscription_status;
-                } else if (user.is_active === false) {
-                    licenseStatus = 'blocked';
-                } else if (daysUntilExpiry < 0) {
-                    licenseStatus = 'expired';
-                } else if (user.is_premium) {
-                    licenseStatus = 'active';
-                }
                 
                 return {
                     ...user,
@@ -1441,8 +1429,7 @@
                     licenseEndDate,
                     daysUntilExpiry,
                     scanFrequency: getScanFrequency(avgScansPerDay),
-                    userType: getUserType(user.email, user.company),
-                    license_status: licenseStatus
+                    userType: getUserType(user.email, user.company)
                 };
             });
             
@@ -1470,10 +1457,9 @@
                     domainMap[domain].adminEmail = user.email;
                 }
                 
-                const userLicenseStatus = user.subscription_status || (user.is_premium ? 'active' : 'trial');
-                if (userLicenseStatus === 'active' || userLicenseStatus === 'trial') {
+                if (user.license_status === 'active' || user.license_status === 'trial') {
                     domainMap[domain].activeLicenses++;
-                    if (userLicenseStatus === 'active') {
+                    if (user.license_status === 'active') {
                         domainMap[domain].monthlyRevenue += MONTHLY_PRICE;
                     }
                 }
@@ -2053,11 +2039,11 @@
                 endDate.setHours(23, 59, 59, 999);
                 const isoDate = endDate.toISOString();
 
-                // Utiliser trial_end_date qui existe dans la base
+                // Utiliser license_expires_at qui existe dans le schéma
                 const { error } = await supabaseClient
                     .from('users')
                     .update({ 
-                        trial_end_date: isoDate,
+                        license_expires_at: isoDate,
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', userId);
@@ -2101,9 +2087,8 @@
                 const { error } = await supabaseClient
                     .from('users')
                     .update({ 
-                        trial_end_date: newEndDate.toISOString(),
-                        is_premium: true,
-                        is_active: true,
+                        license_expires_at: newEndDate.toISOString(),
+                        license_status: 'active',
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', userId);
@@ -2224,29 +2209,12 @@
                     throw new Error('Utilisateur non trouvé dans la base de données');
                 }
 
-                // Utiliser les colonnes qui existent réellement dans la base
+                // Utiliser les vraies colonnes du schéma users
                 const updateData = {
+                    license_status: status,
+                    license_expires_at: end.toISOString(),
                     updated_at: new Date().toISOString()
                 };
-
-                // Ajouter trial_end_date au lieu de license_end_date
-                updateData.trial_end_date = end.toISOString();
-
-                // Gérer le statut selon les colonnes disponibles
-                if (status === 'active') {
-                    updateData.is_premium = true;
-                    updateData.is_active = true;
-                } else if (status === 'trial') {
-                    updateData.is_premium = false;
-                    updateData.is_active = true;
-                } else if (status === 'blocked' || status === 'expired') {
-                    updateData.is_active = false;
-                }
-
-                // Si subscription_status existe, l'utiliser
-                if (user.hasOwnProperty('subscription_status')) {
-                    updateData.subscription_status = status;
-                }
 
                 const { data, error } = await supabaseClient
                     .from('users')
@@ -2436,9 +2404,8 @@
                 const { error } = await supabaseClient
                     .from('users')
                     .update({ 
-                        is_premium: true,
-                        is_active: true,
-                        trial_end_date: newEndDate.toISOString(),
+                        license_status: 'active',
+                        license_expires_at: newEndDate.toISOString(),
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', userId);
@@ -2487,7 +2454,7 @@
                 const { error } = await supabaseClient
                     .from('users')
                     .update({ 
-                        is_active: false,
+                        license_status: 'blocked',
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', userId);
