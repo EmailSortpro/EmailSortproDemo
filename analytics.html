@@ -545,9 +545,13 @@
         let allUsers = [];
         let allDomains = [];
 
-        // Configuration Supabase avec vos vraies clés
-        const SUPABASE_URL = 'https://xqrwaietdwcblqpqvcqp.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxcndhaWV0ZHdjYmxxcHF2Y3FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE2MjU1MzUsImV4cCI6MjA0NzIwMTUzNX0.KDXMZ-eVyfVj0mNXhHaEHs6KBSciTXc5OjMh2xMiX7o';
+        // IMPORTANT: REMPLACEZ CES VALEURS PAR VOS VRAIES CLÉS SUPABASE
+        // Trouvez-les dans: https://app.supabase.com/ > Votre Projet > Settings > API
+        const SUPABASE_URL = 'https://VOTRE-REF.supabase.co'; // <-- CHANGEZ CECI
+        const SUPABASE_ANON_KEY = 'eyJ...VOTRE-CLE-ANONYME...'; // <-- CHANGEZ CECI
+        
+        // Pour tester sans Supabase, mettez USE_DEMO_MODE à true
+        const USE_DEMO_MODE = false;
 
         // === INITIALISATION ===
         document.addEventListener('DOMContentLoaded', async () => {
@@ -565,6 +569,24 @@
 
         async function initializeSupabase() {
             try {
+                if (USE_DEMO_MODE) {
+                    console.log('[Analytics] Mode demo activé - pas de connexion Supabase');
+                    supabaseClient = null;
+                    return;
+                }
+                
+                if (!SUPABASE_URL.includes('supabase.co') || SUPABASE_URL.includes('VOTRE-REF')) {
+                    console.error('[Analytics] ❌ ERREUR: Vous devez configurer vos clés Supabase !');
+                    console.error('[Analytics] 1. Allez sur https://app.supabase.com/');
+                    console.error('[Analytics] 2. Sélectionnez votre projet');
+                    console.error('[Analytics] 3. Settings > API');
+                    console.error('[Analytics] 4. Copiez Project URL et Anon key');
+                    console.error('[Analytics] 5. Remplacez les valeurs dans ce fichier');
+                    alert('Configuration Supabase manquante ! Voir la console pour les instructions.');
+                    supabaseClient = null;
+                    return;
+                }
+                
                 supabaseClient = window.supabase.createClient(
                     SUPABASE_URL,
                     SUPABASE_ANON_KEY,
@@ -588,8 +610,12 @@
                 
                 if (error) {
                     console.error('[Analytics] Test connexion échoué:', error);
+                    if (error.message.includes('Failed to fetch')) {
+                        console.error('[Analytics] ❌ Impossible de se connecter à Supabase');
+                        console.error('[Analytics] Vérifiez que l\'URL est correcte:', SUPABASE_URL);
+                    }
                 } else {
-                    console.log('[Analytics] Connexion Supabase OK');
+                    console.log('[Analytics] ✅ Connexion Supabase OK');
                 }
                 
             } catch (error) {
@@ -644,6 +670,26 @@
             setLoading(true);
             
             try {
+                // Mode demo si pas de Supabase
+                if (!supabaseClient || USE_DEMO_MODE) {
+                    console.log('[Auth] Mode demo - connexion simulée');
+                    currentUser = {
+                        id: 'demo-user',
+                        email: email,
+                        name: email.split('@')[0],
+                        role: 'super_admin',
+                        license_status: 'active',
+                        company: { 
+                            name: 'Demo Company',
+                            domain: email.split('@')[1]
+                        }
+                    };
+                    localStorage.setItem('emailsortpro_admin_email', email);
+                    showApp();
+                    loadDemoData();
+                    return;
+                }
+                
                 console.log('[Auth] Tentative de connexion pour:', email);
                 
                 // Vérifier si l'utilisateur existe et est admin
@@ -728,32 +774,36 @@
             document.getElementById('loadingState').style.display = 'block';
             
             try {
-                // Charger les utilisateurs avec leurs licences
-                const { data: users, error: usersError } = await supabaseClient
-                    .from('users')
-                    .select(`
-                        *,
-                        company:companies(*)
-                    `)
-                    .order('last_login_at', { ascending: false, nullsFirst: false });
-                
-                if (usersError) throw usersError;
-                
-                console.log(`[Data] ${users?.length || 0} utilisateurs trouvés`);
-                
-                // Charger les événements analytics pour les statistiques
-                const { data: events, error: eventsError } = await supabaseClient
-                    .from('analytics_events')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(1000);
-                
-                if (!eventsError && events) {
-                    console.log(`[Data] ${events.length} événements trouvés`);
+                if (!supabaseClient || USE_DEMO_MODE) {
+                    loadDemoData();
+                } else {
+                    // Charger les utilisateurs avec leurs licences
+                    const { data: users, error: usersError } = await supabaseClient
+                        .from('users')
+                        .select(`
+                            *,
+                            company:companies(*)
+                        `)
+                        .order('last_login_at', { ascending: false, nullsFirst: false });
+                    
+                    if (usersError) throw usersError;
+                    
+                    console.log(`[Data] ${users?.length || 0} utilisateurs trouvés`);
+                    
+                    // Charger les événements analytics pour les statistiques
+                    const { data: events, error: eventsError } = await supabaseClient
+                        .from('analytics_events')
+                        .select('*')
+                        .order('created_at', { ascending: false })
+                        .limit(1000);
+                    
+                    if (!eventsError && events) {
+                        console.log(`[Data] ${events.length} événements trouvés`);
+                    }
+                    
+                    // Traiter les données
+                    processData(users, events);
                 }
-                
-                // Traiter les données
-                processData(users, events);
                 
                 // Mettre à jour l'interface
                 updateStats();
@@ -766,6 +816,81 @@
             } finally {
                 document.getElementById('loadingState').style.display = 'none';
             }
+        }
+        
+        function loadDemoData() {
+            console.log('[Data] Chargement des données demo');
+            
+            // Données demo
+            allUsers = [
+                {
+                    id: '1',
+                    email: 'vianney.hastings@hotmail.fr',
+                    name: 'Vianney Hastings',
+                    role: 'super_admin',
+                    license_status: 'active',
+                    company: { name: 'EmailSortPro Admin', domain: 'hotmail.fr' },
+                    last_login_at: new Date().toISOString(),
+                    emailsScanned: 1250,
+                    sessionsCount: 15
+                },
+                {
+                    id: '2',
+                    email: 'john.doe@company.com',
+                    name: 'John Doe',
+                    role: 'company_admin',
+                    license_status: 'active',
+                    company: { name: 'Company Inc', domain: 'company.com' },
+                    last_login_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+                    emailsScanned: 850,
+                    sessionsCount: 12
+                },
+                {
+                    id: '3',
+                    email: 'jane.smith@company.com',
+                    name: 'Jane Smith',
+                    role: 'user',
+                    license_status: 'trial',
+                    company: { name: 'Company Inc', domain: 'company.com' },
+                    last_login_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+                    emailsScanned: 200,
+                    sessionsCount: 5
+                },
+                {
+                    id: '4',
+                    email: 'test@demo.fr',
+                    name: 'Test User',
+                    role: 'user',
+                    license_status: 'expired',
+                    company: { name: 'Demo FR', domain: 'demo.fr' },
+                    last_login_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    emailsScanned: 50,
+                    sessionsCount: 2
+                }
+            ];
+            
+            // Créer les domaines à partir des utilisateurs
+            const domainMap = {};
+            allUsers.forEach(user => {
+                const domain = user.company?.domain || user.email.split('@')[1];
+                if (!domainMap[domain]) {
+                    domainMap[domain] = {
+                        domain: domain,
+                        companyName: user.company?.name || domain,
+                        users: [],
+                        adminEmail: null,
+                        activeLicenses: 0
+                    };
+                }
+                domainMap[domain].users.push(user);
+                if (user.role === 'company_admin' || user.role === 'super_admin') {
+                    domainMap[domain].adminEmail = user.email;
+                }
+                if (user.license_status === 'active' || user.license_status === 'trial') {
+                    domainMap[domain].activeLicenses++;
+                }
+            });
+            allDomains = Object.values(domainMap);
         }
 
         function processData(users, events) {
