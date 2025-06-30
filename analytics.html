@@ -545,14 +545,6 @@
         let allUsers = [];
         let allDomains = [];
 
-        // IMPORTANT: REMPLACEZ CES VALEURS PAR VOS VRAIES CLÉS SUPABASE
-        // Trouvez-les dans: https://app.supabase.com/ > Votre Projet > Settings > API
-        const SUPABASE_URL = 'https://VOTRE-REF.supabase.co'; // <-- CHANGEZ CECI
-        const SUPABASE_ANON_KEY = 'eyJ...VOTRE-CLE-ANONYME...'; // <-- CHANGEZ CECI
-        
-        // Pour tester sans Supabase, mettez USE_DEMO_MODE à true
-        const USE_DEMO_MODE = false;
-
         // === INITIALISATION ===
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('[Analytics] Initialisation...');
@@ -569,27 +561,36 @@
 
         async function initializeSupabase() {
             try {
-                if (USE_DEMO_MODE) {
-                    console.log('[Analytics] Mode demo activé - pas de connexion Supabase');
+                // Charger la configuration depuis Netlify Functions
+                console.log('[Analytics] Chargement de la configuration depuis Netlify...');
+                
+                const response = await fetch('/.netlify/functions/get-supabase-config');
+                
+                if (!response.ok) {
+                    console.error('[Analytics] Erreur fonction Netlify:', response.status);
+                    const errorText = await response.text();
+                    console.error('[Analytics] Détails:', errorText);
+                    
+                    // Mode demo si la fonction n'est pas disponible
+                    console.warn('[Analytics] Passage en mode demo');
                     supabaseClient = null;
                     return;
                 }
                 
-                if (!SUPABASE_URL.includes('supabase.co') || SUPABASE_URL.includes('VOTRE-REF')) {
-                    console.error('[Analytics] ❌ ERREUR: Vous devez configurer vos clés Supabase !');
-                    console.error('[Analytics] 1. Allez sur https://app.supabase.com/');
-                    console.error('[Analytics] 2. Sélectionnez votre projet');
-                    console.error('[Analytics] 3. Settings > API');
-                    console.error('[Analytics] 4. Copiez Project URL et Anon key');
-                    console.error('[Analytics] 5. Remplacez les valeurs dans ce fichier');
-                    alert('Configuration Supabase manquante ! Voir la console pour les instructions.');
-                    supabaseClient = null;
-                    return;
+                const config = await response.json();
+                console.log('[Analytics] Configuration reçue:', {
+                    hasUrl: !!config.url,
+                    hasAnonKey: !!config.anonKey
+                });
+                
+                if (!config.url || !config.anonKey) {
+                    throw new Error('Configuration incomplète');
                 }
                 
+                // Initialiser Supabase avec la config
                 supabaseClient = window.supabase.createClient(
-                    SUPABASE_URL,
-                    SUPABASE_ANON_KEY,
+                    config.url,
+                    config.anonKey,
                     {
                         auth: {
                             autoRefreshToken: true,
@@ -600,7 +601,6 @@
                 );
                 
                 console.log('[Analytics] Supabase initialisé avec succès');
-                console.log('[Analytics] URL:', SUPABASE_URL);
                 
                 // Tester la connexion
                 const { data, error } = await supabaseClient
@@ -610,16 +610,13 @@
                 
                 if (error) {
                     console.error('[Analytics] Test connexion échoué:', error);
-                    if (error.message.includes('Failed to fetch')) {
-                        console.error('[Analytics] ❌ Impossible de se connecter à Supabase');
-                        console.error('[Analytics] Vérifiez que l\'URL est correcte:', SUPABASE_URL);
-                    }
                 } else {
                     console.log('[Analytics] ✅ Connexion Supabase OK');
                 }
                 
             } catch (error) {
                 console.error('[Analytics] Erreur Supabase:', error);
+                console.warn('[Analytics] Passage en mode demo');
                 supabaseClient = null;
             }
         }
@@ -671,7 +668,7 @@
             
             try {
                 // Mode demo si pas de Supabase
-                if (!supabaseClient || USE_DEMO_MODE) {
+                if (!supabaseClient) {
                     console.log('[Auth] Mode demo - connexion simulée');
                     currentUser = {
                         id: 'demo-user',
@@ -774,7 +771,7 @@
             document.getElementById('loadingState').style.display = 'block';
             
             try {
-                if (!supabaseClient || USE_DEMO_MODE) {
+                if (!supabaseClient) {
                     loadDemoData();
                 } else {
                     // Charger les utilisateurs avec leurs licences
