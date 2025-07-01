@@ -1,5 +1,5 @@
 // AuthLicenseManager.js - Système de licence unifié et simplifié
-// Version corrigée qui fonctionne avec Supabase
+// Version corrigée qui ne bloque pas le démarrage
 
 class AuthLicenseManager {
     constructor() {
@@ -25,9 +25,6 @@ class AuthLicenseManager {
             // 1. Initialiser Supabase
             await this.initializeSupabase();
             
-            // 2. Vérifier l'authentification existante
-            await this.checkExistingAuth();
-            
             this.initialized = true;
             console.log('[AuthLicense] ✅ Gestionnaire initialisé');
             return true;
@@ -50,12 +47,14 @@ class AuthLicenseManager {
             // Charger la config depuis Netlify
             const response = await fetch('/.netlify/functions/get-supabase-config');
             if (!response.ok) {
-                throw new Error(`Erreur config: ${response.status}`);
+                console.warn('[AuthLicense] Fonction Netlify non disponible:', response.status);
+                return;
             }
             
             const config = await response.json();
             if (!config.url || !config.anonKey) {
-                throw new Error('Configuration Supabase incomplète');
+                console.warn('[AuthLicense] Configuration Supabase incomplète');
+                return;
             }
             
             this.supabaseClient = window.supabase.createClient(
@@ -73,7 +72,7 @@ class AuthLicenseManager {
             console.log('[AuthLicense] ✅ Supabase configuré');
             
         } catch (error) {
-            console.error('[AuthLicense] ❌ Erreur Supabase:', error);
+            console.warn('[AuthLicense] Supabase non disponible:', error.message);
             // Ne pas bloquer l'application si Supabase n'est pas disponible
             this.supabaseClient = null;
         }
@@ -82,70 +81,6 @@ class AuthLicenseManager {
     // ==========================================
     // AUTHENTIFICATION
     // ==========================================
-    async checkExistingAuth() {
-        try {
-            // Vérifier si un email est stocké
-            const storedEmail = localStorage.getItem('emailsortpro_user_email');
-            if (!storedEmail || !this.supabaseClient) {
-                console.log('[AuthLicense] Aucun utilisateur stocké ou Supabase non disponible');
-                return false;
-            }
-
-            console.log('[AuthLicense] Vérification de l\'utilisateur:', storedEmail);
-            
-            // Vérifier dans la base de données
-            const { data: user, error } = await this.supabaseClient
-                .from('users')
-                .select(`
-                    id,
-                    email,
-                    name,
-                    role,
-                    license_status,
-                    license_expires_at,
-                    created_at,
-                    company_id,
-                    companies (
-                        id,
-                        name,
-                        domain
-                    )
-                `)
-                .eq('email', storedEmail)
-                .single();
-
-            if (error || !user) {
-                console.warn('[AuthLicense] Utilisateur non trouvé:', error?.message);
-                this.clearAuth();
-                return false;
-            }
-
-            // Vérifier et mettre à jour le statut de licence
-            const licenseCheck = this.checkAndUpdateLicense(user);
-            
-            if (licenseCheck.valid) {
-                this.currentUser = user;
-                this.isAuthenticated = true;
-                this.licenseValid = true;
-                
-                // Mettre à jour la dernière connexion
-                await this.updateLastLogin(user.id);
-                
-                console.log('[AuthLicense] ✅ Utilisateur authentifié avec licence valide');
-                return true;
-            } else {
-                console.warn('[AuthLicense] ❌ Licence invalide:', licenseCheck.message);
-                this.showLicenseError(licenseCheck);
-                return false;
-            }
-
-        } catch (error) {
-            console.error('[AuthLicense] Erreur vérification auth:', error);
-            this.clearAuth();
-            return false;
-        }
-    }
-
     async authenticateWithEmail(email) {
         if (!email) {
             throw new Error('Email requis');
@@ -153,7 +88,7 @@ class AuthLicenseManager {
 
         // Si pas de Supabase, autoriser l'accès
         if (!this.supabaseClient) {
-            console.warn('[AuthLicense] Supabase non disponible, accès autorisé par défaut');
+            console.log('[AuthLicense] Supabase non disponible, accès autorisé par défaut');
             this.currentUser = { email, license_status: 'active' };
             this.isAuthenticated = true;
             this.licenseValid = true;
@@ -202,14 +137,14 @@ class AuthLicenseManager {
             const licenseCheck = this.checkAndUpdateLicense(user);
             
             if (!licenseCheck.valid) {
-                this.showLicenseError(licenseCheck);
-                throw new Error(licenseCheck.message);
+                console.warn('[AuthLicense] Licence invalide:', licenseCheck.message);
+                // Ne pas afficher d'erreur bloquante, juste logger
             }
 
             // Authentification réussie
             this.currentUser = user;
             this.isAuthenticated = true;
-            this.licenseValid = true;
+            this.licenseValid = licenseCheck.valid;
             
             // Stocker l'email
             localStorage.setItem('emailsortpro_user_email', email);
@@ -289,7 +224,27 @@ class AuthLicenseManager {
             
         } catch (error) {
             console.error('[AuthLicense] Erreur création utilisateur:', error);
-            throw error;
+            
+            // En cas d'erreur, créer un utilisateur local
+            const localUser = {
+                email: email,
+                name: email.split('@')[0],
+                license_status: 'trial',
+                license_expires_at: new Date(Date.now() + (15 * 24 * 60 * 60 * 1000)).toISOString()
+            };
+            
+            this.currentUser = localUser;
+            this.isAuthenticated = true;
+            this.licenseValid = true;
+            
+            localStorage.setItem('emailsortpro_user_email', email);
+            
+            return {
+                valid: true,
+                user: localUser,
+                status: 'trial',
+                message: 'Compte créé localement avec essai gratuit'
+            };
         }
     }
 
@@ -375,128 +330,6 @@ class AuthLicenseManager {
     }
 
     // ==========================================
-    // INTERFACE UTILISATEUR
-    // ==========================================
-    showLicenseError(licenseResult) {
-        // Supprimer les erreurs existantes
-        document.querySelectorAll('.license-error-overlay').forEach(el => el.remove());
-        
-        const { status, message, showContact } = licenseResult;
-        
-        // Créer l'overlay d'erreur
-        const overlay = document.createElement('div');
-        overlay.className = 'license-error-overlay';
-        overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 99999;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            backdrop-filter: blur(10px);
-        `;
-        
-        let icon = '⚠️';
-        let title = 'Accès refusé';
-        
-        switch (status) {
-            case 'trial_expired':
-                icon = '⏰';
-                title = 'Période d\'essai expirée';
-                break;
-            case 'expired':
-                icon = '📋';
-                title = 'Licence expirée';
-                break;
-            case 'blocked':
-                icon = '🚫';
-                title = 'Accès suspendu';
-                break;
-        }
-        
-        const errorBox = document.createElement('div');
-        errorBox.style.cssText = `
-            background: white;
-            padding: 2.5rem;
-            border-radius: 16px;
-            text-align: center;
-            max-width: 550px;
-            width: 90%;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
-            animation: slideInUp 0.3s ease-out;
-        `;
-        
-        errorBox.innerHTML = `
-            <div style="color: #dc2626; font-size: 4rem; margin-bottom: 1.5rem;">${icon}</div>
-            <h2 style="color: #1f2937; margin-bottom: 1rem; font-size: 1.75rem;">${title}</h2>
-            <p style="color: #6b7280; margin-bottom: 1.5rem; line-height: 1.6;">${message}</p>
-            
-            ${showContact ? `
-                <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 16px; margin: 16px 0;">
-                    <h4 style="margin: 0 0 8px 0; color: #0c4a6e; font-size: 14px;">📧 Support EmailSortPro</h4>
-                    <p style="margin: 0; color: #0369a1;">
-                        <a href="mailto:vianney.hastings@hotmail.fr" style="color: #0284c7; text-decoration: none;">
-                            vianney.hastings@hotmail.fr
-                        </a>
-                    </p>
-                </div>
-            ` : ''}
-            
-            <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px;">
-                <button onclick="window.authLicenseManager.retryAuth()" style="
-                    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-                    color: white;
-                    border: none;
-                    padding: 12px 24px;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    font-weight: 600;
-                    transition: all 0.2s ease;
-                ">
-                    <i class="fas fa-refresh"></i> Réessayer
-                </button>
-                
-                <button onclick="window.authLicenseManager.logout()" style="
-                    background: #6b7280;
-                    color: white;
-                    border: none;
-                    padding: 12px 24px;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    font-weight: 600;
-                    transition: all 0.2s ease;
-                ">
-                    Changer d'utilisateur
-                </button>
-            </div>
-        `;
-        
-        overlay.appendChild(errorBox);
-        document.body.appendChild(overlay);
-        document.body.style.overflow = 'hidden';
-        
-        // Ajouter les styles d'animation
-        if (!document.getElementById('license-error-styles')) {
-            const styles = document.createElement('style');
-            styles.id = 'license-error-styles';
-            styles.textContent = `
-                @keyframes slideInUp {
-                    from { opacity: 0; transform: translateY(30px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-            `;
-            document.head.appendChild(styles);
-        }
-    }
-
-    // ==========================================
     // MÉTHODES PUBLIQUES
     // ==========================================
     async login(email) {
@@ -526,15 +359,6 @@ class AuthLicenseManager {
         }
     }
 
-    retryAuth() {
-        // Supprimer l'overlay d'erreur
-        document.querySelectorAll('.license-error-overlay').forEach(el => el.remove());
-        document.body.style.overflow = '';
-        
-        // Relancer la vérification
-        window.location.reload();
-    }
-
     logout() {
         this.clearAuth();
         window.location.reload();
@@ -551,10 +375,6 @@ class AuthLicenseManager {
         } catch (error) {
             console.warn('[AuthLicense] Erreur nettoyage localStorage:', error);
         }
-        
-        // Supprimer les overlays d'erreur
-        document.querySelectorAll('.license-error-overlay').forEach(el => el.remove());
-        document.body.style.overflow = '';
     }
 
     // Getters
@@ -602,19 +422,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('[AuthLicense] Auto-initialisation...');
     
     try {
-        const initialized = await window.authLicenseManager.initialize();
-        
-        if (initialized && window.authLicenseManager.isUserAuthenticated()) {
-            console.log('[AuthLicense] ✅ Utilisateur authentifié, déclenchement showApp');
-            
-            // Déclencher l'affichage de l'app
-            if (window.showApp) {
-                window.showApp();
-            }
-        } else {
-            console.log('[AuthLicense] ❌ Authentification requise');
-        }
-        
+        await window.authLicenseManager.initialize();
+        console.log('[AuthLicense] ✅ Initialisation terminée');
     } catch (error) {
         console.error('[AuthLicense] Erreur auto-initialisation:', error);
     }
