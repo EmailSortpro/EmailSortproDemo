@@ -938,161 +938,6 @@
             text-align: center;
         }
 
-        /* === STYLES POUR LES ERREURS DE LICENCE === */
-        .license-error-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 99999;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            backdrop-filter: blur(10px);
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .license-error-box {
-            background: white;
-            padding: 2.5rem;
-            border-radius: 16px;
-            text-align: center;
-            max-width: 550px;
-            width: 90%;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(226, 232, 240, 0.8);
-            position: relative;
-            animation: slideInUp 0.3s ease-out;
-        }
-
-        .license-error-icon {
-            color: #dc2626;
-            font-size: 4rem;
-            margin-bottom: 1.5rem;
-            line-height: 1;
-        }
-
-        .license-error-title {
-            color: #1f2937;
-            margin-bottom: 1rem;
-            font-size: 1.75rem;
-            font-weight: 700;
-        }
-
-        .license-error-message {
-            color: #6b7280;
-            margin-bottom: 1.5rem;
-            line-height: 1.6;
-            font-size: 1.1rem;
-        }
-
-        .admin-contact {
-            background: #f0f9ff;
-            border: 1px solid #0ea5e9;
-            border-radius: 8px;
-            padding: 16px;
-            margin: 16px 0;
-            text-align: left;
-        }
-
-        .admin-contact h4 {
-            margin: 0 0 8px 0;
-            color: #0c4a6e;
-            font-size: 14px;
-        }
-
-        .admin-contact p {
-            margin: 0;
-            color: #0369a1;
-        }
-
-        .admin-contact a {
-            color: #0284c7;
-            text-decoration: none;
-        }
-
-        .admin-contact a:hover {
-            text-decoration: underline;
-        }
-
-        .license-error-details {
-            background: #f8fafc;
-            padding: 20px;
-            border-radius: 12px;
-            margin: 20px 0;
-        }
-
-        .license-error-details p {
-            color: #64748b;
-            font-size: 0.9rem;
-            margin: 0;
-            line-height: 1.5;
-        }
-
-        .license-error-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            margin-top: 24px;
-            flex-wrap: wrap;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            margin: 6px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-        }
-
-        .btn-secondary {
-            background: #6b7280;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            margin: 6px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-secondary:hover {
-            background: #4b5563;
-            transform: translateY(-1px);
-        }
-
         /* Responsive sobre */
         @media (max-width: 768px) {
             .login-container {
@@ -1268,6 +1113,8 @@
 
 </head>
 <body>
+    <!-- Vérification du domaine - SUPPRIMÉE -->
+
     <div id="app">
         <!-- Header Application -->
         <header class="app-header">
@@ -1441,860 +1288,56 @@
 
     <!-- Scripts - Ordre CORRIGÉ pour éviter le délai de 10 secondes -->
     
-    <!-- 1. CHARGEMENT DE SUPABASE CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
 
-    <!-- 2. UIManager -->
-    <script src="UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
+<!-- 2. Configuration Supabase (NE PAS COMMITER) -->
+<script src="./config-supabase.js" onerror="console.warn('config-supabase.js manquant - les licences ne fonctionneront pas')"></script>
 
-    <!-- 3. Configuration Supabase -->
-    <script src="config-supabase.js" onerror="console.warn('config-supabase.js manquant - les licences ne fonctionneront pas')"></script>
+<!-- 3. Service de gestion des licences -->
+<script src="./LicenseService.js" onerror="console.error('LicenseService.js manquant')"></script>
 
-    <!-- 4. Service de gestion des licences INTÉGRÉ -->
-    <script>
-    // LicenseService.js intégré directement pour éviter les problèmes de chargement
-    (function() {
-        'use strict';
-        
-        console.log('[LicenseService] Initializing integrated service v5.0...');
-        
-        class LicenseService {
-            constructor() {
-                this.supabase = null;
-                this.currentUser = null;
-                this.initialized = false;
-                this.config = null;
-                this.isNetlify = window.location.hostname.includes('netlify.app');
-                
-                console.log('[LicenseService] Constructor v5.0');
-                console.log('[LicenseService] Environment:', this.isNetlify ? 'Netlify' : 'Local');
-                
-                // Initialiser immédiatement
-                this.initialize();
-            }
+<!-- 4. Services Core -->
+<script src="./AuthService.js" onerror="console.error('AuthService.js manquant')"></script>
+<script src="./GoogleAuthService.js" onerror="console.error('GoogleAuthService.js manquant')"></script>
+<script src="./MailService.js" onerror="console.error('MailService.js manquant')"></script>
 
-            async initialize() {
-                if (this.initialized) {
-                    console.log('[LicenseService] Already initialized');
-                    return true;
-                }
+<!-- 5. CategoryManager -->
+<script src="./CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
 
-                console.log('[LicenseService] Starting initialization...');
-                
-                try {
-                    // Attendre que Supabase soit chargé
-                    await this.waitForSupabase();
-                    
-                    // Initialiser la configuration
-                    await this.initializeSupabaseConfig();
-                    
-                    // Créer le client Supabase
-                    await this.createSupabaseClient();
-                    
-                    this.initialized = true;
-                    console.log('[LicenseService] ✅ Initialization complete');
-                    
-                    // Émettre l'événement
-                    this.emitReadyEvent();
-                    
-                    return true;
-                    
-                } catch (error) {
-                    console.error('[LicenseService] Initialization error:', error);
-                    // En cas d'erreur, utiliser le mode fallback
-                    this.initialized = true;
-                    this.emitReadyEvent();
-                    return false;
-                }
-            }
+<!-- 6. TaskManager AVANT PageManager -->
+<script src="./TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
 
-            async waitForSupabase() {
-                console.log('[LicenseService] Waiting for Supabase library...');
-                
-                let attempts = 0;
-                const maxAttempts = 50; // 5 secondes
-                
-                while (!window.supabase && attempts < maxAttempts) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    attempts++;
-                }
-                
-                if (!window.supabase) {
-                    throw new Error('Supabase library not loaded after 5 seconds');
-                }
-                
-                console.log('[LicenseService] ✅ Supabase library ready');
-            }
+<!-- 7. Autres Managers -->
+<script src="./EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
+<script src="./EmailDeduplicationManager.js" onerror="console.error('EmailDeduplicationManager.js manquant')"></script>
+<script src="./AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
 
-            async initializeSupabaseConfig() {
-                console.log('[LicenseService] Initializing Supabase config...');
-                
-                // Attendre que supabaseConfig soit disponible
-                let attempts = 0;
-                const maxAttempts = 30; // 3 secondes
-                
-                while (!window.supabaseConfig && attempts < maxAttempts) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    attempts++;
-                }
-                
-                if (!window.supabaseConfig) {
-                    throw new Error('Supabase config not available');
-                }
-                
-                // Initialiser la configuration
-                if (!window.supabaseConfig.initialized) {
-                    if (typeof window.initializeSupabaseConfig === 'function') {
-                        await window.initializeSupabaseConfig();
-                    } else if (typeof window.supabaseConfig.initialize === 'function') {
-                        await window.supabaseConfig.initialize();
-                    }
-                }
-                
-                // Récupérer la configuration
-                this.config = window.supabaseConfig.getConfig();
-                
-                if (!this.config || !this.config.url || !this.config.anonKey) {
-                    throw new Error('Invalid Supabase configuration');
-                }
-                
-                console.log('[LicenseService] ✅ Config loaded');
-            }
+<!-- 8. DASHBOARD MODULE -->
+<script src="./dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
 
-            async createSupabaseClient() {
-                console.log('[LicenseService] Creating Supabase client...');
-                
-                this.supabase = window.supabase.createClient(
-                    this.config.url,
-                    this.config.anonKey,
-                    {
-                        auth: {
-                            autoRefreshToken: true,
-                            persistSession: true,
-                            detectSessionInUrl: false,
-                            storage: window.localStorage
-                        }
-                    }
-                );
-                
-                console.log('[LicenseService] ✅ Supabase client created');
-            }
+<!-- 9. Page Manager APRÈS Dashboard et TaskManager -->
+<script src="./PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
 
-            emitReadyEvent() {
-                window.licenseServiceReady = true;
-                
-                setTimeout(() => {
-                    try {
-                        window.dispatchEvent(new CustomEvent('licenseServiceReady', {
-                            detail: { service: this }
-                        }));
-                        console.log('[LicenseService] ✅ Ready event emitted');
-                    } catch (eventError) {
-                        console.warn('[LicenseService] Error emitting ready event:', eventError);
-                    }
-                }, 100);
-            }
+<!-- 10. Modules de pages -->
+<script src="./startscan.js" onerror="console.error('startscan.js manquant - utilisation de StartScan.js à la place')"></script>
+<script src="./StartScan.js" onerror="console.error('StartScan.js manquant')"></script>
+<script src="./DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
+<script src="./CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
 
-            async authenticateWithEmail(email) {
-                console.log('[LicenseService] Authenticating user:', email);
-                
-                const cleanEmail = email.toLowerCase().trim();
-                
-                try {
-                    // Si pas de Supabase, utiliser le mode trial
-                    if (!this.supabase) {
-                        console.warn('[LicenseService] No Supabase, using trial mode');
-                        return this.createTrialLicense(cleanEmail);
-                    }
-                    
-                    // Rechercher l'utilisateur
-                    const { data: user, error } = await this.supabase
-                        .from('users')
-                        .select(`
-                            *,
-                            company:companies(*)
-                        `)
-                        .eq('email', cleanEmail)
-                        .single();
+<!-- 11. Modules Optionnels -->
+<script src="./Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
 
-                    if (error && error.code !== 'PGRST116') {
-                        console.error('[LicenseService] Database error:', error);
-                        throw error;
-                    }
+<!-- 12. Analytics -->
+<script src="./analytics.js" onerror="console.error('analytics.js manquant')"></script>
 
-                    if (!user) {
-                        console.log('[LicenseService] User not found, creating new user');
-                        const newUser = await this.createNewUser(cleanEmail);
-                        return this.formatLicenseResponse(newUser);
-                    }
-
-                    // Mettre à jour la dernière connexion
-                    await this.updateLastLogin(user.id);
-                    
-                    // Stocker l'utilisateur
-                    this.currentUser = user;
-                    
-                    // Retourner la réponse
-                    return this.formatLicenseResponse(user);
-                    
-                } catch (error) {
-                    console.error('[LicenseService] Authentication error:', error);
-                    return this.createTrialLicense(cleanEmail);
-                }
-            }
-
-            async createNewUser(email) {
-                const domain = email.split('@')[1];
-                const name = email.split('@')[0];
-                
-                try {
-                    // Créer ou trouver la société
-                    let company = null;
-                    
-                    const { data: existingCompany } = await this.supabase
-                        .from('companies')
-                        .select('*')
-                        .eq('domain', domain)
-                        .single();
-                    
-                    if (!existingCompany) {
-                        const { data: newCompany, error } = await this.supabase
-                            .from('companies')
-                            .insert([{
-                                name: domain,
-                                domain: domain,
-                                created_at: new Date().toISOString()
-                            }])
-                            .select()
-                            .single();
-                        
-                        if (error) throw error;
-                        company = newCompany;
-                    } else {
-                        company = existingCompany;
-                    }
-                    
-                    // Créer l'utilisateur
-                    const newUser = {
-                        email: email,
-                        name: name,
-                        company_id: company?.id,
-                        role: 'user',
-                        license_status: 'trial',
-                        license_expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-                        first_login_at: new Date().toISOString(),
-                        last_login_at: new Date().toISOString(),
-                        created_at: new Date().toISOString()
-                    };
-                    
-                    const { data, error } = await this.supabase
-                        .from('users')
-                        .insert([newUser])
-                        .select(`
-                            *,
-                            company:companies(*)
-                        `)
-                        .single();
-                    
-                    if (error) throw error;
-                    
-                    console.log('[LicenseService] ✅ New user created');
-                    return data;
-                    
-                } catch (error) {
-                    console.error('[LicenseService] Error creating user:', error);
-                    throw error;
-                }
-            }
-
-            async updateLastLogin(userId) {
-                try {
-                    await this.supabase
-                        .from('users')
-                        .update({ 
-                            last_login_at: new Date().toISOString()
-                        })
-                        .eq('id', userId);
-                } catch (error) {
-                    console.warn('[LicenseService] Failed to update last login:', error);
-                }
-            }
-
-            formatLicenseResponse(user) {
-                const now = new Date();
-                const expiresAt = new Date(user.license_expires_at);
-                const daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
-                
-                let status = 'trial';
-                let valid = true;
-                let message = '';
-                
-                if (user.license_status === 'blocked') {
-                    status = 'blocked';
-                    valid = false;
-                    message = 'Votre accès a été bloqué';
-                } else if (expiresAt < now) {
-                    status = 'expired';
-                    valid = false;
-                    message = 'Votre période d\'essai a expiré';
-                } else if (user.license_status === 'active') {
-                    status = 'active';
-                    message = 'Licence active';
-                } else {
-                    status = 'trial';
-                    message = `Période d'essai - ${daysRemaining} jours restants`;
-                }
-                
-                this.currentUser = user;
-                
-                return {
-                    valid: valid,
-                    status: status,
-                    user: user,
-                    message: message,
-                    daysRemaining: Math.max(0, daysRemaining),
-                    adminContact: this.getAdminContact(user)
-                };
-            }
-
-            createTrialLicense(email) {
-                const domain = email.split('@')[1];
-                const name = email.split('@')[0];
-                
-                const user = {
-                    id: 'trial_' + Date.now(),
-                    email: email,
-                    name: name,
-                    role: 'user',
-                    license_status: 'trial',
-                    license_expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-                    company: {
-                        id: 'trial_company',
-                        name: domain,
-                        domain: domain
-                    },
-                    created_at: new Date().toISOString()
-                };
-                
-                this.currentUser = user;
-                
-                return {
-                    valid: true,
-                    status: 'trial',
-                    user: user,
-                    message: 'Période d\'essai - 15 jours restants (Mode hors ligne)',
-                    daysRemaining: 15,
-                    offline: true
-                };
-            }
-
-            getAdminContact(user) {
-                if (user.company_id && user.company) {
-                    return {
-                        name: user.company.name + ' Admin',
-                        email: `admin@${user.company.domain}`
-                    };
-                }
-                return null;
-            }
-
-            getCurrentUser() {
-                return this.currentUser;
-            }
-
-            isAdmin() {
-                return this.currentUser?.role === 'company_admin' || 
-                       this.currentUser?.role === 'super_admin';
-            }
-
-            async logout() {
-                console.log('[LicenseService] Logging out...');
-                
-                this.currentUser = null;
-                window.currentUser = null;
-                window.licenseStatus = null;
-                
-                if (this.supabase) {
-                    try {
-                        await this.supabase.auth.signOut();
-                    } catch (error) {
-                        console.warn('[LicenseService] Logout error:', error);
-                    }
-                }
-            }
-
-            async debug() {
-                return {
-                    initialized: this.initialized,
-                    hasSupabase: !!this.supabase,
-                    hasConfig: !!this.config,
-                    currentUser: this.currentUser,
-                    isAdmin: this.isAdmin()
-                };
-            }
-        }
-
-        // Créer l'instance globale
-        window.licenseService = new LicenseService();
-        console.log('[LicenseService] ✅ Global instance created v5.0');
-        
-    })();
-    </script>
-
-    <!-- 5. Script de vérification des licences -->
-    <script src="license-check.js" onerror="console.error('license-check.js manquant')"></script>
-
-    <!-- 6. Services Core -->
-    <script src="AuthService.js" onerror="console.error('AuthService.js manquant')"></script>
-    <script src="GoogleAuthService.js" onerror="console.error('GoogleAuthService.js manquant')"></script>
-    <script src="MailService.js" onerror="console.error('MailService.js manquant')"></script>
-
-    <!-- 7. CategoryManager -->
-    <script src="CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
-
-    <!-- 8. TaskManager AVANT PageManager -->
-    <script src="TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
-
-    <!-- 9. Autres Managers -->
-    <script src="EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
-    <script src="EmailDeduplicationManager.js" onerror="console.error('EmailDeduplicationManager.js manquant')"></script>
-    <script src="AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
-
-    <!-- 10. DASHBOARD MODULE -->
-    <script src="dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
-
-    <!-- 11. Page Manager APRÈS Dashboard et TaskManager -->
-    <script src="PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
-
-    <!-- 12. Modules de pages -->
-    <script src="StartScan.js" onerror="console.error('StartScan.js manquant')"></script>
-    <script src="DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
-    <script src="CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
-
-    <!-- 13. Modules Optionnels -->
-    <script src="Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
-
-    <!-- 14. Analytics -->
-    <script src="analytics.js" onerror="console.error('analytics.js manquant')"></script>
-
-    <!-- 15. Application Principal EN DERNIER -->
-    <script src="app.js" onerror="console.error('app.js manquant')"></script>
+<!-- 13. Application Principal EN DERNIER -->
+<script src="./app.js" onerror="console.error('app.js manquant')"></script>
  
-    <!-- Scripts de gestion des événements AVEC INTÉGRATION DE LICENCE -->
+    <!-- Scripts de gestion des événements -->
     <script>
         // Variable pour éviter les vérifications multiples
         let authCheckInProgress = false;
         let appAlreadyShown = false;
-        let licenseCheckPerformed = false;
-
-        // Écouter les événements de licence
-        window.addEventListener('licenseServiceReady', function(event) {
-            console.log('[INDEX] License service ready event received');
-        });
-
-        window.addEventListener('userAuthenticated', function(event) {
-            console.log('[INDEX] User authenticated event received:', event.detail);
-            
-            // Mettre à jour l'affichage utilisateur immédiatement
-            if (event.detail && event.detail.user) {
-                // Forcer la mise à jour de l'affichage avec les infos du service d'auth
-                let userInfo = event.detail.user;
-                
-                // Si on a aussi les infos d'auth Microsoft/Google, les utiliser
-                if (window.authService && window.authService.isAuthenticated()) {
-                    const msAccount = window.authService.getAccount();
-                    if (msAccount) {
-                        userInfo = {
-                            ...userInfo,
-                            displayName: msAccount.name || userInfo.name,
-                            email: msAccount.username || userInfo.email,
-                            provider: 'microsoft'
-                        };
-                    }
-                } else if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
-                    const googleAccount = window.googleAuthService.getAccount();
-                    if (googleAccount) {
-                        userInfo = {
-                            ...userInfo,
-                            displayName: googleAccount.name || userInfo.name,
-                            email: googleAccount.email || userInfo.email,
-                            provider: 'google'
-                        };
-                    }
-                }
-                
-                // Mettre à jour l'affichage
-                window.updateUserDisplay(userInfo);
-                
-                // Afficher un message de statut de licence
-                if (window.uiManager && event.detail.status) {
-                    const { status, daysRemaining, message } = event.detail.status;
-                    if (status === 'trial') {
-                        window.uiManager.showToast(`✅ Période d'essai - ${daysRemaining} jours restants`, 'success', 5000);
-                    } else if (status === 'active') {
-                        window.uiManager.showToast('✅ Licence active', 'success', 5000);
-                    }
-                }
-            }
-            
-            // Si l'app n'est pas encore affichée et que l'utilisateur est authentifié, afficher l'app
-            if (!appAlreadyShown && event.detail.user && event.detail.status.valid) {
-                window.showApp();
-            }
-        });
-
-        window.addEventListener('licenseCheckFailed', function(event) {
-            console.log('[INDEX] License check failed event received:', event.detail);
-            
-            // Masquer le loading et afficher l'erreur de licence
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            if (loadingOverlay) {
-                loadingOverlay.classList.remove('active');
-            }
-            
-            // Afficher l'erreur de licence appropriée
-            if (event.detail) {
-                showLicenseError(event.detail);
-            }
-        });
-
-        // Fonction pour afficher les erreurs de licence
-        function showLicenseError(licenseResult) {
-            const { status, message, adminContact, daysRemaining } = licenseResult;
-            
-            console.error('[INDEX] Showing license error:', licenseResult);
-            
-            // Supprimer les overlays existants
-            document.querySelectorAll('.license-error-overlay').forEach(el => el.remove());
-            
-            // Créer l'overlay d'erreur
-            const overlay = document.createElement('div');
-            overlay.className = 'license-error-overlay';
-            
-            const errorBox = document.createElement('div');
-            errorBox.className = 'license-error-box';
-            
-            let icon = '⚠️';
-            let title = 'Accès refusé';
-            let adminInfo = '';
-            let actions = '';
-            
-            switch (status) {
-                case 'expired':
-                    icon = '⏰';
-                    title = 'Période d\'essai expirée';
-                    message = message || 'Votre période d\'essai de 15 jours a expiré. L\'application doit être régularisée par votre administrateur.';
-                    
-                    if (adminContact) {
-                        adminInfo = `
-                            <div class="admin-contact">
-                                <h4>👤 Contactez votre administrateur :</h4>
-                                <p><strong>${adminContact.name}</strong><br>
-                                📧 <a href="mailto:${adminContact.email}">${adminContact.email}</a></p>
-                            </div>
-                        `;
-                    }
-                    
-                    // Si l'utilisateur est lui-même admin, proposer le lien analytics
-                    if (window.licenseService && window.licenseService.isAdmin()) {
-                        actions = `
-                            <a href="https://emailsortpro.netlify.app/analytics.html" class="btn-primary">
-                                <i class="fas fa-chart-bar"></i> Gérer les licences
-                            </a>
-                            <button onclick="retryLogin()" class="btn-secondary">
-                                <i class="fas fa-refresh"></i> Réessayer
-                            </button>
-                        `;
-                    } else {
-                        actions = `
-                            <button onclick="contactAdmin()" class="btn-primary">
-                                <i class="fas fa-envelope"></i> Contacter l'admin
-                            </button>
-                            <button onclick="retryLogin()" class="btn-secondary">
-                                <i class="fas fa-refresh"></i> Réessayer
-                            </button>
-                        `;
-                    }
-                    break;
-                    
-                case 'blocked':
-                    icon = '🚫';
-                    title = 'Accès bloqué';
-                    message = message || 'Votre accès a été bloqué par votre administrateur.';
-                    
-                    if (adminContact) {
-                        adminInfo = `
-                            <div class="admin-contact">
-                                <h4>👤 Contactez votre administrateur :</h4>
-                                <p><strong>${adminContact.name}</strong><br>
-                                📧 <a href="mailto:${adminContact.email}">${adminContact.email}</a></p>
-                            </div>
-                        `;
-                    }
-                    
-                    actions = `
-                        <button onclick="contactAdmin()" class="btn-primary">
-                            <i class="fas fa-envelope"></i> Contacter l'admin
-                        </button>
-                        <button onclick="retryLogin()" class="btn-secondary">
-                            <i class="fas fa-refresh"></i> Réessayer
-                        </button>
-                    `;
-                    break;
-                    
-                case 'invalid':
-                case 'not_found':
-                    icon = '❓';
-                    title = 'Licence non trouvée';
-                    message = message || 'Aucune licence active trouvée pour votre compte. Contactez votre administrateur pour obtenir l\'accès.';
-                    
-                    actions = `
-                        <button onclick="retryWithDifferentEmail()" class="btn-primary">
-                            <i class="fas fa-user"></i> Essayer un autre email
-                        </button>
-                        <button onclick="retryLogin()" class="btn-secondary">
-                            <i class="fas fa-refresh"></i> Réessayer
-                        </button>
-                    `;
-                    break;
-                    
-                default:
-                    actions = `
-                        <button onclick="retryLogin()" class="btn-primary">
-                            <i class="fas fa-refresh"></i> Réessayer
-                        </button>
-                    `;
-            }
-            
-            errorBox.innerHTML = `
-                <div class="license-error-icon">${icon}</div>
-                <h2 class="license-error-title">${title}</h2>
-                <p class="license-error-message">${message}</p>
-                ${adminInfo}
-                <div class="license-error-details">
-                    <p>
-                        <strong>Type d'erreur :</strong> ${status}<br>
-                        <strong>Heure :</strong> ${new Date().toLocaleString()}
-                    </p>
-                </div>
-                <div class="license-error-actions">
-                    ${actions}
-                </div>
-            `;
-            
-            overlay.appendChild(errorBox);
-            document.body.appendChild(overlay);
-            
-            // Désactiver le défilement
-            document.body.style.overflow = 'hidden';
-        }
-
-        // Fonctions globales pour les actions
-        window.retryLogin = function() {
-            document.querySelectorAll('.license-error-overlay').forEach(el => el.remove());
-            document.body.style.overflow = '';
-            
-            // Effacer les données stockées
-            try {
-                localStorage.removeItem('emailsortpro_user_email');
-                localStorage.removeItem('emailsortpro_current_user');
-            } catch (e) {}
-            
-            // Recharger la page
-            window.location.reload();
-        };
-
-        window.retryWithDifferentEmail = function() {
-            document.querySelectorAll('.license-error-overlay').forEach(el => el.remove());
-            document.body.style.overflow = '';
-            
-            // Effacer les données stockées
-            try {
-                localStorage.removeItem('emailsortpro_user_email');
-                localStorage.removeItem('emailsortpro_current_user');
-            } catch (e) {}
-            
-            // Déconnecter et recharger
-            if (window.handleLogout) {
-                window.handleLogout();
-            } else {
-                window.location.reload();
-            }
-        };
-
-        window.contactAdmin = function() {
-            const adminContact = window.licenseStatus?.adminContact || window.currentUser?.company?.admin;
-            
-            if (adminContact && adminContact.email) {
-                const subject = encodeURIComponent('Demande d\'accès EmailSortPro');
-                const body = encodeURIComponent(`Bonjour,\n\nJe souhaiterais obtenir l'accès à EmailSortPro.\n\nMon email: ${window.currentUser?.email || 'Non spécifié'}\n\nMerci,`);
-                window.open(`mailto:${adminContact.email}?subject=${subject}&body=${body}`);
-            } else {
-                alert('Informations de contact administrateur non disponibles.');
-            }
-        };
-
-        // Fonction pour vérifier la licence après connexion
-        async function checkLicenseAfterAuth(userEmail) {
-            if (licenseCheckPerformed) {
-                console.log('[INDEX] License check already performed, skipping...');
-                return;
-            }
-            
-            licenseCheckPerformed = true;
-            console.log('[INDEX] Checking license after authentication for:', userEmail);
-            
-            // Afficher un message de vérification
-            if (window.uiManager) {
-                window.uiManager.showToast('Vérification de votre licence...', 'info');
-            }
-            
-            try {
-                // Attendre que le service de licence soit prêt
-                if (!window.licenseService) {
-                    console.log('[INDEX] Waiting for license service...');
-                    await new Promise(resolve => {
-                        const checkInterval = setInterval(() => {
-                            if (window.licenseService || window.licenseServiceReady) {
-                                clearInterval(checkInterval);
-                                resolve();
-                            }
-                        }, 100);
-                        
-                        // Timeout après 10 secondes
-                        setTimeout(() => {
-                            clearInterval(checkInterval);
-                            resolve();
-                        }, 10000);
-                    });
-                }
-                
-                if (window.licenseService && typeof window.licenseService.authenticateWithEmail === 'function') {
-                    const licenseResult = await window.licenseService.authenticateWithEmail(userEmail);
-                    
-                    console.log('[INDEX] License check result:', licenseResult);
-                    
-                    if (licenseResult && licenseResult.valid) {
-                        // Licence valide, continuer
-                        console.log('[INDEX] ✅ License valid, continuing to app...');
-                        
-                        // Stocker les informations globalement
-                        window.currentUser = licenseResult.user;
-                        window.licenseStatus = {
-                            status: licenseResult.status,
-                            valid: licenseResult.valid,
-                            daysRemaining: licenseResult.daysRemaining,
-                            message: licenseResult.message
-                        };
-                        
-                        // Émettre l'événement
-                        window.dispatchEvent(new CustomEvent('userAuthenticated', {
-                            detail: { user: licenseResult.user, status: licenseResult }
-                        }));
-                        
-                        // Afficher un message de succès
-                        if (window.uiManager) {
-                            let message = '✅ Licence valide';
-                            if (licenseResult.status === 'trial') {
-                                message = `✅ Période d'essai - ${licenseResult.daysRemaining} jours restants`;
-                            } else if (licenseResult.status === 'active') {
-                                message = '✅ Licence active';
-                            }
-                            window.uiManager.showToast(message, 'success', 5000);
-                        }
-                        
-                        // Afficher un avertissement si période d'essai bientôt expirée
-                        if (licenseResult.status === 'trial' && licenseResult.daysRemaining <= 3) {
-                            showTrialWarning(licenseResult.daysRemaining);
-                        }
-                        
-                        return true;
-                    } else {
-                        // Licence invalide
-                        console.warn('[INDEX] ❌ Invalid license:', licenseResult);
-                        
-                        if (window.uiManager) {
-                            window.uiManager.showToast('❌ Licence invalide ou expirée', 'error', 5000);
-                        }
-                        
-                        showLicenseError(licenseResult || {
-                            status: 'invalid',
-                            message: 'Licence invalide ou expirée'
-                        });
-                        return false;
-                    }
-                } else {
-                    console.error('[INDEX] License service not available');
-                    
-                    // En mode dégradé, afficher un avertissement
-                    if (window.uiManager) {
-                        window.uiManager.showToast('⚠️ Service de licence indisponible - Mode dégradé', 'warning', 5000);
-                    }
-                    
-                    // Continuer sans vérification en mode dégradé
-                    return true;
-                }
-                
-            } catch (error) {
-                console.error('[INDEX] License check error:', error);
-                
-                if (window.uiManager) {
-                    window.uiManager.showToast('⚠️ Erreur de vérification - Mode dégradé activé', 'warning', 5000);
-                }
-                
-                // En cas d'erreur, continuer en mode dégradé
-                return true;
-            }
-        }
-
-        // Fonction pour afficher l'avertissement de période d'essai
-        function showTrialWarning(daysRemaining) {
-            const warningDiv = document.createElement('div');
-            warningDiv.id = 'trial-warning';
-            warningDiv.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                background: linear-gradient(135deg, #f59e0b, #d97706);
-                color: white;
-                padding: 12px;
-                text-align: center;
-                z-index: 9999;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                font-weight: 600;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            `;
-
-            let warningText = `⏳ Attention : Votre période d'essai expire dans ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''} !`;
-            
-            // Si l'utilisateur est admin, ajouter le lien vers analytics
-            if (window.licenseService && window.licenseService.isAdmin()) {
-                warningText += ` <a href="https://emailsortpro.netlify.app/analytics.html" style="color: white; text-decoration: underline; margin-left: 10px;">Gérer les licences</a>`;
-            }
-
-            warningDiv.innerHTML = `
-                ${warningText}
-                <button onclick="this.parentElement.remove()" style="
-                    background: rgba(255,255,255,0.2);
-                    border: none;
-                    color: white;
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                    margin-left: 10px;
-                    cursor: pointer;
-                ">✕</button>
-            `;
-
-            document.body.insertBefore(warningDiv, document.body.firstChild);
-
-            // Retirer automatiquement après 10 secondes
-            setTimeout(() => {
-                if (warningDiv.parentNode) {
-                    warningDiv.remove();
-                }
-            }, 10000);
-        }
 
         // Vérification précoce IMMÉDIATE de l'authentification
         const earlyAuthCheck = () => {
@@ -2384,12 +1427,14 @@
             console.log('[SHOW_APP] App interface activated with dashboard module');
         };
 
-        // Autres fonctions de l'index (checkScrollNeeded, setPageMode, etc.)
+        // Fonction pour vérifier si le scroll est nécessaire - OPTIMISÉE ET SILENCIEUSE
         window.checkScrollNeeded = function() {
+            // Si l'app est active, laisser app.js gérer le scroll
             if (document.body.classList.contains('app-active') && window.app) {
                 return;
             }
             
+            // Éviter les appels multiples
             if (window.scrollCheckInProgress) return;
             window.scrollCheckInProgress = true;
             
@@ -2415,16 +1460,242 @@
         // Ajouter une classe pour le mode login initial
         document.body.classList.add('login-mode');
 
-        // Gestion des boutons de connexion et autres événements
+        // Vérifier à chaque redimensionnement de fenêtre - OPTIMISÉ
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            // Si l'app est active, laisser app.js gérer le resize
+            if (document.body.classList.contains('app-active') && window.app) {
+                return;
+            }
+            
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(window.checkScrollNeeded, 150);
+        });
+
+        // Gestion des modes d'affichage pour les pages - SILENCIEUX
+        window.setPageMode = function(pageName) {
+            // Si l'app est active, laisser app.js gérer le scroll
+            if (document.body.classList.contains('app-active') && window.app) {
+                return;
+            }
+            
+            const appMain = document.querySelector('.app-main');
+            const pageContent = document.getElementById('pageContent');
+            const body = document.body;
+            
+            // Nettoyer les anciennes classes de page
+            body.classList.remove('page-dashboard', 'page-scanner', 'page-emails', 'page-tasks', 'page-ranger', 'page-settings', 'page-short-content', 'login-mode');
+            
+            if (pageName === 'dashboard') {
+                appMain.classList.remove('page-mode');
+                appMain.classList.add('dashboard-mode');
+                pageContent.classList.remove('non-dashboard');
+                body.classList.add('page-dashboard');
+            } else {
+                appMain.classList.remove('dashboard-mode');
+                appMain.classList.add('page-mode');
+                pageContent.classList.add('non-dashboard');
+                body.classList.add(`page-${pageName}`);
+            }
+            
+            // Gestion du scroll UNIQUEMENT si l'app n'est pas encore active
+            if (!document.body.classList.contains('app-active')) {
+                clearTimeout(window.scrollCheckTimeout);
+                window.scrollCheckTimeout = setTimeout(() => {
+                    const contentHeight = document.documentElement.scrollHeight;
+                    const viewportHeight = window.innerHeight;
+                    const bodyHeight = document.body.scrollHeight;
+                    
+                    if (bodyHeight <= viewportHeight || contentHeight <= viewportHeight) {
+                        body.classList.add('page-short-content');
+                        body.style.overflow = 'hidden';
+                        body.style.overflowY = 'hidden';
+                    } else {
+                        body.classList.remove('page-short-content');
+                        body.style.overflow = '';
+                        body.style.overflowY = '';
+                    }
+                }, 100);
+            }
+        };
+
+        // Intercepter la méthode loadPage du PageManager pour le dashboard
+        window.interceptDashboardLoad = function() {
+            if (window.pageManager && window.pageManager.loadPage) {
+                const originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
+                
+                window.pageManager.loadPage = function(pageName, ...args) {
+                    // Appliquer le mode d'affichage approprié pour TOUTES les pages
+                    window.setPageMode(pageName);
+                    
+                    if (pageName === 'dashboard') {
+                        // Mettre à jour la navigation pour marquer dashboard comme actif
+                        const navItems = document.querySelectorAll('.nav-item');
+                        navItems.forEach(item => {
+                            item.classList.remove('active');
+                            if (item.dataset.page === 'dashboard') {
+                                item.classList.add('active');
+                            }
+                        });
+                        
+                        // UTILISER LE MODULE DASHBOARD
+                        if (window.dashboardModule) {
+                            const pageContent = document.getElementById('pageContent');
+                            if (pageContent) {
+                                pageContent.style.display = 'block';
+                                pageContent.style.opacity = '1';
+                            }
+                            
+                            // Render dashboard via module
+                            window.dashboardModule.render();
+                        } else {
+                            return originalLoadPage(pageName, ...args);
+                        }
+                        
+                        // Vérifier le scroll après affichage du dashboard
+                        setTimeout(() => {
+                            if (window.app && window.app.checkScrollNeeded) {
+                                window.app.checkScrollNeeded();
+                            } else {
+                                window.checkScrollNeeded();
+                            }
+                        }, 300);
+                        
+                        return Promise.resolve();
+                    } else {
+                        // Pour toutes les autres pages, masquer le dashboard et utiliser la méthode originale
+                        const pageContent = document.getElementById('pageContent');
+                        if (pageContent && window.dashboardModule) {
+                            window.dashboardModule.hide();
+                        }
+                        
+                        return originalLoadPage(pageName, ...args);
+                    }
+                };
+            } else {
+                setTimeout(window.interceptDashboardLoad, 500);
+            }
+        };
+
+        // Lancer l'interception du dashboard
+        setTimeout(window.interceptDashboardLoad, 1000);
+
+        // Fonction pour gérer la déconnexion
+        window.handleLogout = async function() {
+            console.log('[LOGOUT] Starting logout process...');
+            
+            try {
+                // Déconnecter du service actuel
+                if (window.authService && window.authService.isAuthenticated()) {
+                    console.log('[LOGOUT] Logging out from Microsoft...');
+                    await window.authService.logout();
+                } else if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+                    console.log('[LOGOUT] Logging out from Google...');
+                    await window.googleAuthService.logout();
+                }
+                
+                // Reset tous les services
+                if (window.mailService) {
+                    window.mailService.reset();
+                }
+                
+                // Nettoyer l'état de l'app
+                document.body.classList.remove('app-active');
+                document.body.classList.add('login-mode');
+                
+                // Afficher la page de login
+                const loginPage = document.getElementById('loginPage');
+                if (loginPage) {
+                    loginPage.style.display = 'flex';
+                }
+                
+                // Masquer le header et la nav
+                const appHeader = document.querySelector('.app-header');
+                const appNav = document.querySelector('.app-nav');
+                if (appHeader) appHeader.style.display = 'none';
+                if (appNav) appNav.style.display = 'none';
+                
+                // Reset les variables d'état
+                appAlreadyShown = false;
+                authCheckInProgress = false;
+                
+                console.log('[LOGOUT] ✅ Logout complete');
+                
+            } catch (error) {
+                console.error('[LOGOUT] ❌ Error during logout:', error);
+                
+                // Force cleanup en cas d'erreur
+                if (window.authService && window.authService.forceCleanup) {
+                    window.authService.forceCleanup();
+                }
+                if (window.googleAuthService && window.googleAuthService.forceCleanup) {
+                    window.googleAuthService.forceCleanup();
+                }
+                
+                // Rediriger vers la page de login même en cas d'erreur
+                window.location.reload();
+            }
+        };
+
+        // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
             if (appAlreadyShown) {
                 return;
             }
             
+            // Fonction de vérification d'authentification sécurisée
+            const safeAuthCheck = () => {
+                if (authCheckInProgress || appAlreadyShown) {
+                    return false;
+                }
+                
+                if (document.body.classList.contains('app-active')) {
+                    appAlreadyShown = true;
+                    return true;
+                }
+                
+                try {
+                    // Vérifier Microsoft
+                    if (window.authService && typeof window.authService.isAuthenticated === 'function') {
+                        if (window.authService.isAuthenticated()) {
+                            window.showApp();
+                            return true;
+                        }
+                    }
+                    
+                    // Vérifier Google
+                    if (window.googleAuthService && typeof window.googleAuthService.isAuthenticated === 'function') {
+                        if (window.googleAuthService.isAuthenticated()) {
+                            window.showApp();
+                            return true;
+                        }
+                    }
+                } catch (error) {
+                    // Silencieux
+                }
+                return false;
+            };
+            
+            // Vérification avec délai
+            setTimeout(() => {
+                if (document.body.classList.contains('app-active')) {
+                    appAlreadyShown = true;
+                    return;
+                }
+                
+                if (!safeAuthCheck()) {
+                    setTimeout(() => {
+                        if (!document.body.classList.contains('app-active')) {
+                            safeAuthCheck();
+                        }
+                    }, 600);
+                }
+            }, 200);
+            
             // Bouton Microsoft
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
-                loginBtn.addEventListener('click', async function() {
+                loginBtn.addEventListener('click', function() {
                     if (authCheckInProgress) {
                         return;
                     }
@@ -2439,25 +1710,19 @@
                         loadingOverlay.classList.add('active');
                     }
                     
-                    try {
-                        if (window.app && window.app.login) {
-                            await window.app.login();
-                            
-                            // Après connexion réussie, vérifier la licence
-                            const account = window.authService.getAccount();
-                            if (account && account.username) {
-                                const licenseValid = await checkLicenseAfterAuth(account.username);
-                                if (licenseValid !== false) {
-                                    window.showApp();
-                                }
+                    if (window.app && window.app.login) {
+                        window.app.login().then(() => {
+                            window.showApp();
+                            authCheckInProgress = false;
+                        }).catch((error) => {
+                            authCheckInProgress = false;
+                            this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
+                            this.disabled = false;
+                            if (loadingOverlay) {
+                                loadingOverlay.classList.remove('active');
                             }
-                        }
-                    } catch (error) {
-                        console.error('[LOGIN] Error:', error);
-                        if (window.uiManager) {
-                            window.uiManager.showToast('Erreur de connexion: ' + error.message, 'error');
-                        }
-                    } finally {
+                        });
+                    } else {
                         authCheckInProgress = false;
                         this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
                         this.disabled = false;
@@ -2490,6 +1755,7 @@
                         if (window.googleAuthService) {
                             await window.googleAuthService.initialize();
                             await window.googleAuthService.login();
+                            // La redirection va se produire, pas besoin de showApp() ici
                         } else {
                             throw new Error('GoogleAuthService not available');
                         }
@@ -2508,31 +1774,57 @@
                     }
                 });
             }
+            
+            // Ajouter un gestionnaire d'événements direct pour le bouton Dashboard
+            const dashboardBtn = document.querySelector('.nav-item[data-page="dashboard"]');
+            if (dashboardBtn) {
+                dashboardBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Forcer le retour au dashboard
+                    if (window.pageManager && window.pageManager.loadPage) {
+                        window.pageManager.loadPage('dashboard');
+                    } else {
+                        // Fallback: utiliser le module dashboard directement
+                        const navItems = document.querySelectorAll('.nav-item');
+                        navItems.forEach(item => item.classList.remove('active'));
+                        this.classList.add('active');
+                        
+                        if (window.dashboardModule) {
+                            window.dashboardModule.render();
+                        }
+                        
+                        window.setPageMode('dashboard');
+                    }
+                });
+            }
         });
+        
+        // Fonction globale pour basculer vers l'app après connexion
+        window.onAuthSuccess = function() {
+            if (!appAlreadyShown && !document.body.classList.contains('app-active')) {
+                window.showApp();
+            }
+        };
 
-        // Fonction pour mettre à jour l'affichage utilisateur
+        // Fonction pour mettre à jour l'affichage utilisateur dans le header
         window.updateUserDisplay = function(user) {
             const authStatus = document.getElementById('authStatus');
             if (authStatus && user) {
+                // Utiliser le nom et email spécifiés ou ceux du profil
                 const userName = user.displayName || user.name || 'Utilisateur';
                 const userEmail = user.mail || user.userPrincipalName || user.email || 'Non spécifié';
                 const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
                 
+                // Détecter le provider
                 const provider = user.provider || 'unknown';
+                const providerIcon = provider === 'google' ? 'fab fa-google' : 'fab fa-microsoft';
                 const providerText = provider === 'google' ? 'Gmail' : 'Outlook';
-                
-                let licenseInfo = '';
-                if (window.licenseStatus) {
-                    const { status, daysRemaining } = window.licenseStatus;
-                    if (status === 'trial' && daysRemaining <= 7) {
-                        licenseInfo = `<span style="color: #fbbf24; margin-left: 8px; font-size: 11px;">⏳ ${daysRemaining}j restants</span>`;
-                    }
-                }
                 
                 authStatus.innerHTML = `
                     <div class="user-info">
                         <div class="user-details">
-                            <div class="user-name">${userName}${licenseInfo}</div>
+                            <div class="user-name">${userName}</div>
                             <div class="user-email">${userEmail} (${providerText})</div>
                         </div>
                         <div class="user-avatar">${initials}</div>
@@ -2544,27 +1836,56 @@
             }
         };
 
-        // Fonction de déconnexion
-        window.handleLogout = async function() {
-            console.log('[LOGOUT] Starting logout process...');
+        // Fonction de diagnostic accessible globalement (silencieuse par défaut)
+        window.checkServices = function() {
+            return {
+                AppConfig: window.AppConfig ? 'OK' : 'MANQUANT',
+                authService: window.authService ? 'OK' : 'MANQUANT',
+                googleAuthService: window.googleAuthService ? 'OK' : 'MANQUANT',
+                mailService: window.mailService ? 'OK' : 'MANQUANT',
+                uiManager: window.uiManager ? 'OK' : 'MANQUANT',
+                taskManager: window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT',
+                tasksView: window.tasksView ? 'OK' : 'MANQUANT',
+                pageManager: window.pageManager ? 'OK' : 'MANQUANT',
+                categoryManager: window.categoryManager ? 'OK' : 'MANQUANT',
+                dashboardModule: window.dashboardModule ? 'OK' : 'MANQUANT',
+                hostname: window.location.hostname,
+                currentDomain: window.location.hostname,
+                authenticationStatus: {
+                    microsoft: window.authService ? window.authService.isAuthenticated() : false,
+                    google: window.googleAuthService ? window.googleAuthService.isAuthenticated() : false
+                }
+            };
+        };
+
+        // Fonction pour vérifier les callbacks Google au chargement de la page
+        window.checkGoogleCallback = function() {
+            // Vérifier si nous revenons d'un callback Google OAuth2
+            const fragment = window.location.hash;
+            const search = window.location.search;
             
-            try {
-                if (window.authService && window.authService.isAuthenticated()) {
-                    await window.authService.logout();
-                } else if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
-                    await window.googleAuthService.logout();
-                }
+            if (fragment && fragment.includes('access_token')) {
+                console.log('[GOOGLE_CALLBACK] OAuth2 implicit flow callback detected');
                 
-                if (window.licenseService && window.licenseService.logout) {
-                    await window.licenseService.logout();
+                // Traiter le callback immédiatement
+                if (window.googleAuthService && window.googleAuthService.handleOAuthCallback) {
+                    window.googleAuthService.handleOAuthCallback(fragment).then(() => {
+                        console.log('[GOOGLE_CALLBACK] ✅ Google authentication successful');
+                        window.showApp();
+                    }).catch((error) => {
+                        console.error('[GOOGLE_CALLBACK] ❌ Error processing Google callback:', error);
+                    });
                 }
-                
-                window.location.reload();
-            } catch (error) {
-                console.error('[LOGOUT] Error:', error);
-                window.location.reload();
+            } else if (search && search.includes('code') && search.includes('state') && search.includes('google')) {
+                console.log('[GOOGLE_CALLBACK] OAuth2 code flow callback detected');
+                // Le callback sera traité par auth-callback.html
             }
         };
+
+        // Vérifier les callbacks au chargement
+        setTimeout(() => {
+            window.checkGoogleCallback();
+        }, 500);
     </script>
 </body>
 </html>
