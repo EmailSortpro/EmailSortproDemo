@@ -724,6 +724,270 @@
         console.log('[INDEX] 🧪 Utilisateurs de test limités:', Object.keys(window.StrictLicenseSystem?.TEST_USERS || {}));
         console.log('[INDEX] 👑 Super admins:', window.StrictLicenseSystem?.SUPER_ADMINS || []);
         console.log('[INDEX] 🔧 Debug: window.debugStrictLicense()');
+
+        // GESTIONNAIRE D'ÉTAT DE L'APPLICATION - DÉFINI ICI POUR ÉVITER LES ERREURS
+        window.AppStateManager = {
+            currentState: 'license-checking',
+            currentUser: null,
+            licenseStatus: null,
+            authProvider: null,
+
+            setState(newState, data = {}) {
+                console.log(`[APP_STATE] Transition: ${this.currentState} → ${newState}`);
+                
+                // Nettoyer les classes de body
+                document.body.className = '';
+                
+                // Appliquer le nouveau state
+                this.currentState = newState;
+                document.body.classList.add(newState);
+                
+                // Mettre à jour les données si fournies
+                if (data.user) this.currentUser = data.user;
+                if (data.license) this.licenseStatus = data.license;
+                if (data.provider) this.authProvider = data.provider;
+                
+                // Exécuter les actions spécifiques au state
+                this.handleStateChange(newState, data);
+            },
+
+            handleStateChange(state, data) {
+                console.log('[APP_STATE] Handling state change:', state);
+                switch (state) {
+                    case 'license-checking':
+                        this.handleLicenseChecking();
+                        break;
+                    case 'login-mode':
+                        this.handleLoginMode(data);
+                        break;
+                    case 'blocked-mode':
+                        this.handleBlockedMode(data);
+                        break;
+                    case 'app-mode':
+                        this.handleAppMode(data);
+                        break;
+                }
+            },
+
+            handleLicenseChecking() {
+                console.log('[APP_STATE] Démarrage vérification licence...');
+                const statusElement = document.getElementById('licenseCheckStatus');
+                if (statusElement) {
+                    statusElement.innerHTML = `
+                        <p style="color: #6b7280; font-size: 14px;">
+                            <i class="fas fa-shield-alt"></i> Validation des droits d'accès...
+                        </p>
+                    `;
+                }
+                
+                // Démarrer la vérification après un court délai pour l'UX
+                setTimeout(() => {
+                    console.log('[APP_STATE] Calling verifyLicense...');
+                    if (window.verifyLicense) {
+                        window.verifyLicense().then(result => {
+                            console.log('[APP_STATE] License verification result:', result);
+                        }).catch(error => {
+                            console.error('[APP_STATE] License verification error:', error);
+                        });
+                    } else {
+                        console.error('[APP_STATE] verifyLicense function not found');
+                    }
+                }, 1000);
+            },
+
+            handleLoginMode(data) {
+                console.log('[APP_STATE] Mode login activé');
+                
+                const licenseInfo = document.getElementById('licenseInfo');
+                if (licenseInfo && data.license) {
+                    let statusClass = 'success';
+                    let statusIcon = '✅';
+                    let statusText = 'Licence vérifiée';
+                    
+                    if (data.license.status === 'trial_active') {
+                        statusClass = data.license.daysRemaining <= 3 ? 'warning' : 'success';
+                        statusIcon = data.license.daysRemaining <= 3 ? '⚠️' : '✅';
+                        statusText = `Essai gratuit - ${data.license.daysRemaining} jour${data.license.daysRemaining > 1 ? 's' : ''} restant${data.license.daysRemaining > 1 ? 's' : ''}`;
+                    } else if (data.license.status === 'paid_active') {
+                        statusText = 'Licence payée active';
+                    } else if (data.license.status === 'super_admin') {
+                        statusText = 'Accès super administrateur';
+                    }
+                    
+                    licenseInfo.className = `status-message ${statusClass}`;
+                    licenseInfo.innerHTML = `
+                        <strong>${statusIcon} ${statusText}</strong><br>
+                        ${data.license.message}
+                    `;
+                }
+
+                // Configurer les boutons de connexion
+                this.setupLoginButtons();
+            },
+
+            handleBlockedMode(data) {
+                console.log('[APP_STATE] Mode bloqué activé');
+                
+                const blockedMessage = document.getElementById('blockedMessage');
+                const userEmail = data.user ? data.user.email : 'utilisateur';
+                
+                if (blockedMessage && data.license) {
+                    blockedMessage.textContent = data.license.message;
+                }
+
+                // Ajouter l'email dans les détails de contact
+                const blockedDetails = document.getElementById('blockedDetails');
+                if (blockedDetails && data.user) {
+                    blockedDetails.innerHTML = `
+                        <h3 style="color: #1f2937; margin-bottom: 12px;">Pour continuer à utiliser EmailSortPro :</h3>
+                        <ul style="color: #4b5563; line-height: 1.6; padding-left: 20px;">
+                            <li><strong>Votre email :</strong> ${data.user.email}</li>
+                            <li><strong>Contactez le support :</strong> support@emailsortpro.com</li>
+                            <li><strong>Téléphone :</strong> +33 1 23 45 67 89</li>
+                            <li><strong>Objet :</strong> Renouvellement licence - ${data.user.email}</li>
+                        </ul>
+                    `;
+                }
+            },
+
+            handleAppMode(data) {
+                console.log('[APP_STATE] Mode application activé');
+                
+                // Mettre à jour les informations utilisateur
+                this.updateUserInfo(data.user, data.license);
+                
+                // Charger l'interface complète de l'application
+                this.loadApplicationInterface();
+            },
+
+            updateUserInfo(user, license) {
+                const userInfo = document.getElementById('userInfo');
+                if (!userInfo || !user) return;
+
+                const userName = user.name || user.email.split('@')[0];
+                const userEmail = user.email;
+                const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                
+                let licenseDisplay = '';
+                if (license) {
+                    if (license.status === 'trial_active') {
+                        licenseDisplay = `<div style="font-size: 11px; color: #f59e0b; margin-top: 2px;">
+                            <i class="fas fa-clock"></i> Essai: ${license.daysRemaining} jour${license.daysRemaining !== 1 ? 's' : ''}
+                        </div>`;
+                    } else if (license.status === 'paid_active') {
+                        licenseDisplay = `<div style="font-size: 11px; color: #10b981; margin-top: 2px;">
+                            <i class="fas fa-check-circle"></i> Licence payée
+                        </div>`;
+                    } else if (license.status === 'super_admin') {
+                        licenseDisplay = `<div style="font-size: 11px; color: #8b5cf6; margin-top: 2px;">
+                            <i class="fas fa-crown"></i> Super Admin
+                        </div>`;
+                    }
+                }
+
+                userInfo.innerHTML = `
+                    <div style="text-align: right; line-height: 1.2;">
+                        <div style="color: white; font-weight: 600; font-size: 14px;">${userName}</div>
+                        <div style="color: rgba(255,255,255,0.9); font-size: 12px;">${userEmail}</div>
+                        ${licenseDisplay}
+                    </div>
+                    <div class="user-avatar">${initials}</div>
+                    <button class="logout-button" onclick="window.AppStateManager.logout()">
+                        <i class="fas fa-sign-out-alt"></i> Déconnexion
+                    </button>
+                `;
+            },
+
+            setupLoginButtons() {
+                const outlookBtn = document.getElementById('loginOutlookBtn');
+                const gmailBtn = document.getElementById('loginGmailBtn');
+
+                if (outlookBtn) {
+                    outlookBtn.onclick = () => {
+                        this.handleProviderLogin('outlook');
+                    };
+                }
+
+                if (gmailBtn) {
+                    gmailBtn.onclick = () => {
+                        this.handleProviderLogin('gmail');
+                    };
+                }
+            },
+
+            handleProviderLogin(provider) {
+                console.log(`[APP_STATE] Connexion ${provider} demandée`);
+                
+                // Ici vous intégrerez vos services d'authentification existants
+                if (provider === 'outlook') {
+                    // Appeler window.authService.login() ou équivalent
+                    if (window.authService) {
+                        window.authService.login().then(() => {
+                            this.onAuthSuccess(provider);
+                        }).catch(error => {
+                            console.error('[APP_STATE] Erreur connexion Outlook:', error);
+                            alert('Erreur de connexion Outlook: ' + error.message);
+                        });
+                    } else {
+                        alert('Service d\'authentification Outlook non disponible');
+                    }
+                } else if (provider === 'gmail') {
+                    // Appeler window.googleAuthService.login() ou équivalent  
+                    if (window.googleAuthService) {
+                        window.googleAuthService.login().then(() => {
+                            this.onAuthSuccess(provider);
+                        }).catch(error => {
+                            console.error('[APP_STATE] Erreur connexion Gmail:', error);
+                            alert('Erreur de connexion Gmail: ' + error.message);
+                        });
+                    } else {
+                        alert('Service d\'authentification Gmail non disponible');
+                    }
+                }
+            },
+
+            onAuthSuccess(provider) {
+                console.log(`[APP_STATE] Authentification ${provider} réussie`);
+                this.authProvider = provider;
+                
+                // Passer en mode application
+                this.setState('app-mode', {
+                    user: this.currentUser,
+                    license: this.licenseStatus,
+                    provider: provider
+                });
+            },
+
+            loadApplicationInterface() {
+                // Ici vous pouvez charger dynamiquement vos modules d'application
+                console.log('[APP_STATE] Chargement interface application...');
+                
+                // Exemple : charger le dashboard, scanner, etc.
+                // Cette partie dépend de votre architecture existante
+            },
+
+            logout() {
+                console.log('[APP_STATE] Déconnexion demandée');
+                
+                // Nettoyer les données utilisateur
+                this.currentUser = null;
+                this.licenseStatus = null;
+                this.authProvider = null;
+                
+                // Appeler les services de déconnexion si disponibles
+                if (window.authService && window.authService.logout) {
+                    window.authService.logout();
+                }
+                if (window.googleAuthService && window.googleAuthService.logout) {
+                    window.googleAuthService.logout();
+                }
+                
+                // Recharger la page pour revenir à l'état initial
+                window.location.reload();
+            }
+        };
+
+        console.log('[APP_STATE] ✅ AppStateManager défini');
     </script>
 
     <!-- STYLES INTÉGRÉS -->
@@ -1216,286 +1480,46 @@
     
     <!-- Gestionnaire d'état de l'application -->
     <script>
-        // Gestionnaire d'état global de l'application
-        window.AppStateManager = {
-            currentState: 'license-checking',
-            currentUser: null,
-            licenseStatus: null,
-            authProvider: null,
-
-            setState(newState, data = {}) {
-                console.log(`[APP_STATE] Transition: ${this.currentState} → ${newState}`);
-                
-                // Nettoyer les classes de body
-                document.body.className = '';
-                
-                // Appliquer le nouveau state
-                this.currentState = newState;
-                document.body.classList.add(newState);
-                
-                // Mettre à jour les données si fournies
-                if (data.user) this.currentUser = data.user;
-                if (data.license) this.licenseStatus = data.license;
-                if (data.provider) this.authProvider = data.provider;
-                
-                // Exécuter les actions spécifiques au state
-                this.handleStateChange(newState, data);
-            },
-
-            handleStateChange(state, data) {
-                switch (state) {
-                    case 'license-checking':
-                        this.handleLicenseChecking();
-                        break;
-                    case 'login-mode':
-                        this.handleLoginMode(data);
-                        break;
-                    case 'blocked-mode':
-                        this.handleBlockedMode(data);
-                        break;
-                    case 'app-mode':
-                        this.handleAppMode(data);
-                        break;
-                }
-            },
-
-            handleLicenseChecking() {
-                console.log('[APP_STATE] Démarrage vérification licence...');
-                const statusElement = document.getElementById('licenseCheckStatus');
-                if (statusElement) {
-                    statusElement.innerHTML = `
-                        <p style="color: #6b7280; font-size: 14px;">
-                            <i class="fas fa-shield-alt"></i> Validation des droits d'accès...
-                        </p>
-                    `;
-                }
-                
-                // Démarrer la vérification après un court délai pour l'UX
-                setTimeout(() => {
-                    window.verifyLicense();
-                }, 1000);
-            },
-
-            handleLoginMode(data) {
-                console.log('[APP_STATE] Mode login activé');
-                
-                const licenseInfo = document.getElementById('licenseInfo');
-                if (licenseInfo && data.license) {
-                    let statusClass = 'success';
-                    let statusIcon = '✅';
-                    let statusText = 'Licence vérifiée';
-                    
-                    if (data.license.status === 'trial_active') {
-                        statusClass = data.license.daysRemaining <= 3 ? 'warning' : 'success';
-                        statusIcon = data.license.daysRemaining <= 3 ? '⚠️' : '✅';
-                        statusText = `Essai gratuit - ${data.license.daysRemaining} jour${data.license.daysRemaining > 1 ? 's' : ''} restant${data.license.daysRemaining > 1 ? 's' : ''}`;
-                    } else if (data.license.status === 'paid_active') {
-                        statusText = 'Licence payée active';
-                    } else if (data.license.status === 'super_admin') {
-                        statusText = 'Accès super administrateur';
-                    }
-                    
-                    licenseInfo.className = `status-message ${statusClass}`;
-                    licenseInfo.innerHTML = `
-                        <strong>${statusIcon} ${statusText}</strong><br>
-                        ${data.license.message}
-                    `;
-                }
-
-                // Configurer les boutons de connexion
-                this.setupLoginButtons();
-            },
-
-            handleBlockedMode(data) {
-                console.log('[APP_STATE] Mode bloqué activé');
-                
-                const blockedMessage = document.getElementById('blockedMessage');
-                const userEmail = data.user ? data.user.email : 'utilisateur';
-                
-                if (blockedMessage && data.license) {
-                    blockedMessage.textContent = data.license.message;
-                }
-
-                // Ajouter l'email dans les détails de contact
-                const blockedDetails = document.getElementById('blockedDetails');
-                if (blockedDetails && data.user) {
-                    blockedDetails.innerHTML = `
-                        <h3 style="color: #1f2937; margin-bottom: 12px;">Pour continuer à utiliser EmailSortPro :</h3>
-                        <ul style="color: #4b5563; line-height: 1.6; padding-left: 20px;">
-                            <li><strong>Votre email :</strong> ${data.user.email}</li>
-                            <li><strong>Contactez le support :</strong> support@emailsortpro.com</li>
-                            <li><strong>Téléphone :</strong> +33 1 23 45 67 89</li>
-                            <li><strong>Objet :</strong> Renouvellement licence - ${data.user.email}</li>
-                        </ul>
-                    `;
-                }
-            },
-
-            handleAppMode(data) {
-                console.log('[APP_STATE] Mode application activé');
-                
-                // Mettre à jour les informations utilisateur
-                this.updateUserInfo(data.user, data.license);
-                
-                // Charger l'interface complète de l'application
-                this.loadApplicationInterface();
-            },
-
-            updateUserInfo(user, license) {
-                const userInfo = document.getElementById('userInfo');
-                if (!userInfo || !user) return;
-
-                const userName = user.name || user.email.split('@')[0];
-                const userEmail = user.email;
-                const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-                
-                let licenseDisplay = '';
-                if (license) {
-                    if (license.status === 'trial_active') {
-                        licenseDisplay = `<div style="font-size: 11px; color: #f59e0b; margin-top: 2px;">
-                            <i class="fas fa-clock"></i> Essai: ${license.daysRemaining} jour${license.daysRemaining !== 1 ? 's' : ''}
-                        </div>`;
-                    } else if (license.status === 'paid_active') {
-                        licenseDisplay = `<div style="font-size: 11px; color: #10b981; margin-top: 2px;">
-                            <i class="fas fa-check-circle"></i> Licence payée
-                        </div>`;
-                    } else if (license.status === 'super_admin') {
-                        licenseDisplay = `<div style="font-size: 11px; color: #8b5cf6; margin-top: 2px;">
-                            <i class="fas fa-crown"></i> Super Admin
-                        </div>`;
-                    }
-                }
-
-                userInfo.innerHTML = `
-                    <div style="text-align: right; line-height: 1.2;">
-                        <div style="color: white; font-weight: 600; font-size: 14px;">${userName}</div>
-                        <div style="color: rgba(255,255,255,0.9); font-size: 12px;">${userEmail}</div>
-                        ${licenseDisplay}
-                    </div>
-                    <div class="user-avatar">${initials}</div>
-                    <button class="logout-button" onclick="window.AppStateManager.logout()">
-                        <i class="fas fa-sign-out-alt"></i> Déconnexion
-                    </button>
-                `;
-            },
-
-            setupLoginButtons() {
-                const outlookBtn = document.getElementById('loginOutlookBtn');
-                const gmailBtn = document.getElementById('loginGmailBtn');
-
-                if (outlookBtn) {
-                    outlookBtn.onclick = () => {
-                        this.handleProviderLogin('outlook');
-                    };
-                }
-
-                if (gmailBtn) {
-                    gmailBtn.onclick = () => {
-                        this.handleProviderLogin('gmail');
-                    };
-                }
-            },
-
-            handleProviderLogin(provider) {
-                console.log(`[APP_STATE] Connexion ${provider} demandée`);
-                
-                // Ici vous intégrerez vos services d'authentification existants
-                if (provider === 'outlook') {
-                    // Appeler window.authService.login() ou équivalent
-                    if (window.authService) {
-                        window.authService.login().then(() => {
-                            this.onAuthSuccess(provider);
-                        }).catch(error => {
-                            console.error('[APP_STATE] Erreur connexion Outlook:', error);
-                            alert('Erreur de connexion Outlook: ' + error.message);
-                        });
-                    } else {
-                        alert('Service d\'authentification Outlook non disponible');
-                    }
-                } else if (provider === 'gmail') {
-                    // Appeler window.googleAuthService.login() ou équivalent  
-                    if (window.googleAuthService) {
-                        window.googleAuthService.login().then(() => {
-                            this.onAuthSuccess(provider);
-                        }).catch(error => {
-                            console.error('[APP_STATE] Erreur connexion Gmail:', error);
-                            alert('Erreur de connexion Gmail: ' + error.message);
-                        });
-                    } else {
-                        alert('Service d\'authentification Gmail non disponible');
-                    }
-                }
-            },
-
-            onAuthSuccess(provider) {
-                console.log(`[APP_STATE] Authentification ${provider} réussie`);
-                this.authProvider = provider;
-                
-                // Passer en mode application
-                this.setState('app-mode', {
-                    user: this.currentUser,
-                    license: this.licenseStatus,
-                    provider: provider
-                });
-            },
-
-            loadApplicationInterface() {
-                // Ici vous pouvez charger dynamiquement vos modules d'application
-                console.log('[APP_STATE] Chargement interface application...');
-                
-                // Exemple : charger le dashboard, scanner, etc.
-                // Cette partie dépend de votre architecture existante
-            },
-
-            logout() {
-                console.log('[APP_STATE] Déconnexion demandée');
-                
-                // Nettoyer les données utilisateur
-                this.currentUser = null;
-                this.licenseStatus = null;
-                this.authProvider = null;
-                
-                // Appeler les services de déconnexion si disponibles
-                if (window.authService && window.authService.logout) {
-                    window.authService.logout();
-                }
-                if (window.googleAuthService && window.googleAuthService.logout) {
-                    window.googleAuthService.logout();
-                }
-                
-                // Recharger la page pour revenir à l'état initial
-                window.location.reload();
-            }
-        };
-
-        // Gestionnaire d'événements pour les vérifications de licence
+        // Gestionnaires d'événements pour les vérifications de licence
         window.addEventListener('licenseVerified', (event) => {
             console.log('[EVENT] Licence vérifiée:', event.detail);
             
-            window.AppStateManager.setState('login-mode', {
-                user: event.detail.user,
-                license: event.detail.license
-            });
+            if (window.AppStateManager) {
+                window.AppStateManager.setState('login-mode', {
+                    user: event.detail.user,
+                    license: event.detail.license
+                });
+            } else {
+                console.error('[EVENT] AppStateManager not found');
+            }
         });
 
         window.addEventListener('licenseBlocked', (event) => {
             console.log('[EVENT] Licence bloquée:', event.detail);
             
-            window.AppStateManager.setState('blocked-mode', {
-                user: event.detail.user,
-                license: event.detail.license
-            });
+            if (window.AppStateManager) {
+                window.AppStateManager.setState('blocked-mode', {
+                    user: event.detail.user,
+                    license: event.detail.license
+                });
+            } else {
+                console.error('[EVENT] AppStateManager not found');
+            }
         });
 
         window.addEventListener('licenseError', (event) => {
             console.error('[EVENT] Erreur licence:', event.detail);
             
-            // En cas d'erreur, afficher l'écran de blocage avec un message générique
-            window.AppStateManager.setState('blocked-mode', {
-                license: {
-                    message: 'Erreur de vérification de licence. Veuillez recharger la page ou contacter le support.'
-                }
-            });
+            if (window.AppStateManager) {
+                // En cas d'erreur, afficher l'écran de blocage avec un message générique
+                window.AppStateManager.setState('blocked-mode', {
+                    license: {
+                        message: 'Erreur de vérification de licence. Veuillez recharger la page ou contacter le support.'
+                    }
+                });
+            } else {
+                console.error('[EVENT] AppStateManager not found');
+            }
         });
 
         // Fonctions utilitaires globales
@@ -1504,20 +1528,69 @@
         };
 
         window.getCurrentAppState = function() {
-            return {
-                state: window.AppStateManager.currentState,
-                user: window.AppStateManager.currentUser,
-                license: window.AppStateManager.licenseStatus,
-                provider: window.AppStateManager.authProvider
-            };
+            if (window.AppStateManager) {
+                return {
+                    state: window.AppStateManager.currentState,
+                    user: window.AppStateManager.currentUser,
+                    license: window.AppStateManager.licenseStatus,
+                    provider: window.AppStateManager.authProvider
+                };
+            } else {
+                return { error: 'AppStateManager not found' };
+            }
         };
 
-        // Démarrage automatique de la vérification
+        // Démarrage automatique de la vérification avec protection d'erreur
         document.addEventListener('DOMContentLoaded', function() {
             console.log('[APP] 🚀 EmailSortPro démarré - Mode licence strict v5.0');
             
-            // Démarrer en mode vérification de licence
-            window.AppStateManager.setState('license-checking');
+            // Vérifier que AppStateManager est disponible
+            if (window.AppStateManager) {
+                // Démarrer en mode vérification de licence
+                window.AppStateManager.setState('license-checking');
+                console.log('[APP] ✅ Vérification de licence démarrée');
+            } else {
+                console.error('[APP] ❌ AppStateManager non trouvé - Tentative de récupération');
+                
+                // Tentative de récupération : forcer le mode login
+                setTimeout(() => {
+                    if (window.verifyLicense) {
+                        console.log('[APP] 🔄 Tentative de vérification directe');
+                        window.verifyLicense();
+                    } else {
+                        console.error('[APP] ❌ Impossible de démarrer la vérification de licence');
+                        // Mode de récupération : afficher un message d'erreur
+                        document.body.innerHTML = `
+                            <div style="
+                                background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+                                height: 100vh; display: flex; align-items: center; justify-content: center;
+                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                            ">
+                                <div style="
+                                    background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px);
+                                    border-radius: 16px; padding: 40px 32px; text-align: center; max-width: 500px;
+                                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); border: 2px solid #ef4444;
+                                ">
+                                    <div style="color: #dc2626; font-size: 3rem; margin-bottom: 20px;">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    </div>
+                                    <h1 style="color: #dc2626; font-size: 1.5rem; margin-bottom: 16px;">Erreur de Chargement</h1>
+                                    <p style="color: #6b7280; margin-bottom: 24px;">
+                                        Une erreur s'est produite lors du chargement de l'application. 
+                                        Veuillez recharger la page.
+                                    </p>
+                                    <button onclick="window.location.reload()" style="
+                                        background: #dc2626; color: white; border: none; 
+                                        padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 500;
+                                    ">
+                                        <i class="fas fa-refresh"></i> Recharger la page
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }, 2000);
+            }
         });
 
         console.log('[APP] ✅ Gestionnaire d'état chargé - Contrôle de licence strict actif');
