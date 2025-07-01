@@ -938,6 +938,161 @@
             text-align: center;
         }
 
+        /* === STYLES POUR LES ERREURS DE LICENCE === */
+        .license-error-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .license-error-box {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 550px;
+            width: 90%;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            position: relative;
+            animation: slideInUp 0.3s ease-out;
+        }
+
+        .license-error-icon {
+            color: #dc2626;
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            line-height: 1;
+        }
+
+        .license-error-title {
+            color: #1f2937;
+            margin-bottom: 1rem;
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .license-error-message {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+
+        .admin-contact {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            text-align: left;
+        }
+
+        .admin-contact h4 {
+            margin: 0 0 8px 0;
+            color: #0c4a6e;
+            font-size: 14px;
+        }
+
+        .admin-contact p {
+            margin: 0;
+            color: #0369a1;
+        }
+
+        .admin-contact a {
+            color: #0284c7;
+            text-decoration: none;
+        }
+
+        .admin-contact a:hover {
+            text-decoration: underline;
+        }
+
+        .license-error-details {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+
+        .license-error-details p {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .license-error-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            margin: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            margin: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+            transform: translateY(-1px);
+        }
+
         /* Responsive sobre */
         @media (max-width: 768px) {
             .login-container {
@@ -1113,8 +1268,6 @@
 
 </head>
 <body>
-    <!-- Vérification du domaine - SUPPRIMÉE -->
-
     <div id="app">
         <!-- Header Application -->
         <header class="app-header">
@@ -1288,56 +1441,385 @@
 
     <!-- Scripts - Ordre CORRIGÉ pour éviter le délai de 10 secondes -->
     
-<script src="./UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
+    <!-- 1. CHARGEMENT DE SUPABASE CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- 2. Configuration Supabase (NE PAS COMMITER) -->
-<script src="./config-supabase.js" onerror="console.warn('config-supabase.js manquant - les licences ne fonctionneront pas')"></script>
+    <!-- 2. UIManager -->
+    <script src="./UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
 
-<!-- 3. Service de gestion des licences -->
-<script src="./LicenseService.js" onerror="console.error('LicenseService.js manquant')"></script>
+    <!-- 3. Configuration Supabase -->
+    <script src="./config-supabase.js" onerror="console.warn('config-supabase.js manquant - les licences ne fonctionneront pas')"></script>
 
-<!-- 4. Services Core -->
-<script src="./AuthService.js" onerror="console.error('AuthService.js manquant')"></script>
-<script src="./GoogleAuthService.js" onerror="console.error('GoogleAuthService.js manquant')"></script>
-<script src="./MailService.js" onerror="console.error('MailService.js manquant')"></script>
+    <!-- 4. Service de gestion des licences -->
+    <script src="./LicenseService.js" onerror="console.error('LicenseService.js manquant')"></script>
 
-<!-- 5. CategoryManager -->
-<script src="./CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
+    <!-- 5. Script de vérification des licences -->
+    <script src="./license-check.js" onerror="console.error('license-check.js manquant')"></script>
 
-<!-- 6. TaskManager AVANT PageManager -->
-<script src="./TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
+    <!-- 6. Services Core -->
+    <script src="./AuthService.js" onerror="console.error('AuthService.js manquant')"></script>
+    <script src="./GoogleAuthService.js" onerror="console.error('GoogleAuthService.js manquant')"></script>
+    <script src="./MailService.js" onerror="console.error('MailService.js manquant')"></script>
 
-<!-- 7. Autres Managers -->
-<script src="./EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
-<script src="./EmailDeduplicationManager.js" onerror="console.error('EmailDeduplicationManager.js manquant')"></script>
-<script src="./AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
+    <!-- 7. CategoryManager -->
+    <script src="./CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
 
-<!-- 8. DASHBOARD MODULE -->
-<script src="./dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
+    <!-- 8. TaskManager AVANT PageManager -->
+    <script src="./TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
 
-<!-- 9. Page Manager APRÈS Dashboard et TaskManager -->
-<script src="./PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
+    <!-- 9. Autres Managers -->
+    <script src="./EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
+    <script src="./EmailDeduplicationManager.js" onerror="console.error('EmailDeduplicationManager.js manquant')"></script>
+    <script src="./AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
 
-<!-- 10. Modules de pages -->
-<script src="./startscan.js" onerror="console.error('startscan.js manquant - utilisation de StartScan.js à la place')"></script>
-<script src="./StartScan.js" onerror="console.error('StartScan.js manquant')"></script>
-<script src="./DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
-<script src="./CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
+    <!-- 10. DASHBOARD MODULE -->
+    <script src="./dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
 
-<!-- 11. Modules Optionnels -->
-<script src="./Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
+    <!-- 11. Page Manager APRÈS Dashboard et TaskManager -->
+    <script src="./PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
 
-<!-- 12. Analytics -->
-<script src="./analytics.js" onerror="console.error('analytics.js manquant')"></script>
+    <!-- 12. Modules de pages -->
+    <script src="./startscan.js" onerror="console.error('startscan.js manquant - utilisation de StartScan.js à la place')"></script>
+    <script src="./StartScan.js" onerror="console.error('StartScan.js manquant')"></script>
+    <script src="./DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
+    <script src="./CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
 
-<!-- 13. Application Principal EN DERNIER -->
-<script src="./app.js" onerror="console.error('app.js manquant')"></script>
+    <!-- 13. Modules Optionnels -->
+    <script src="./Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
+
+    <!-- 14. Analytics -->
+    <script src="./analytics.js" onerror="console.error('analytics.js manquant')"></script>
+
+    <!-- 15. Application Principal EN DERNIER -->
+    <script src="./app.js" onerror="console.error('app.js manquant')"></script>
  
-    <!-- Scripts de gestion des événements -->
+    <!-- Scripts de gestion des événements AVEC INTÉGRATION DE LICENCE -->
     <script>
         // Variable pour éviter les vérifications multiples
         let authCheckInProgress = false;
         let appAlreadyShown = false;
+        let licenseCheckPerformed = false;
+
+        // Écouter les événements de licence
+        window.addEventListener('licenseServiceReady', function(event) {
+            console.log('[INDEX] License service ready event received');
+        });
+
+        window.addEventListener('userAuthenticated', function(event) {
+            console.log('[INDEX] User authenticated event received:', event.detail);
+            
+            // Si l'app n'est pas encore affichée et que l'utilisateur est authentifié, afficher l'app
+            if (!appAlreadyShown && event.detail.user && event.detail.status.valid) {
+                window.showApp();
+            }
+        });
+
+        window.addEventListener('licenseCheckFailed', function(event) {
+            console.log('[INDEX] License check failed event received:', event.detail);
+            
+            // Masquer le loading et afficher l'erreur de licence
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('active');
+            }
+            
+            // Afficher l'erreur de licence appropriée
+            if (event.detail) {
+                showLicenseError(event.detail);
+            }
+        });
+
+        // Fonction pour afficher les erreurs de licence
+        function showLicenseError(licenseResult) {
+            const { status, message, adminContact, daysRemaining } = licenseResult;
+            
+            console.error('[INDEX] Showing license error:', licenseResult);
+            
+            // Supprimer les overlays existants
+            document.querySelectorAll('.license-error-overlay').forEach(el => el.remove());
+            
+            // Créer l'overlay d'erreur
+            const overlay = document.createElement('div');
+            overlay.className = 'license-error-overlay';
+            
+            const errorBox = document.createElement('div');
+            errorBox.className = 'license-error-box';
+            
+            let icon = '⚠️';
+            let title = 'Accès refusé';
+            let adminInfo = '';
+            let actions = '';
+            
+            switch (status) {
+                case 'expired':
+                    icon = '⏰';
+                    title = 'Période d\'essai expirée';
+                    message = message || 'Votre période d\'essai de 15 jours a expiré. L\'application doit être régularisée par votre administrateur.';
+                    
+                    if (adminContact) {
+                        adminInfo = `
+                            <div class="admin-contact">
+                                <h4>👤 Contactez votre administrateur :</h4>
+                                <p><strong>${adminContact.name}</strong><br>
+                                📧 <a href="mailto:${adminContact.email}">${adminContact.email}</a></p>
+                            </div>
+                        `;
+                    }
+                    
+                    // Si l'utilisateur est lui-même admin, proposer le lien analytics
+                    if (window.licenseService && window.licenseService.isAdmin()) {
+                        actions = `
+                            <a href="https://coruscating-dodol-f30e8d.netlify.app/analytics.html" class="btn-primary">
+                                <i class="fas fa-chart-bar"></i> Gérer les licences
+                            </a>
+                            <button onclick="retryLogin()" class="btn-secondary">
+                                <i class="fas fa-refresh"></i> Réessayer
+                            </button>
+                        `;
+                    } else {
+                        actions = `
+                            <button onclick="contactAdmin()" class="btn-primary">
+                                <i class="fas fa-envelope"></i> Contacter l'admin
+                            </button>
+                            <button onclick="retryLogin()" class="btn-secondary">
+                                <i class="fas fa-refresh"></i> Réessayer
+                            </button>
+                        `;
+                    }
+                    break;
+                    
+                case 'blocked':
+                    icon = '🚫';
+                    title = 'Accès bloqué';
+                    message = message || 'Votre accès a été bloqué par votre administrateur.';
+                    
+                    if (adminContact) {
+                        adminInfo = `
+                            <div class="admin-contact">
+                                <h4>👤 Contactez votre administrateur :</h4>
+                                <p><strong>${adminContact.name}</strong><br>
+                                📧 <a href="mailto:${adminContact.email}">${adminContact.email}</a></p>
+                            </div>
+                        `;
+                    }
+                    
+                    actions = `
+                        <button onclick="contactAdmin()" class="btn-primary">
+                            <i class="fas fa-envelope"></i> Contacter l'admin
+                        </button>
+                        <button onclick="retryLogin()" class="btn-secondary">
+                            <i class="fas fa-refresh"></i> Réessayer
+                        </button>
+                    `;
+                    break;
+                    
+                case 'invalid':
+                case 'not_found':
+                    icon = '❓';
+                    title = 'Licence non trouvée';
+                    message = message || 'Aucune licence active trouvée pour votre compte. Contactez votre administrateur pour obtenir l\'accès.';
+                    
+                    actions = `
+                        <button onclick="retryWithDifferentEmail()" class="btn-primary">
+                            <i class="fas fa-user"></i> Essayer un autre email
+                        </button>
+                        <button onclick="retryLogin()" class="btn-secondary">
+                            <i class="fas fa-refresh"></i> Réessayer
+                        </button>
+                    `;
+                    break;
+                    
+                default:
+                    actions = `
+                        <button onclick="retryLogin()" class="btn-primary">
+                            <i class="fas fa-refresh"></i> Réessayer
+                        </button>
+                    `;
+            }
+            
+            errorBox.innerHTML = `
+                <div class="license-error-icon">${icon}</div>
+                <h2 class="license-error-title">${title}</h2>
+                <p class="license-error-message">${message}</p>
+                ${adminInfo}
+                <div class="license-error-details">
+                    <p>
+                        <strong>Type d'erreur :</strong> ${status}<br>
+                        <strong>Heure :</strong> ${new Date().toLocaleString()}
+                    </p>
+                </div>
+                <div class="license-error-actions">
+                    ${actions}
+                </div>
+            `;
+            
+            overlay.appendChild(errorBox);
+            document.body.appendChild(overlay);
+            
+            // Désactiver le défilement
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Fonctions globales pour les actions
+        window.retryLogin = function() {
+            document.querySelectorAll('.license-error-overlay').forEach(el => el.remove());
+            document.body.style.overflow = '';
+            
+            // Effacer les données stockées
+            try {
+                localStorage.removeItem('emailsortpro_user_email');
+                localStorage.removeItem('emailsortpro_current_user');
+            } catch (e) {}
+            
+            // Recharger la page
+            window.location.reload();
+        };
+
+        window.retryWithDifferentEmail = function() {
+            document.querySelectorAll('.license-error-overlay').forEach(el => el.remove());
+            document.body.style.overflow = '';
+            
+            // Effacer les données stockées
+            try {
+                localStorage.removeItem('emailsortpro_user_email');
+                localStorage.removeItem('emailsortpro_current_user');
+            } catch (e) {}
+            
+            // Déconnecter et recharger
+            if (window.handleLogout) {
+                window.handleLogout();
+            } else {
+                window.location.reload();
+            }
+        };
+
+        window.contactAdmin = function() {
+            const adminContact = window.licenseStatus?.adminContact || window.currentUser?.company?.admin;
+            
+            if (adminContact && adminContact.email) {
+                const subject = encodeURIComponent('Demande d\'accès EmailSortPro');
+                const body = encodeURIComponent(`Bonjour,\n\nJe souhaiterais obtenir l'accès à EmailSortPro.\n\nMon email: ${window.currentUser?.email || 'Non spécifié'}\n\nMerci,`);
+                window.open(`mailto:${adminContact.email}?subject=${subject}&body=${body}`);
+            } else {
+                alert('Informations de contact administrateur non disponibles.');
+            }
+        };
+
+        // Fonction pour vérifier la licence après connexion
+        async function checkLicenseAfterAuth(userEmail) {
+            if (licenseCheckPerformed) {
+                console.log('[INDEX] License check already performed, skipping...');
+                return;
+            }
+            
+            licenseCheckPerformed = true;
+            console.log('[INDEX] Checking license after authentication for:', userEmail);
+            
+            try {
+                // Attendre que le service de licence soit prêt
+                if (!window.licenseService) {
+                    console.log('[INDEX] Waiting for license service...');
+                    await new Promise(resolve => {
+                        const checkInterval = setInterval(() => {
+                            if (window.licenseService || window.licenseServiceReady) {
+                                clearInterval(checkInterval);
+                                resolve();
+                            }
+                        }, 100);
+                        
+                        // Timeout après 10 secondes
+                        setTimeout(() => {
+                            clearInterval(checkInterval);
+                            resolve();
+                        }, 10000);
+                    });
+                }
+                
+                if (window.licenseService && typeof window.licenseService.authenticateWithEmail === 'function') {
+                    const licenseResult = await window.licenseService.authenticateWithEmail(userEmail);
+                    
+                    console.log('[INDEX] License check result:', licenseResult);
+                    
+                    if (licenseResult && licenseResult.valid) {
+                        // Licence valide, continuer
+                        console.log('[INDEX] ✅ License valid, continuing to app...');
+                        
+                        // Afficher un avertissement si période d'essai bientôt expirée
+                        if (licenseResult.status === 'trial' && licenseResult.daysRemaining <= 3) {
+                            showTrialWarning(licenseResult.daysRemaining);
+                        }
+                        
+                        return true;
+                    } else {
+                        // Licence invalide
+                        console.warn('[INDEX] ❌ Invalid license:', licenseResult);
+                        showLicenseError(licenseResult || {
+                            status: 'invalid',
+                            message: 'Licence invalide ou expirée'
+                        });
+                        return false;
+                    }
+                } else {
+                    console.error('[INDEX] License service not available');
+                    // Continuer sans vérification en mode dégradé
+                    return true;
+                }
+                
+            } catch (error) {
+                console.error('[INDEX] License check error:', error);
+                // En cas d'erreur, continuer en mode dégradé
+                return true;
+            }
+        }
+
+        // Fonction pour afficher l'avertissement de période d'essai
+        function showTrialWarning(daysRemaining) {
+            const warningDiv = document.createElement('div');
+            warningDiv.id = 'trial-warning';
+            warningDiv.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                background: linear-gradient(135deg, #f59e0b, #d97706);
+                color: white;
+                padding: 12px;
+                text-align: center;
+                z-index: 9999;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-weight: 600;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            `;
+
+            let warningText = `⏳ Attention : Votre période d'essai expire dans ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''} !`;
+            
+            // Si l'utilisateur est admin, ajouter le lien vers analytics
+            if (window.licenseService && window.licenseService.isAdmin()) {
+                warningText += ` <a href="https://coruscating-dodol-f30e8d.netlify.app/analytics.html" style="color: white; text-decoration: underline; margin-left: 10px;">Gérer les licences</a>`;
+            }
+
+            warningDiv.innerHTML = `
+                ${warningText}
+                <button onclick="this.parentElement.remove()" style="
+                    background: rgba(255,255,255,0.2);
+                    border: none;
+                    color: white;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    margin-left: 10px;
+                    cursor: pointer;
+                ">✕</button>
+            `;
+
+            document.body.insertBefore(warningDiv, document.body.firstChild);
+
+            // Retirer automatiquement après 10 secondes
+            setTimeout(() => {
+                if (warningDiv.parentNode) {
+                    warningDiv.remove();
+                }
+            }, 10000);
+        }
 
         // Vérification précoce IMMÉDIATE de l'authentification
         const earlyAuthCheck = () => {
@@ -1594,6 +2076,11 @@
                     await window.googleAuthService.logout();
                 }
                 
+                // Déconnecter du service de licence
+                if (window.licenseService && window.licenseService.logout) {
+                    await window.licenseService.logout();
+                }
+                
                 // Reset tous les services
                 if (window.mailService) {
                     window.mailService.reset();
@@ -1618,6 +2105,7 @@
                 // Reset les variables d'état
                 appAlreadyShown = false;
                 authCheckInProgress = false;
+                licenseCheckPerformed = false;
                 
                 console.log('[LOGOUT] ✅ Logout complete');
                 
@@ -1658,16 +2146,32 @@
                     // Vérifier Microsoft
                     if (window.authService && typeof window.authService.isAuthenticated === 'function') {
                         if (window.authService.isAuthenticated()) {
-                            window.showApp();
-                            return true;
+                            // Vérifier la licence avant d'afficher l'app
+                            const account = window.authService.getAccount();
+                            if (account && account.username) {
+                                checkLicenseAfterAuth(account.username).then(valid => {
+                                    if (valid !== false) {
+                                        window.showApp();
+                                    }
+                                });
+                                return true;
+                            }
                         }
                     }
                     
                     // Vérifier Google
                     if (window.googleAuthService && typeof window.googleAuthService.isAuthenticated === 'function') {
                         if (window.googleAuthService.isAuthenticated()) {
-                            window.showApp();
-                            return true;
+                            // Vérifier la licence avant d'afficher l'app
+                            const account = window.googleAuthService.getAccount();
+                            if (account && account.email) {
+                                checkLicenseAfterAuth(account.email).then(valid => {
+                                    if (valid !== false) {
+                                        window.showApp();
+                                    }
+                                });
+                                return true;
+                            }
                         }
                     }
                 } catch (error) {
@@ -1695,7 +2199,7 @@
             // Bouton Microsoft
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
-                loginBtn.addEventListener('click', function() {
+                loginBtn.addEventListener('click', async function() {
                     if (authCheckInProgress) {
                         return;
                     }
@@ -1710,19 +2214,25 @@
                         loadingOverlay.classList.add('active');
                     }
                     
-                    if (window.app && window.app.login) {
-                        window.app.login().then(() => {
-                            window.showApp();
-                            authCheckInProgress = false;
-                        }).catch((error) => {
-                            authCheckInProgress = false;
-                            this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
-                            this.disabled = false;
-                            if (loadingOverlay) {
-                                loadingOverlay.classList.remove('active');
+                    try {
+                        if (window.app && window.app.login) {
+                            await window.app.login();
+                            
+                            // Après connexion réussie, vérifier la licence
+                            const account = window.authService.getAccount();
+                            if (account && account.username) {
+                                const licenseValid = await checkLicenseAfterAuth(account.username);
+                                if (licenseValid !== false) {
+                                    window.showApp();
+                                }
                             }
-                        });
-                    } else {
+                        }
+                    } catch (error) {
+                        console.error('[LOGIN] Error:', error);
+                        if (window.uiManager) {
+                            window.uiManager.showToast('Erreur de connexion: ' + error.message, 'error');
+                        }
+                    } finally {
                         authCheckInProgress = false;
                         this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
                         this.disabled = false;
@@ -1755,7 +2265,7 @@
                         if (window.googleAuthService) {
                             await window.googleAuthService.initialize();
                             await window.googleAuthService.login();
-                            // La redirection va se produire, pas besoin de showApp() ici
+                            // La redirection va se produire, la vérification de licence se fera au retour
                         } else {
                             throw new Error('GoogleAuthService not available');
                         }
@@ -1801,9 +2311,28 @@
         });
         
         // Fonction globale pour basculer vers l'app après connexion
-        window.onAuthSuccess = function() {
+        window.onAuthSuccess = async function() {
             if (!appAlreadyShown && !document.body.classList.contains('app-active')) {
-                window.showApp();
+                // Vérifier la licence avant d'afficher l'app
+                let userEmail = null;
+                
+                if (window.authService && window.authService.isAuthenticated()) {
+                    const account = window.authService.getAccount();
+                    userEmail = account?.username || account?.mail;
+                } else if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+                    const account = window.googleAuthService.getAccount();
+                    userEmail = account?.email;
+                }
+                
+                if (userEmail) {
+                    const licenseValid = await checkLicenseAfterAuth(userEmail);
+                    if (licenseValid !== false) {
+                        window.showApp();
+                    }
+                } else {
+                    // Si pas d'email trouvé, afficher l'app quand même (mode dégradé)
+                    window.showApp();
+                }
             }
         };
 
@@ -1821,10 +2350,19 @@
                 const providerIcon = provider === 'google' ? 'fab fa-google' : 'fab fa-microsoft';
                 const providerText = provider === 'google' ? 'Gmail' : 'Outlook';
                 
+                // Ajouter le statut de licence si disponible
+                let licenseInfo = '';
+                if (window.licenseStatus) {
+                    const { status, daysRemaining } = window.licenseStatus;
+                    if (status === 'trial' && daysRemaining <= 7) {
+                        licenseInfo = `<span style="color: #fbbf24; margin-left: 8px; font-size: 11px;">⏳ ${daysRemaining}j restants</span>`;
+                    }
+                }
+                
                 authStatus.innerHTML = `
                     <div class="user-info">
                         <div class="user-details">
-                            <div class="user-name">${userName}</div>
+                            <div class="user-name">${userName}${licenseInfo}</div>
                             <div class="user-email">${userEmail} (${providerText})</div>
                         </div>
                         <div class="user-avatar">${initials}</div>
@@ -1844,6 +2382,7 @@
                 googleAuthService: window.googleAuthService ? 'OK' : 'MANQUANT',
                 mailService: window.mailService ? 'OK' : 'MANQUANT',
                 uiManager: window.uiManager ? 'OK' : 'MANQUANT',
+                licenseService: window.licenseService ? 'OK' : 'MANQUANT',
                 taskManager: window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT',
                 tasksView: window.tasksView ? 'OK' : 'MANQUANT',
                 pageManager: window.pageManager ? 'OK' : 'MANQUANT',
@@ -1851,6 +2390,8 @@
                 dashboardModule: window.dashboardModule ? 'OK' : 'MANQUANT',
                 hostname: window.location.hostname,
                 currentDomain: window.location.hostname,
+                currentUser: window.currentUser,
+                licenseStatus: window.licenseStatus,
                 authenticationStatus: {
                     microsoft: window.authService ? window.authService.isAuthenticated() : false,
                     google: window.googleAuthService ? window.googleAuthService.isAuthenticated() : false
@@ -1869,9 +2410,19 @@
                 
                 // Traiter le callback immédiatement
                 if (window.googleAuthService && window.googleAuthService.handleOAuthCallback) {
-                    window.googleAuthService.handleOAuthCallback(fragment).then(() => {
+                    window.googleAuthService.handleOAuthCallback(fragment).then(async () => {
                         console.log('[GOOGLE_CALLBACK] ✅ Google authentication successful');
-                        window.showApp();
+                        
+                        // Vérifier la licence après connexion Google
+                        const account = window.googleAuthService.getAccount();
+                        if (account && account.email) {
+                            const licenseValid = await checkLicenseAfterAuth(account.email);
+                            if (licenseValid !== false) {
+                                window.showApp();
+                            }
+                        } else {
+                            window.showApp();
+                        }
                     }).catch((error) => {
                         console.error('[GOOGLE_CALLBACK] ❌ Error processing Google callback:', error);
                     });
