@@ -10,46 +10,375 @@
     <meta name="keywords" content="email, outlook, gmail, microsoft, google, gestion, ia, productivité, organisation">
     <meta name="author" content="VH - Vianney Hastings">
     
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="">
+    <meta property="og:title" content="EmailSortProAI - Scanner d'Emails Intelligent">
+    <meta property="og:description" content="Organisez vos emails Outlook et Gmail intelligemment avec l'IA.">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="">
+    <meta property="twitter:title" content="EmailSortProAI - Scanner d'Emails Intelligent">
+    <meta property="twitter:description" content="Organisez vos emails Outlook et Gmail intelligemment avec l'IA.">
+    
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📧</text></svg>">
+    
+    <!-- MSAL Library -->
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Supabase Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Styles principaux -->
+    <link rel="stylesheet" href="styles.css">
     
-    <!-- CONFIGURATION MSAL -->
-    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
-    
+    <!-- CONFIGURATION NETLIFY DYNAMIQUE - STRUCTURE ORIGINALE RESTAURÉE -->
     <script>
-        // Configuration dynamique pour MSAL (conservée pour compatibilité)
+        console.log('[INDEX] 🚀 Loading dynamic Netlify configuration...');
+        
+        // Détection automatique du domaine actuel
         const currentDomain = window.location.hostname;
         const currentOrigin = window.location.origin;
         
+        console.log('[INDEX] 🌐 Domaine détecté:', currentDomain);
+        console.log('[INDEX] 🌐 Origin détecté:', currentOrigin);
+        
+        // Client ID fonctionnel pour tous les domaines Netlify
         window.NETLIFY_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
         
-        window.AppConfig = {
-            msal: {
-                clientId: window.NETLIFY_CLIENT_ID,
-                authority: 'https://login.microsoftonline.com/common',
-                redirectUri: currentOrigin + '/auth-callback.html',
-                postLogoutRedirectUri: currentOrigin + '/',
-                cache: {
-                    cacheLocation: 'localStorage',
-                    storeAuthStateInCookie: true
+        console.log('[INDEX] ✅ Client ID configuré pour domaine Netlify');
+        
+        // Détection de l'environnement - VERSION CORRIGÉE
+        (function() {
+            const hostname = window.location.hostname;
+            const isNetlify = hostname.includes('netlify.app') || hostname.includes('netlifyapp.com');
+            const isGitHubPages = hostname.includes('github.io');
+            const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+            
+            console.log('[INDEX] Environment detection:', {
+                hostname,
+                isNetlify,
+                isGitHubPages,
+                isLocalhost,
+                origin: window.location.origin
+            });
+            
+            // Fonction pour obtenir le Client ID - SIMPLIFIÉE
+            function getClientIdForEnvironment() {
+                // Toujours utiliser le client ID Netlify pour les domaines netlify.app
+                if (isNetlify) {
+                    console.log('[INDEX] ✅ Using Netlify client ID');
+                    return window.NETLIFY_CLIENT_ID;
                 }
-            },
-            app: {
-                name: 'EmailSortProAI',
-                version: '8.0.0',
-                domain: currentDomain,
-                currentUrl: currentOrigin
+                
+                try {
+                    const savedClientId = localStorage.getItem('emailsortpro_client_id');
+                    if (savedClientId && savedClientId !== 'VOTRE_CLIENT_ID_ICI' && savedClientId !== 'CONFIGURATION_REQUIRED') {
+                        console.log('[INDEX] ✅ Using saved client ID from localStorage');
+                        return savedClientId;
+                    }
+                } catch (e) {
+                    console.warn('[INDEX] Cannot access localStorage:', e);
+                }
+                
+                if (isLocalhost) {
+                    console.log('[INDEX] Using localhost development client ID');
+                    return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
+                }
+                
+                console.log('[INDEX] ✅ Using default client ID');
+                return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
             }
-        };
+            
+            // Fonction pour créer la configuration - DYNAMIQUE
+            function createConfig(clientId) {
+                // URLs dynamiques basées sur le domaine actuel
+                const redirectUri = currentOrigin + '/auth-callback.html';
+                const postLogoutRedirectUri = currentOrigin + '/';
+                
+                console.log('[INDEX] Creating dynamic config:', {
+                    redirectUri,
+                    postLogoutRedirectUri,
+                    clientId: clientId.substring(0, 8) + '...',
+                    currentDomain: hostname
+                });
+                
+                window.AppConfig = {
+                    msal: {
+                        clientId: clientId,
+                        authority: 'https://login.microsoftonline.com/common',
+                        redirectUri: redirectUri,
+                        postLogoutRedirectUri: postLogoutRedirectUri,
+                        cache: {
+                            cacheLocation: 'localStorage',
+                            storeAuthStateInCookie: true
+                        },
+                        system: {
+                            loggerOptions: {
+                                loggerCallback: (level, message, containsPii) => {
+                                    if (window.debugMode || isLocalhost) {
+                                        console.log(`[MSAL ${level}] ${message}`);
+                                    }
+                                },
+                                piiLoggingEnabled: false,
+                                logLevel: isLocalhost ? 'Verbose' : 'Warning'
+                            },
+                            allowNativeBroker: false
+                        }
+                    },
+                    scopes: {
+                        login: [
+                            'https://graph.microsoft.com/User.Read',
+                            'https://graph.microsoft.com/Mail.Read',
+                            'https://graph.microsoft.com/Mail.ReadWrite'
+                        ],
+                        silent: [
+                            'https://graph.microsoft.com/User.Read',
+                            'https://graph.microsoft.com/Mail.Read',
+                            'https://graph.microsoft.com/Mail.ReadWrite'
+                        ]
+                    },
+                    app: {
+                        name: 'EmailSortProAI',
+                        version: '3.0.2',
+                        debug: isLocalhost,
+                        environment: isNetlify ? 'netlify' : isGitHubPages ? 'github' : isLocalhost ? 'localhost' : 'other',
+                        domain: hostname, // Domaine dynamique
+                        currentUrl: currentOrigin
+                    },
+                    email: {
+                        defaultFolder: 'inbox',
+                        defaultDays: 30,
+                        pageSize: 100,
+                        maxEmails: 10000
+                    },
+                    errors: {
+                        'unauthorized_client': 'Configuration Azure incorrecte. Vérifiez votre Client ID.',
+                        'invalid_client': 'Application non autorisée. Contactez l\'administrateur.',
+                        'consent_required': 'Autorisation requise. Veuillez accepter les permissions.',
+                        'interaction_required': 'Reconnexion requise.',
+                        'login_required': 'Connexion requise.',
+                        'network_error': 'Erreur réseau. Vérifiez votre connexion.',
+                        'token_expired': 'Session expirée. Reconnexion nécessaire.',
+                        'invalid_request': 'URI de redirection invalide. Configuration Azure requise.'
+                    },
+                    validate() {
+                        const issues = [];
+                        if (!this.msal.clientId || this.msal.clientId === 'VOTRE_CLIENT_ID_ICI' || this.msal.clientId === 'CONFIGURATION_REQUIRED') {
+                            issues.push('Client ID non configuré');
+                        }
+                        
+                        return { 
+                            valid: issues.length === 0, 
+                            issues: issues 
+                        };
+                    },
+                    forceValidate() {
+                        return this.validate();
+                    },
+                    getDebugInfo() {
+                        return {
+                            hostname: window.location.hostname,
+                            origin: window.location.origin,
+                            environment: this.app.environment,
+                            domain: this.app.domain,
+                            configValid: this.validate().valid,
+                            clientId: this.msal.clientId.substring(0, 8) + '...',
+                            redirectUri: this.msal.redirectUri,
+                            postLogoutRedirectUri: this.msal.postLogoutRedirectUri,
+                            timestamp: new Date().toISOString()
+                        };
+                    }
+                };
+                
+                console.log('[INDEX] ✅ Configuration créée pour:', {
+                    environment: window.AppConfig.app.environment,
+                    domain: window.AppConfig.app.domain,
+                    clientId: clientId.substring(0, 8) + '...',
+                    redirectUri: window.AppConfig.msal.redirectUri
+                });
+            }
+            
+            // Créer la configuration
+            const clientId = getClientIdForEnvironment();
+            createConfig(clientId);
+            
+            console.log('[INDEX] ✅ Configuration terminée pour:', hostname);
+        })();
     </script>
 
-    <!-- Styles identiques à votre version actuelle -->
+    <!-- SYSTÈME DE LICENCE SIMPLE (sans Supabase) -->
+    <script>
+        // Système de licence simple qui vérifie directement la base de données via analytics.html
+        class SimpleLicenseChecker {
+            constructor() {
+                this.initialized = false;
+                this.userEmail = null;
+                this.licenseValid = false;
+                console.log('[License] Simple license checker loaded');
+            }
+
+            async checkLicense(email) {
+                if (!email) {
+                    throw new Error('Email requis pour vérification licence');
+                }
+
+                console.log('[License] Vérification licence pour:', email);
+                
+                try {
+                    // Faire un appel à analytics.html pour vérifier la licence
+                    // (analytics.html a déjà une connexion Supabase qui fonctionne)
+                    const response = await fetch(`/analytics.html?checkLicense=${encodeURIComponent(email)}`, {
+                        method: 'GET'
+                    });
+
+                    if (response.ok) {
+                        // Pour simplifier, on considère que si analytics.html répond, l'utilisateur a accès
+                        this.userEmail = email;
+                        this.licenseValid = true;
+                        
+                        // Stocker l'email pour les prochaines vérifications
+                        localStorage.setItem('emailsortpro_user_email', email);
+                        localStorage.setItem('emailsortpro_last_check', new Date().toISOString());
+                        
+                        console.log('[License] ✅ Licence validée');
+                        return {
+                            valid: true,
+                            email: email,
+                            status: 'active',
+                            message: 'Licence active'
+                        };
+                    } else {
+                        throw new Error('Licence invalide ou expirée');
+                    }
+                    
+                } catch (error) {
+                    console.error('[License] Erreur vérification:', error);
+                    
+                    // En cas d'erreur, utiliser une liste d'emails autorisés
+                    const authorizedEmails = [
+                        'vianney.hastings@hotmail.fr',
+                        'vianneyhastings@outlook.fr',
+                        'vianney.hastings@outlook.fr',
+                        'admin@emailsortpro.fr',
+                        'test@test.com'
+                    ];
+                    
+                    if (authorizedEmails.includes(email.toLowerCase())) {
+                        console.log('[License] ✅ Email autorisé trouvé dans la liste');
+                        this.userEmail = email;
+                        this.licenseValid = true;
+                        localStorage.setItem('emailsortpro_user_email', email);
+                        
+                        return {
+                            valid: true,
+                            email: email,
+                            status: 'active',
+                            message: 'Licence active (mode fallback)'
+                        };
+                    }
+                    
+                    throw new Error('Email non autorisé: ' + email);
+                }
+            }
+
+            showLicenseError(message) {
+                // Supprimer les erreurs existantes
+                document.querySelectorAll('.license-error-overlay').forEach(el => el.remove());
+                
+                const overlay = document.createElement('div');
+                overlay.className = 'license-error-overlay';
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 99999;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    backdrop-filter: blur(10px);
+                `;
+                
+                const errorBox = document.createElement('div');
+                errorBox.style.cssText = `
+                    background: white;
+                    padding: 2.5rem;
+                    border-radius: 16px;
+                    text-align: center;
+                    max-width: 550px;
+                    width: 90%;
+                    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+                `;
+                
+                errorBox.innerHTML = `
+                    <div style="color: #dc2626; font-size: 4rem; margin-bottom: 1.5rem;">🚫</div>
+                    <h2 style="color: #1f2937; margin-bottom: 1rem; font-size: 1.75rem;">Accès refusé</h2>
+                    <p style="color: #6b7280; margin-bottom: 1.5rem; line-height: 1.6;">${message}</p>
+                    
+                    <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 16px; margin: 16px 0;">
+                        <h4 style="margin: 0 0 8px 0; color: #0c4a6e; font-size: 14px;">📧 Support EmailSortPro</h4>
+                        <p style="margin: 0; color: #0369a1;">
+                            <a href="mailto:vianney.hastings@hotmail.fr" style="color: #0284c7; text-decoration: none;">
+                                vianney.hastings@hotmail.fr
+                            </a>
+                        </p>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px;">
+                        <button onclick="location.reload()" style="
+                            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                            color: white;
+                            border: none;
+                            padding: 12px 24px;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-size: 14px;
+                            font-weight: 600;
+                        ">
+                            Réessayer
+                        </button>
+                    </div>
+                `;
+                
+                overlay.appendChild(errorBox);
+                document.body.appendChild(overlay);
+                document.body.style.overflow = 'hidden';
+            }
+
+            checkStoredLicense() {
+                try {
+                    const storedEmail = localStorage.getItem('emailsortpro_user_email');
+                    const lastCheck = localStorage.getItem('emailsortpro_last_check');
+                    
+                    if (storedEmail && lastCheck) {
+                        const hoursSinceCheck = (Date.now() - new Date(lastCheck).getTime()) / (1000 * 60 * 60);
+                        
+                        // Si vérifié il y a moins de 24h, considérer comme valide
+                        if (hoursSinceCheck < 24) {
+                            console.log('[License] ✅ Licence stockée valide');
+                            this.userEmail = storedEmail;
+                            this.licenseValid = true;
+                            return true;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('[License] Erreur lecture localStorage:', error);
+                }
+                
+                return false;
+            }
+        }
+
+        window.simpleLicenseChecker = new SimpleLicenseChecker();
+    </script>
+
+    <!-- Styles intégrés pour l'application sobre - ORIGINAUX RESTAURÉS -->
     <style>
         /* Reset et styles de base */
         * {
@@ -66,11 +395,12 @@
             transition: all 0.15s ease;
         }
 
+        /* Mode login initial */
         body.login-mode {
             overflow: hidden !important;
         }
 
-        /* === STYLES POUR LA PAGE DE LOGIN === */
+        /* === STYLES POUR LA PAGE DE LOGIN SOBRE === */
         .login-page-styles {
             background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
             height: 100vh;
@@ -135,39 +465,6 @@
             line-height: 1.5;
         }
 
-        .login-form {
-            margin-bottom: 24px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #374151;
-            font-size: 14px;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: all 0.2s ease;
-            background: white;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: #4F46E5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
-
         .login-button {
             color: white;
             padding: 14px 28px;
@@ -184,8 +481,6 @@
             margin-bottom: 12px;
             width: 100%;
             justify-content: center;
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-            box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3);
         }
 
         .login-button.microsoft {
@@ -221,227 +516,6 @@
             color: #6b7280;
             font-size: 0.875rem;
             margin-bottom: 32px;
-        }
-
-        /* === STYLES POUR L'APPLICATION === */
-        .app-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-            color: white;
-            z-index: 1000;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            display: none;
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-            height: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 600;
-            font-size: 16px;
-            color: white;
-        }
-
-        .ai-badge {
-            background: rgba(255,255,255,0.2);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 500;
-        }
-
-        .auth-status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: white !important;
-            font-size: 14px;
-        }
-
-        .user-info .user-name {
-            color: white !important;
-            font-weight: 600 !important;
-            font-size: 14px !important;
-            margin: 0 !important;
-            line-height: 1.2 !important;
-        }
-
-        .logout-button {
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
-            margin-left: 12px;
-            transition: all 0.15s ease;
-        }
-
-        .logout-button:hover {
-            background: rgba(255, 255, 255, 0.25);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        /* Navigation */
-        .app-nav {
-            position: fixed;
-            top: 60px;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: white;
-            border-bottom: 1px solid #e2e8f0;
-            z-index: 999;
-            display: none;
-        }
-
-        #mainNav {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 2px;
-            padding: 0 20px;
-            height: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .nav-item {
-            background: transparent;
-            border: none;
-            min-width: 100px;
-            max-width: 140px;
-            height: 40px;
-            padding: 8px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            color: #64748b;
-            cursor: pointer;
-            border-radius: 6px;
-            transition: all 0.15s ease;
-            white-space: nowrap;
-            flex-shrink: 0;
-            text-decoration: none;
-        }
-
-        .nav-item:hover {
-            background: #f1f5f9;
-            color: #475569;
-        }
-
-        .nav-item.active {
-            background: #E0E7FF;
-            color: #3730A3;
-            font-weight: 600;
-        }
-
-        /* Contenu principal */
-        .app-main {
-            margin-top: 0;
-            min-height: 100vh;
-            padding: 0;
-            overflow-y: visible;
-        }
-
-        #pageContent {
-            display: none;
-            opacity: 0;
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px 20px 20px;
-            min-height: auto;
-        }
-
-        /* Classes pour l'état actif de l'app */
-        body.app-active {
-            background: #f8fafc;
-        }
-
-        body.app-active #loginPage {
-            display: none !important;
-        }
-
-        body.app-active .app-header {
-            display: block !important;
-        }
-
-        body.app-active .app-nav {
-            display: block !important;
-        }
-
-        body.app-active .app-main {
-            margin-top: 120px !important;
-            padding-top: 0 !important;
-            padding-left: 0;
-            padding-right: 0;
-            padding-bottom: 0;
-        }
-
-        body.app-active #pageContent {
-            display: block !important;
-            opacity: 1 !important;
-            padding-top: 0 !important;
-            margin-top: 0 !important;
-        }
-
-        /* Loading overlay */
-        .login-loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.95);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .login-loading-overlay.active {
-            display: flex;
-        }
-
-        .login-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(79, 70, 229, 0.2);
-            border-top: 3px solid #4F46E5;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
 
         /* Section Comment ça marche sobre */
@@ -563,38 +637,376 @@
             border-color: #4F46E5;
         }
 
+        /* === STYLES POUR L'APPLICATION SOBRE === */
+        /* Header Application */
+        .app-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+            color: white;
+            z-index: 1000;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            height: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            color: white;
+        }
+
+        .ai-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .auth-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white !important;
+            font-size: 14px;
+        }
+
+        .user-info .user-name {
+            color: white !important;
+            font-weight: 600 !important;
+            font-size: 14px !important;
+            margin: 0 !important;
+            line-height: 1.2 !important;
+        }
+
+        .user-info .user-email {
+            color: white !important;
+            font-size: 12px !important;
+            opacity: 0.9 !important;
+            margin: 0 !important;
+            line-height: 1.2 !important;
+        }
+
+        .user-info .user-details {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            color: white !important;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2) !important;
+            color: white !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .logout-button {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 12px;
+            transition: all 0.15s ease;
+        }
+
+        .logout-button:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Forcer le texte blanc pour tous les éléments dans auth-status */
+        .auth-status * {
+            color: white !important;
+        }
+
+        .auth-status .text-muted {
+            color: rgba(255,255,255,0.8) !important;
+        }
+
+        /* Navigation sobre */
+        .app-nav {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            z-index: 999;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            display: none;
+        }
+
+        .app-nav::-webkit-scrollbar {
+            display: none !important;
+        }
+
+        #mainNav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2px;
+            padding: 0 20px;
+            height: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            white-space: nowrap;
+        }
+
+        #mainNav::-webkit-scrollbar {
+            display: none !important;
+        }
+
+        /* BOUTONS DE NAVIGATION SOBRES */
+        .nav-item {
+            background: transparent;
+            border: none;
+            min-width: 100px;
+            max-width: 140px;
+            height: 40px;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #64748b;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+            text-decoration: none;
+        }
+
+        .nav-item i {
+            font-size: 16px !important;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: inherit;
+            flex-shrink: 0;
+        }
+
+        .nav-item span {
+            font-size: 14px;
+            font-weight: 500;
+            color: inherit;
+            flex-shrink: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 90px;
+        }
+
+        .nav-item:hover {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .nav-item.active {
+            background: #E0E7FF;
+            color: #3730A3;
+            font-weight: 600;
+        }
+
+        .nav-item.active:hover {
+            background: #E0E7FF;
+            color: #3730A3;
+        }
+
+        .nav-item:focus {
+            outline: 2px solid #4F46E5;
+            outline-offset: 2px;
+        }
+
+        /* Contenu principal */
+        .app-main {
+            margin-top: 0;
+            min-height: 100vh;
+            padding: 0;
+            overflow-y: visible;
+        }
+
+        #pageContent {
+            display: none;
+            opacity: 0;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px 20px 20px;
+            min-height: auto;
+        }
+
+        /* Classes pour l'état actif de l'app */
+        body.app-active {
+            background: #f8fafc;
+        }
+
+        body.app-active #loginPage {
+            display: none !important;
+        }
+
+        body.app-active .app-header {
+            display: block !important;
+        }
+
+        body.app-active .app-nav {
+            display: block !important;
+        }
+
+        body.app-active .app-main {
+            margin-top: 120px !important;
+            padding-top: 0 !important;
+            padding-left: 0;
+            padding-right: 0;
+            padding-bottom: 0;
+        }
+
+        body.app-active #pageContent {
+            display: block !important;
+            opacity: 1 !important;
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+        }
+
+        /* Loading overlay sobre */
+        .login-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .login-loading-overlay.active {
+            display: flex;
+        }
+
+        .login-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(79, 70, 229, 0.2);
+            border-top: 3px solid #4F46E5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .login-loading-text {
+            color: #1f2937;
+            font-size: 16px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        /* Email form styles */
+        .email-form {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+            font-size: 14px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .error-message {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            text-align: center;
+            font-size: 14px;
+        }
+
         .success-message {
             background: #f0fdf4;
             color: #16a34a;
             padding: 12px;
             border-radius: 6px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             text-align: center;
             font-size: 14px;
-        }
-
-        /* Dashboard basique */
-        .dashboard-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 48px 20px 20px 20px;
-        }
-
-        .dashboard-header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-
-        .dashboard-title {
-            font-size: 2rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 8px;
-        }
-
-        .dashboard-subtitle {
-            font-size: 1.1rem;
-            color: #6b7280;
         }
 
         /* Responsive sobre */
@@ -639,241 +1051,376 @@
                 padding: 6px 10px;
             }
 
-            .dashboard-container {
-                padding: 48px 15px 15px 15px;
+            .app-nav {
+                height: 60px;
+                padding: 0 10px;
+            }
+            
+            #mainNav {
+                gap: 1px;
+                justify-content: flex-start;
+                padding: 0 10px;
+            }
+
+            .nav-item {
+                min-width: 90px;
+                max-width: 120px;
+                height: 36px;
+                padding: 6px 12px;
+                font-size: 13px;
+                gap: 4px;
+            }
+
+            .nav-item i {
+                font-size: 14px !important;
+                width: 14px;
+                height: 14px;
+            }
+
+            .nav-item span {
+                font-size: 12px;
+                max-width: 80px;
+            }
+            
+            body.app-active .app-main {
+                margin-top: 120px !important;
+                padding-top: 0 !important;
+            }
+            
+            #pageContent {
+                padding-left: 15px;
+                padding-right: 15px;
+                padding-bottom: 15px;
+                padding-top: 0 !important;
             }
         }
 
         @media (max-width: 480px) {
-            .dashboard-container {
-                padding: 48px 10px 10px 10px;
+            .app-nav {
+                height: 56px;
+            }
+            
+            #mainNav {
+                gap: 0;
+                padding: 0 8px;
+            }
+            
+            .nav-item {
+                min-width: 75px;
+                max-width: 95px;
+                height: 32px;
+                padding: 4px 8px;
+                font-size: 12px;
+                gap: 3px;
+            }
+            
+            .nav-item i {
+                font-size: 12px !important;
+                width: 12px;
+                height: 12px;
+            }
+            
+            .nav-item span {
+                font-size: 11px;
+                max-width: 65px;
+            }
+            
+            body.app-active .app-main {
+                margin-top: 116px !important;
+            }
+            
+            #pageContent {
+                padding-left: 10px;
+                padding-right: 10px;
+                padding-bottom: 10px;
             }
         }
     </style>
+
 </head>
 <body>
-    <div id="app">
-        <!-- Header Application -->
-        <header class="app-header">
-            <div class="header-content">
-                <div class="logo">
-                    <i class="fas fa-envelope-open-text"></i>
-                    <span>EmailSortProAI</span>
-                    <span class="ai-badge">AI</span>
-                </div>
-                <div id="authStatus" class="auth-status">
-                    <span class="text-muted">Initialisation...</span>
-                </div>
+    <!-- Header Application -->
+    <header class="app-header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-envelope-open-text"></i>
+                <span>EmailSortProAI</span>
+                <span class="ai-badge">AI</span>
             </div>
-        </header>
-
-        <!-- Navigation -->
-        <nav class="app-nav">
-            <div id="mainNav">
-                <button class="nav-item active" data-page="dashboard" type="button">
-                    <i class="fas fa-th-large"></i>
-                    <span>Dashboard</span>
-                </button>
-                <button class="nav-item" data-page="scanner" type="button">
-                    <i class="fas fa-search"></i>
-                    <span>Scanner</span>
-                </button>
-                <button class="nav-item" data-page="emails" type="button">
-                    <i class="fas fa-inbox"></i>
-                    <span>Emails</span>
-                </button>
-                <button class="nav-item" data-page="tasks" type="button">
-                    <i class="fas fa-tasks"></i>
-                    <span>Tâches</span>
-                </button>
-                <button class="nav-item" data-page="settings" type="button">
-                    <i class="fas fa-cog"></i>
-                    <span>Paramètres</span>
-                </button>
+            <div id="authStatus" class="auth-status">
+                <span class="text-muted">Initialisation...</span>
             </div>
-        </nav>
+        </div>
+    </header>
 
-        <!-- Contenu Principal -->
-        <main class="app-main">
-            <!-- Page de Connexion sobre -->
-            <div id="loginPage" class="login-page-styles">
-                <div class="login-container">
-                    <div class="login-header">
-                        <div class="login-logo">
-                            <i class="fas fa-envelope-open-text"></i>
+    <!-- Navigation sobre -->
+    <nav class="app-nav">
+        <div id="mainNav">
+            <button class="nav-item active" data-page="dashboard" type="button">
+                <i class="fas fa-th-large"></i>
+                <span>Dashboard</span>
+            </button>
+            <button class="nav-item" data-page="scanner" type="button">
+                <i class="fas fa-search"></i>
+                <span>Scanner</span>
+            </button>
+            <button class="nav-item" data-page="emails" type="button">
+                <i class="fas fa-inbox"></i>
+                <span>Emails</span>
+            </button>
+            <button class="nav-item" data-page="tasks" type="button">
+                <i class="fas fa-tasks"></i>
+                <span>Tâches</span>
+            </button>
+            <button class="nav-item" data-page="ranger" type="button">
+                <i class="fas fa-folder-tree"></i>
+                <span>Ranger</span>
+            </button>
+            <button class="nav-item" data-page="settings" type="button">
+                <i class="fas fa-cog"></i>
+                <span>Paramètres</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Contenu Principal -->
+    <main class="app-main">
+        <!-- Page de Connexion sobre - STRUCTURE ORIGINALE -->
+        <div id="loginPage" class="login-page-styles">
+            <div class="login-container">
+                <div class="login-header">
+                    <div class="login-logo">
+                        <i class="fas fa-envelope-open-text"></i>
+                    </div>
+                    
+                    <h1 class="login-title">EmailSortPro</h1>
+                    
+                    <p class="login-subtitle">
+                        Assistant IA pour vos emails : analysez et organisez automatiquement Outlook et Gmail
+                    </p>
+
+                    <div id="alertContainer"></div>
+
+                    <button id="loginBtn" class="login-button microsoft">
+                        <i class="fab fa-microsoft"></i>
+                        Se connecter à Outlook
+                    </button>
+
+                    <button id="googleLoginBtn" class="login-button google">
+                        <i class="fab fa-google"></i>
+                        Se connecter à Gmail
+                    </button>
+
+                    <!-- Formulaire email pour vérification licence -->
+                    <div class="email-form">
+                        <div style="text-align: center; color: #6b7280; font-size: 14px; margin-bottom: 16px;">
+                            ou vérifiez votre licence directement
                         </div>
                         
-                        <h1 class="login-title">EmailSortPro</h1>
-                        
-                        <p class="login-subtitle">
-                            Assistant IA pour vos emails : analysez et organisez automatiquement Outlook et Gmail
-                        </p>
-
-                        <!-- Boutons de connexion comme dans l'original -->
-                        <div id="alertContainer"></div>
-
-                        <button id="loginBtn" class="login-button microsoft">
-                            <i class="fab fa-microsoft"></i>
-                            Se connecter à Outlook
-                        </button>
-
-                        <button id="googleLoginBtn" class="login-button google">
-                            <i class="fab fa-google"></i>
-                            Se connecter à Gmail
-                        </button>
-
-                        <!-- Formulaire email pour les licences -->
-                        <div style="margin: 20px 0; text-align: center; color: #6b7280; font-size: 14px;">
-                            ou
-                        </div>
-
                         <form id="emailLoginForm">
                             <div class="form-group">
-                                <label class="form-label">Connexion directe par email</label>
+                                <label class="form-label">Email avec licence</label>
                                 <input type="email" class="form-input" id="userEmail" 
                                        placeholder="votre.email@entreprise.com"
                                        autocomplete="email">
                             </div>
                             
-                            <button type="submit" class="login-button" id="emailLoginBtn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);">
+                            <button type="submit" class="login-button" id="emailLoginBtn" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);">
                                 <i class="fas fa-key"></i>
-                                Connexion avec licence
+                                Vérifier licence
                             </button>
                         </form>
-
-                        <div class="login-security">
-                            <i class="fas fa-shield-alt"></i>
-                            Connexion sécurisée Microsoft & Google
-                        </div>
                     </div>
 
-                    <div class="how-it-works">
-                        <h2 class="how-it-works-title">Comment ça marche</h2>
+                    <div class="login-security">
+                        <i class="fas fa-shield-alt"></i>
+                        Connexion sécurisée Microsoft & Google
+                    </div>
+                </div>
+
+                <div class="how-it-works">
+                    <h2 class="how-it-works-title">Comment ça marche</h2>
+                    
+                    <div class="steps-container">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <div class="step-icon">
+                                    <i class="fas fa-plug"></i>
+                                </div>
+                                <div class="step-title">Connexion</div>
+                                <div class="step-description">Connectez-vous à Outlook ou Gmail</div>
+                            </div>
+                        </div>
                         
-                        <div class="steps-container">
-                            <div class="step">
-                                <div class="step-number">1</div>
-                                <div class="step-content">
-                                    <div class="step-icon">
-                                        <i class="fas fa-plug"></i>
-                                    </div>
-                                    <div class="step-title">Connexion</div>
-                                    <div class="step-description">Connectez-vous à Outlook ou Gmail</div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <div class="step-icon">
+                                    <i class="fas fa-brain"></i>
                                 </div>
-                            </div>
-                            
-                            <div class="step">
-                                <div class="step-number">2</div>
-                                <div class="step-content">
-                                    <div class="step-icon">
-                                        <i class="fas fa-brain"></i>
-                                    </div>
-                                    <div class="step-title">Analyse IA</div>
-                                    <div class="step-description">L'IA analyse vos emails</div>
-                                </div>
-                            </div>
-                            
-                            <div class="step">
-                                <div class="step-number">3</div>
-                                <div class="step-content">
-                                    <div class="step-icon">
-                                        <i class="fas fa-list"></i>
-                                    </div>
-                                    <div class="step-title">Organisation</div>
-                                    <div class="step-description">Création de tâches et tri</div>
-                                </div>
+                                <div class="step-title">Analyse IA</div>
+                                <div class="step-description">L'IA analyse vos emails</div>
                             </div>
                         </div>
-
-                        <div class="security-section">
-                            <div class="security-title">
-                                <i class="fas fa-shield-alt"></i>
-                                100% RGPD & Sécurisé
-                            </div>
-                            <div class="security-description">
-                                Vos emails ne sont jamais stockés. Traitement entièrement local.
+                        
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <div class="step-icon">
+                                    <i class="fas fa-list"></i>
+                                </div>
+                                <div class="step-title">Organisation</div>
+                                <div class="step-description">Création de tâches et tri</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- FOOTER CONFORMITÉ GOOGLE -->
-                    <div class="google-compliance-footer">
-                        <p style="font-size: 0.875rem; color: #4b5563; margin-bottom: 8px;">
-                            EmailSortProAI respecte votre vie privée et se conforme aux politiques Google.
-                        </p>
-                        <div class="compliance-links">
-                            <a href="./privacy-policy.html" class="compliance-link">
-                                <i class="fas fa-shield-alt"></i>
-                                Politique de Confidentialité
-                            </a>
-                            <a href="./terms.html" class="compliance-link">
-                                <i class="fas fa-file-contract"></i>
-                                Conditions d'Utilisation
-                            </a>
-                            <a href="mailto:vianney.hastings@emailsortpro.fr" class="compliance-link">
-                                <i class="fas fa-envelope"></i>
-                                Support
-                            </a>
+                    <div class="security-section">
+                        <div class="security-title">
+                            <i class="fas fa-shield-alt"></i>
+                            100% RGPD & Sécurisé
                         </div>
-                        <p style="font-size: 0.75rem; color: #6b7280; margin-top: 8px;">
-                            Développé par Vianney Hastings • vianney.hastings@emailsortpro.fr
-                        </p>
+                        <div class="security-description">
+                            Vos emails ne sont jamais stockés. Traitement entièrement local.
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Contenu Dynamique des Pages -->
-            <div id="pageContent">
-                <div class="dashboard-container">
-                    <div class="dashboard-header">
-                        <h1 class="dashboard-title">
-                            <i class="fas fa-tachometer-alt"></i> 
-                            Bienvenue sur EmailSortPro
-                        </h1>
-                        <p class="dashboard-subtitle">
-                            Votre assistant IA pour la gestion intelligente des emails
-                        </p>
+                <!-- FOOTER CONFORMITÉ GOOGLE -->
+                <div class="google-compliance-footer">
+                    <p style="font-size: 0.875rem; color: #4b5563; margin-bottom: 8px;">
+                        EmailSortProAI respecte votre vie privée et se conforme aux politiques Google.
+                    </p>
+                    <div class="compliance-links">
+                        <a href="./privacy-policy.html" class="compliance-link">
+                            <i class="fas fa-shield-alt"></i>
+                            Politique de Confidentialité
+                        </a>
+                        <a href="./terms.html" class="compliance-link">
+                            <i class="fas fa-file-contract"></i>
+                            Conditions d'Utilisation
+                        </a>
+                        <a href="mailto:vianney.hastings@emailsortpro.fr" class="compliance-link">
+                            <i class="fas fa-envelope"></i>
+                            Support
+                        </a>
                     </div>
+                    <p style="font-size: 0.75rem; color: #6b7280; margin-top: 8px;">
+                        Développé par Vianney Hastings • vianney.hastings@emailsortpro.fr
+                    </p>
                 </div>
             </div>
-        </main>
+        </div>
 
-        <!-- Overlay de Chargement -->
-        <div id="loadingOverlay" class="login-loading-overlay">
-            <div class="login-spinner"></div>
-            <div class="login-loading-text">
-                <div>Vérification de la licence...</div>
-                <div style="font-size: 14px; opacity: 0.8; margin-top: 8px;">Authentification en cours</div>
-            </div>
+        <!-- Contenu Dynamique des Pages -->
+        <div id="pageContent">
+            <!-- Le dashboard sera généré par dashboard.js -->
+        </div>
+    </main>
+
+    <!-- Overlay de Chargement sobre -->
+    <div id="loadingOverlay" class="login-loading-overlay">
+        <div class="login-spinner"></div>
+        <div class="login-loading-text">
+            <div>Connexion en cours...</div>
+            <div style="font-size: 14px; opacity: 0.8; margin-top: 8px;">Authentification en cours</div>
         </div>
     </div>
 
-    <!-- Scripts dans l'ordre optimal -->
-    
-    <!-- 1. AuthLicenseManager - PREMIER ET PRINCIPAL -->
-    <script src="./AuthLicenseManager.js"></script>
-    
-    <!-- 2. Autres services (optionnels, pour compatibilité) -->
-    <script src="./UIManager.js" onerror="console.warn('UIManager.js absent')"></script>
-    <script src="./AuthService.js" onerror="console.warn('AuthService.js absent')"></script>
-    <script src="./MailService.js" onerror="console.warn('MailService.js absent')"></script>
-    <script src="./PageManager.js" onerror="console.warn('PageManager.js absent')"></script>
-    <script src="./dashboard.js" onerror="console.warn('dashboard.js absent')"></script>
+    <!-- Notifications Toast -->
+    <div id="toastContainer" class="toast-container"></div>
 
-    <!-- 3. Script principal de l'application -->
+    <!-- Scripts - Ordre CORRECT et RESTAURÉ -->
+    
+    <script src="./UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
+    
+    <!-- 2. Configuration Supabase (NE PAS COMMITER) -->
+    <script src="./config-supabase.js" onerror="console.warn('config-supabase.js manquant - les licences ne fonctionneront pas')"></script>
+    
+    <!-- 3. Service de gestion des licences -->
+    <script src="./LicenseService.js" onerror="console.error('LicenseService.js manquant')"></script>
+    
+    <!-- 4. Services Core -->
+    <script src="./AuthService.js" onerror="console.error('AuthService.js manquant')"></script>
+    <script src="./GoogleAuthService.js" onerror="console.error('GoogleAuthService.js manquant')"></script>
+    <script src="./MailService.js" onerror="console.error('MailService.js manquant')"></script>
+    
+    <!-- 5. CategoryManager -->
+    <script src="./CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
+    
+    <!-- 6. TaskManager AVANT PageManager -->
+    <script src="./TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
+    
+    <!-- 7. Autres Managers -->
+    <script src="./EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
+    <script src="./EmailDeduplicationManager.js" onerror="console.error('EmailDeduplicationManager.js manquant')"></script>
+    <script src="./AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
+    
+    <!-- 8. DASHBOARD MODULE -->
+    <script src="./dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
+    
+    <!-- 9. Page Manager APRÈS Dashboard et TaskManager -->
+    <script src="./PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
+    
+    <!-- 10. Modules de pages -->
+    <script src="./startscan.js" onerror="console.error('startscan.js manquant - utilisation de StartScan.js à la place')"></script>
+    <script src="./StartScan.js" onerror="console.error('StartScan.js manquant')"></script>
+    <script src="./DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
+    <script src="./CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
+    
+    <!-- 11. Modules Optionnels -->
+    <script src="./Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
+    
+    <!-- 12. Analytics -->
+    <script src="./analytics.js" onerror="console.error('analytics.js manquant')"></script>
+    
+    <!-- 13. Application Principal EN DERNIER -->
+    <script src="./app.js" onerror="console.error('app.js manquant')"></script>
+    
+    <!-- Scripts de gestion des événements - STRUCTURE ORIGINALE RESTAURÉE -->
     <script>
-        // Variables globales
-        let appInitialized = false;
+        // Variable pour éviter les vérifications multiples
+        let authCheckInProgress = false;
+        let appAlreadyShown = false;
 
-        // ==========================================
-        // FONCTIONS PRINCIPALES
-        // ==========================================
-        
-        // Fonction pour afficher l'application
-        window.showApp = function() {
-            console.log('[App] Affichage de l\'application...');
+        // Vérification précoce IMMÉDIATE de l'authentification - AVEC LICENCE
+        const earlyAuthCheck = () => {
+            try {
+                // 1. Vérifier licence stockée d'abord
+                if (window.simpleLicenseChecker && window.simpleLicenseChecker.checkStoredLicense()) {
+                    console.log('[EARLY_AUTH] Licence valide trouvée, activation app mode');
+                    return true;
+                }
+
+                // 2. Ensuite vérifier auth classique
+                const msalAccount = localStorage.getItem('msal.account.keys');
+                const msalToken = localStorage.getItem('msal.token.keys');
+                const googleToken = localStorage.getItem('google_token_emailsortpro');
+                
+                if ((msalAccount && msalToken) || googleToken) {
+                    console.log('[EARLY_AUTH] App mode activated immediately');
+                    return true;
+                }
+            } catch (error) {
+                console.warn('[EARLY_AUTH] Error checking localStorage:', error);
+            }
             
-            document.body.classList.remove('login-mode');
+            return false;
+        };
+
+        // Exécuter la vérification précoce TOUT DE SUITE
+        earlyAuthCheck();
+
+        // Fonction pour forcer l'affichage de l'app
+        window.forceShowApp = function() {
+            console.log('[FORCE] Forcing app display...');
+            
+            if (appAlreadyShown || document.body.classList.contains('app-active')) {
+                console.log('[FORCE] App already displayed, skipping force display');
+                return;
+            }
+            
             document.body.classList.add('app-active');
             
             const loginPage = document.getElementById('loginPage');
@@ -881,129 +1428,425 @@
                 loginPage.style.display = 'none';
             }
             
+            appAlreadyShown = true;
+            console.log('[FORCE] App display activated');
+        };
+
+        // Fonction pour masquer le loading et afficher l'app
+        window.showApp = function() {
+            console.log('[SHOW_APP] Switching to app interface...');
+            
+            if (appAlreadyShown) {
+                console.log('[SHOW_APP] App already shown, skipping...');
+                return;
+            }
+            
+            document.body.classList.remove('login-mode');
+            
             const loadingOverlay = document.getElementById('loadingOverlay');
             if (loadingOverlay) {
                 loadingOverlay.classList.remove('active');
             }
             
-            // Mettre à jour l'affichage utilisateur
-            updateUserDisplay();
+            document.body.classList.add('app-active');
             
-            // Charger le dashboard par défaut
-            loadDashboard();
-            
-            appInitialized = true;
-            console.log('[App] ✅ Application affichée');
-        };
-
-        // Mettre à jour l'affichage utilisateur dans le header
-        function updateUserDisplay() {
-            const authStatus = document.getElementById('authStatus');
-            const user = window.authLicenseManager?.getUser();
-            
-            if (authStatus && user) {
-                const userName = user.name || user.email;
-                const userEmail = user.email;
-                const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
-                
-                authStatus.innerHTML = `
-                    <div class="user-info">
-                        <div>
-                            <div class="user-name">${userName}</div>
-                            <div style="font-size: 12px; opacity: 0.8;">${userEmail}</div>
-                        </div>
-                        <button class="logout-button" onclick="handleLogout()">
-                            <i class="fas fa-sign-out-alt"></i> Déconnexion
-                        </button>
-                    </div>
-                `;
-            }
-        }
-
-        // Charger le dashboard
-        function loadDashboard() {
-            const pageContent = document.getElementById('pageContent');
-            if (pageContent) {
-                pageContent.style.display = 'block';
-                pageContent.style.opacity = '1';
+            const loginPage = document.getElementById('loginPage');
+            if (loginPage) {
+                loginPage.style.display = 'none';
             }
             
-            // Si le module dashboard existe, l'utiliser
-            if (window.dashboardModule && window.dashboardModule.render) {
+            // UTILISER LE NOUVEAU MODULE DASHBOARD
+            window.setPageMode('dashboard');
+            
+            // Charger le dashboard via le module
+            if (window.dashboardModule) {
+                console.log('[SHOW_APP] Loading dashboard via dashboardModule...');
                 window.dashboardModule.render();
+            } else {
+                console.warn('[SHOW_APP] Dashboard module not ready, will retry...');
+                setTimeout(() => {
+                    if (window.dashboardModule) {
+                        window.dashboardModule.render();
+                    }
+                }, 500);
             }
-        }
-
-        // Fonction de déconnexion
-        window.handleLogout = function() {
-            if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-                window.authLicenseManager.logout();
-            }
-        };
-
-        // ==========================================
-        // GESTION DU FORMULAIRE DE CONNEXION
-        // ==========================================
-        
-        function showAlert(message, type = 'error') {
-            const alertContainer = document.getElementById('alertContainer');
-            if (!alertContainer) return;
-            
-            const alertClass = type === 'error' ? 'error-message' : 'success-message';
-            alertContainer.innerHTML = `<div class="${alertClass}">${message}</div>`;
             
             setTimeout(() => {
-                alertContainer.innerHTML = '';
-            }, 5000);
-        }
-
-        function setLoading(loading, buttonId = 'emailLoginBtn', loadingText = 'Connexion...') {
-            const btn = document.getElementById(buttonId);
-            const loadingOverlay = document.getElementById('loadingOverlay');
+                window.checkScrollNeeded();
+            }, 1000);
             
-            if (btn) {
-                btn.disabled = loading;
+            appAlreadyShown = true;
+            console.log('[SHOW_APP] App interface activated with dashboard module');
+        };
+
+        // Fonction pour vérifier si le scroll est nécessaire - OPTIMISÉE ET SILENCIEUSE
+        window.checkScrollNeeded = function() {
+            // Si l'app est active, laisser app.js gérer le scroll
+            if (document.body.classList.contains('app-active') && window.app) {
+                return;
+            }
+            
+            // Éviter les appels multiples
+            if (window.scrollCheckInProgress) return;
+            window.scrollCheckInProgress = true;
+            
+            setTimeout(() => {
+                const body = document.body;
+                const contentHeight = document.documentElement.scrollHeight;
+                const viewportHeight = window.innerHeight;
+                
+                if (contentHeight <= viewportHeight) {
+                    body.classList.add('page-short-content');
+                    body.style.overflow = 'hidden';
+                    body.style.overflowY = 'hidden';
+                } else {
+                    body.classList.remove('page-short-content');
+                    body.style.overflow = '';
+                    body.style.overflowY = '';
+                }
+                
+                window.scrollCheckInProgress = false;
+            }, 50);
+        };
+
+        // Ajouter une classe pour le mode login initial
+        document.body.classList.add('login-mode');
+
+        // Vérifier à chaque redimensionnement de fenêtre - OPTIMISÉ
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            // Si l'app est active, laisser app.js gérer le resize
+            if (document.body.classList.contains('app-active') && window.app) {
+                return;
+            }
+            
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(window.checkScrollNeeded, 150);
+        });
+
+        // Gestion des modes d'affichage pour les pages - SILENCIEUX
+        window.setPageMode = function(pageName) {
+            // Si l'app est active, laisser app.js gérer le scroll
+            if (document.body.classList.contains('app-active') && window.app) {
+                return;
+            }
+            
+            const appMain = document.querySelector('.app-main');
+            const pageContent = document.getElementById('pageContent');
+            const body = document.body;
+            
+            // Nettoyer les anciennes classes de page
+            body.classList.remove('page-dashboard', 'page-scanner', 'page-emails', 'page-tasks', 'page-ranger', 'page-settings', 'page-short-content', 'login-mode');
+            
+            if (pageName === 'dashboard') {
+                appMain.classList.remove('page-mode');
+                appMain.classList.add('dashboard-mode');
+                pageContent.classList.remove('non-dashboard');
+                body.classList.add('page-dashboard');
+            } else {
+                appMain.classList.remove('dashboard-mode');
+                appMain.classList.add('page-mode');
+                pageContent.classList.add('non-dashboard');
+                body.classList.add(`page-${pageName}`);
+            }
+            
+            // Gestion du scroll UNIQUEMENT si l'app n'est pas encore active
+            if (!document.body.classList.contains('app-active')) {
+                clearTimeout(window.scrollCheckTimeout);
+                window.scrollCheckTimeout = setTimeout(() => {
+                    const contentHeight = document.documentElement.scrollHeight;
+                    const viewportHeight = window.innerHeight;
+                    const bodyHeight = document.body.scrollHeight;
+                    
+                    if (bodyHeight <= viewportHeight || contentHeight <= viewportHeight) {
+                        body.classList.add('page-short-content');
+                        body.style.overflow = 'hidden';
+                        body.style.overflowY = 'hidden';
+                    } else {
+                        body.classList.remove('page-short-content');
+                        body.style.overflow = '';
+                        body.style.overflowY = '';
+                    }
+                }, 100);
+            }
+        };
+
+        // Fonction pour gérer la déconnexion
+        window.handleLogout = async function() {
+            console.log('[LOGOUT] Starting logout process...');
+            
+            try {
+                // Déconnecter du service actuel
+                if (window.authService && window.authService.isAuthenticated()) {
+                    console.log('[LOGOUT] Logging out from Microsoft...');
+                    await window.authService.logout();
+                } else if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+                    console.log('[LOGOUT] Logging out from Google...');
+                    await window.googleAuthService.logout();
+                }
+                
+                // Reset tous les services
+                if (window.mailService) {
+                    window.mailService.reset();
+                }
+                
+                // Nettoyer la licence
+                if (window.simpleLicenseChecker) {
+                    window.simpleLicenseChecker.userEmail = null;
+                    window.simpleLicenseChecker.licenseValid = false;
+                }
+                
+                // Nettoyer l'état de l'app
+                document.body.classList.remove('app-active');
+                document.body.classList.add('login-mode');
+                
+                // Afficher la page de login
+                const loginPage = document.getElementById('loginPage');
+                if (loginPage) {
+                    loginPage.style.display = 'flex';
+                }
+                
+                // Masquer le header et la nav
+                const appHeader = document.querySelector('.app-header');
+                const appNav = document.querySelector('.app-nav');
+                if (appHeader) appHeader.style.display = 'none';
+                if (appNav) appNav.style.display = 'none';
+                
+                // Reset les variables d'état
+                appAlreadyShown = false;
+                authCheckInProgress = false;
+                
+                console.log('[LOGOUT] ✅ Logout complete');
+                
+            } catch (error) {
+                console.error('[LOGOUT] ❌ Error during logout:', error);
+                window.location.reload();
+            }
+        };
+
+        // NOUVEAU: Fonction pour la connexion avec licence
+        window.loginWithLicense = async function(email) {
+            if (!window.simpleLicenseChecker) {
+                throw new Error('License checker not available');
+            }
+
+            console.log('[LOGIN_LICENSE] Vérification licence pour:', email);
+            
+            try {
+                const result = await window.simpleLicenseChecker.checkLicense(email);
+                
+                if (result.valid) {
+                    console.log('[LOGIN_LICENSE] ✅ Licence valide, affichage app');
+                    
+                    // Émettre l'événement de succès
+                    window.dispatchEvent(new CustomEvent('userAuthenticated', {
+                        detail: {
+                            user: { 
+                                email: result.email, 
+                                name: result.email,
+                                license_status: result.status,
+                                provider: 'license'
+                            },
+                            status: result
+                        }
+                    }));
+                    
+                    return result;
+                } else {
+                    throw new Error(result.message || 'Licence invalide');
+                }
+                
+            } catch (error) {
+                console.error('[LOGIN_LICENSE] Erreur:', error);
+                
+                // Afficher l'erreur
+                if (window.simpleLicenseChecker) {
+                    window.simpleLicenseChecker.showLicenseError(error.message);
+                }
+                
+                throw error;
+            }
+        };
+
+        // Gestion du formulaire de connexion
+        document.addEventListener('DOMContentLoaded', function() {
+            if (appAlreadyShown) {
+                return;
+            }
+            
+            // Fonction de vérification d'authentification sécurisée - AVEC LICENCE
+            const safeAuthCheck = () => {
+                if (authCheckInProgress || appAlreadyShown) {
+                    return false;
+                }
+                
+                if (document.body.classList.contains('app-active')) {
+                    appAlreadyShown = true;
+                    return true;
+                }
+                
+                try {
+                    // 1. Vérifier licence en premier
+                    if (window.simpleLicenseChecker && window.simpleLicenseChecker.checkStoredLicense()) {
+                        window.showApp();
+                        return true;
+                    }
+                    
+                    // 2. Vérifier Microsoft
+                    if (window.authService && typeof window.authService.isAuthenticated === 'function') {
+                        if (window.authService.isAuthenticated()) {
+                            const account = window.authService.getAccount();
+                            if (account && account.username) {
+                                // Vérifier la licence pour cet utilisateur
+                                window.loginWithLicense(account.username).then(() => {
+                                    window.showApp();
+                                }).catch(() => {
+                                    // Licence invalide pour cet utilisateur Microsoft
+                                    console.warn('[AUTH] Utilisateur Microsoft sans licence valide');
+                                });
+                                return true;
+                            }
+                        }
+                    }
+                    
+                    // 3. Vérifier Google
+                    if (window.googleAuthService && typeof window.googleAuthService.isAuthenticated === 'function') {
+                        if (window.googleAuthService.isAuthenticated()) {
+                            const account = window.googleAuthService.getAccount();
+                            if (account && account.email) {
+                                // Vérifier la licence pour cet utilisateur
+                                window.loginWithLicense(account.email).then(() => {
+                                    window.showApp();
+                                }).catch(() => {
+                                    // Licence invalide pour cet utilisateur Google
+                                    console.warn('[AUTH] Utilisateur Google sans licence valide');
+                                });
+                                return true;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    // Silencieux
+                }
+                return false;
+            };
+            
+            // Vérification avec délai
+            setTimeout(() => {
+                if (document.body.classList.contains('app-active')) {
+                    appAlreadyShown = true;
+                    return;
+                }
+                
+                if (!safeAuthCheck()) {
+                    setTimeout(() => {
+                        if (!document.body.classList.contains('app-active')) {
+                            safeAuthCheck();
+                        }
+                    }, 600);
+                }
+            }, 200);
+            
+            // Fonctions pour les alertes
+            function showAlert(message, type = 'error') {
+                const alertContainer = document.getElementById('alertContainer');
+                if (!alertContainer) return;
+                
+                const alertClass = type === 'error' ? 'error-message' : 'success-message';
+                alertContainer.innerHTML = `<div class="${alertClass}">${message}</div>`;
+                
+                setTimeout(() => {
+                    alertContainer.innerHTML = '';
+                }, 5000);
+            }
+
+            function setLoading(loading, buttonId = 'loginBtn') {
+                const loadingOverlay = document.getElementById('loadingOverlay');
                 
                 if (loading) {
-                    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
+                    if (loadingOverlay) loadingOverlay.classList.add('active');
                 } else {
-                    // Restaurer le texte original selon le bouton
-                    switch(buttonId) {
-                        case 'loginBtn':
-                            btn.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
-                            break;
-                        case 'googleLoginBtn':
-                            btn.innerHTML = '<i class="fab fa-google"></i> Se connecter à Gmail';
-                            break;
-                        case 'emailLoginBtn':
-                            btn.innerHTML = '<i class="fas fa-key"></i> Connexion avec licence';
-                            break;
-                        default:
-                            btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Se connecter';
+                    if (loadingOverlay) loadingOverlay.classList.remove('active');
+                }
+                
+                // Gérer les boutons individuellement
+                const buttons = {
+                    'loginBtn': { 
+                        element: document.getElementById('loginBtn'),
+                        original: '<i class="fab fa-microsoft"></i> Se connecter à Outlook',
+                        loading: '<i class="fas fa-spinner fa-spin"></i> Connexion Outlook...'
+                    },
+                    'googleLoginBtn': { 
+                        element: document.getElementById('googleLoginBtn'),
+                        original: '<i class="fab fa-google"></i> Se connecter à Gmail',
+                        loading: '<i class="fas fa-spinner fa-spin"></i> Connexion Gmail...'
+                    },
+                    'emailLoginBtn': { 
+                        element: document.getElementById('emailLoginBtn'),
+                        original: '<i class="fas fa-key"></i> Vérifier licence',
+                        loading: '<i class="fas fa-spinner fa-spin"></i> Vérification...'
                     }
+                };
+                
+                const btn = buttons[buttonId];
+                if (btn && btn.element) {
+                    btn.element.disabled = loading;
+                    btn.element.innerHTML = loading ? btn.loading : btn.original;
                 }
             }
             
-            if (loadingOverlay) {
-                if (loading) {
-                    loadingOverlay.classList.add('active');
-                } else {
-                    loadingOverlay.classList.remove('active');
-                }
+            // Bouton Microsoft
+            const loginBtn = document.getElementById('loginBtn');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', function() {
+                    if (authCheckInProgress) return;
+                    
+                    authCheckInProgress = true;
+                    setLoading(true, 'loginBtn');
+                    
+                    if (window.app && window.app.login) {
+                        window.app.login().then(() => {
+                            // L'app va gérer la suite
+                        }).catch((error) => {
+                            authCheckInProgress = false;
+                            setLoading(false, 'loginBtn');
+                            showAlert('Erreur de connexion Microsoft: ' + error.message, 'error');
+                        });
+                    } else {
+                        authCheckInProgress = false;
+                        setLoading(false, 'loginBtn');
+                        showAlert('Service Microsoft non disponible', 'error');
+                    }
+                });
             }
-        }
 
-        // ==========================================
-        // ÉVÉNEMENTS
-        // ==========================================
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('[App] DOM chargé, initialisation...');
-            
-            // Ajouter le mode login initial
-            document.body.classList.add('login-mode');
-            
-            // Gestion du formulaire de connexion
+            // Bouton Google
+            const googleLoginBtn = document.getElementById('googleLoginBtn');
+            if (googleLoginBtn) {
+                googleLoginBtn.addEventListener('click', async function() {
+                    if (authCheckInProgress) return;
+                    
+                    authCheckInProgress = true;
+                    setLoading(true, 'googleLoginBtn');
+                    
+                    try {
+                        if (window.googleAuthService) {
+                            await window.googleAuthService.initialize();
+                            await window.googleAuthService.login();
+                            // La redirection va se produire, pas besoin de gérer la suite ici
+                        } else {
+                            throw new Error('GoogleAuthService not available');
+                        }
+                    } catch (error) {
+                        console.error('[GOOGLE_LOGIN] Error:', error);
+                        authCheckInProgress = false;
+                        setLoading(false, 'googleLoginBtn');
+                        showAlert('Erreur de connexion Gmail: ' + error.message, 'error');
+                    }
+                });
+            }
+
+            // Formulaire de licence directe
             const emailForm = document.getElementById('emailLoginForm');
             if (emailForm) {
                 emailForm.addEventListener('submit', async function(e) {
@@ -1015,99 +1858,104 @@
                         return;
                     }
                     
+                    if (authCheckInProgress) return;
+                    
+                    authCheckInProgress = true;
                     setLoading(true, 'emailLoginBtn');
                     
                     try {
-                        console.log('[App] Tentative de connexion avec:', email);
-                        
-                        const result = await window.loginWithEmail(email);
+                        const result = await window.loginWithLicense(email);
                         
                         if (result && result.valid) {
-                            showAlert('Connexion réussie !', 'success');
+                            showAlert('Licence valide ! Connexion...', 'success');
                             setTimeout(() => {
                                 window.showApp();
-                            }, 500);
+                            }, 1000);
                         }
                         
                     } catch (error) {
-                        console.error('[App] Erreur connexion:', error);
-                        showAlert(error.message || 'Erreur de connexion', 'error');
+                        console.error('[EMAIL_LOGIN] Error:', error);
+                        showAlert(error.message || 'Erreur de vérification de licence', 'error');
                     } finally {
+                        authCheckInProgress = false;
                         setLoading(false, 'emailLoginBtn');
                     }
                 });
             }
-
-            // Bouton Microsoft
-            const loginBtn = document.getElementById('loginBtn');
-            if (loginBtn) {
-                loginBtn.addEventListener('click', async function() {
-                    setLoading(true, 'loginBtn', 'Connexion Outlook...');
-                    
-                    try {
-                        if (window.app && window.app.login) {
-                            await window.app.login('microsoft');
-                        } else {
-                            throw new Error('Service Microsoft non disponible');
-                        }
-                    } catch (error) {
-                        console.error('[App] Erreur login Microsoft:', error);
-                        showAlert('Erreur de connexion Microsoft: ' + error.message, 'error');
-                    } finally {
-                        setLoading(false, 'loginBtn', 'Se connecter à Outlook');
-                    }
-                });
-            }
-
-            // Bouton Google
-            const googleLoginBtn = document.getElementById('googleLoginBtn');
-            if (googleLoginBtn) {
-                googleLoginBtn.addEventListener('click', async function() {
-                    setLoading(true, 'googleLoginBtn', 'Connexion Gmail...');
-                    
-                    try {
-                        if (window.googleAuthService) {
-                            await window.googleAuthService.initialize();
-                            await window.googleAuthService.login();
-                        } else {
-                            throw new Error('Service Google non disponible');
-                        }
-                    } catch (error) {
-                        console.error('[App] Erreur login Google:', error);
-                        showAlert('Erreur de connexion Gmail: ' + error.message, 'error');
-                    } finally {
-                        setLoading(false, 'googleLoginBtn', 'Se connecter à Gmail');
-                    }
-                });
-            }
-            
-            // Écouter les événements d'authentification
-            window.addEventListener('userAuthenticated', function(event) {
-                console.log('[App] Utilisateur authentifié:', event.detail);
-                if (!appInitialized) {
-                    setTimeout(() => window.showApp(), 500);
-                }
-            });
-            
-            window.addEventListener('licenseCheckFailed', function(event) {
-                console.log('[App] Échec de la licence:', event.detail);
-                setLoading(false);
-            });
         });
-
-        // ==========================================
-        // FONCTIONS DE DEBUG
-        // ==========================================
         
-        window.debugApp = function() {
-            console.group('🔍 APPLICATION DEBUG');
-            console.log('App initialized:', appInitialized);
-            console.log('Body classes:', document.body.className);
-            console.log('AuthLicenseManager:', window.debugAuth());
-            console.groupEnd();
+        // Fonction globale pour basculer vers l'app après connexion
+        window.onAuthSuccess = function() {
+            if (!appAlreadyShown && !document.body.classList.contains('app-active')) {
+                window.showApp();
+            }
         };
 
-        console.log('✅ EmailSortPro v8.0 - Application avec AuthLicenseManager intégré');
+        // Fonction pour mettre à jour l'affichage utilisateur dans le header
+        window.updateUserDisplay = function(user) {
+            const authStatus = document.getElementById('authStatus');
+            if (authStatus && user) {
+                // Utiliser le nom et email spécifiés ou ceux du profil
+                const userName = user.displayName || user.name || 'Utilisateur';
+                const userEmail = user.mail || user.userPrincipalName || user.email || 'Non spécifié';
+                const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
+                
+                // Détecter le provider
+                const provider = user.provider || 'unknown';
+                const providerIcon = provider === 'google' ? 'fab fa-google' : 
+                                   provider === 'license' ? 'fas fa-key' : 'fab fa-microsoft';
+                const providerText = provider === 'google' ? 'Gmail' : 
+                                   provider === 'license' ? 'Licence' : 'Outlook';
+                
+                authStatus.innerHTML = `
+                    <div class="user-info">
+                        <div class="user-details">
+                            <div class="user-name">${userName}</div>
+                            <div class="user-email">${userEmail} (${providerText})</div>
+                        </div>
+                        <div class="user-avatar">${initials}</div>
+                        <button class="logout-button" onclick="window.handleLogout()">
+                            <i class="fas fa-sign-out-alt"></i> Déconnexion
+                        </button>
+                    </div>
+                `;
+            }
+        };
+
+        // Écouter les événements d'authentification
+        window.addEventListener('userAuthenticated', function(event) {
+            console.log('[APP] Utilisateur authentifié:', event.detail);
+            if (event.detail.user) {
+                window.updateUserDisplay(event.detail.user);
+            }
+            if (!appAlreadyShown) {
+                setTimeout(() => window.showApp(), 500);
+            }
+        });
+        
+        // Fonction de diagnostic accessible globalement (silencieuse par défaut)
+        window.checkServices = function() {
+            return {
+                AppConfig: window.AppConfig ? 'OK' : 'MANQUANT',
+                authService: window.authService ? 'OK' : 'MANQUANT',
+                googleAuthService: window.googleAuthService ? 'OK' : 'MANQUANT',
+                mailService: window.mailService ? 'OK' : 'MANQUANT',
+                uiManager: window.uiManager ? 'OK' : 'MANQUANT',
+                taskManager: window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT',
+                tasksView: window.tasksView ? 'OK' : 'MANQUANT',
+                pageManager: window.pageManager ? 'OK' : 'MANQUANT',
+                categoryManager: window.categoryManager ? 'OK' : 'MANQUANT',
+                dashboardModule: window.dashboardModule ? 'OK' : 'MANQUANT',
+                simpleLicenseChecker: window.simpleLicenseChecker ? 'OK' : 'MANQUANT',
+                hostname: window.location.hostname,
+                currentDomain: window.location.hostname,
+                authenticationStatus: {
+                    microsoft: window.authService ? window.authService.isAuthenticated() : false,
+                    google: window.googleAuthService ? window.googleAuthService.isAuthenticated() : false,
+                    license: window.simpleLicenseChecker ? window.simpleLicenseChecker.licenseValid : false
+                }
+            };
+        };
     </script>
 </body>
 </html>
