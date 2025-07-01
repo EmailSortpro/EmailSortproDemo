@@ -1,5 +1,5 @@
-// AuthService.js - Service d'authentification Microsoft Graph CORRIGÉ v4.4
-// Amélioration de l'intégration analytics avec gestion d'erreurs OAuth renforcée
+// AuthService.js - Service d'authentification Microsoft Graph CORRIGÉ avec Analytics v4.3
+// Amélioration de l'intégration analytics avec capture d'email en clair
 
 class AuthService {
     constructor() {
@@ -10,11 +10,8 @@ class AuthService {
         this.configWaitAttempts = 0;
         this.maxConfigWaitAttempts = 50; // 5 secondes max
         this.targetDomain = 'coruscating-dodol-f30e8d.netlify.app';
-        this.lastRedirectError = null;
-        this.redirectRetryCount = 0;
-        this.maxRedirectRetries = 3;
         
-        console.log('[AuthService] Constructor called v4.4 - Enhanced OAuth error handling for:', this.targetDomain);
+        console.log('[AuthService] Constructor called - Configured EXCLUSIVELY for:', this.targetDomain);
         
         // Vérifier le domaine immédiatement
         this.verifyDomain();
@@ -212,10 +209,10 @@ class AuthService {
             await this.msalInstance.initialize();
             console.log(`[AuthService] ✅ MSAL instance initialized for ${this.targetDomain}`);
             
-            // Gérer la redirection si elle existe avec gestion d'erreurs améliorée
+            // Gérer la redirection si elle existe
             try {
                 console.log('[AuthService] Checking for redirect response...');
-                const response = await this.handleRedirectWithRetry();
+                const response = await this.msalInstance.handleRedirectPromise();
                 
                 if (response) {
                     console.log(`[AuthService] ✅ Redirect response received for ${this.targetDomain}:`, {
@@ -284,8 +281,15 @@ class AuthService {
                     }
                 }
             } catch (redirectError) {
-                // Gestion améliorée des erreurs de redirection
-                await this.handleRedirectError(redirectError);
+                console.warn('[AuthService] Redirect handling error (non-critical):', redirectError);
+                
+                // Gestion spéciale des erreurs de redirection pour le domaine cible
+                if (redirectError.message && redirectError.message.includes('redirect_uri')) {
+                    console.error(`[AuthService] ❌ REDIRECT URI ERROR for ${this.targetDomain}!`);
+                    throw new Error(`Redirect URI error: Configure https://${this.targetDomain}/auth-callback.html in Azure Portal`);
+                }
+                
+                // Continuer même en cas d'erreur de redirection non critique
             }
 
             this.isInitialized = true;
@@ -354,307 +358,6 @@ class AuthService {
         }
     }
 
-    // === GESTION AMÉLIORÉE DES ERREURS DE REDIRECTION ===
-
-    async handleRedirectWithRetry() {
-        let attempts = 0;
-        const maxAttempts = 3;
-        
-        while (attempts < maxAttempts) {
-            try {
-                console.log(`[AuthService] Attempting to handle redirect (attempt ${attempts + 1}/${maxAttempts})`);
-                const response = await this.msalInstance.handleRedirectPromise();
-                
-                // Reset retry count on success
-                this.redirectRetryCount = 0;
-                this.lastRedirectError = null;
-                
-                return response;
-                
-            } catch (error) {
-                attempts++;
-                this.lastRedirectError = error;
-                
-                console.warn(`[AuthService] Redirect handling attempt ${attempts} failed:`, error.message);
-                
-                // Gestion spécifique des erreurs d'expiration de code
-                if (this.isExpiredCodeError(error)) {
-                    console.log('[AuthService] 🔄 Expired OAuth code detected, clearing state and retrying...');
-                    await this.clearExpiredAuthState();
-                    
-                    if (attempts < maxAttempts) {
-                        console.log('[AuthService] Retrying redirect handling after clearing expired state...');
-                        await new Promise(resolve => setTimeout(resolve, 1000)); // Attendre 1 seconde
-                        continue;
-                    }
-                }
-                
-                // Gestion des erreurs de grant invalide
-                if (this.isInvalidGrantError(error)) {
-                    console.log('[AuthService] 🔄 Invalid grant detected, clearing authentication state...');
-                    await this.clearInvalidGrantState();
-                    
-                    if (attempts < maxAttempts) {
-                        console.log('[AuthService] Retrying after clearing invalid grant state...');
-                        await new Promise(resolve => setTimeout(resolve, 1500)); // Attendre 1.5 secondes
-                        continue;
-                    }
-                }
-                
-                // Si c'est la dernière tentative, throw l'erreur
-                if (attempts >= maxAttempts) {
-                    throw error;
-                }
-                
-                // Attendre avant la prochaine tentative
-                await new Promise(resolve => setTimeout(resolve, 2000));
-            }
-        }
-        
-        return null;
-    }
-
-    async handleRedirectError(error) {
-        console.warn('[AuthService] 🚨 Redirect handling error detected:', error.message);
-        
-        // Analyser le type d'erreur
-        const errorAnalysis = this.analyzeRedirectError(error);
-        console.log('[AuthService] Error analysis:', errorAnalysis);
-        
-        // ANALYTICS: Track redirect error avec détails
-        if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
-            try {
-                window.analyticsManager.onError('redirect_error', {
-                    message: error.message,
-                    errorCode: error.errorCode || 'unknown',
-                    subError: error.subError || 'unknown',
-                    provider: 'microsoft',
-                    domain: this.targetDomain,
-                    isExpiredCode: this.isExpiredCodeError(error),
-                    isInvalidGrant: this.isInvalidGrantError(error),
-                    retryCount: this.redirectRetryCount
-                });
-            } catch (analyticsError) {
-                console.warn('[AuthService] Analytics error:', analyticsError);
-            }
-        }
-        
-        // Actions basées sur le type d'erreur
-        if (errorAnalysis.isExpiredCode) {
-            console.log('[AuthService] 🔄 Handling expired OAuth code...');
-            await this.handleExpiredCodeError(error);
-        } else if (errorAnalysis.isInvalidGrant) {
-            console.log('[AuthService] 🔄 Handling invalid grant...');
-            await this.handleInvalidGrantError(error);
-        } else if (errorAnalysis.isRedirectUriError) {
-            console.log('[AuthService] 🚨 Handling redirect URI error...');
-            await this.handleRedirectUriError(error);
-        } else {
-            console.log('[AuthService] ⚠️ Handling generic redirect error...');
-            await this.handleGenericRedirectError(error);
-        }
-    }
-
-    analyzeRedirectError(error) {
-        const message = error.message || '';
-        const errorCode = error.errorCode || '';
-        const subError = error.subError || '';
-        
-        return {
-            isExpiredCode: this.isExpiredCodeError(error),
-            isInvalidGrant: this.isInvalidGrantError(error),
-            isRedirectUriError: message.includes('redirect_uri') || errorCode.includes('redirect'),
-            isNetworkError: message.includes('network') || message.includes('Network'),
-            isUserCancelled: errorCode === 'user_cancelled',
-            isPolicyError: message.includes('AADB2C') || subError.includes('policy'),
-            errorType: errorCode || 'unknown_error',
-            canRetry: this.canRetryError(error)
-        };
-    }
-
-    isExpiredCodeError(error) {
-        const message = error.message || '';
-        const errorCode = error.errorCode || '';
-        
-        return message.includes('code has expired') || 
-               message.includes('70000') || 
-               message.includes('AADSTS70000') ||
-               errorCode === 'invalid_grant' && message.includes('expired');
-    }
-
-    isInvalidGrantError(error) {
-        const errorCode = error.errorCode || '';
-        const message = error.message || '';
-        
-        return errorCode === 'invalid_grant' || 
-               message.includes('invalid_grant') ||
-               message.includes('AADSTS70008') ||
-               message.includes('AADSTS50089');
-    }
-
-    canRetryError(error) {
-        const nonRetryableErrors = [
-            'unauthorized_client',
-            'invalid_client',
-            'unsupported_grant_type',
-            'redirect_uri_mismatch'
-        ];
-        
-        const errorCode = error.errorCode || '';
-        return !nonRetryableErrors.includes(errorCode);
-    }
-
-    async clearExpiredAuthState() {
-        console.log('[AuthService] 🧹 Clearing expired authentication state...');
-        
-        try {
-            // Nettoyer les paramètres URL liés à OAuth
-            const url = new URL(window.location);
-            const hasOAuthParams = url.searchParams.has('code') || 
-                                 url.searchParams.has('state') || 
-                                 url.searchParams.has('session_state');
-            
-            if (hasOAuthParams) {
-                console.log('[AuthService] Removing OAuth parameters from URL...');
-                url.searchParams.delete('code');
-                url.searchParams.delete('state');
-                url.searchParams.delete('session_state');
-                url.searchParams.delete('error');
-                url.searchParams.delete('error_description');
-                
-                // Mise à jour de l'URL sans recharger la page
-                window.history.replaceState({}, document.title, url.toString());
-            }
-            
-            // Nettoyer le cache MSAL sélectivement
-            if (this.msalInstance) {
-                console.log('[AuthService] Clearing MSAL temp cache...');
-                try {
-                    // Nettoyer seulement les données temporaires, pas les comptes persistants
-                    const cache = this.msalInstance.getTokenCache();
-                    // Note: Ne pas supprimer tous les comptes, juste les tokens temporaires
-                } catch (cacheError) {
-                    console.warn('[AuthService] Error clearing MSAL cache:', cacheError);
-                }
-            }
-            
-        } catch (error) {
-            console.warn('[AuthService] Error during expired state cleanup:', error);
-        }
-    }
-
-    async clearInvalidGrantState() {
-        console.log('[AuthService] 🧹 Clearing invalid grant state...');
-        
-        try {
-            // Supprimer tous les tokens mais garder les informations de compte si possible
-            if (this.msalInstance) {
-                const accounts = this.msalInstance.getAllAccounts();
-                
-                // Nettoyer les tokens expirés
-                for (const account of accounts) {
-                    try {
-                        const cache = this.msalInstance.getTokenCache();
-                        // Nettoyer les tokens d'accès expirés pour ce compte
-                        console.log('[AuthService] Clearing tokens for account:', account.username);
-                    } catch (tokenClearError) {
-                        console.warn('[AuthService] Error clearing tokens for account:', tokenClearError);
-                    }
-                }
-            }
-            
-            // Nettoyer l'URL
-            await this.clearExpiredAuthState();
-            
-        } catch (error) {
-            console.warn('[AuthService] Error during invalid grant cleanup:', error);
-        }
-    }
-
-    async handleExpiredCodeError(error) {
-        console.log('[AuthService] 🔄 Handling expired OAuth code error...');
-        
-        // Incrémenter le compteur de retry
-        this.redirectRetryCount++;
-        
-        if (this.redirectRetryCount <= this.maxRedirectRetries) {
-            console.log(`[AuthService] Will retry authentication (${this.redirectRetryCount}/${this.maxRedirectRetries})`);
-            
-            // Nettoyer l'état et continuer
-            await this.clearExpiredAuthState();
-            
-            // Optionnel: Notification à l'utilisateur
-            if (window.uiManager) {
-                window.uiManager.showToast(
-                    'Session expirée, reconnexion automatique en cours...',
-                    'info',
-                    3000
-                );
-            }
-        } else {
-            console.warn('[AuthService] Max retries reached for expired code error');
-            
-            if (window.uiManager) {
-                window.uiManager.showToast(
-                    'Session expirée. Veuillez vous reconnecter.',
-                    'warning',
-                    5000
-                );
-            }
-        }
-    }
-
-    async handleInvalidGrantError(error) {
-        console.log('[AuthService] 🔄 Handling invalid grant error...');
-        
-        await this.clearInvalidGrantState();
-        
-        if (window.uiManager) {
-            window.uiManager.showToast(
-                'Autorisation expirée. Reconnexion nécessaire.',
-                'warning',
-                4000
-            );
-        }
-    }
-
-    async handleRedirectUriError(error) {
-        console.error('[AuthService] 🚨 Redirect URI error detected:', error.message);
-        
-        // Gestion spéciale des erreurs de redirection pour le domaine cible
-        if (error.message && error.message.includes('redirect_uri')) {
-            console.error(`[AuthService] ❌ REDIRECT URI ERROR for ${this.targetDomain}!`);
-            
-            if (window.uiManager) {
-                window.uiManager.showToast(
-                    `URI de redirection incorrecte. Configurez: https://${this.targetDomain}/auth-callback.html`,
-                    'error',
-                    10000
-                );
-            }
-            
-            throw new Error(`Redirect URI error: Configure https://${this.targetDomain}/auth-callback.html in Azure Portal`);
-        }
-    }
-
-    async handleGenericRedirectError(error) {
-        console.warn('[AuthService] ⚠️ Generic redirect error:', error.message);
-        
-        // Log détaillé pour debug
-        console.log('[AuthService] Full error details:', {
-            message: error.message,
-            errorCode: error.errorCode,
-            subError: error.subError,
-            correlationId: error.correlationId,
-            timestamp: new Date().toISOString()
-        });
-        
-        // Continuer l'initialisation même en cas d'erreur non critique
-        console.log('[AuthService] Continuing initialization despite redirect error...');
-    }
-
-    // === MÉTHODES PUBLIQUES ===
-
     isAuthenticated() {
         const authenticated = this.account !== null && this.isInitialized;
         console.log(`[AuthService] Authentication check for ${this.targetDomain}:`, {
@@ -663,8 +366,7 @@ class AuthService {
             result: authenticated,
             domain: window.location.hostname,
             correctDomain: window.location.hostname === this.targetDomain,
-            userEmail: this.account?.username || 'none',
-            lastRedirectError: this.lastRedirectError?.message || 'none'
+            userEmail: this.account?.username || 'none'
         });
         return authenticated;
     }
@@ -675,10 +377,6 @@ class AuthService {
 
     async login() {
         console.log(`[AuthService] Login attempt started for ${this.targetDomain}...`);
-        
-        // Reset retry counters on new login attempt
-        this.redirectRetryCount = 0;
-        this.lastRedirectError = null;
         
         // Vérification critique du domaine avant login
         const currentDomain = window.location.hostname;
@@ -708,9 +406,6 @@ class AuthService {
                 console.error('[AuthService] Expected:', expectedOrigin);
                 throw new Error(`Origin mismatch: Expected ${expectedOrigin}, got ${currentUrl}`);
             }
-
-            // Nettoyer l'état avant le login
-            await this.clearExpiredAuthState();
 
             // Préparer la requête de login avec validation
             const scopes = window.AppConfig.scopes?.login || ['https://graph.microsoft.com/User.Read'];
@@ -1030,8 +725,6 @@ class AuthService {
         this.msalInstance = null;
         this.initializationPromise = null;
         this.configWaitAttempts = 0;
-        this.lastRedirectError = null;
-        this.redirectRetryCount = 0;
         
         // Clear MSAL cache plus agressivement
         if (window.localStorage) {
@@ -1052,21 +745,6 @@ class AuthService {
             });
         }
         
-        // Nettoyer l'URL des paramètres OAuth
-        try {
-            const url = new URL(window.location);
-            if (url.searchParams.has('code') || url.searchParams.has('state')) {
-                url.searchParams.delete('code');
-                url.searchParams.delete('state');
-                url.searchParams.delete('session_state');
-                url.searchParams.delete('error');
-                url.searchParams.delete('error_description');
-                window.history.replaceState({}, document.title, url.toString());
-            }
-        } catch (urlError) {
-            console.warn('[AuthService] Error cleaning URL:', urlError);
-        }
-        
         console.log(`[AuthService] ✅ Cleanup complete for ${this.targetDomain}`);
     }
 
@@ -1084,9 +762,6 @@ class AuthService {
             accountUsername: this.account?.username,
             msalInstanceExists: !!this.msalInstance,
             configWaitAttempts: this.configWaitAttempts,
-            lastRedirectError: this.lastRedirectError?.message || null,
-            redirectRetryCount: this.redirectRetryCount,
-            maxRedirectRetries: this.maxRedirectRetries,
             msalConfig: this.msalInstance ? {
                 clientId: this.msalInstance.getConfiguration()?.auth?.clientId?.substring(0, 8) + '...',
                 authority: this.msalInstance.getConfiguration()?.auth?.authority,
@@ -1108,42 +783,15 @@ class AuthService {
             domainValidation: {
                 isCorrectDomain: isCorrectDomain,
                 criticalError: !isCorrectDomain ? `Service configured for ${this.targetDomain} but running on ${currentDomain}` : null
-            },
-            errorHandling: {
-                lastRedirectError: this.lastRedirectError,
-                redirectRetryCount: this.redirectRetryCount,
-                maxRetries: this.maxRedirectRetries,
-                canRetry: this.redirectRetryCount < this.maxRedirectRetries
             }
         };
-    }
-
-    // === MÉTHODES DE RÉCUPÉRATION D'ERREURS ===
-
-    getLastError() {
-        return this.lastRedirectError;
-    }
-
-    canRetryAuthentication() {
-        return this.redirectRetryCount < this.maxRedirectRetries;
-    }
-
-    resetErrorState() {
-        this.lastRedirectError = null;
-        this.redirectRetryCount = 0;
-        console.log('[AuthService] Error state reset');
     }
 }
 
 // Créer l'instance globale avec gestion d'erreur renforcée
 try {
-    // Éviter la double création
-    if (!window.authService) {
-        window.authService = new AuthService();
-        console.log(`[AuthService] ✅ Global instance created successfully for ${window.authService.targetDomain}`);
-    } else {
-        console.log('[AuthService] Global instance already exists, skipping creation');
-    }
+    window.authService = new AuthService();
+    console.log(`[AuthService] ✅ Global instance created successfully for ${window.authService.targetDomain}`);
 } catch (error) {
     console.error('[AuthService] ❌ Failed to create global instance:', error);
     
@@ -1151,27 +799,23 @@ try {
     window.authService = {
         targetDomain: 'coruscating-dodol-f30e8d.netlify.app',
         isInitialized: false,
-        lastRedirectError: error,
         initialize: () => Promise.reject(new Error('AuthService failed to initialize: ' + error.message)),
         login: () => Promise.reject(new Error('AuthService not available: ' + error.message)),
         isAuthenticated: () => false,
-        canRetryAuthentication: () => false,
-        resetErrorState: () => console.warn('[AuthService] Fallback: resetErrorState called'),
         getDiagnosticInfo: () => ({ 
             error: 'AuthService failed to create: ' + error.message,
             targetDomain: 'coruscating-dodol-f30e8d.netlify.app',
             currentDomain: window.location.hostname,
             domainMatch: window.location.hostname === 'coruscating-dodol-f30e8d.netlify.app',
             environment: window.AppConfig?.app?.environment || 'unknown',
-            configExists: !!window.AppConfig,
-            fallbackMode: true
+            configExists: !!window.AppConfig
         })
     };
 }
 
 // Fonction de diagnostic globale améliorée pour le domaine cible
 window.diagnoseMSAL = function() {
-    console.group(`🔍 DIAGNOSTIC MSAL DÉTAILLÉ v4.4 - ${window.authService.targetDomain} ONLY`);
+    console.group(`🔍 DIAGNOSTIC MSAL DÉTAILLÉ - ${window.authService.targetDomain} ONLY`);
     
     try {
         const authDiag = window.authService.getDiagnosticInfo();
@@ -1184,35 +828,9 @@ window.diagnoseMSAL = function() {
             console.log('🚨 CRITICAL DOMAIN ERROR:', authDiag.domainValidation.criticalError);
         }
         
-        console.log('🔐 AuthService Status:', {
-            initialized: authDiag.isInitialized,
-            hasAccount: authDiag.hasAccount,
-            userEmail: authDiag.accountUsername || 'none'
-        });
-        
+        console.log('🔐 AuthService:', authDiag);
         console.log('📚 MSAL Library:', typeof msal !== 'undefined' ? 'Available' : 'Missing');
         console.log('🔗 Current URL:', window.location.href);
-        
-        // Gestion d'erreurs spécifique
-        if (authDiag.errorHandling?.lastRedirectError) {
-            console.log('🚨 Last Redirect Error:', {
-                message: authDiag.errorHandling.lastRedirectError.message || authDiag.errorHandling.lastRedirectError,
-                retryCount: authDiag.errorHandling.redirectRetryCount,
-                canRetry: authDiag.errorHandling.canRetry
-            });
-            
-            // Analyse de l'erreur
-            if (typeof authDiag.errorHandling.lastRedirectError === 'object') {
-                const error = authDiag.errorHandling.lastRedirectError;
-                console.log('🔍 Error Analysis:', {
-                    isExpiredCode: window.authService.isExpiredCodeError?.(error) || false,
-                    isInvalidGrant: window.authService.isInvalidGrantError?.(error) || false,
-                    errorCode: error.errorCode || 'unknown',
-                    canRetryError: window.authService.canRetryError?.(error) || false
-                });
-            }
-        }
-        
         console.log('💾 LocalStorage keys:', Object.keys(localStorage).filter(k => k.includes('msal') || k.includes('auth')));
         
         // Validation spécifique des URIs
@@ -1233,14 +851,6 @@ window.diagnoseMSAL = function() {
             console.log('  Authentication WILL FAIL on wrong domain');
         }
         
-        // Actions de récupération suggérées
-        if (authDiag.errorHandling?.lastRedirectError && authDiag.errorHandling.canRetry) {
-            console.log('🔧 RECOVERY OPTIONS:');
-            console.log('  1. window.authService.resetErrorState() - Reset error state');
-            console.log('  2. window.authService.login() - Retry authentication');
-            console.log('  3. window.authService.forceCleanup() - Clean all auth data');
-        }
-        
         return { authDiag };
         
     } catch (error) {
@@ -1251,48 +861,11 @@ window.diagnoseMSAL = function() {
     }
 };
 
-// Fonction de récupération d'erreurs globale
-window.recoverMSALAuth = function() {
-    console.log('🔧 Attempting MSAL authentication recovery...');
-    
-    try {
-        if (window.authService) {
-            // Reset error state
-            if (typeof window.authService.resetErrorState === 'function') {
-                window.authService.resetErrorState();
-                console.log('✅ Error state reset');
-            }
-            
-            // Clear expired auth state
-            if (typeof window.authService.clearExpiredAuthState === 'function') {
-                window.authService.clearExpiredAuthState();
-                console.log('✅ Expired auth state cleared');
-            }
-            
-            // Check if retry is possible
-            if (typeof window.authService.canRetryAuthentication === 'function' && 
-                window.authService.canRetryAuthentication()) {
-                console.log('✅ Retry is possible');
-                return true;
-            } else {
-                console.log('⚠️ Maximum retries reached or retry not available');
-                return false;
-            }
-        } else {
-            console.error('❌ AuthService not available');
-            return false;
-        }
-    } catch (error) {
-        console.error('❌ Recovery failed:', error);
-        return false;
-    }
-};
-
-// Test de disponibilité de la configuration au chargement avec gestion d'erreurs améliorée
+// Test de disponibilité de la configuration au chargement
 setTimeout(() => {
     if (window.AppConfig) {
         const validation = window.AppConfig.validate();
-        const targetDomain = window.authService?.targetDomain || 'coruscating-dodol-f30e8d.netlify.app';
+        const targetDomain = window.authService.targetDomain;
         const currentDomain = window.location.hostname;
         
         if (currentDomain !== targetDomain) {
@@ -1312,84 +885,8 @@ setTimeout(() => {
             console.error('Configured:', window.AppConfig.msal.redirectUri);
         }
         
-        // Vérifier s'il y a des erreurs OAuth dans l'URL
-        const url = new URL(window.location);
-        if (url.searchParams.has('error')) {
-            const error = url.searchParams.get('error');
-            const errorDescription = url.searchParams.get('error_description');
-            console.warn('🚨 OAuth error in URL:', { error, errorDescription });
-            
-            // Nettoyer l'URL automatiquement
-            url.searchParams.delete('error');
-            url.searchParams.delete('error_description');
-            window.history.replaceState({}, document.title, url.toString());
-            console.log('✅ OAuth error parameters cleaned from URL');
-        }
-        
-        console.log('🔧 Available recovery functions:');
-        console.log('  - diagnoseMSAL() for detailed diagnostic');
-        console.log('  - recoverMSALAuth() for error recovery');
-        console.log('  - window.authService.resetErrorState() to reset errors');
-        
-    } else {
-        console.error('🚨 AppConfig not available after 2 seconds');
+        console.log('Use diagnoseMSAL() for detailed diagnostic');
     }
 }, 2000);
 
-// Gestionnaire d'événements pour les erreurs OAuth dans l'URL
-window.addEventListener('load', () => {
-    try {
-        const url = new URL(window.location);
-        
-        // Détecter et gérer les erreurs OAuth
-        if (url.searchParams.has('error')) {
-            const error = url.searchParams.get('error');
-            const errorDescription = url.searchParams.get('error_description');
-            
-            console.warn('[AuthService] OAuth error detected in URL:', { error, errorDescription });
-            
-            // ANALYTICS: Track OAuth URL error
-            if (window.analyticsManager && typeof window.analyticsManager.onError === 'function') {
-                try {
-                    window.analyticsManager.onError('oauth_url_error', {
-                        error: error,
-                        description: errorDescription,
-                        url: window.location.href,
-                        provider: 'microsoft'
-                    });
-                } catch (analyticsError) {
-                    console.warn('[AuthService] Analytics error:', analyticsError);
-                }
-            }
-            
-            // Nettoyer l'URL et notifier l'utilisateur si nécessaire
-            url.searchParams.delete('error');
-            url.searchParams.delete('error_description');
-            url.searchParams.delete('error_uri');
-            window.history.replaceState({}, document.title, url.toString());
-            
-            // Gérer les erreurs spécifiques
-            if (error === 'access_denied') {
-                console.log('[AuthService] User denied access');
-                if (window.uiManager) {
-                    window.uiManager.showToast('Accès refusé. Veuillez accepter les autorisations.', 'warning', 5000);
-                }
-            } else if (error === 'invalid_request') {
-                console.error('[AuthService] Invalid OAuth request');
-                if (window.uiManager) {
-                    window.uiManager.showToast('Requête OAuth invalide. Vérifiez la configuration.', 'error', 8000);
-                }
-            }
-        }
-        
-        // Détecter les codes expirés
-        if (url.searchParams.has('code')) {
-            console.log('[AuthService] OAuth code detected in URL, will be processed by MSAL');
-        }
-        
-    } catch (error) {
-        console.warn('[AuthService] Error processing URL parameters:', error);
-    }
-});
-
-console.log(`✅ AuthService loaded v4.4 with EXCLUSIVE support for coruscating-dodol-f30e8d.netlify.app - Enhanced OAuth Error Handling and Recovery`);
+console.log(`✅ AuthService loaded with EXCLUSIVE support for coruscating-dodol-f30e8d.netlify.app v4.3 - Enhanced Analytics Integration with Email Tracking`);
