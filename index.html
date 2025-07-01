@@ -2492,30 +2492,152 @@
             }
         };
 
-        // Fonction pour mettre à jour l'affichage utilisateur dans le header
+        // Fonction pour mettre à jour l'affichage utilisateur dans le header - CORRIGÉE
         window.updateUserDisplay = function(user) {
+            console.log('[UPDATE_USER] Updating user display:', user);
+            
             const authStatus = document.getElementById('authStatus');
-            if (authStatus && user) {
-                const userName = user.displayName || user.name || 'Utilisateur';
-                const userEmail = user.mail || user.userPrincipalName || user.email || 'Non spécifié';
-                const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
-                
-                const provider = user.provider || 'unknown';
-                const providerIcon = provider === 'google' ? 'fab fa-google' : 'fab fa-microsoft';
-                const providerText = provider === 'google' ? 'Gmail' : 'Outlook';
-                
-                authStatus.innerHTML = `
-                    <div class="user-info">
-                        <div class="user-details">
-                            <div class="user-name">${userName}</div>
-                            <div class="user-email">${userEmail} (${providerText})</div>
+            if (!authStatus) {
+                console.warn('[UPDATE_USER] authStatus element not found');
+                return;
+            }
+            
+            if (!user) {
+                console.log('[UPDATE_USER] No user provided, showing default');
+                authStatus.innerHTML = '<span class="text-muted">Non connecté</span>';
+                return;
+            }
+            
+            // Déterminer les informations utilisateur
+            const userName = user.displayName || user.name || user.email?.split('@')[0] || 'Utilisateur';
+            const userEmail = user.mail || user.userPrincipalName || user.email || 'Non spécifié';
+            const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+            
+            // Détecter le provider
+            let provider = user.provider;
+            if (!provider) {
+                if (userEmail.includes('@hotmail.') || userEmail.includes('@outlook.') || userEmail.includes('@live.')) {
+                    provider = 'microsoft';
+                } else if (userEmail.includes('@gmail.')) {
+                    provider = 'google';
+                } else {
+                    provider = 'unknown';
+                }
+            }
+            
+            const providerText = provider === 'google' ? 'Gmail' : 
+                               provider === 'microsoft' ? 'Outlook' : 
+                               'Email';
+            
+            // Informations de licence
+            const licenseInfo = window.licenseStatus;
+            let licenseDisplay = '';
+            
+            if (licenseInfo) {
+                if (licenseInfo.status === 'trial') {
+                    licenseDisplay = `<div style="font-size: 11px; color: #f59e0b; margin-top: 2px;">
+                        <i class="fas fa-clock"></i> Essai: ${licenseInfo.daysRemaining || 0} jour${(licenseInfo.daysRemaining || 0) !== 1 ? 's' : ''}
+                    </div>`;
+                } else if (licenseInfo.status === 'active') {
+                    licenseDisplay = `<div style="font-size: 11px; color: #10b981; margin-top: 2px;">
+                        <i class="fas fa-check-circle"></i> Licence active
+                    </div>`;
+                } else if (licenseInfo.status === 'admin_override') {
+                    licenseDisplay = `<div style="font-size: 11px; color: #8b5cf6; margin-top: 2px;">
+                        <i class="fas fa-crown"></i> Admin override
+                    </div>`;
+                }
+            }
+            
+            authStatus.innerHTML = `
+                <div class="user-info" style="display: flex; align-items: center; gap: 12px; color: white;">
+                    <div class="user-details" style="text-align: right; line-height: 1.2;">
+                        <div class="user-name" style="color: white; font-weight: 600; font-size: 14px; margin: 0;">
+                            ${userName}
                         </div>
-                        <div class="user-avatar">${initials}</div>
-                        <button class="logout-button" onclick="window.handleLogout()">
-                            <i class="fas fa-sign-out-alt"></i> Déconnexion
-                        </button>
+                        <div class="user-email" style="color: rgba(255,255,255,0.9); font-size: 12px; margin: 0;">
+                            ${userEmail} (${providerText})
+                        </div>
+                        ${licenseDisplay}
                     </div>
-                `;
+                    <div class="user-avatar" style="
+                        width: 32px; height: 32px; border-radius: 50%; 
+                        background: rgba(255,255,255,0.2); color: white;
+                        display: flex; align-items: center; justify-content: center;
+                        font-weight: 500; font-size: 13px; flex-shrink: 0;
+                    ">
+                        ${initials}
+                    </div>
+                    <button class="logout-button" onclick="window.handleLogout()" style="
+                        background: rgba(255, 255, 255, 0.15); color: white;
+                        border: 1px solid rgba(255, 255, 255, 0.2);
+                        padding: 6px 12px; border-radius: 6px; font-size: 12px;
+                        cursor: pointer; margin-left: 8px; transition: all 0.15s ease;
+                    " onmouseover="this.style.background='rgba(255, 255, 255, 0.25)'" 
+                       onmouseout="this.style.background='rgba(255, 255, 255, 0.15)'">
+                        <i class="fas fa-sign-out-alt"></i> Déconnexion
+                    </button>
+                </div>
+            `;
+            
+            console.log('[UPDATE_USER] ✅ User display updated successfully');
+        };
+
+        // Fonction pour forcer la mise à jour de l'affichage utilisateur
+        window.forceUpdateUserDisplay = function() {
+            console.log('[FORCE_UPDATE] Forcing user display update...');
+            
+            // Essayer avec les différentes sources de données utilisateur
+            let user = window.currentUser;
+            
+            // Si pas d'utilisateur dans les globals, essayer de récupérer depuis les services
+            if (!user && window.authService && window.authService.isAuthenticated()) {
+                const account = window.authService.getAccount();
+                if (account) {
+                    user = {
+                        displayName: account.name,
+                        name: account.name,
+                        email: account.username,
+                        mail: account.username,
+                        userPrincipalName: account.username,
+                        provider: 'microsoft'
+                    };
+                    
+                    // Mettre à jour les globals
+                    window.currentUser = user;
+                    console.log('[FORCE_UPDATE] Retrieved user from authService:', user.email);
+                }
+            }
+            
+            // Essayer Google
+            if (!user && window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+                const account = window.googleAuthService.getAccount();
+                if (account) {
+                    user = {
+                        displayName: account.name,
+                        name: account.name,
+                        email: account.email,
+                        provider: 'google'
+                    };
+                    
+                    // Mettre à jour les globals
+                    window.currentUser = user;
+                    console.log('[FORCE_UPDATE] Retrieved user from googleAuthService:', user.email);
+                }
+            }
+            
+            // Utiliser le service de licence
+            if (!user && window.licenseService && window.licenseService.currentUser) {
+                user = window.licenseService.currentUser;
+                console.log('[FORCE_UPDATE] Retrieved user from licenseService:', user.email);
+            }
+            
+            if (user) {
+                window.updateUserDisplay(user);
+                console.log('[FORCE_UPDATE] ✅ User display force updated');
+            } else {
+                console.warn('[FORCE_UPDATE] ⚠️ No user found to display');
+                window.updateUserDisplay(null);
             }
         };
 
