@@ -10,6 +10,9 @@ class EmailSortProApp {
             currentPage: 'dashboard',
             error: null
         };
+        
+        // Exposer l'état d'initialisation directement sur l'instance
+        this.initialized = false;
 
         console.log('[App] EmailSortPro v9.0 starting...');
         this.initialize();
@@ -18,6 +21,10 @@ class EmailSortProApp {
     async initialize() {
         try {
             console.log('[App] Initialisation...');
+            
+            // Marquer comme initialisé dès le début pour permettre la vérification externe
+            this.state.initialized = true;
+            this.initialized = true;
             
             // Vérifier si l'utilisateur est déjà authentifié
             const existingAuth = await this.checkExistingAuthentication();
@@ -41,8 +48,6 @@ class EmailSortProApp {
                 console.log('[App] Pas d\'authentification existante');
                 this.showLoginPage();
             }
-
-            this.state.initialized = true;
 
         } catch (error) {
             console.error('[App] Erreur initialisation:', error);
