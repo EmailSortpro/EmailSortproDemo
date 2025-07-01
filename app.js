@@ -1,5 +1,5 @@
-// app.js - Application EmailSortPro v6.0
-// Version réécrite, simplifiée et sans erreurs
+// app.js - Application EmailSortPro v7.0
+// Version complète avec intégration du système de licence
 
 class EmailSortProApp {
     constructor() {
@@ -26,7 +26,7 @@ class EmailSortProApp {
         };
 
         // Initialisation
-        console.log('[App] EmailSortPro v6.0 starting...');
+        console.log('[App] EmailSortPro v7.0 starting...');
         console.log('[App] Environment:', this.config.isNetlify ? 'Netlify' : 'Local');
         console.log('[App] Domain:', this.config.domain);
 
@@ -44,8 +44,18 @@ class EmailSortProApp {
             // 2. Initialiser l'analytics si disponible
             this.initAnalytics();
 
-            // 3. Attendre la vérification de licence
-            await this.waitForLicenseCheck();
+            // 3. Vérifier si l'utilisateur est déjà authentifié
+            const existingAuth = await this.checkExistingAuthentication();
+            
+            if (existingAuth) {
+                console.log('[App] Existing authentication found, checking license...');
+                // Si authentifié, vérifier la licence
+                await this.checkUserLicense(existingAuth.email);
+            } else {
+                console.log('[App] No existing authentication, showing login page');
+                // Sinon, afficher la page de login
+                this.showLoginPage();
+            }
 
         } catch (error) {
             console.error('[App] Initialization error:', error);
@@ -54,101 +64,142 @@ class EmailSortProApp {
     }
 
     // ==========================================
-    // GESTION DE LA LICENCE
+    // VÉRIFICATION D'AUTHENTIFICATION EXISTANTE
     // ==========================================
-    setupEventListeners() {
-        // Licence validée
-        window.addEventListener('userAuthenticated', (event) => {
-            console.log('[App] License validated:', event.detail);
-            this.handleLicenseSuccess(event.detail);
-        });
-
-        // Licence échouée
-        window.addEventListener('licenseCheckFailed', (event) => {
-            console.log('[App] License failed:', event.detail);
-            this.handleLicenseFailed(event.detail);
-        });
-
-        // Service de licence prêt
-        window.addEventListener('licenseServiceReady', () => {
-            console.log('[App] License service ready');
-        });
+    async checkExistingAuthentication() {
+        console.log('[App] Checking existing authentication...');
+        
+        // Attendre que les services soient prêts
+        await this.waitForAuthServices();
+        
+        // Vérifier Microsoft
+        if (window.authService && window.authService.isAuthenticated()) {
+            const account = window.authService.getAccount();
+            if (account && account.username) {
+                console.log('[App] Microsoft authentication found');
+                return {
+                    provider: 'microsoft',
+                    email: account.username,
+                    account: account
+                };
+            }
+        }
+        
+        // Vérifier Google
+        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+            const account = window.googleAuthService.getAccount();
+            if (account && account.email) {
+                console.log('[App] Google authentication found');
+                return {
+                    provider: 'google',
+                    email: account.email,
+                    account: account
+                };
+            }
+        }
+        
+        return null;
     }
 
-    async waitForLicenseCheck() {
-        console.log('[App] Waiting for license check...');
+    async waitForAuthServices() {
+        console.log('[App] Waiting for auth services...');
         
-        // Créer une promesse qui se résout quand la licence est vérifiée
-        const licensePromise = new Promise((resolve, reject) => {
-            // Timeout de sécurité
-            const timeout = setTimeout(() => {
-                reject(new Error('License check timeout'));
-            }, this.config.timeouts.license);
-
-            // Vérifier si la licence est déjà validée
-            if (this.state.licenseValid) {
-                clearTimeout(timeout);
-                resolve();
+        let attempts = 0;
+        const maxAttempts = 50; // 5 secondes
+        
+        while (attempts < maxAttempts) {
+            if ((window.authService || window.googleAuthService)) {
+                console.log('[App] Auth services available');
                 return;
             }
+            await this.sleep(100);
+            attempts++;
+        }
+        
+        console.warn('[App] Auth services not available after timeout');
+    }
 
-            // Attendre l'événement de licence
-            const handleSuccess = (event) => {
-                clearTimeout(timeout);
-                window.removeEventListener('userAuthenticated', handleSuccess);
-                window.removeEventListener('licenseCheckFailed', handleFailed);
-                this.handleLicenseSuccess(event.detail);
-                resolve();
-            };
-
-            const handleFailed = (event) => {
-                clearTimeout(timeout);
-                window.removeEventListener('userAuthenticated', handleSuccess);
-                window.removeEventListener('licenseCheckFailed', handleFailed);
-                this.handleLicenseFailed(event.detail);
-                reject(new Error('License check failed'));
-            };
-
-            window.addEventListener('userAuthenticated', handleSuccess, { once: true });
-            window.addEventListener('licenseCheckFailed', handleFailed, { once: true });
-        });
-
+    // ==========================================
+    // VÉRIFICATION DE LICENCE
+    // ==========================================
+    async checkUserLicense(email) {
+        console.log('[App] Checking license for:', email);
+        
         try {
-            await licensePromise;
+            // Attendre que le service de licence soit prêt
+            await this.waitForLicenseService();
+            
+            // Vérifier la licence
+            const result = await window.licenseService.authenticateWithEmail(email);
+            
+            if (result && result.valid) {
+                console.log('[App] License valid:', result);
+                
+                // Mettre à jour l'état
+                this.state.licenseValid = true;
+                this.state.authenticated = true;
+                this.state.user = result.user;
+                this.state.provider = this.detectProvider(result.user);
+                
+                // Stocker les informations de licence
+                window.currentUser = result.user;
+                window.licenseStatus = {
+                    status: result.status,
+                    valid: result.valid,
+                    daysRemaining: result.daysRemaining,
+                    message: result.message
+                };
+                
+                // Émettre l'événement pour l'index
+                window.dispatchEvent(new CustomEvent('userAuthenticated', {
+                    detail: { user: result.user, status: result }
+                }));
+                
+                // Démarrer l'application
+                await this.startApplication();
+                
+            } else {
+                console.warn('[App] License invalid:', result);
+                
+                // Émettre l'événement d'échec
+                window.dispatchEvent(new CustomEvent('licenseCheckFailed', {
+                    detail: result || { status: 'invalid', message: 'Licence invalide' }
+                }));
+                
+                this.handleLicenseError(result);
+            }
+            
         } catch (error) {
             console.error('[App] License check error:', error);
             
-            // En environnement local, continuer sans licence
-            if (!this.config.isNetlify) {
-                console.warn('[App] Local environment - continuing without license');
-                this.state.licenseValid = true;
-                await this.startApplication();
-            } else {
-                throw error;
-            }
+            // En cas d'erreur, émettre l'événement d'échec
+            window.dispatchEvent(new CustomEvent('licenseCheckFailed', {
+                detail: { status: 'error', message: error.message }
+            }));
+            
+            this.handleLicenseError({
+                status: 'error',
+                message: `Erreur de vérification: ${error.message}`
+            });
         }
     }
 
-    handleLicenseSuccess(detail) {
-        console.log('[App] License success:', detail);
+    async waitForLicenseService() {
+        console.log('[App] Waiting for license service...');
         
-        // Mettre à jour l'état
-        this.state.licenseValid = true;
-        this.state.authenticated = true;
-        this.state.user = detail.user;
-        this.state.provider = this.detectProvider(detail.user);
-
-        // Démarrer l'application
-        this.startApplication();
-    }
-
-    handleLicenseFailed(detail) {
-        console.error('[App] License failed:', detail);
+        let attempts = 0;
+        const maxAttempts = 100; // 10 secondes
         
-        this.state.licenseValid = false;
-        this.state.error = detail.message || 'Licence invalide';
+        while ((!window.licenseService || !window.licenseService.initialized) && attempts < maxAttempts) {
+            await this.sleep(100);
+            attempts++;
+        }
         
-        this.showErrorPage(this.state.error);
+        if (!window.licenseService || !window.licenseService.initialized) {
+            throw new Error('License service not available');
+        }
+        
+        console.log('[App] License service ready');
     }
 
     detectProvider(user) {
@@ -159,6 +210,31 @@ class EmailSortProApp {
         if (email.includes('@outlook.com') || email.includes('@hotmail.')) return 'microsoft';
         
         return 'unknown';
+    }
+
+    // ==========================================
+    // GESTION DES ÉVÉNEMENTS
+    // ==========================================
+    setupEventListeners() {
+        // Écouter les événements de l'index.html
+        window.addEventListener('userAuthenticated', (event) => {
+            console.log('[App] User authenticated event from index:', event.detail);
+            // L'index gère déjà l'affichage, on ne fait rien ici
+        });
+
+        window.addEventListener('licenseCheckFailed', (event) => {
+            console.log('[App] License check failed event from index:', event.detail);
+            // L'index gère déjà l'affichage de l'erreur
+        });
+    }
+
+    handleLicenseError(result) {
+        console.error('[App] License error:', result);
+        
+        this.state.licenseValid = false;
+        this.state.error = result.message || 'Licence invalide';
+        
+        // L'index.html va afficher l'erreur via l'événement licenseCheckFailed
     }
 
     // ==========================================
@@ -220,14 +296,14 @@ class EmailSortProApp {
         const services = [];
 
         // Service Microsoft
-        if (window.authService) {
+        if (window.authService && !window.authService.initialized) {
             services.push(
                 this.initService('Microsoft Auth', () => window.authService.initialize())
             );
         }
 
         // Service Google
-        if (window.googleAuthService) {
+        if (window.googleAuthService && !window.googleAuthService.initialized) {
             services.push(
                 this.initService('Google Auth', () => window.googleAuthService.initialize())
             );
@@ -236,12 +312,7 @@ class EmailSortProApp {
         // Attendre l'initialisation avec timeout
         const results = await Promise.allSettled(services);
         
-        // Vérifier qu'au moins un service est disponible
-        const successCount = results.filter(r => r.status === 'fulfilled').length;
-        if (successCount === 0 && services.length > 0) {
-            throw new Error('No authentication service available');
-        }
-
+        console.log('[App] Services initialization results:', results);
         console.log('[App] ✅ Services initialized');
     }
 
@@ -391,31 +462,48 @@ class EmailSortProApp {
     // ==========================================
     // AFFICHAGE
     // ==========================================
+    showLoginPage() {
+        console.log('[App] Showing login page...');
+        
+        // S'assurer que la page de login est visible
+        const loginPage = document.getElementById('loginPage');
+        if (loginPage) {
+            loginPage.style.display = 'flex';
+        }
+        
+        // Masquer l'interface de l'app
+        document.body.classList.add('login-mode');
+        document.body.classList.remove('app-active');
+    }
+
     showApplication() {
         console.log('[App] Showing application...');
 
-        // Masquer la page de login
-        const loginPage = document.getElementById('loginPage');
-        if (loginPage) {
-            loginPage.style.display = 'none';
-        }
-
-        // Activer le mode application
-        document.body.classList.remove('login-mode');
-        document.body.classList.add('app-active');
-
-        // Afficher les éléments de l'app
-        const elements = ['.app-header', '.app-nav', '#pageContent'];
-        elements.forEach(selector => {
-            const el = document.querySelector(selector);
-            if (el) {
-                el.style.display = 'block';
-                el.style.opacity = '1';
+        // Utiliser la fonction showApp de l'index si disponible
+        if (window.showApp) {
+            window.showApp();
+        } else {
+            // Sinon, faire l'affichage manuellement
+            const loginPage = document.getElementById('loginPage');
+            if (loginPage) {
+                loginPage.style.display = 'none';
             }
-        });
 
-        // Charger le dashboard
-        this.loadDashboard();
+            document.body.classList.remove('login-mode');
+            document.body.classList.add('app-active');
+
+            // Afficher les éléments de l'app
+            const elements = ['.app-header', '.app-nav', '#pageContent'];
+            elements.forEach(selector => {
+                const el = document.querySelector(selector);
+                if (el) {
+                    el.style.display = 'block';
+                    el.style.opacity = '1';
+                }
+            });
+
+            this.loadDashboard();
+        }
     }
 
     loadDashboard() {
@@ -535,15 +623,29 @@ class EmailSortProApp {
     // ==========================================
     // MÉTHODES D'AUTHENTIFICATION
     // ==========================================
-    async login() {
-        console.log('[App] Login requested...');
+    async login(provider = 'microsoft') {
+        console.log('[App] Login requested for provider:', provider);
         
-        if (!window.authService) {
-            throw new Error('Authentication service not available');
-        }
-
         try {
-            await window.authService.login();
+            let email = null;
+            
+            if (provider === 'microsoft' && window.authService) {
+                await window.authService.login();
+                const account = window.authService.getAccount();
+                email = account?.username;
+            } else if (provider === 'google' && window.googleAuthService) {
+                await window.googleAuthService.login();
+                // Google redirige, donc on ne récupère pas l'email ici
+                return;
+            } else {
+                throw new Error(`Authentication service for ${provider} not available`);
+            }
+            
+            // Si on a un email, vérifier la licence
+            if (email) {
+                await this.checkUserLicense(email);
+            }
+            
         } catch (error) {
             console.error('[App] Login error:', error);
             if (window.uiManager) {
@@ -567,10 +669,13 @@ class EmailSortProApp {
             }
 
             // Déconnexion du service d'authentification
-            if (this.state.provider === 'microsoft' && window.authService) {
-                await window.authService.logout();
-            } else if (this.state.provider === 'google' && window.googleAuthService) {
-                await window.googleAuthService.logout();
+            const auth = await this.checkExistingAuthentication();
+            if (auth) {
+                if (auth.provider === 'microsoft' && window.authService) {
+                    await window.authService.logout();
+                } else if (auth.provider === 'google' && window.googleAuthService) {
+                    await window.googleAuthService.logout();
+                }
             }
         } catch (error) {
             console.error('[App] Logout error:', error);
@@ -609,7 +714,7 @@ class EmailSortProApp {
     // ==========================================
     getDiagnostic() {
         return {
-            version: '6.0',
+            version: '7.0',
             state: this.state,
             config: this.config,
             services: {
@@ -617,15 +722,27 @@ class EmailSortProApp {
                 authService: !!window.authService,
                 googleAuthService: !!window.googleAuthService,
                 licenseService: !!window.licenseService,
+                licenseServiceReady: window.licenseService?.initialized,
                 mailService: !!window.mailService,
                 taskManager: !!window.taskManager,
                 pageManager: !!window.pageManager,
                 dashboardModule: !!window.dashboardModule
             },
+            license: {
+                serviceReady: window.licenseService?.initialized,
+                currentUser: window.currentUser,
+                licenseStatus: window.licenseStatus
+            },
+            authentication: {
+                microsoftReady: window.authService?.initialized,
+                googleReady: window.googleAuthService?.initialized,
+                microsoftAuth: window.authService?.isAuthenticated(),
+                googleAuth: window.googleAuthService?.isAuthenticated()
+            },
             environment: {
                 hostname: window.location.hostname,
                 protocol: window.location.protocol,
-                userAgent: navigator.userAgent
+                userAgent: navigator.userAgent.substring(0, 100)
             }
         };
     }
@@ -645,18 +762,33 @@ document.addEventListener('DOMContentLoaded', () => {
         window.handleLogout = () => window.app.logout();
         window.diagnoseApp = () => {
             const diagnostic = window.app.getDiagnostic();
-            console.group('🔍 APPLICATION DIAGNOSTIC');
+            console.group('🔍 APPLICATION DIAGNOSTIC v7.0');
             console.log('Version:', diagnostic.version);
             console.log('State:', diagnostic.state);
             console.log('Config:', diagnostic.config);
             console.log('Services:', diagnostic.services);
+            console.log('License:', diagnostic.license);
+            console.log('Authentication:', diagnostic.authentication);
             console.log('Environment:', diagnostic.environment);
             console.groupEnd();
             return diagnostic;
         };
         
+        // Fonction pour vérifier manuellement la licence
+        window.checkLicense = async (email) => {
+            if (!email) {
+                console.error('Email requis: checkLicense("email@domain.com")');
+                return;
+            }
+            return await window.app.checkUserLicense(email);
+        };
+        
         console.log('[App] ✅ Application created successfully');
-        console.log('[App] 📋 Available commands: diagnoseApp(), handleLogout()');
+        console.log('[App] 📋 Available commands:');
+        console.log('  - diagnoseApp() : Diagnostic complet');
+        console.log('  - handleLogout() : Déconnexion');
+        console.log('  - checkLicense("email") : Vérifier une licence');
+        console.log('  - window.licenseService.debug() : Debug du service de licence');
         
     } catch (error) {
         console.error('[App] Fatal error:', error);
@@ -677,4 +809,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-console.log('✅ EmailSortProApp v6.0 loaded - Simplified and error-free');
+console.log('✅ EmailSortProApp v7.0 loaded - With complete license integration');
