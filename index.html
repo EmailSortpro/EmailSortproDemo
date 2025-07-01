@@ -1450,8 +1450,8 @@
     <!-- 3. Configuration Supabase -->
     <script src="./config-supabase.js" onerror="console.warn('config-supabase.js manquant - les licences ne fonctionneront pas')"></script>
 
-    <!-- 4. Service de gestion des licences -->
-    <script src="./LicenseService.js" onerror="console.error('LicenseService.js manquant')"></script>
+    <!-- 4. Service de gestion des licences - CHARGEMENT DIRECT -->
+    <script src="./LicenseService.js"></script>
 
     <!-- 5. Script de vérification des licences -->
     <script src="./license-check.js" onerror="console.error('license-check.js manquant')"></script>
@@ -1510,7 +1510,44 @@
             
             // Mettre à jour l'affichage utilisateur immédiatement
             if (event.detail && event.detail.user) {
-                window.updateUserDisplay(event.detail.user);
+                // Forcer la mise à jour de l'affichage avec les infos du service d'auth
+                let userInfo = event.detail.user;
+                
+                // Si on a aussi les infos d'auth Microsoft/Google, les utiliser
+                if (window.authService && window.authService.isAuthenticated()) {
+                    const msAccount = window.authService.getAccount();
+                    if (msAccount) {
+                        userInfo = {
+                            ...userInfo,
+                            displayName: msAccount.name || userInfo.name,
+                            email: msAccount.username || userInfo.email,
+                            provider: 'microsoft'
+                        };
+                    }
+                } else if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+                    const googleAccount = window.googleAuthService.getAccount();
+                    if (googleAccount) {
+                        userInfo = {
+                            ...userInfo,
+                            displayName: googleAccount.name || userInfo.name,
+                            email: googleAccount.email || userInfo.email,
+                            provider: 'google'
+                        };
+                    }
+                }
+                
+                // Mettre à jour l'affichage
+                window.updateUserDisplay(userInfo);
+                
+                // Afficher un message de statut de licence
+                if (window.uiManager && event.detail.status) {
+                    const { status, daysRemaining, message } = event.detail.status;
+                    if (status === 'trial') {
+                        window.uiManager.showToast(`✅ Période d'essai - ${daysRemaining} jours restants`, 'success', 5000);
+                    } else if (status === 'active') {
+                        window.uiManager.showToast('✅ Licence active', 'success', 5000);
+                    }
+                }
             }
             
             // Si l'app n'est pas encore affichée et que l'utilisateur est authentifié, afficher l'app
@@ -2350,6 +2387,9 @@
         // Fonction globale pour basculer vers l'app après connexion
         window.onAuthSuccess = async function() {
             if (!appAlreadyShown && !document.body.classList.contains('app-active')) {
+                // Attendre un peu pour s'assurer que tous les services sont prêts
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
                 // Vérifier la licence avant d'afficher l'app
                 let userEmail = null;
                 
