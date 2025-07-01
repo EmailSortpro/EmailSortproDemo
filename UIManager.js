@@ -1,14 +1,14 @@
-// UIManager.js - Gestionnaire d'interface CORRIGÉ sans mode démo v7.1
+// UIManager.js - Gestionnaire d'interface CORRIGÉ v7.2
 
 class UIManager {
     constructor() {
         this.isInitialized = false;
-        this.realModeOnly = true; // CORRECTION: Forcer le mode réel uniquement
+        this.realModeOnly = true;
         this.loadingStates = new Map();
         this.toastQueue = [];
         this.maxToasts = 3;
         
-        console.log('[UIManager] Constructor v7.1 - REAL MODE ONLY');
+        console.log('[UIManager] Constructor v7.2 - REAL MODE ONLY');
         this.init();
     }
 
@@ -29,7 +29,7 @@ class UIManager {
         const container = document.createElement('div');
         container.id = 'toast-container';
         container.className = 'toast-container';
-        container.innerHTML = ''; // CORRECTION: Pas de contenu par défaut
+        container.innerHTML = '';
         
         document.body.appendChild(container);
     }
@@ -169,52 +169,6 @@ class UIManager {
                     font-weight: 500;
                 }
                 
-                .auth-status {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    font-size: 14px;
-                    color: white;
-                }
-                
-                .auth-status .user-avatar {
-                    width: 24px;
-                    height: 24px;
-                    border-radius: 50%;
-                    background: rgba(255, 255, 255, 0.2);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 10px;
-                    font-weight: bold;
-                }
-                
-                .auth-status .user-info {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: flex-end;
-                }
-                
-                .auth-status .user-name {
-                    font-weight: 600;
-                    font-size: 13px;
-                }
-                
-                .auth-status .user-mode {
-                    font-size: 11px;
-                    opacity: 0.8;
-                }
-                
-                .real-mode-badge {
-                    background: #10b981;
-                    color: white;
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                    font-size: 10px;
-                    font-weight: 600;
-                    text-transform: uppercase;
-                }
-                
                 @media (max-width: 768px) {
                     .toast-container {
                         top: 10px;
@@ -229,10 +183,6 @@ class UIManager {
                     
                     .toast.show {
                         transform: translateY(0);
-                    }
-                    
-                    .auth-status .user-info {
-                        display: none;
                     }
                 }
             </style>
@@ -266,7 +216,7 @@ class UIManager {
         
         loadingEl.classList.add('show');
         
-        // Auto-hide après 30 secondes pour éviter les blocages
+        // Auto-hide après 30 secondes
         setTimeout(() => {
             this.hideLoading(key);
         }, 30000);
@@ -277,7 +227,6 @@ class UIManager {
         
         this.loadingStates.delete(key);
         
-        // Si aucun loading en cours, masquer l'indicateur
         if (this.loadingStates.size === 0) {
             const loadingEl = document.getElementById('loading-indicator');
             if (loadingEl) {
@@ -289,7 +238,6 @@ class UIManager {
     showToast(message, type = 'info', duration = 5000) {
         console.log('[UIManager] Showing toast:', { message, type, duration });
         
-        // CORRECTION: Ne pas afficher de toasts de démo
         if (message.toLowerCase().includes('demo') || message.toLowerCase().includes('démonstration')) {
             console.warn('[UIManager] Skipping demo toast message');
             return;
@@ -301,7 +249,6 @@ class UIManager {
             return;
         }
         
-        // Limiter le nombre de toasts
         const existingToasts = container.children;
         if (existingToasts.length >= this.maxToasts) {
             existingToasts[0].remove();
@@ -329,12 +276,10 @@ class UIManager {
         
         container.appendChild(toast);
         
-        // Animation d'entrée
         setTimeout(() => {
             toast.classList.add('show');
         }, 10);
         
-        // Auto-remove
         if (duration > 0) {
             setTimeout(() => {
                 if (toast.parentElement) {
@@ -349,9 +294,9 @@ class UIManager {
         }
     }
 
-    // CORRECTION: Mise à jour du statut d'authentification avec mode réel
+    // CORRECTION: Mise à jour du statut d'authentification avec gestion des cas undefined
     updateAuthStatus(user) {
-        console.log('[UIManager] Updating auth status for real mode:', user?.displayName || user?.mail);
+        console.log('[UIManager] Updating auth status for:', user);
         
         const authStatusEl = document.getElementById('authStatus');
         if (!authStatusEl) {
@@ -359,31 +304,42 @@ class UIManager {
             return;
         }
         
-        if (user && window.APP_REAL_MODE) {
-            const initials = this.getInitials(user.displayName || user.name || user.mail);
+        // Si pas d'utilisateur, utiliser les variables globales comme fallback
+        if (!user) {
+            user = window.currentUser || null;
+        }
+        
+        if (user) {
+            const displayName = user.displayName || user.name || user.mail || user.email || 'Utilisateur';
+            const email = user.mail || user.userPrincipalName || user.email || '';
+            const initials = this.getInitials(displayName);
+            const provider = user.provider || (email.includes('@gmail.com') ? 'google' : 'microsoft');
+            const providerText = provider === 'google' ? 'Gmail' : 'Outlook';
+            
+            // Récupérer le statut de licence
+            let licenseInfo = '';
+            if (window.licenseStatus) {
+                const { status, daysRemaining } = window.licenseStatus;
+                if (status === 'trial' && daysRemaining <= 7) {
+                    licenseInfo = `<span style="color: #fbbf24; margin-left: 8px; font-size: 11px;">⏳ ${daysRemaining}j restants</span>`;
+                }
+            }
             
             authStatusEl.innerHTML = `
-                <div class="auth-status">
-                    <div class="user-avatar">${initials}</div>
-                    <div class="user-info">
-                        <div class="user-name">${user.displayName || user.name || user.mail || 'Utilisateur'}</div>
-                        <div class="user-mode">
-                            <span class="real-mode-badge">Mode réel</span>
-                        </div>
+                <div class="user-info">
+                    <div class="user-details">
+                        <div class="user-name">${displayName}${licenseInfo}</div>
+                        <div class="user-email">${email} (${providerText})</div>
                     </div>
-                    <button onclick="window.app.logout()" class="btn-small" title="Se déconnecter">
-                        <i class="fas fa-sign-out-alt"></i>
+                    <div class="user-avatar">${initials}</div>
+                    <button class="logout-button" onclick="window.handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i> Déconnexion
                     </button>
                 </div>
             `;
         } else {
             authStatusEl.innerHTML = `
-                <div class="auth-status">
-                    <span style="opacity: 0.8;">Non connecté</span>
-                    <button onclick="window.app.login()" class="btn-small" title="Se connecter">
-                        <i class="fas fa-sign-in-alt"></i>
-                    </button>
-                </div>
+                <span style="opacity: 0.8;">Non connecté</span>
             `;
         }
     }
@@ -391,25 +347,23 @@ class UIManager {
     getInitials(name) {
         if (!name) return '?';
         
-        const parts = name.split(' ');
+        const parts = name.split(/[\s@._-]+/).filter(p => p.length > 0);
         if (parts.length >= 2) {
             return (parts[0][0] + parts[1][0]).toUpperCase();
-        } else {
-            return name.substring(0, 2).toUpperCase();
+        } else if (parts.length === 1) {
+            return parts[0].substring(0, 2).toUpperCase();
         }
+        return 'U';
     }
 
-    // CORRECTION: Affichage de modales sans contenu de démo
     showModal(title, content, actions = []) {
         console.log('[UIManager] Showing modal:', title);
         
-        // CORRECTION: Vérifier qu'il n'y a pas de contenu de démo
         if (content.toLowerCase().includes('demo') || content.toLowerCase().includes('démonstration')) {
             console.warn('[UIManager] Blocking demo content in modal');
             content = 'Contenu de démonstration bloqué. Utilisez vos données réelles.';
         }
         
-        // Supprimer les modales existantes
         const existingModal = document.getElementById('ui-modal');
         if (existingModal) {
             existingModal.remove();
@@ -442,7 +396,6 @@ class UIManager {
             </div>
         `;
         
-        // Styles pour la modale
         if (!document.getElementById('modal-styles')) {
             const modalStyles = document.createElement('style');
             modalStyles.id = 'modal-styles';
@@ -553,33 +506,16 @@ class UIManager {
                 .btn-secondary:hover {
                     background: #d1d5db;
                 }
-                
-                .btn-small {
-                    padding: 6px 12px;
-                    font-size: 12px;
-                    background: rgba(255, 255, 255, 0.2);
-                    color: white;
-                    border: none;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-                
-                .btn-small:hover {
-                    background: rgba(255, 255, 255, 0.3);
-                }
             `;
             document.head.appendChild(modalStyles);
         }
         
         document.body.appendChild(modal);
         
-        // Animation d'entrée
         setTimeout(() => {
             modal.classList.add('show');
         }, 10);
         
-        // Fermer avec Escape
         const handleEscape = (e) => {
             if (e.key === 'Escape') {
                 modal.remove();
@@ -588,7 +524,6 @@ class UIManager {
         };
         document.addEventListener('keydown', handleEscape);
         
-        // Fermer en cliquant à l'extérieur
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 modal.remove();
@@ -608,9 +543,7 @@ class UIManager {
         }
     }
 
-    // CORRECTION: Confirmation sans contenu de démo
     showConfirmation(message, onConfirm, onCancel = null) {
-        // CORRECTION: Bloquer les messages de confirmation de démo
         if (message.toLowerCase().includes('demo') || message.toLowerCase().includes('démonstration')) {
             console.warn('[UIManager] Blocking demo confirmation message');
             message = 'Action sur données réelles. Êtes-vous sûr ?';
@@ -645,15 +578,12 @@ class UIManager {
         }
     }
 
-    // CORRECTION: Notifications système sans démo
     showNotification(title, message, type = 'info') {
-        // CORRECTION: Bloquer les notifications de démo
         if (message.toLowerCase().includes('demo') || title.toLowerCase().includes('demo')) {
             console.warn('[UIManager] Blocking demo notification');
             return;
         }
         
-        // Vérifier si les notifications sont supportées
         if ('Notification' in window) {
             if (Notification.permission === 'granted') {
                 new Notification(title, {
@@ -672,11 +602,9 @@ class UIManager {
             }
         }
         
-        // Fallback avec toast
         this.showToast(`${title}: ${message}`, type);
     }
 
-    // Gestion des erreurs globales
     handleError(error, context = 'Application') {
         console.error(`[UIManager] Error in ${context}:`, error);
         
@@ -697,7 +625,6 @@ class UIManager {
         this.showToast(userMessage, 'error');
     }
 
-    // Méthodes de diagnostic
     getStatus() {
         return {
             isInitialized: this.isInitialized,
@@ -728,4 +655,4 @@ try {
     };
 }
 
-console.log('✅ UIManager v7.1 loaded - NO DEMO CONTENT ALLOWED');
+console.log('✅ UIManager v7.2 loaded - NO DEMO CONTENT ALLOWED');
