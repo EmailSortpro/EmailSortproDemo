@@ -1508,6 +1508,11 @@
         window.addEventListener('userAuthenticated', function(event) {
             console.log('[INDEX] User authenticated event received:', event.detail);
             
+            // Mettre à jour l'affichage utilisateur immédiatement
+            if (event.detail && event.detail.user) {
+                window.updateUserDisplay(event.detail.user);
+            }
+            
             // Si l'app n'est pas encore affichée et que l'utilisateur est authentifié, afficher l'app
             if (!appAlreadyShown && event.detail.user && event.detail.status.valid) {
                 window.showApp();
@@ -1715,6 +1720,11 @@
             licenseCheckPerformed = true;
             console.log('[INDEX] Checking license after authentication for:', userEmail);
             
+            // Afficher un message de vérification
+            if (window.uiManager) {
+                window.uiManager.showToast('Vérification de votre licence...', 'info');
+            }
+            
             try {
                 // Attendre que le service de licence soit prêt
                 if (!window.licenseService) {
@@ -1744,6 +1754,17 @@
                         // Licence valide, continuer
                         console.log('[INDEX] ✅ License valid, continuing to app...');
                         
+                        // Afficher un message de succès avec le statut
+                        if (window.uiManager) {
+                            let message = '✅ Licence valide';
+                            if (licenseResult.status === 'trial') {
+                                message = `✅ Période d'essai - ${licenseResult.daysRemaining} jours restants`;
+                            } else if (licenseResult.status === 'active') {
+                                message = '✅ Licence active';
+                            }
+                            window.uiManager.showToast(message, 'success', 5000);
+                        }
+                        
                         // Afficher un avertissement si période d'essai bientôt expirée
                         if (licenseResult.status === 'trial' && licenseResult.daysRemaining <= 3) {
                             showTrialWarning(licenseResult.daysRemaining);
@@ -1753,6 +1774,11 @@
                     } else {
                         // Licence invalide
                         console.warn('[INDEX] ❌ Invalid license:', licenseResult);
+                        
+                        if (window.uiManager) {
+                            window.uiManager.showToast('❌ Licence invalide ou expirée', 'error', 5000);
+                        }
+                        
                         showLicenseError(licenseResult || {
                             status: 'invalid',
                             message: 'Licence invalide ou expirée'
@@ -1761,12 +1787,23 @@
                     }
                 } else {
                     console.error('[INDEX] License service not available');
+                    
+                    // En mode dégradé, afficher un avertissement
+                    if (window.uiManager) {
+                        window.uiManager.showToast('⚠️ Service de licence indisponible - Mode dégradé', 'warning', 5000);
+                    }
+                    
                     // Continuer sans vérification en mode dégradé
                     return true;
                 }
                 
             } catch (error) {
                 console.error('[INDEX] License check error:', error);
+                
+                if (window.uiManager) {
+                    window.uiManager.showToast('⚠️ Erreur de vérification - Mode dégradé activé', 'warning', 5000);
+                }
+                
                 // En cas d'erreur, continuer en mode dégradé
                 return true;
             }
