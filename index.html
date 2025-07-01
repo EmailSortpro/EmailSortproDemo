@@ -34,7 +34,7 @@
     <!-- Styles principaux -->
     <link rel="stylesheet" href="styles.css">
     
-    <!-- CONFIGURATION NETLIFY DYNAMIQUE - STRUCTURE ORIGINALE RESTAURÉE -->
+    <!-- CONFIGURATION NETLIFY DYNAMIQUE - ORIGINALE -->
     <script>
         console.log('[INDEX] 🚀 Loading dynamic Netlify configuration...');
         
@@ -209,176 +209,7 @@
         })();
     </script>
 
-    <!-- SYSTÈME DE LICENCE SIMPLE (sans Supabase) -->
-    <script>
-        // Système de licence simple qui vérifie directement la base de données via analytics.html
-        class SimpleLicenseChecker {
-            constructor() {
-                this.initialized = false;
-                this.userEmail = null;
-                this.licenseValid = false;
-                console.log('[License] Simple license checker loaded');
-            }
-
-            async checkLicense(email) {
-                if (!email) {
-                    throw new Error('Email requis pour vérification licence');
-                }
-
-                console.log('[License] Vérification licence pour:', email);
-                
-                try {
-                    // Faire un appel à analytics.html pour vérifier la licence
-                    // (analytics.html a déjà une connexion Supabase qui fonctionne)
-                    const response = await fetch(`/analytics.html?checkLicense=${encodeURIComponent(email)}`, {
-                        method: 'GET'
-                    });
-
-                    if (response.ok) {
-                        // Pour simplifier, on considère que si analytics.html répond, l'utilisateur a accès
-                        this.userEmail = email;
-                        this.licenseValid = true;
-                        
-                        // Stocker l'email pour les prochaines vérifications
-                        localStorage.setItem('emailsortpro_user_email', email);
-                        localStorage.setItem('emailsortpro_last_check', new Date().toISOString());
-                        
-                        console.log('[License] ✅ Licence validée');
-                        return {
-                            valid: true,
-                            email: email,
-                            status: 'active',
-                            message: 'Licence active'
-                        };
-                    } else {
-                        throw new Error('Licence invalide ou expirée');
-                    }
-                    
-                } catch (error) {
-                    console.error('[License] Erreur vérification:', error);
-                    
-                    // En cas d'erreur, utiliser une liste d'emails autorisés
-                    const authorizedEmails = [
-                        'vianney.hastings@hotmail.fr',
-                        'vianneyhastings@outlook.fr',
-                        'vianney.hastings@outlook.fr',
-                        'admin@emailsortpro.fr',
-                        'test@test.com'
-                    ];
-                    
-                    if (authorizedEmails.includes(email.toLowerCase())) {
-                        console.log('[License] ✅ Email autorisé trouvé dans la liste');
-                        this.userEmail = email;
-                        this.licenseValid = true;
-                        localStorage.setItem('emailsortpro_user_email', email);
-                        
-                        return {
-                            valid: true,
-                            email: email,
-                            status: 'active',
-                            message: 'Licence active (mode fallback)'
-                        };
-                    }
-                    
-                    throw new Error('Email non autorisé: ' + email);
-                }
-            }
-
-            showLicenseError(message) {
-                // Supprimer les erreurs existantes
-                document.querySelectorAll('.license-error-overlay').forEach(el => el.remove());
-                
-                const overlay = document.createElement('div');
-                overlay.className = 'license-error-overlay';
-                overlay.style.cssText = `
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    z-index: 99999;
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    backdrop-filter: blur(10px);
-                `;
-                
-                const errorBox = document.createElement('div');
-                errorBox.style.cssText = `
-                    background: white;
-                    padding: 2.5rem;
-                    border-radius: 16px;
-                    text-align: center;
-                    max-width: 550px;
-                    width: 90%;
-                    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
-                `;
-                
-                errorBox.innerHTML = `
-                    <div style="color: #dc2626; font-size: 4rem; margin-bottom: 1.5rem;">🚫</div>
-                    <h2 style="color: #1f2937; margin-bottom: 1rem; font-size: 1.75rem;">Accès refusé</h2>
-                    <p style="color: #6b7280; margin-bottom: 1.5rem; line-height: 1.6;">${message}</p>
-                    
-                    <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 16px; margin: 16px 0;">
-                        <h4 style="margin: 0 0 8px 0; color: #0c4a6e; font-size: 14px;">📧 Support EmailSortPro</h4>
-                        <p style="margin: 0; color: #0369a1;">
-                            <a href="mailto:vianney.hastings@hotmail.fr" style="color: #0284c7; text-decoration: none;">
-                                vianney.hastings@hotmail.fr
-                            </a>
-                        </p>
-                    </div>
-                    
-                    <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px;">
-                        <button onclick="location.reload()" style="
-                            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-                            color: white;
-                            border: none;
-                            padding: 12px 24px;
-                            border-radius: 8px;
-                            cursor: pointer;
-                            font-size: 14px;
-                            font-weight: 600;
-                        ">
-                            Réessayer
-                        </button>
-                    </div>
-                `;
-                
-                overlay.appendChild(errorBox);
-                document.body.appendChild(overlay);
-                document.body.style.overflow = 'hidden';
-            }
-
-            checkStoredLicense() {
-                try {
-                    const storedEmail = localStorage.getItem('emailsortpro_user_email');
-                    const lastCheck = localStorage.getItem('emailsortpro_last_check');
-                    
-                    if (storedEmail && lastCheck) {
-                        const hoursSinceCheck = (Date.now() - new Date(lastCheck).getTime()) / (1000 * 60 * 60);
-                        
-                        // Si vérifié il y a moins de 24h, considérer comme valide
-                        if (hoursSinceCheck < 24) {
-                            console.log('[License] ✅ Licence stockée valide');
-                            this.userEmail = storedEmail;
-                            this.licenseValid = true;
-                            return true;
-                        }
-                    }
-                } catch (error) {
-                    console.warn('[License] Erreur lecture localStorage:', error);
-                }
-                
-                return false;
-            }
-        }
-
-        window.simpleLicenseChecker = new SimpleLicenseChecker();
-    </script>
-
-    <!-- Styles intégrés pour l'application sobre - ORIGINAUX RESTAURÉS -->
+    <!-- Styles intégrés pour l'application sobre -->
     <style>
         /* Reset et styles de base */
         * {
@@ -953,62 +784,6 @@
             text-align: center;
         }
 
-        /* Email form styles */
-        .email-form {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-            text-align: left;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #374151;
-            font-size: 14px;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: all 0.2s ease;
-            background: white;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: #4F46E5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
-
-        .error-message {
-            background: #fef2f2;
-            color: #dc2626;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 16px;
-            text-align: center;
-            font-size: 14px;
-        }
-
-        .success-message {
-            background: #f0fdf4;
-            color: #16a34a;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 16px;
-            text-align: center;
-            font-size: 14px;
-        }
-
         /* Responsive sobre */
         @media (max-width: 768px) {
             .login-container {
@@ -1139,261 +914,682 @@
 
 </head>
 <body>
-    <!-- Header Application -->
-    <header class="app-header">
-        <div class="header-content">
-            <div class="logo">
-                <i class="fas fa-envelope-open-text"></i>
-                <span>EmailSortProAI</span>
-                <span class="ai-badge">AI</span>
+    <div id="app">
+        <!-- Header Application -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-envelope-open-text"></i>
+                    <span>EmailSortProAI</span>
+                    <span class="ai-badge">AI</span>
+                </div>
+                <div id="authStatus" class="auth-status">
+                    <span class="text-muted">Initialisation...</span>
+                </div>
             </div>
-            <div id="authStatus" class="auth-status">
-                <span class="text-muted">Initialisation...</span>
+        </header>
+
+        <!-- Navigation sobre -->
+        <nav class="app-nav">
+            <div id="mainNav">
+                <button class="nav-item active" data-page="dashboard" type="button">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-item" data-page="scanner" type="button">
+                    <i class="fas fa-search"></i>
+                    <span>Scanner</span>
+                </button>
+                <button class="nav-item" data-page="emails" type="button">
+                    <i class="fas fa-inbox"></i>
+                    <span>Emails</span>
+                </button>
+                <button class="nav-item" data-page="tasks" type="button">
+                    <i class="fas fa-tasks"></i>
+                    <span>Tâches</span>
+                </button>
+                <button class="nav-item" data-page="ranger" type="button">
+                    <i class="fas fa-folder-tree"></i>
+                    <span>Ranger</span>
+                </button>
+                <button class="nav-item" data-page="settings" type="button">
+                    <i class="fas fa-cog"></i>
+                    <span>Paramètres</span>
+                </button>
             </div>
-        </div>
-    </header>
+        </nav>
 
-    <!-- Navigation sobre -->
-    <nav class="app-nav">
-        <div id="mainNav">
-            <button class="nav-item active" data-page="dashboard" type="button">
-                <i class="fas fa-th-large"></i>
-                <span>Dashboard</span>
-            </button>
-            <button class="nav-item" data-page="scanner" type="button">
-                <i class="fas fa-search"></i>
-                <span>Scanner</span>
-            </button>
-            <button class="nav-item" data-page="emails" type="button">
-                <i class="fas fa-inbox"></i>
-                <span>Emails</span>
-            </button>
-            <button class="nav-item" data-page="tasks" type="button">
-                <i class="fas fa-tasks"></i>
-                <span>Tâches</span>
-            </button>
-            <button class="nav-item" data-page="ranger" type="button">
-                <i class="fas fa-folder-tree"></i>
-                <span>Ranger</span>
-            </button>
-            <button class="nav-item" data-page="settings" type="button">
-                <i class="fas fa-cog"></i>
-                <span>Paramètres</span>
-            </button>
-        </div>
-    </nav>
-
-    <!-- Contenu Principal -->
-    <main class="app-main">
-        <!-- Page de Connexion sobre - STRUCTURE ORIGINALE -->
-        <div id="loginPage" class="login-page-styles">
-            <div class="login-container">
-                <div class="login-header">
-                    <div class="login-logo">
-                        <i class="fas fa-envelope-open-text"></i>
-                    </div>
-                    
-                    <h1 class="login-title">EmailSortPro</h1>
-                    
-                    <p class="login-subtitle">
-                        Assistant IA pour vos emails : analysez et organisez automatiquement Outlook et Gmail
-                    </p>
-
-                    <div id="alertContainer"></div>
-
-                    <button id="loginBtn" class="login-button microsoft">
-                        <i class="fab fa-microsoft"></i>
-                        Se connecter à Outlook
-                    </button>
-
-                    <button id="googleLoginBtn" class="login-button google">
-                        <i class="fab fa-google"></i>
-                        Se connecter à Gmail
-                    </button>
-
-                    <!-- Formulaire email pour vérification licence -->
-                    <div class="email-form">
-                        <div style="text-align: center; color: #6b7280; font-size: 14px; margin-bottom: 16px;">
-                            ou vérifiez votre licence directement
+        <!-- Contenu Principal -->
+        <main class="app-main">
+            <!-- Page de Connexion sobre -->
+            <div id="loginPage" class="login-page-styles">
+                <div class="login-container">
+                    <div class="login-header">
+                        <div class="login-logo">
+                            <i class="fas fa-envelope-open-text"></i>
                         </div>
                         
-                        <form id="emailLoginForm">
-                            <div class="form-group">
-                                <label class="form-label">Email avec licence</label>
-                                <input type="email" class="form-input" id="userEmail" 
-                                       placeholder="votre.email@entreprise.com"
-                                       autocomplete="email">
+                        <h1 class="login-title">EmailSortPro</h1>
+                        
+                        <p class="login-subtitle">
+                            Assistant IA pour vos emails : analysez et organisez automatiquement Outlook et Gmail
+                        </p>
+
+                        <button id="loginBtn" class="login-button microsoft">
+                            <i class="fab fa-microsoft"></i>
+                            Se connecter à Outlook
+                        </button>
+
+                        <button id="googleLoginBtn" class="login-button google">
+                            <i class="fab fa-google"></i>
+                            Se connecter à Gmail
+                        </button>
+
+                        <div class="login-security">
+                            <i class="fas fa-shield-alt"></i>
+                            Connexion sécurisée Microsoft & Google
+                        </div>
+                    </div>
+
+                    <div class="how-it-works">
+                        <h2 class="how-it-works-title">Comment ça marche</h2>
+                        
+                        <div class="steps-container">
+                            <div class="step">
+                                <div class="step-number">1</div>
+                                <div class="step-content">
+                                    <div class="step-icon">
+                                        <i class="fas fa-plug"></i>
+                                    </div>
+                                    <div class="step-title">Connexion</div>
+                                    <div class="step-description">Connectez-vous à Outlook ou Gmail</div>
+                                </div>
                             </div>
                             
-                            <button type="submit" class="login-button" id="emailLoginBtn" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);">
-                                <i class="fas fa-key"></i>
-                                Vérifier licence
-                            </button>
-                        </form>
-                    </div>
-
-                    <div class="login-security">
-                        <i class="fas fa-shield-alt"></i>
-                        Connexion sécurisée Microsoft & Google
-                    </div>
-                </div>
-
-                <div class="how-it-works">
-                    <h2 class="how-it-works-title">Comment ça marche</h2>
-                    
-                    <div class="steps-container">
-                        <div class="step">
-                            <div class="step-number">1</div>
-                            <div class="step-content">
-                                <div class="step-icon">
-                                    <i class="fas fa-plug"></i>
+                            <div class="step">
+                                <div class="step-number">2</div>
+                                <div class="step-content">
+                                    <div class="step-icon">
+                                        <i class="fas fa-brain"></i>
+                                    </div>
+                                    <div class="step-title">Analyse IA</div>
+                                    <div class="step-description">L'IA analyse vos emails</div>
                                 </div>
-                                <div class="step-title">Connexion</div>
-                                <div class="step-description">Connectez-vous à Outlook ou Gmail</div>
+                            </div>
+                            
+                            <div class="step">
+                                <div class="step-number">3</div>
+                                <div class="step-content">
+                                    <div class="step-icon">
+                                        <i class="fas fa-list"></i>
+                                    </div>
+                                    <div class="step-title">Organisation</div>
+                                    <div class="step-description">Création de tâches et tri</div>
+                                </div>
                             </div>
                         </div>
-                        
-                        <div class="step">
-                            <div class="step-number">2</div>
-                            <div class="step-content">
-                                <div class="step-icon">
-                                    <i class="fas fa-brain"></i>
-                                </div>
-                                <div class="step-title">Analyse IA</div>
-                                <div class="step-description">L'IA analyse vos emails</div>
+
+                        <div class="security-section">
+                            <div class="security-title">
+                                <i class="fas fa-shield-alt"></i>
+                                100% RGPD & Sécurisé
                             </div>
-                        </div>
-                        
-                        <div class="step">
-                            <div class="step-number">3</div>
-                            <div class="step-content">
-                                <div class="step-icon">
-                                    <i class="fas fa-list"></i>
-                                </div>
-                                <div class="step-title">Organisation</div>
-                                <div class="step-description">Création de tâches et tri</div>
+                            <div class="security-description">
+                                Vos emails ne sont jamais stockés. Traitement entièrement local.
                             </div>
                         </div>
                     </div>
 
-                    <div class="security-section">
-                        <div class="security-title">
-                            <i class="fas fa-shield-alt"></i>
-                            100% RGPD & Sécurisé
+                    <!-- FOOTER CONFORMITÉ GOOGLE -->
+                    <div class="google-compliance-footer">
+                        <p style="font-size: 0.875rem; color: #4b5563; margin-bottom: 8px;">
+                            EmailSortProAI respecte votre vie privée et se conforme aux politiques Google.
+                        </p>
+                        <div class="compliance-links">
+                            <a href="./privacy-policy.html" class="compliance-link">
+                                <i class="fas fa-shield-alt"></i>
+                                Politique de Confidentialité
+                            </a>
+                            <a href="./terms.html" class="compliance-link">
+                                <i class="fas fa-file-contract"></i>
+                                Conditions d'Utilisation
+                            </a>
+                            <a href="mailto:vianney.hastings@emailsortpro.fr" class="compliance-link">
+                                <i class="fas fa-envelope"></i>
+                                Support
+                            </a>
                         </div>
-                        <div class="security-description">
-                            Vos emails ne sont jamais stockés. Traitement entièrement local.
-                        </div>
+                        <p style="font-size: 0.75rem; color: #6b7280; margin-top: 8px;">
+                            Développé par Vianney Hastings • vianney.hastings@emailsortpro.fr
+                        </p>
                     </div>
                 </div>
+            </div>
 
-                <!-- FOOTER CONFORMITÉ GOOGLE -->
-                <div class="google-compliance-footer">
-                    <p style="font-size: 0.875rem; color: #4b5563; margin-bottom: 8px;">
-                        EmailSortProAI respecte votre vie privée et se conforme aux politiques Google.
-                    </p>
-                    <div class="compliance-links">
-                        <a href="./privacy-policy.html" class="compliance-link">
-                            <i class="fas fa-shield-alt"></i>
-                            Politique de Confidentialité
-                        </a>
-                        <a href="./terms.html" class="compliance-link">
-                            <i class="fas fa-file-contract"></i>
-                            Conditions d'Utilisation
-                        </a>
-                        <a href="mailto:vianney.hastings@emailsortpro.fr" class="compliance-link">
-                            <i class="fas fa-envelope"></i>
-                            Support
-                        </a>
-                    </div>
-                    <p style="font-size: 0.75rem; color: #6b7280; margin-top: 8px;">
-                        Développé par Vianney Hastings • vianney.hastings@emailsortpro.fr
-                    </p>
-                </div>
+            <!-- Contenu Dynamique des Pages -->
+            <div id="pageContent">
+                <!-- Le dashboard sera généré par dashboard.js -->
+            </div>
+        </main>
+
+        <!-- Overlay de Chargement sobre -->
+        <div id="loadingOverlay" class="login-loading-overlay">
+            <div class="login-spinner"></div>
+            <div class="login-loading-text">
+                <div>Connexion en cours...</div>
+                <div style="font-size: 14px; opacity: 0.8; margin-top: 8px;">Authentification en cours</div>
             </div>
         </div>
 
-        <!-- Contenu Dynamique des Pages -->
-        <div id="pageContent">
-            <!-- Le dashboard sera généré par dashboard.js -->
-        </div>
-    </main>
-
-    <!-- Overlay de Chargement sobre -->
-    <div id="loadingOverlay" class="login-loading-overlay">
-        <div class="login-spinner"></div>
-        <div class="login-loading-text">
-            <div>Connexion en cours...</div>
-            <div style="font-size: 14px; opacity: 0.8; margin-top: 8px;">Authentification en cours</div>
-        </div>
+        <!-- Notifications Toast -->
+        <div id="toastContainer" class="toast-container"></div>
     </div>
 
-    <!-- Notifications Toast -->
-    <div id="toastContainer" class="toast-container"></div>
-
-    <!-- Scripts - Ordre CORRECT et RESTAURÉ -->
+    <!-- Scripts - Ordre CORRECT ORIGINAL -->
     
     <script src="./UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
-    
+
     <!-- 2. Configuration Supabase (NE PAS COMMITER) -->
     <script src="./config-supabase.js" onerror="console.warn('config-supabase.js manquant - les licences ne fonctionneront pas')"></script>
-    
+
     <!-- 3. Service de gestion des licences -->
     <script src="./LicenseService.js" onerror="console.error('LicenseService.js manquant')"></script>
-    
+
     <!-- 4. Services Core -->
     <script src="./AuthService.js" onerror="console.error('AuthService.js manquant')"></script>
     <script src="./GoogleAuthService.js" onerror="console.error('GoogleAuthService.js manquant')"></script>
     <script src="./MailService.js" onerror="console.error('MailService.js manquant')"></script>
-    
+
     <!-- 5. CategoryManager -->
     <script src="./CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
-    
+
     <!-- 6. TaskManager AVANT PageManager -->
     <script src="./TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
-    
+
     <!-- 7. Autres Managers -->
     <script src="./EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
     <script src="./EmailDeduplicationManager.js" onerror="console.error('EmailDeduplicationManager.js manquant')"></script>
     <script src="./AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
-    
+
     <!-- 8. DASHBOARD MODULE -->
     <script src="./dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
-    
+
     <!-- 9. Page Manager APRÈS Dashboard et TaskManager -->
     <script src="./PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
-    
+
     <!-- 10. Modules de pages -->
     <script src="./startscan.js" onerror="console.error('startscan.js manquant - utilisation de StartScan.js à la place')"></script>
     <script src="./StartScan.js" onerror="console.error('StartScan.js manquant')"></script>
     <script src="./DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
     <script src="./CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
-    
+
     <!-- 11. Modules Optionnels -->
     <script src="./Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
-    
+
     <!-- 12. Analytics -->
     <script src="./analytics.js" onerror="console.error('analytics.js manquant')"></script>
+
+    <!-- 13. Application Principal EN DERNIER - VERSION COMPATIBLE -->
+    <script>
+        // app.js - Application EmailSortPro v8.0 SIMPLIFIÉ ET CORRIGÉ
+        // Version compatible qui ne casse rien
+
+        class EmailSortProApp {
+            constructor() {
+                this.state = {
+                    initialized: false,
+                    authenticated: false,
+                    user: null,
+                    currentPage: 'dashboard',
+                    error: null
+                };
+
+                console.log('[App] EmailSortPro v8.0 starting...');
+                this.initialize();
+            }
+
+            async initialize() {
+                try {
+                    console.log('[App] Initialisation...');
+                    
+                    // Vérifier si l'utilisateur est déjà authentifié
+                    const existingAuth = await this.checkExistingAuthentication();
+                    
+                    if (existingAuth) {
+                        console.log('[App] Utilisateur déjà authentifié');
+                        
+                        // VÉRIFICATION SIMPLE DE LICENCE
+                        if (this.isEmailAuthorized(existingAuth.email)) {
+                            console.log('[App] ✅ Email autorisé, démarrage app');
+                            this.state.authenticated = true;
+                            this.state.user = existingAuth;
+                            await this.startApplication();
+                        } else {
+                            console.log('[App] ❌ Email non autorisé');
+                            this.showLicenseError('Votre email n\'est pas autorisé à utiliser cette application.');
+                        }
+                    } else {
+                        console.log('[App] Pas d\'authentification existante');
+                        this.showLoginPage();
+                    }
+
+                    this.state.initialized = true;
+
+                } catch (error) {
+                    console.error('[App] Erreur initialisation:', error);
+                    this.showErrorPage('Erreur d\'initialisation: ' + error.message);
+                }
+            }
+
+            // LISTE SIMPLE D'EMAILS AUTORISÉS
+            isEmailAuthorized(email) {
+                const authorizedEmails = [
+                    'vianney.hastings@hotmail.fr',
+                    'vianneyhastings@outlook.fr',
+                    'vianney.hastings@outlook.fr',
+                    'admin@emailsortpro.fr',
+                    'test@test.com'
+                ];
+                
+                return authorizedEmails.includes(email.toLowerCase());
+            }
+
+            async checkExistingAuthentication() {
+                console.log('[App] Vérification authentification existante...');
+                
+                // Attendre que les services soient prêts
+                await this.waitForAuthServices();
+                
+                // Vérifier Microsoft
+                if (window.authService && window.authService.isAuthenticated()) {
+                    const account = window.authService.getAccount();
+                    if (account && account.username) {
+                        console.log('[App] Authentification Microsoft trouvée');
+                        return {
+                            provider: 'microsoft',
+                            email: account.username,
+                            name: account.name,
+                            account: account
+                        };
+                    }
+                }
+                
+                // Vérifier Google
+                if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+                    const account = window.googleAuthService.getAccount();
+                    if (account && account.email) {
+                        console.log('[App] Authentification Google trouvée');
+                        return {
+                            provider: 'google',
+                            email: account.email,
+                            name: account.name,
+                            account: account
+                        };
+                    }
+                }
+                
+                return null;
+            }
+
+            async waitForAuthServices() {
+                console.log('[App] Attente des services d\'auth...');
+                
+                let attempts = 0;
+                const maxAttempts = 50; // 5 secondes
+                
+                while (attempts < maxAttempts) {
+                    if ((window.authService || window.googleAuthService)) {
+                        console.log('[App] Services d\'auth disponibles');
+                        return;
+                    }
+                    await this.sleep(100);
+                    attempts++;
+                }
+                
+                console.warn('[App] Services d\'auth non disponibles après timeout');
+            }
+
+            async startApplication() {
+                console.log('[App] Démarrage de l\'application...');
+
+                try {
+                    // Configurer l'interface
+                    this.setupUI();
+
+                    // Afficher l'application
+                    this.showApplication();
+
+                    console.log('[App] ✅ Application démarrée avec succès');
+
+                } catch (error) {
+                    console.error('[App] Erreur de démarrage:', error);
+                    this.showErrorPage('Erreur de démarrage: ' + error.message);
+                }
+            }
+
+            setupUI() {
+                console.log('[App] Configuration de l\'interface...');
+
+                // Configurer la navigation
+                this.setupNavigation();
+
+                console.log('[App] ✅ Interface configurée');
+            }
+
+            setupNavigation() {
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        const page = e.currentTarget.dataset.page;
+                        if (page) {
+                            this.navigateToPage(page);
+                        }
+                    });
+                });
+            }
+
+            navigateToPage(pageName) {
+                console.log('[App] Navigation vers:', pageName);
+                
+                this.state.currentPage = pageName;
+                
+                // Mettre à jour la navigation active
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('active');
+                    if (item.dataset.page === pageName) {
+                        item.classList.add('active');
+                    }
+                });
+                
+                // Utiliser PageManager si disponible
+                if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
+                    window.pageManager.loadPage(pageName);
+                }
+            }
+
+            showLoginPage() {
+                console.log('[App] Affichage de la page de connexion...');
+                
+                const loginPage = document.getElementById('loginPage');
+                if (loginPage) {
+                    loginPage.style.display = 'flex';
+                }
+                
+                document.body.classList.add('login-mode');
+                document.body.classList.remove('app-active');
+            }
+
+            showApplication() {
+                console.log('[App] Affichage de l\'application...');
+
+                // Utiliser la fonction showApp de l'index si disponible
+                if (window.showApp) {
+                    window.showApp();
+                } else {
+                    // Sinon, faire l'affichage manuellement
+                    const loginPage = document.getElementById('loginPage');
+                    if (loginPage) {
+                        loginPage.style.display = 'none';
+                    }
+
+                    document.body.classList.remove('login-mode');
+                    document.body.classList.add('app-active');
+
+                    // Afficher les éléments de l'app
+                    const elements = ['.app-header', '.app-nav', '#pageContent'];
+                    elements.forEach(selector => {
+                        const el = document.querySelector(selector);
+                        if (el) {
+                            el.style.display = 'block';
+                            el.style.opacity = '1';
+                        }
+                    });
+
+                    this.loadDashboard();
+                }
+
+                // Mettre à jour l'affichage utilisateur
+                this.updateUserDisplay();
+            }
+
+            loadDashboard() {
+                this.state.currentPage = 'dashboard';
+                
+                // Essayer de charger le module dashboard
+                if (window.dashboardModule && typeof window.dashboardModule.render === 'function') {
+                    try {
+                        window.dashboardModule.render();
+                        console.log('[App] Dashboard chargé');
+                    } catch (error) {
+                        console.error('[App] Erreur dashboard:', error);
+                    }
+                }
+            }
+
+            updateUserDisplay() {
+                if (window.updateUserDisplay && this.state.user) {
+                    window.updateUserDisplay(this.state.user);
+                }
+            }
+
+            showLicenseError(message) {
+                console.error('[App] Erreur de licence:', message);
+                
+                // Créer l'overlay d'erreur
+                const overlay = document.createElement('div');
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 99999;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    backdrop-filter: blur(10px);
+                `;
+                
+                const errorBox = document.createElement('div');
+                errorBox.style.cssText = `
+                    background: white;
+                    padding: 2.5rem;
+                    border-radius: 16px;
+                    text-align: center;
+                    max-width: 550px;
+                    width: 90%;
+                    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+                `;
+                
+                errorBox.innerHTML = `
+                    <div style="color: #dc2626; font-size: 4rem; margin-bottom: 1.5rem;">🚫</div>
+                    <h2 style="color: #1f2937; margin-bottom: 1rem; font-size: 1.75rem;">Accès refusé</h2>
+                    <p style="color: #6b7280; margin-bottom: 1.5rem; line-height: 1.6;">${message}</p>
+                    
+                    <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 16px; margin: 16px 0;">
+                        <h4 style="margin: 0 0 8px 0; color: #0c4a6e; font-size: 14px;">📧 Support EmailSortPro</h4>
+                        <p style="margin: 0; color: #0369a1;">
+                            <a href="mailto:vianney.hastings@hotmail.fr" style="color: #0284c7; text-decoration: none;">
+                                vianney.hastings@hotmail.fr
+                            </a>
+                        </p>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px;">
+                        <button onclick="location.reload()" style="
+                            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                            color: white;
+                            border: none;
+                            padding: 12px 24px;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-size: 14px;
+                            font-weight: 600;
+                        ">
+                            Réessayer
+                        </button>
+                    </div>
+                `;
+                
+                overlay.appendChild(errorBox);
+                document.body.appendChild(overlay);
+                document.body.style.overflow = 'hidden';
+            }
+
+            showErrorPage(message) {
+                console.error('[App] Affichage page d\'erreur:', message);
+
+                const errorPage = document.createElement('div');
+                errorPage.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 99999;
+                    padding: 20px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                `;
+
+                errorPage.innerHTML = `
+                    <div style="background: white; border-radius: 16px; padding: 2rem; text-align: center; max-width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
+                        <div style="font-size: 4rem; margin-bottom: 1rem;">⚠️</div>
+                        <h1 style="font-size: 1.5rem; margin-bottom: 1rem; color: #1f2937;">Erreur Application</h1>
+                        <p style="color: #6b7280; margin-bottom: 2rem; line-height: 1.6;">${message}</p>
+                        <button onclick="location.reload()" style="
+                            background: #3b82f6; 
+                            color: white; 
+                            border: none; 
+                            padding: 0.75rem 1.5rem; 
+                            border-radius: 8px; 
+                            cursor: pointer;
+                            font-size: 1rem;
+                            transition: background 0.2s;
+                        ">
+                            <i class="fas fa-redo"></i> Recharger la page
+                        </button>
+                    </div>
+                `;
+
+                document.body.appendChild(errorPage);
+            }
+
+            async login(provider = 'microsoft') {
+                console.log('[App] Connexion demandée pour:', provider);
+                
+                try {
+                    let email = null;
+                    
+                    if (provider === 'microsoft' && window.authService) {
+                        await window.authService.login();
+                        const account = window.authService.getAccount();
+                        email = account?.username;
+                    } else if (provider === 'google' && window.googleAuthService) {
+                        await window.googleAuthService.login();
+                        // Google redirige, donc on ne récupère pas l'email ici
+                        return;
+                    } else {
+                        throw new Error(`Service d'authentification ${provider} non disponible`);
+                    }
+                    
+                    // Si on a un email, vérifier l'autorisation
+                    if (email) {
+                        if (this.isEmailAuthorized(email)) {
+                            console.log('[App] ✅ Email autorisé, démarrage app');
+                            this.state.authenticated = true;
+                            this.state.user = { email, provider };
+                            await this.startApplication();
+                        } else {
+                            console.log('[App] ❌ Email non autorisé');
+                            this.showLicenseError('Votre email n\'est pas autorisé à utiliser cette application.');
+                        }
+                    }
+                    
+                } catch (error) {
+                    console.error('[App] Erreur de connexion:', error);
+                    throw error;
+                }
+            }
+
+            async logout() {
+                console.log('[App] Déconnexion demandée...');
+
+                if (!confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+                    return;
+                }
+
+                try {
+                    // Déconnexion du service d'authentification
+                    const auth = await this.checkExistingAuthentication();
+                    if (auth) {
+                        if (auth.provider === 'microsoft' && window.authService) {
+                            await window.authService.logout();
+                        } else if (auth.provider === 'google' && window.googleAuthService) {
+                            await window.googleAuthService.logout();
+                        }
+                    }
+                } catch (error) {
+                    console.error('[App] Erreur déconnexion:', error);
+                }
+
+                // Recharger la page
+                window.location.reload();
+            }
+
+            sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+
+        // Créer l'application au chargement du DOM
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('[App] DOM chargé, création de l\'application...');
+            
+            try {
+                // Créer l'instance de l'application
+                window.app = new EmailSortProApp();
+                
+                // Exposer les méthodes globales
+                window.handleLogout = () => window.app.logout();
+                
+                console.log('[App] ✅ Application créée avec succès');
+                
+            } catch (error) {
+                console.error('[App] Erreur fatale:', error);
+                
+                // Affichage d'erreur critique
+                document.body.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #1f2937; font-family: system-ui;">
+                        <div style="background: white; padding: 2rem; border-radius: 12px; text-align: center; max-width: 500px;">
+                            <div style="font-size: 3rem; color: #ef4444; margin-bottom: 1rem;">❌</div>
+                            <h1 style="margin-bottom: 1rem; color: #1f2937;">Erreur Critique</h1>
+                            <p style="color: #6b7280; margin-bottom: 2rem;">${error.message}</p>
+                            <button onclick="location.reload()" style="background: #3b82f6; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer;">
+                                Recharger
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+
+        console.log('✅ EmailSortProApp v8.0 chargé - Version simplifiée et compatible');
+    </script>
     
-    <!-- 13. Application Principal EN DERNIER -->
-    <script src="./app.js" onerror="console.error('app.js manquant')"></script>
-    
-    <!-- Scripts de gestion des événements - STRUCTURE ORIGINALE RESTAURÉE -->
+    <!-- Scripts de gestion des événements - STRUCTURE ORIGINALE -->
     <script>
         // Variable pour éviter les vérifications multiples
         let authCheckInProgress = false;
         let appAlreadyShown = false;
 
-        // Vérification précoce IMMÉDIATE de l'authentification - AVEC LICENCE
+        // Vérification précoce IMMÉDIATE de l'authentification
         const earlyAuthCheck = () => {
             try {
-                // 1. Vérifier licence stockée d'abord
-                if (window.simpleLicenseChecker && window.simpleLicenseChecker.checkStoredLicense()) {
-                    console.log('[EARLY_AUTH] Licence valide trouvée, activation app mode');
-                    return true;
-                }
-
-                // 2. Ensuite vérifier auth classique
                 const msalAccount = localStorage.getItem('msal.account.keys');
                 const msalToken = localStorage.getItem('msal.token.keys');
                 const googleToken = localStorage.getItem('google_token_emailsortpro');
@@ -1571,102 +1767,66 @@
             }
         };
 
-        // Fonction pour gérer la déconnexion
-        window.handleLogout = async function() {
-            console.log('[LOGOUT] Starting logout process...');
-            
-            try {
-                // Déconnecter du service actuel
-                if (window.authService && window.authService.isAuthenticated()) {
-                    console.log('[LOGOUT] Logging out from Microsoft...');
-                    await window.authService.logout();
-                } else if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
-                    console.log('[LOGOUT] Logging out from Google...');
-                    await window.googleAuthService.logout();
-                }
+        // Intercepter la méthode loadPage du PageManager pour le dashboard
+        window.interceptDashboardLoad = function() {
+            if (window.pageManager && window.pageManager.loadPage) {
+                const originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
                 
-                // Reset tous les services
-                if (window.mailService) {
-                    window.mailService.reset();
-                }
-                
-                // Nettoyer la licence
-                if (window.simpleLicenseChecker) {
-                    window.simpleLicenseChecker.userEmail = null;
-                    window.simpleLicenseChecker.licenseValid = false;
-                }
-                
-                // Nettoyer l'état de l'app
-                document.body.classList.remove('app-active');
-                document.body.classList.add('login-mode');
-                
-                // Afficher la page de login
-                const loginPage = document.getElementById('loginPage');
-                if (loginPage) {
-                    loginPage.style.display = 'flex';
-                }
-                
-                // Masquer le header et la nav
-                const appHeader = document.querySelector('.app-header');
-                const appNav = document.querySelector('.app-nav');
-                if (appHeader) appHeader.style.display = 'none';
-                if (appNav) appNav.style.display = 'none';
-                
-                // Reset les variables d'état
-                appAlreadyShown = false;
-                authCheckInProgress = false;
-                
-                console.log('[LOGOUT] ✅ Logout complete');
-                
-            } catch (error) {
-                console.error('[LOGOUT] ❌ Error during logout:', error);
-                window.location.reload();
-            }
-        };
-
-        // NOUVEAU: Fonction pour la connexion avec licence
-        window.loginWithLicense = async function(email) {
-            if (!window.simpleLicenseChecker) {
-                throw new Error('License checker not available');
-            }
-
-            console.log('[LOGIN_LICENSE] Vérification licence pour:', email);
-            
-            try {
-                const result = await window.simpleLicenseChecker.checkLicense(email);
-                
-                if (result.valid) {
-                    console.log('[LOGIN_LICENSE] ✅ Licence valide, affichage app');
+                window.pageManager.loadPage = function(pageName, ...args) {
+                    // Appliquer le mode d'affichage approprié pour TOUTES les pages
+                    window.setPageMode(pageName);
                     
-                    // Émettre l'événement de succès
-                    window.dispatchEvent(new CustomEvent('userAuthenticated', {
-                        detail: {
-                            user: { 
-                                email: result.email, 
-                                name: result.email,
-                                license_status: result.status,
-                                provider: 'license'
-                            },
-                            status: result
+                    if (pageName === 'dashboard') {
+                        // Mettre à jour la navigation pour marquer dashboard comme actif
+                        const navItems = document.querySelectorAll('.nav-item');
+                        navItems.forEach(item => {
+                            item.classList.remove('active');
+                            if (item.dataset.page === 'dashboard') {
+                                item.classList.add('active');
+                            }
+                        });
+                        
+                        // UTILISER LE MODULE DASHBOARD
+                        if (window.dashboardModule) {
+                            const pageContent = document.getElementById('pageContent');
+                            if (pageContent) {
+                                pageContent.style.display = 'block';
+                                pageContent.style.opacity = '1';
+                            }
+                            
+                            // Render dashboard via module
+                            window.dashboardModule.render();
+                        } else {
+                            return originalLoadPage(pageName, ...args);
                         }
-                    }));
-                    
-                    return result;
-                } else {
-                    throw new Error(result.message || 'Licence invalide');
-                }
-                
-            } catch (error) {
-                console.error('[LOGIN_LICENSE] Erreur:', error);
-                
-                // Afficher l'erreur
-                if (window.simpleLicenseChecker) {
-                    window.simpleLicenseChecker.showLicenseError(error.message);
-                }
-                
-                throw error;
+                        
+                        // Vérifier le scroll après affichage du dashboard
+                        setTimeout(() => {
+                            if (window.app && window.app.checkScrollNeeded) {
+                                window.app.checkScrollNeeded();
+                            } else {
+                                window.checkScrollNeeded();
+                            }
+                        }, 300);
+                        
+                        return Promise.resolve();
+                    } else {
+                        // Pour toutes les autres pages, masquer le dashboard et utiliser la méthode originale
+                        const pageContent = document.getElementById('pageContent');
+                        if (pageContent && window.dashboardModule) {
+                            window.dashboardModule.hide();
+                        }
+                        
+                        return originalLoadPage(pageName, ...args);
+                    }
+                };
+            } else {
+                setTimeout(window.interceptDashboardLoad, 500);
             }
         };
+
+        // Lancer l'interception du dashboard
+        setTimeout(window.interceptDashboardLoad, 1000);
 
         // Gestion du formulaire de connexion
         document.addEventListener('DOMContentLoaded', function() {
@@ -1674,7 +1834,7 @@
                 return;
             }
             
-            // Fonction de vérification d'authentification sécurisée - AVEC LICENCE
+            // Fonction de vérification d'authentification sécurisée
             const safeAuthCheck = () => {
                 if (authCheckInProgress || appAlreadyShown) {
                     return false;
@@ -1686,42 +1846,42 @@
                 }
                 
                 try {
-                    // 1. Vérifier licence en premier
-                    if (window.simpleLicenseChecker && window.simpleLicenseChecker.checkStoredLicense()) {
-                        window.showApp();
-                        return true;
-                    }
-                    
-                    // 2. Vérifier Microsoft
+                    // Vérifier Microsoft
                     if (window.authService && typeof window.authService.isAuthenticated === 'function') {
                         if (window.authService.isAuthenticated()) {
                             const account = window.authService.getAccount();
                             if (account && account.username) {
-                                // Vérifier la licence pour cet utilisateur
-                                window.loginWithLicense(account.username).then(() => {
+                                // Vérifier si l'email est autorisé
+                                if (window.app && window.app.isEmailAuthorized && window.app.isEmailAuthorized(account.username)) {
                                     window.showApp();
-                                }).catch(() => {
-                                    // Licence invalide pour cet utilisateur Microsoft
-                                    console.warn('[AUTH] Utilisateur Microsoft sans licence valide');
-                                });
-                                return true;
+                                    return true;
+                                } else {
+                                    console.warn('[AUTH] Email Microsoft non autorisé:', account.username);
+                                    if (window.app && window.app.showLicenseError) {
+                                        window.app.showLicenseError('Votre email n\'est pas autorisé à utiliser cette application.');
+                                    }
+                                    return false;
+                                }
                             }
                         }
                     }
                     
-                    // 3. Vérifier Google
+                    // Vérifier Google
                     if (window.googleAuthService && typeof window.googleAuthService.isAuthenticated === 'function') {
                         if (window.googleAuthService.isAuthenticated()) {
                             const account = window.googleAuthService.getAccount();
                             if (account && account.email) {
-                                // Vérifier la licence pour cet utilisateur
-                                window.loginWithLicense(account.email).then(() => {
+                                // Vérifier si l'email est autorisé
+                                if (window.app && window.app.isEmailAuthorized && window.app.isEmailAuthorized(account.email)) {
                                     window.showApp();
-                                }).catch(() => {
-                                    // Licence invalide pour cet utilisateur Google
-                                    console.warn('[AUTH] Utilisateur Google sans licence valide');
-                                });
-                                return true;
+                                    return true;
+                                } else {
+                                    console.warn('[AUTH] Email Google non autorisé:', account.email);
+                                    if (window.app && window.app.showLicenseError) {
+                                        window.app.showLicenseError('Votre email n\'est pas autorisé à utiliser cette application.');
+                                    }
+                                    return false;
+                                }
                             }
                         }
                     }
@@ -1747,75 +1907,44 @@
                 }
             }, 200);
             
-            // Fonctions pour les alertes
-            function showAlert(message, type = 'error') {
-                const alertContainer = document.getElementById('alertContainer');
-                if (!alertContainer) return;
-                
-                const alertClass = type === 'error' ? 'error-message' : 'success-message';
-                alertContainer.innerHTML = `<div class="${alertClass}">${message}</div>`;
-                
-                setTimeout(() => {
-                    alertContainer.innerHTML = '';
-                }, 5000);
-            }
-
-            function setLoading(loading, buttonId = 'loginBtn') {
-                const loadingOverlay = document.getElementById('loadingOverlay');
-                
-                if (loading) {
-                    if (loadingOverlay) loadingOverlay.classList.add('active');
-                } else {
-                    if (loadingOverlay) loadingOverlay.classList.remove('active');
-                }
-                
-                // Gérer les boutons individuellement
-                const buttons = {
-                    'loginBtn': { 
-                        element: document.getElementById('loginBtn'),
-                        original: '<i class="fab fa-microsoft"></i> Se connecter à Outlook',
-                        loading: '<i class="fas fa-spinner fa-spin"></i> Connexion Outlook...'
-                    },
-                    'googleLoginBtn': { 
-                        element: document.getElementById('googleLoginBtn'),
-                        original: '<i class="fab fa-google"></i> Se connecter à Gmail',
-                        loading: '<i class="fas fa-spinner fa-spin"></i> Connexion Gmail...'
-                    },
-                    'emailLoginBtn': { 
-                        element: document.getElementById('emailLoginBtn'),
-                        original: '<i class="fas fa-key"></i> Vérifier licence',
-                        loading: '<i class="fas fa-spinner fa-spin"></i> Vérification...'
-                    }
-                };
-                
-                const btn = buttons[buttonId];
-                if (btn && btn.element) {
-                    btn.element.disabled = loading;
-                    btn.element.innerHTML = loading ? btn.loading : btn.original;
-                }
-            }
-            
             // Bouton Microsoft
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
                 loginBtn.addEventListener('click', function() {
-                    if (authCheckInProgress) return;
+                    if (authCheckInProgress) {
+                        return;
+                    }
                     
                     authCheckInProgress = true;
-                    setLoading(true, 'loginBtn');
+                    
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion Outlook...';
+                    this.disabled = true;
+                    
+                    const loadingOverlay = document.getElementById('loadingOverlay');
+                    if (loadingOverlay) {
+                        loadingOverlay.classList.add('active');
+                    }
                     
                     if (window.app && window.app.login) {
                         window.app.login().then(() => {
-                            // L'app va gérer la suite
+                            // La vérification de licence se fait automatiquement dans app.login()
                         }).catch((error) => {
                             authCheckInProgress = false;
-                            setLoading(false, 'loginBtn');
-                            showAlert('Erreur de connexion Microsoft: ' + error.message, 'error');
+                            this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
+                            this.disabled = false;
+                            if (loadingOverlay) {
+                                loadingOverlay.classList.remove('active');
+                            }
+                            console.error('[LOGIN] Erreur Microsoft:', error);
                         });
                     } else {
                         authCheckInProgress = false;
-                        setLoading(false, 'loginBtn');
-                        showAlert('Service Microsoft non disponible', 'error');
+                        this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
+                        this.disabled = false;
+                        if (loadingOverlay) {
+                            loadingOverlay.classList.remove('active');
+                        }
+                        console.error('[LOGIN] Service Microsoft non disponible');
                     }
                 });
             }
@@ -1824,61 +1953,58 @@
             const googleLoginBtn = document.getElementById('googleLoginBtn');
             if (googleLoginBtn) {
                 googleLoginBtn.addEventListener('click', async function() {
-                    if (authCheckInProgress) return;
-                    
-                    authCheckInProgress = true;
-                    setLoading(true, 'googleLoginBtn');
-                    
-                    try {
-                        if (window.googleAuthService) {
-                            await window.googleAuthService.initialize();
-                            await window.googleAuthService.login();
-                            // La redirection va se produire, pas besoin de gérer la suite ici
-                        } else {
-                            throw new Error('GoogleAuthService not available');
-                        }
-                    } catch (error) {
-                        console.error('[GOOGLE_LOGIN] Error:', error);
-                        authCheckInProgress = false;
-                        setLoading(false, 'googleLoginBtn');
-                        showAlert('Erreur de connexion Gmail: ' + error.message, 'error');
-                    }
-                });
-            }
-
-            // Formulaire de licence directe
-            const emailForm = document.getElementById('emailLoginForm');
-            if (emailForm) {
-                emailForm.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    
-                    const email = document.getElementById('userEmail').value.trim();
-                    if (!email) {
-                        showAlert('Veuillez saisir votre email', 'error');
+                    if (authCheckInProgress) {
                         return;
                     }
                     
-                    if (authCheckInProgress) return;
-                    
                     authCheckInProgress = true;
-                    setLoading(true, 'emailLoginBtn');
+                    
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion Gmail...';
+                    this.disabled = true;
+                    
+                    const loadingOverlay = document.getElementById('loadingOverlay');
+                    if (loadingOverlay) {
+                        loadingOverlay.classList.add('active');
+                    }
                     
                     try {
-                        const result = await window.loginWithLicense(email);
+                        if (window.app && window.app.login) {
+                            await window.app.login('google');
+                        } else {
+                            throw new Error('Service Google non disponible');
+                        }
+                    } catch (error) {
+                        console.error('[LOGIN] Erreur Google:', error);
+                        authCheckInProgress = false;
+                        this.innerHTML = '<i class="fab fa-google"></i> Se connecter à Gmail';
+                        this.disabled = false;
+                        if (loadingOverlay) {
+                            loadingOverlay.classList.remove('active');
+                        }
+                    }
+                });
+            }
+            
+            // Ajouter un gestionnaire d'événements direct pour le bouton Dashboard
+            const dashboardBtn = document.querySelector('.nav-item[data-page="dashboard"]');
+            if (dashboardBtn) {
+                dashboardBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Forcer le retour au dashboard
+                    if (window.pageManager && window.pageManager.loadPage) {
+                        window.pageManager.loadPage('dashboard');
+                    } else {
+                        // Fallback: utiliser le module dashboard directement
+                        const navItems = document.querySelectorAll('.nav-item');
+                        navItems.forEach(item => item.classList.remove('active'));
+                        this.classList.add('active');
                         
-                        if (result && result.valid) {
-                            showAlert('Licence valide ! Connexion...', 'success');
-                            setTimeout(() => {
-                                window.showApp();
-                            }, 1000);
+                        if (window.dashboardModule) {
+                            window.dashboardModule.render();
                         }
                         
-                    } catch (error) {
-                        console.error('[EMAIL_LOGIN] Error:', error);
-                        showAlert(error.message || 'Erreur de vérification de licence', 'error');
-                    } finally {
-                        authCheckInProgress = false;
-                        setLoading(false, 'emailLoginBtn');
+                        window.setPageMode('dashboard');
                     }
                 });
             }
@@ -1896,16 +2022,14 @@
             const authStatus = document.getElementById('authStatus');
             if (authStatus && user) {
                 // Utiliser le nom et email spécifiés ou ceux du profil
-                const userName = user.displayName || user.name || 'Utilisateur';
+                const userName = user.displayName || user.name || user.email || 'Utilisateur';
                 const userEmail = user.mail || user.userPrincipalName || user.email || 'Non spécifié';
                 const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
                 
                 // Détecter le provider
                 const provider = user.provider || 'unknown';
-                const providerIcon = provider === 'google' ? 'fab fa-google' : 
-                                   provider === 'license' ? 'fas fa-key' : 'fab fa-microsoft';
-                const providerText = provider === 'google' ? 'Gmail' : 
-                                   provider === 'license' ? 'Licence' : 'Outlook';
+                const providerIcon = provider === 'google' ? 'fab fa-google' : 'fab fa-microsoft';
+                const providerText = provider === 'google' ? 'Gmail' : 'Outlook';
                 
                 authStatus.innerHTML = `
                     <div class="user-info">
@@ -1922,17 +2046,6 @@
             }
         };
 
-        // Écouter les événements d'authentification
-        window.addEventListener('userAuthenticated', function(event) {
-            console.log('[APP] Utilisateur authentifié:', event.detail);
-            if (event.detail.user) {
-                window.updateUserDisplay(event.detail.user);
-            }
-            if (!appAlreadyShown) {
-                setTimeout(() => window.showApp(), 500);
-            }
-        });
-        
         // Fonction de diagnostic accessible globalement (silencieuse par défaut)
         window.checkServices = function() {
             return {
@@ -1946,13 +2059,12 @@
                 pageManager: window.pageManager ? 'OK' : 'MANQUANT',
                 categoryManager: window.categoryManager ? 'OK' : 'MANQUANT',
                 dashboardModule: window.dashboardModule ? 'OK' : 'MANQUANT',
-                simpleLicenseChecker: window.simpleLicenseChecker ? 'OK' : 'MANQUANT',
+                app: window.app ? 'OK' : 'MANQUANT',
                 hostname: window.location.hostname,
                 currentDomain: window.location.hostname,
                 authenticationStatus: {
                     microsoft: window.authService ? window.authService.isAuthenticated() : false,
-                    google: window.googleAuthService ? window.googleAuthService.isAuthenticated() : false,
-                    license: window.simpleLicenseChecker ? window.simpleLicenseChecker.licenseValid : false
+                    google: window.googleAuthService ? window.googleAuthService.isAuthenticated() : false
                 }
             };
         };
