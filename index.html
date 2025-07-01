@@ -215,7 +215,7 @@
             console.log('[INDEX] ⚠️ Supabase non configuré - système de licence désactivé');
         }
 
-        // Service de licence complet intégré pour corriger les erreurs de chargement
+        // Service de licence complet avec VÉRIFICATION STRICTE DE LA DATE D'EXPIRATION
         window.LicenseService = {
             initialized: false,
             hasValidLicense: false,
@@ -226,10 +226,9 @@
             connectionAttempts: 0,
             
             async initialize() {
-                console.log('[LicenseService] Initialisation intégrée v3.3...');
+                console.log('[LicenseService] Initialisation avec vérification stricte v4.0...');
                 this.initialized = true;
                 this.isFallback = true;
-                this.hasValidLicense = true; // Mode dégradé par défaut
                 
                 // Émettre l'événement de disponibilité
                 setTimeout(() => {
@@ -250,115 +249,332 @@
             async authenticateWithEmail(email) {
                 if (this.autoAuthInProgress) {
                     console.log('[LicenseService] Auto-auth already in progress, skipping');
-                    return;
+                    return this.getCurrentLicenseStatus();
                 }
                 
                 this.autoAuthInProgress = true;
                 
                 try {
-                    console.log('[LicenseService] Authenticating user:', email);
+                    console.log('[LicenseService] Authenticating user with STRICT date verification:', email);
                     
                     const cleanEmail = email.toLowerCase().trim();
                     const domain = cleanEmail.split('@')[1];
                     const name = cleanEmail.split('@')[0];
                     
-                    // Créer un utilisateur simulé mais réaliste
-                    const user = {
-                        id: Date.now(),
-                        email: cleanEmail,
-                        name: name,
-                        role: 'user',
-                        license_status: 'trial',
-                        license_expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-                        company: {
-                            id: Date.now() + 1,
-                            name: this.isPersonalEmailDomain(domain) ? `Personnel - ${cleanEmail}` : domain,
-                            domain: domain
-                        },
-                        company_id: Date.now() + 1,
-                        created_at: new Date().toISOString(),
-                        first_login_at: new Date().toISOString(),
-                        last_login_at: new Date().toISOString()
-                    };
+                    // Récupérer ou créer l'utilisateur avec date d'expiration
+                    let user = this.getUserFromStorage(cleanEmail);
+                    
+                    if (!user) {
+                        // Nouvel utilisateur - créer avec 15 jours gratuits
+                        const now = new Date();
+                        const expirationDate = new Date(now.getTime() + (15 * 24 * 60 * 60 * 1000)); // 15 jours
+                        
+                        user = {
+                            id: Date.now(),
+                            email: cleanEmail,
+                            name: name,
+                            role: 'user',
+                            license_status: 'trial',
+                            license_expires_at: expirationDate.toISOString(),
+                            company: {
+                                id: Date.now() + 1,
+                                name: this.isPersonalEmailDomain(domain) ? `Personnel - ${cleanEmail}` : domain,
+                                domain: domain
+                            },
+                            company_id: Date.now() + 1,
+                            created_at: now.toISOString(),
+                            first_login_at: now.toISOString(),
+                            last_login_at: now.toISOString(),
+                            payment_status: 'trial',
+                            super_admin_override: false
+                        };
+                        
+                        this.saveUserToStorage(user);
+                        console.log('[LicenseService] 🆕 Nouvel utilisateur créé avec 15 jours gratuits');
+                    } else {
+                        // Utilisateur existant - mettre à jour last_login
+                        user.last_login_at = new Date().toISOString();
+                        this.saveUserToStorage(user);
+                        console.log('[LicenseService] 👤 Utilisateur existant reconnecté');
+                    }
                     
                     this.currentUser = user;
-                    const daysRemaining = 15;
                     
+                    // VÉRIFICATION STRICTE DE LA LICENCE
+                    const licenseStatus = this.evaluateLicenseStatus(user);
+                    
+                    // Si la licence est expirée et pas de super admin override, BLOQUER
+                    if (!licenseStatus.valid && !user.super_admin_override) {
+                        console.error('[LicenseService] ❌ LICENCE EXPIRÉE - ACCÈS BLOQUÉ');
+                        
+                        const expiredResult = {
+                            valid: false,
+                            status: 'expired',
+                            user: user,
+                            message: licenseStatus.message,
+                            daysRemaining: licenseStatus.daysRemaining,
+                            blocked: true,
+                            adminContact: this.getAdminContact(user)
+                        };
+                        
+                        window.currentUser = user;
+                        window.licenseStatus = expiredResult;
+                        
+                        // Émettre l'événement d'échec
+                        setTimeout(() => {
+                            try {
+                                window.dispatchEvent(new CustomEvent('licenseCheckFailed', {
+                                    detail: expiredResult
+                                }));
+                                console.log('[LicenseService] ❌ licenseCheckFailed event emitted');
+                            } catch (eventError) {
+                                console.error('[LicenseService] Error emitting failed event:', eventError);
+                            }
+                        }, 100);
+                        
+                        return expiredResult;
+                    }
+                    
+                    // Licence valide
                     const result = {
                         valid: true,
-                        status: 'trial',
+                        status: licenseStatus.status,
                         user: user,
-                        message: `Période d'essai - ${daysRemaining} jours restants (Mode intégré)`,
-                        daysRemaining: daysRemaining,
-                        fallback: this.isFallback
+                        message: licenseStatus.message,
+                        daysRemaining: licenseStatus.daysRemaining,
+                        fallback: this.isFallback,
+                        superAdminOverride: user.super_admin_override || false
                     };
                     
                     // Marquer les variables globales
                     window.currentUser = user;
-                    window.licenseStatus = {
-                        status: result.status,
-                        daysRemaining: result.daysRemaining,
-                        valid: result.valid,
-                        message: result.message
-                    };
+                    window.licenseStatus = result;
                     
-                    console.log('[LicenseService] ✅ User authenticated and globals set:', {
+                    console.log('[LicenseService] ✅ User authenticated and license verified:', {
                         email: user.email,
                         status: result.status,
-                        daysRemaining: result.daysRemaining
+                        daysRemaining: result.daysRemaining,
+                        expiresAt: user.license_expires_at,
+                        superAdminOverride: user.super_admin_override
                     });
                     
-                    // Émettre l'événement pour notifier l'app
-                    try {
-                        window.dispatchEvent(new CustomEvent('userAuthenticated', {
-                            detail: { user: user, status: result }
-                        }));
-                        console.log('[LicenseService] ✅ userAuthenticated event emitted');
-                    } catch (eventError) {
-                        console.error('[LicenseService] Error emitting userAuthenticated event:', eventError);
-                    }
+                    // Émettre l'événement de succès
+                    setTimeout(() => {
+                        try {
+                            window.dispatchEvent(new CustomEvent('userAuthenticated', {
+                                detail: { user: user, status: result }
+                            }));
+                            console.log('[LicenseService] ✅ userAuthenticated event emitted');
+                        } catch (eventError) {
+                            console.error('[LicenseService] Error emitting userAuthenticated event:', eventError);
+                        }
+                    }, 100);
                     
                     return result;
                     
                 } catch (error) {
                     console.error('[LicenseService] Authentication error:', error);
-                    return this.createFallbackResult(email);
+                    return this.createErrorResult(email, error);
                 } finally {
                     this.autoAuthInProgress = false;
                 }
             },
             
-            createFallbackResult(email) {
-                const user = {
-                    email: email,
-                    name: email.split('@')[0],
-                    role: 'user',
-                    license_status: 'trial',
-                    company: { name: 'Demo Company' }
-                };
+            evaluateLicenseStatus(user) {
+                const now = new Date();
+                const expiresAt = new Date(user.license_expires_at);
+                const daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
                 
-                const result = {
-                    valid: true,
-                    status: 'trial',
-                    user: user,
-                    daysRemaining: 15,
-                    message: 'Mode démonstration - 15 jours'
-                };
+                console.log('[LicenseService] 📅 Vérification licence:', {
+                    email: user.email,
+                    expiresAt: expiresAt.toISOString(),
+                    now: now.toISOString(),
+                    daysRemaining: daysRemaining,
+                    paymentStatus: user.payment_status,
+                    superAdminOverride: user.super_admin_override
+                });
                 
-                window.currentUser = user;
-                window.licenseStatus = result;
+                // Vérifier si super admin override est actif
+                if (user.super_admin_override) {
+                    return {
+                        valid: true,
+                        status: 'admin_override',
+                        message: 'Accès autorisé par super admin',
+                        daysRemaining: 999,
+                        adminOverride: true
+                    };
+                }
                 
-                setTimeout(() => {
-                    try {
-                        window.dispatchEvent(new CustomEvent('userAuthenticated', {
-                            detail: { user: user, status: result }
-                        }));
-                    } catch (e) {
-                        console.error('[LicenseService] Error emitting fallback event:', e);
+                // Vérifier si la licence est expirée
+                if (expiresAt < now) {
+                    return {
+                        valid: false,
+                        status: 'expired',
+                        message: `Votre période d'essai de 15 jours a expiré le ${expiresAt.toLocaleDateString('fr-FR')}`,
+                        daysRemaining: 0,
+                        expiredSince: Math.ceil((now - expiresAt) / (1000 * 60 * 60 * 24))
+                    };
+                }
+                
+                // Licence active
+                if (user.payment_status === 'paid') {
+                    return {
+                        valid: true,
+                        status: 'active',
+                        message: 'Licence payée active',
+                        daysRemaining: daysRemaining
+                    };
+                }
+                
+                // Période d'essai
+                if (user.license_status === 'trial') {
+                    let message = `Période d'essai gratuite - ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''} restant${daysRemaining > 1 ? 's' : ''}`;
+                    
+                    if (daysRemaining <= 3) {
+                        message += ` ⚠️ Votre essai expire bientôt! Contactez support@emailsortpro.com`;
                     }
-                }, 100);
+                    
+                    return {
+                        valid: true,
+                        status: 'trial',
+                        message: message,
+                        daysRemaining: daysRemaining,
+                        warningLevel: daysRemaining <= 3 ? 'high' : daysRemaining <= 7 ? 'medium' : 'low'
+                    };
+                }
                 
-                return result;
+                return {
+                    valid: false,
+                    status: 'invalid',
+                    message: 'Statut de licence invalide.',
+                    daysRemaining: 0
+                };
+            },
+            
+            // Stockage local des utilisateurs (simulation base de données)
+            getUserFromStorage(email) {
+                try {
+                    const usersData = localStorage.getItem('emailsortpro_users') || '{}';
+                    const users = JSON.parse(usersData);
+                    return users[email] || null;
+                } catch (error) {
+                    console.warn('[LicenseService] Error reading users from storage:', error);
+                    return null;
+                }
+            },
+            
+            saveUserToStorage(user) {
+                try {
+                    const usersData = localStorage.getItem('emailsortpro_users') || '{}';
+                    const users = JSON.parse(usersData);
+                    users[user.email] = user;
+                    localStorage.setItem('emailsortpro_users', JSON.stringify(users));
+                    console.log('[LicenseService] 💾 Utilisateur sauvegardé:', user.email);
+                } catch (error) {
+                    console.warn('[LicenseService] Error saving user to storage:', error);
+                }
+            },
+            
+            // MÉTHODES SUPER ADMIN
+            enableSuperAdminOverride(email, adminEmail) {
+                if (!this.isSuperAdmin(adminEmail)) {
+                    throw new Error('Seuls les super admins peuvent activer l\'override');
+                }
+                
+                const user = this.getUserFromStorage(email);
+                if (!user) {
+                    throw new Error('Utilisateur non trouvé');
+                }
+                
+                user.super_admin_override = true;
+                user.admin_override_by = adminEmail;
+                user.admin_override_at = new Date().toISOString();
+                
+                this.saveUserToStorage(user);
+                
+                console.log('[LicenseService] ✅ Super admin override activé pour:', email, 'par:', adminEmail);
+                return true;
+            },
+            
+            disableSuperAdminOverride(email, adminEmail) {
+                if (!this.isSuperAdmin(adminEmail)) {
+                    throw new Error('Seuls les super admins peuvent désactiver l\'override');
+                }
+                
+                const user = this.getUserFromStorage(email);
+                if (!user) {
+                    throw new Error('Utilisateur non trouvé');
+                }
+                
+                user.super_admin_override = false;
+                user.admin_override_disabled_by = adminEmail;
+                user.admin_override_disabled_at = new Date().toISOString();
+                
+                this.saveUserToStorage(user);
+                
+                console.log('[LicenseService] ❌ Super admin override désactivé pour:', email, 'par:', adminEmail);
+                return true;
+            },
+            
+            isSuperAdmin(email) {
+                const superAdmins = [
+                    'vianney.hastings@hotmail.fr',
+                    'admin@emailsortpro.com',
+                    'vianneyhastings@emailsortpro.fr'
+                ];
+                return superAdmins.includes(email?.toLowerCase());
+            },
+            
+            markAsPaid(email, adminEmail) {
+                if (!this.isSuperAdmin(adminEmail)) {
+                    throw new Error('Seuls les super admins peuvent marquer comme payé');
+                }
+                
+                const user = this.getUserFromStorage(email);
+                if (!user) {
+                    throw new Error('Utilisateur non trouvé');
+                }
+                
+                // Étendre la licence de 1 an
+                const now = new Date();
+                const newExpiration = new Date(now.getTime() + (365 * 24 * 60 * 60 * 1000));
+                
+                user.payment_status = 'paid';
+                user.license_status = 'active';
+                user.license_expires_at = newExpiration.toISOString();
+                user.payment_confirmed_by = adminEmail;
+                user.payment_confirmed_at = new Date().toISOString();
+                
+                this.saveUserToStorage(user);
+                
+                console.log('[LicenseService] 💳 Licence payée activée pour:', email, 'jusqu\'au:', newExpiration.toLocaleDateString());
+                return true;
+            },
+            
+            createErrorResult(email, error) {
+                return {
+                    valid: false,
+                    status: 'error',
+                    message: `Erreur d'authentification: ${error.message}`,
+                    daysRemaining: 0,
+                    error: true
+                };
+            },
+            
+            getAdminContact(user) {
+                return {
+                    email: 'support@emailsortpro.com',
+                    name: 'Support EmailSortPro',
+                    phone: '+33 1 23 45 67 89'
+                };
+            },
+            
+            getCurrentLicenseStatus() {
+                if (!this.currentUser) {
+                    return { valid: false, status: 'no_user', message: 'Aucun utilisateur authentifié' };
+                }
+                
+                return this.evaluateLicenseStatus(this.currentUser);
             },
             
             checkLicense(email) {
@@ -366,10 +582,23 @@
                     this.initialize();
                 }
                 
+                if (this.currentUser) {
+                    const status = this.evaluateLicenseStatus(this.currentUser);
+                    return {
+                        valid: status.valid,
+                        limits: { 
+                            maxEmails: status.valid ? 10000 : 0, 
+                            maxScans: status.valid ? 100 : 0, 
+                            premium: status.valid 
+                        },
+                        message: status.message
+                    };
+                }
+                
                 return {
-                    valid: this.hasValidLicense,
-                    limits: { maxEmails: 1000, maxScans: 10, premium: false },
-                    message: this.hasValidLicense ? 'Licence valide (mode intégré)' : 'Licence requise'
+                    valid: false,
+                    limits: { maxEmails: 0, maxScans: 0, premium: false },
+                    message: 'Aucun utilisateur authentifié'
                 };
             },
             
@@ -378,7 +607,7 @@
             },
             
             isAdmin() {
-                return true; // Mode permissif en mode intégré
+                return this.currentUser?.super_admin_override || this.isSuperAdmin(this.currentUser?.email);
             },
             
             async logout() {
@@ -389,17 +618,27 @@
             },
             
             async trackAnalyticsEvent(eventType, eventData) {
-                console.log('[LicenseService] Analytics event (simulated):', eventType, eventData);
+                console.log('[LicenseService] Analytics event:', eventType, eventData);
             },
             
             async debug() {
+                const user = this.currentUser;
+                const status = user ? this.evaluateLicenseStatus(user) : null;
+                
                 return {
                     initialized: this.initialized,
                     fallbackMode: this.isFallback,
                     isEmergency: this.isEmergency,
                     hasSupabase: false,
-                    currentUser: this.currentUser,
-                    message: 'Service intégré activé - Mode démonstration fonctionnel'
+                    currentUser: user ? {
+                        email: user.email,
+                        license_status: user.license_status,
+                        payment_status: user.payment_status,
+                        expires_at: user.license_expires_at,
+                        super_admin_override: user.super_admin_override
+                    } : null,
+                    licenseStatus: status,
+                    message: 'Service avec vérification stricte des dates - v4.0'
                 };
             },
             
@@ -417,11 +656,12 @@
             },
             
             canScanEmails(count) {
-                return count <= 1000; // Limite généreuse en mode intégré
+                const status = this.getCurrentLicenseStatus();
+                return status.valid && count <= 10000;
             },
             
             incrementUsage(action, count = 1) {
-                console.log(`[LicenseService] Usage: ${action} +${count}`);
+                console.log(`[LicenseService] Usage tracked: ${action} +${count}`);
             }
         };
 
@@ -508,9 +748,12 @@
             }
         };
         
-        // Diagnostic complet pour vérifier l'état du système
+        // Diagnostic complet pour vérifier l'état du système avec gestion des licences
         window.debugLicenseIntegration = function() {
-            console.group('[DEBUG] 🔍 License Integration Status');
+            console.group('[DEBUG] 🔍 License Integration Status v4.0 - STRICT DATE VERIFICATION');
+            
+            const user = window.licenseService?.currentUser || window.currentUser;
+            const licenseStatus = window.licenseStatus;
             
             const status = {
                 licenseService: {
@@ -526,6 +769,22 @@
                     licenseValid: window.licenseStatus?.valid || false,
                     licenseServiceReady: window.licenseServiceReady || false
                 },
+                userDetails: user ? {
+                    email: user.email,
+                    license_status: user.license_status,
+                    license_expires_at: user.license_expires_at,
+                    payment_status: user.payment_status,
+                    super_admin_override: user.super_admin_override,
+                    daysRemaining: licenseStatus?.daysRemaining || 0,
+                    isExpired: licenseStatus ? !licenseStatus.valid : 'unknown'
+                } : null,
+                dateVerification: user ? {
+                    currentDate: new Date().toISOString(),
+                    expirationDate: user.license_expires_at,
+                    isExpired: user.license_expires_at ? new Date(user.license_expires_at) < new Date() : 'unknown',
+                    daysRemaining: user.license_expires_at ? 
+                        Math.ceil((new Date(user.license_expires_at) - new Date()) / (1000 * 60 * 60 * 24)) : 0
+                } : null,
                 functions: {
                     checkUserLicense: typeof window.checkUserLicense === 'function',
                     LicenseService: typeof window.LicenseService === 'object',
@@ -534,6 +793,13 @@
                 compatibility: {
                     bothReferences: window.LicenseService === window.licenseService,
                     appCanAccess: !!(window.licenseService && window.licenseService.initialized)
+                },
+                superAdminFunctions: {
+                    enableOverride: typeof window.licenseService?.enableSuperAdminOverride === 'function',
+                    disableOverride: typeof window.licenseService?.disableSuperAdminOverride === 'function',
+                    markAsPaid: typeof window.licenseService?.markAsPaid === 'function',
+                    isSuperAdmin: window.licenseService?.isSuperAdmin ? 
+                        window.licenseService.isSuperAdmin(user?.email) : false
                 }
             };
             
@@ -545,20 +811,83 @@
                 console.log('❌ License service initialization issue');
             }
             
-            if (status.compatibility.bothReferences) {
-                console.log('✅ License service references are compatible');
+            if (status.dateVerification?.isExpired) {
+                console.log('🚨 LICENSE EXPIRED:', {
+                    expired: status.dateVerification.isExpired,
+                    daysOverdue: Math.abs(status.dateVerification.daysRemaining),
+                    canOverride: status.superAdminFunctions.isSuperAdmin,
+                    hasOverride: status.userDetails?.super_admin_override
+                });
+            } else if (status.dateVerification?.daysRemaining <= 3) {
+                console.log('⚠️ LICENSE EXPIRING SOON:', {
+                    daysRemaining: status.dateVerification.daysRemaining,
+                    urgentAction: 'Contact support@emailsortpro.com'
+                });
             } else {
-                console.log('❌ License service reference mismatch');
+                console.log('✅ License is valid');
             }
             
             if (status.globalVariables.currentUser !== 'None') {
                 console.log('✅ User is authenticated');
+                
+                if (status.superAdminFunctions.isSuperAdmin) {
+                    console.log('👑 SUPER ADMIN DETECTED - Available commands:');
+                    console.log('  - window.licenseService.enableSuperAdminOverride(email, adminEmail)');
+                    console.log('  - window.licenseService.disableSuperAdminOverride(email, adminEmail)');
+                    console.log('  - window.licenseService.markAsPaid(email, adminEmail)');
+                }
             } else {
                 console.log('⚠️ No authenticated user found');
             }
             
             console.groupEnd();
             return status;
+        };
+        
+        // FONCTIONS SUPER ADMIN EXPOSÉES GLOBALEMENT
+        window.enableSuperAdminOverride = function(userEmail, adminEmail) {
+            if (!adminEmail) {
+                adminEmail = window.currentUser?.email;
+            }
+            
+            if (!adminEmail) {
+                throw new Error('Email admin requis');
+            }
+            
+            return window.licenseService.enableSuperAdminOverride(userEmail, adminEmail);
+        };
+        
+        window.markUserAsPaid = function(userEmail, adminEmail) {
+            if (!adminEmail) {
+                adminEmail = window.currentUser?.email;
+            }
+            
+            if (!adminEmail) {
+                throw new Error('Email admin requis');
+            }
+            
+            return window.licenseService.markAsPaid(userEmail, adminEmail);
+        };
+        
+        window.getAllUsers = function() {
+            try {
+                const usersData = localStorage.getItem('emailsortpro_users') || '{}';
+                const users = JSON.parse(usersData);
+                
+                return Object.values(users).map(user => ({
+                    email: user.email,
+                    name: user.name,
+                    license_status: user.license_status,
+                    payment_status: user.payment_status,
+                    license_expires_at: user.license_expires_at,
+                    super_admin_override: user.super_admin_override,
+                    daysRemaining: Math.ceil((new Date(user.license_expires_at) - new Date()) / (1000 * 60 * 60 * 24)),
+                    isExpired: new Date(user.license_expires_at) < new Date()
+                }));
+            } catch (error) {
+                console.error('Error getting users:', error);
+                return [];
+            }
         };
     </script>
 
@@ -2250,7 +2579,7 @@
                             // Démarrer la vérification de licence avec un délai minimal
             setTimeout(async () => {
                 try {
-                    console.log('[INDEX] Starting license verification...');
+                    console.log('[INDEX] Starting STRICT license verification...');
                     
                     // S'assurer que le service est initialisé
                     if (!window.licenseService.initialized) {
@@ -2260,38 +2589,86 @@
                     const licenseOk = await window.checkUserLicense();
                     
                     if (!licenseOk) {
-                        console.error('[INDEX] License verification failed');
-                        // L'événement licenseCheckFailed a déjà été émis
+                        console.error('[INDEX] ❌ STRICT License verification FAILED - APP BLOCKED');
+                        // L'événement licenseCheckFailed a déjà été émis avec les détails de blocage
+                        return;
                     } else {
-                        console.log('[INDEX] ✅ License verification successful');
+                        console.log('[INDEX] ✅ License verification successful - Access granted');
                     }
                 } catch (error) {
-                    console.error('[INDEX] License check error:', error);
+                    console.error('[INDEX] License check critical error:', error);
                     
-                    // Créer un service d'urgence et authentifier automatiquement
-                    console.log('[INDEX] Creating emergency authentication...');
+                    // En cas d'erreur critique, créer un utilisateur de test MAIS avec vérification de date
+                    console.log('[INDEX] Creating emergency test user with date verification...');
                     
                     // S'assurer que le service est initialisé même en cas d'erreur
                     if (!window.licenseService.initialized) {
                         window.licenseService.initialized = true;
                     }
                     
+                    // Créer un utilisateur de test avec date d'expiration réelle (par exemple 3 jours pour les tests)
+                    const testExpirationDate = new Date();
+                    testExpirationDate.setDate(testExpirationDate.getDate() + 3); // 3 jours pour test
+                    
                     const emergencyUser = {
                         email: 'vianney.hastings@hotmail.fr',
-                        name: 'Utilisateur de démonstration',
+                        name: 'Utilisateur de test',
                         role: 'user',
                         license_status: 'trial',
-                        company: { name: 'Mode démonstration' }
+                        license_expires_at: testExpirationDate.toISOString(),
+                        payment_status: 'trial',
+                        super_admin_override: false, // Pas d'override par défaut
+                        company: { name: 'Mode test avec expiration' }
                     };
                     
-                    // Mettre à jour le service avec l'utilisateur d'urgence
+                    // Sauvegarder dans le stockage local
+                    try {
+                        const usersData = localStorage.getItem('emailsortpro_users') || '{}';
+                        const users = JSON.parse(usersData);
+                        users[emergencyUser.email] = emergencyUser;
+                        localStorage.setItem('emailsortpro_users', JSON.stringify(users));
+                    } catch (storageError) {
+                        console.warn('[INDEX] Cannot save emergency user:', storageError);
+                    }
+                    
+                    // Vérifier immédiatement la validité de la licence
+                    const licenseStatus = window.licenseService.evaluateLicenseStatus(emergencyUser);
+                    
+                    if (!licenseStatus.valid) {
+                        // Licence expirée même pour l'utilisateur de test
+                        console.error('[INDEX] ❌ Even emergency user license is expired - BLOCKING ACCESS');
+                        
+                        const expiredResult = {
+                            status: 'expired',
+                            message: 'Période d\'essai expirée. Contactez support@emailsortpro.com',
+                            blocked: true,
+                            user: emergencyUser
+                        };
+                        
+                        window.currentUser = emergencyUser;
+                        window.licenseStatus = { valid: false, ...expiredResult };
+                        
+                        setTimeout(() => {
+                            try {
+                                window.dispatchEvent(new CustomEvent('licenseCheckFailed', {
+                                    detail: expiredResult
+                                }));
+                                console.log('[INDEX] ❌ Emergency license also expired - blocking access');
+                            } catch (eventError) {
+                                console.error('[INDEX] Error emitting expired event:', eventError);
+                            }
+                        }, 100);
+                        return;
+                    }
+                    
+                    // Licence valide pour l'utilisateur de test
                     window.licenseService.currentUser = emergencyUser;
                     window.currentUser = emergencyUser;
                     window.licenseStatus = {
-                        status: 'trial',
+                        status: licenseStatus.status,
                         valid: true,
-                        daysRemaining: 15,
-                        message: 'Mode démonstration - Toutes fonctionnalités disponibles'
+                        daysRemaining: licenseStatus.daysRemaining,
+                        message: licenseStatus.message + ' (Mode test d\'urgence)'
                     };
                     
                     // Émettre l'événement d'authentification
@@ -2303,7 +2680,7 @@
                                     status: window.licenseStatus 
                                 }
                             }));
-                            console.log('[INDEX] ✅ Emergency authentication event emitted');
+                            console.log('[INDEX] ✅ Emergency authentication event emitted with date verification');
                         } catch (eventError) {
                             console.error('[INDEX] Error emitting emergency event:', eventError);
                         }
@@ -2458,10 +2835,14 @@
             window.checkGoogleCallback();
         }, 500);
 
-        console.log('[INDEX] ✅ Script principal chargé avec système de licence intégré');
-        console.log('[INDEX] 🔧 Fonctions de diagnostic: window.checkIntegratedServices()');
+        console.log('[INDEX] ✅ Script principal chargé avec système de licence STRICT v4.0');
+        console.log('[INDEX] 🔧 Fonctions de diagnostic: window.debugLicenseIntegration()');
         console.log('[INDEX] 📧 Email par défaut: vianney.hastings@hotmail.fr');
-        console.log('[INDEX] 🚀 Le système de licence démarrera automatiquement après le chargement du DOM');
+        console.log('[INDEX] 🚀 Le système de licence démarrera automatiquement avec VÉRIFICATION DE DATE');
+        console.log('[INDEX] ⚠️ ATTENTION: Application BLOQUÉE après expiration de la période d\'essai');
+        console.log('[INDEX] 👑 Super Admins: vianney.hastings@hotmail.fr, admin@emailsortpro.com');
+        console.log('[INDEX] 🛠️ Commandes admin: window.enableSuperAdminOverride(email), window.markUserAsPaid(email)');
+        console.log('[INDEX] 📋 Voir tous les utilisateurs: window.getAllUsers()');
     </script>
 </body>
 </html>
