@@ -1,4 +1,4 @@
-// app.js - Application EmailSortPro v9.0 SIMPLIFIÉE
+// app.js - Application EmailSortPro v9.0 CORRIGÉE
 // Version qui se connecte d'abord, puis vérifie les licences si disponible
 
 class EmailSortProApp {
@@ -26,6 +26,9 @@ class EmailSortProApp {
             this.state.initialized = true;
             this.initialized = true;
             
+            // Attendre un peu que les services soient chargés
+            await this.sleep(500);
+            
             // Vérifier si l'utilisateur est déjà authentifié
             const existingAuth = await this.checkExistingAuthentication();
             
@@ -34,16 +37,11 @@ class EmailSortProApp {
                 this.state.authenticated = true;
                 this.state.user = existingAuth;
                 
-                // Essayer de vérifier la licence si le système est disponible
-                const licenseValid = await this.checkLicense(existingAuth.email);
+                // Afficher l'application directement sans vérifier la licence
+                await this.startApplication();
                 
-                if (licenseValid) {
-                    await this.startApplication();
-                } else {
-                    console.log('[App] Licence invalide ou système non disponible');
-                    // Si pas de licence valide mais authentifié, afficher quand même l'app
-                    await this.startApplication();
-                }
+                // Vérifier la licence en arrière-plan après connexion
+                this.checkLicenseInBackground(existingAuth.email);
             } else {
                 console.log('[App] Pas d\'authentification existante');
                 this.showLoginPage();
@@ -110,31 +108,23 @@ class EmailSortProApp {
         console.warn('[App] Services d\'auth non disponibles après timeout');
     }
 
-    async checkLicense(email) {
-        // Si AuthLicenseManager est disponible, l'utiliser
-        if (window.authLicenseManager) {
+    async checkLicenseInBackground(email) {
+        // Vérifier la licence en arrière-plan sans bloquer l'application
+        setTimeout(async () => {
             try {
-                console.log('[App] Vérification licence avec AuthLicenseManager...');
-                
-                // Attendre que le manager soit initialisé
-                if (!window.authLicenseManager.initialized) {
-                    await window.authLicenseManager.initialize();
+                if (window.authLicenseManager && window.authLicenseManager.initialized) {
+                    console.log('[App] Vérification licence en arrière-plan pour:', email);
+                    const result = await window.authLicenseManager.authenticateWithEmail(email);
+                    if (!result.valid) {
+                        console.warn('[App] Licence invalide:', result.message);
+                        // Ne pas bloquer l'app, juste logger
+                    }
                 }
-                
-                // Vérifier la licence
-                const result = await window.authLicenseManager.authenticateWithEmail(email);
-                return result && result.valid;
-                
             } catch (error) {
-                console.warn('[App] Erreur vérification licence:', error);
-                // En cas d'erreur, permettre l'accès
-                return true;
+                console.warn('[App] Erreur vérification licence en arrière-plan:', error);
+                // Ignorer les erreurs de licence
             }
-        } else {
-            console.log('[App] Pas de système de licence disponible');
-            // Pas de système de licence, autoriser l'accès
-            return true;
-        }
+        }, 2000); // Attendre 2 secondes avant de vérifier
     }
 
     async startApplication() {
@@ -464,15 +454,11 @@ class EmailSortProApp {
                 this.state.authenticated = true;
                 this.state.user = authResult;
                 
-                // Essayer de vérifier la licence
-                const licenseValid = await this.checkLicense(authResult.email);
+                // Afficher l'app immédiatement
+                await this.startApplication();
                 
-                if (licenseValid) {
-                    await this.startApplication();
-                } else {
-                    // Même sans licence valide, afficher l'app
-                    await this.startApplication();
-                }
+                // Vérifier la licence en arrière-plan
+                this.checkLicenseInBackground(authResult.email);
             }
             
         } catch (error) {
@@ -582,4 +568,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-console.log('✅ EmailSortProApp v9.0 chargé - Se connecte d\'abord, vérifie licence ensuite');
+console.log('✅ EmailSortProApp v9.0 chargé - Se connecte d\'abord, vérifie licence en arrière-plan');
