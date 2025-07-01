@@ -31,9 +31,6 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Supabase Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <!-- Styles principaux -->
     <link rel="stylesheet" href="styles.css">
     
@@ -53,7 +50,7 @@
         
         console.log('[INDEX] ✅ Client ID configuré pour domaine Netlify');
         
-        // Détection de l'environnement
+        // Détection de l'environnement - VERSION CORRIGÉE
         (function() {
             const hostname = window.location.hostname;
             const isNetlify = hostname.includes('netlify.app') || hostname.includes('netlifyapp.com');
@@ -68,8 +65,9 @@
                 origin: window.location.origin
             });
             
-            // Fonction pour obtenir le Client ID
+            // Fonction pour obtenir le Client ID - SIMPLIFIÉE
             function getClientIdForEnvironment() {
+                // Toujours utiliser le client ID Netlify pour les domaines netlify.app
                 if (isNetlify) {
                     console.log('[INDEX] ✅ Using Netlify client ID');
                     return window.NETLIFY_CLIENT_ID;
@@ -94,8 +92,9 @@
                 return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
             }
             
-            // Fonction pour créer la configuration
+            // Fonction pour créer la configuration - DYNAMIQUE
             function createConfig(clientId) {
+                // URLs dynamiques basées sur le domaine actuel
                 const redirectUri = currentOrigin + '/auth-callback.html';
                 const postLogoutRedirectUri = currentOrigin + '/';
                 
@@ -146,7 +145,7 @@
                         version: '3.0.2',
                         debug: isLocalhost,
                         environment: isNetlify ? 'netlify' : isGitHubPages ? 'github' : isLocalhost ? 'localhost' : 'other',
-                        domain: hostname,
+                        domain: hostname, // Domaine dynamique
                         currentUrl: currentOrigin
                     },
                     email: {
@@ -744,6 +743,160 @@
             margin-top: 0 !important;
         }
 
+        /* === DASHBOARD SOBRE === */
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 48px 20px 20px 20px;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .quick-guide {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .guide-intro {
+            font-size: 16px;
+            color: #0f172a;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .guide-steps {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .guide-step {
+            background: #f1f5f9;
+            color: #475569;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            flex: 1;
+            text-align: center;
+            min-width: 120px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .dashboard-actions {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .action-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            min-height: 140px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .action-card:hover {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-color: var(--color);
+        }
+
+        .action-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            background: var(--color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            margin: 0 auto 12px;
+        }
+
+        .action-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+
+        .action-description {
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.4;
+        }
+
+        .action-description small {
+            display: block;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #94a3b8;
+            background: #f8fafc;
+            padding: 6px 8px;
+            border-radius: 4px;
+            border-left: 3px solid var(--color);
+        }
+
+        .scan-card {
+            --color: #3b82f6;
+        }
+
+        .organize-card {
+            --color: #10b981;
+        }
+
+        .tasks-card {
+            --color: #f59e0b;
+        }
+
+        .settings-card {
+            --color: #4F46E5;
+        }
+
+        .dashboard-stats {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            text-align: center;
+        }
+
+        .stat {
+            min-width: 100px;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 600;
+            color: #4F46E5;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
         /* Loading overlay sobre */
         .login-loading-overlay {
             position: fixed;
@@ -869,6 +1022,47 @@
                 padding-bottom: 15px;
                 padding-top: 0 !important;
             }
+
+            .dashboard-container {
+                padding: 48px 15px 15px 15px;
+            }
+
+            .dashboard-actions {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .action-card {
+                min-height: 120px;
+                padding: 16px;
+            }
+
+            .action-title {
+                font-size: 15px;
+            }
+
+            .action-description {
+                font-size: 13px;
+            }
+
+            .action-description small {
+                font-size: 11px;
+                padding: 4px 6px;
+            }
+
+            .dashboard-stats {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .guide-steps {
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .guide-step {
+                min-width: auto;
+            }
         }
 
         @media (max-width: 480px) {
@@ -910,11 +1104,17 @@
                 padding-right: 10px;
                 padding-bottom: 10px;
             }
+
+            .dashboard-container {
+                padding: 48px 10px 10px 10px;
+            }
         }
     </style>
 
 </head>
 <body>
+    <!-- Vérification du domaine - SUPPRIMÉE -->
+
     <div id="app">
         <!-- Header Application -->
         <header class="app-header">
@@ -1055,13 +1255,13 @@
                                 <i class="fas fa-file-contract"></i>
                                 Conditions d'Utilisation
                             </a>
-                            <a href="mailto:vianney.hastings@emailsortpro.fr" class="compliance-link">
+                            <a href="mailto:vianneyhastings@emailsortpro.fr" class="compliance-link">
                                 <i class="fas fa-envelope"></i>
                                 Support
                             </a>
                         </div>
                         <p style="font-size: 0.75rem; color: #6b7280; margin-top: 8px;">
-                            Développé par Vianney Hastings • vianney.hastings@emailsortpro.fr
+                            Développé par Vianney Hastings • vianneyhastings@emailsortpro.fr
                         </p>
                     </div>
                 </div>
@@ -1086,54 +1286,99 @@
         <div id="toastContainer" class="toast-container"></div>
     </div>
 
-    <!-- Scripts - Ordre CORRECT -->
-    <script src="./UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
-
-    <!-- AuthLicenseManager intégré directement -->
-    <script src="./AuthLicenseManager.js" onerror="console.error('AuthLicenseManager.js manquant')"></script>
-
-    <!-- Services Core -->
-    <script src="./AuthService.js" onerror="console.error('AuthService.js manquant')"></script>
-    <script src="./GoogleAuthService.js" onerror="console.error('GoogleAuthService.js manquant')"></script>
-    <script src="./MailService.js" onerror="console.error('MailService.js manquant')"></script>
-
-    <!-- CategoryManager -->
-    <script src="./CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
-
-    <!-- TaskManager AVANT PageManager -->
-    <script src="./TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
-
-    <!-- Autres Managers -->
-    <script src="./EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
-    <script src="./EmailDeduplicationManager.js" onerror="console.error('EmailDeduplicationManager.js manquant')"></script>
-    <script src="./AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
-
-    <!-- DASHBOARD MODULE -->
-    <script src="./dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
-
-    <!-- Page Manager APRÈS Dashboard et TaskManager -->
-    <script src="./PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
-
-    <!-- Modules de pages -->
-    <script src="./startscan.js" onerror="console.error('startscan.js manquant - utilisation de StartScan.js à la place')"></script>
-    <script src="./StartScan.js" onerror="console.error('StartScan.js manquant')"></script>
-    <script src="./DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
-    <script src="./CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
-
-    <!-- Modules Optionnels -->
-    <script src="./Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
-
-    <!-- Analytics -->
-    <script src="./analytics.js" onerror="console.error('analytics.js manquant')"></script>
-
-    <!-- Application Principal -->
-    <script src="./app.js" onerror="console.error('app.js manquant')"></script>
+    <!-- Scripts - Ordre CORRIGÉ pour éviter le délai de 10 secondes -->
     
+<script src="./UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
+
+<!-- 2. Configuration Supabase (NE PAS COMMITER) -->
+<script src="./config-supabase.js" onerror="console.warn('config-supabase.js manquant - les licences ne fonctionneront pas')"></script>
+
+<!-- 3. Service de gestion des licences -->
+<script src="./LicenseService.js" onerror="console.error('LicenseService.js manquant')"></script>
+
+<!-- 4. Services Core -->
+<script src="./AuthService.js" onerror="console.error('AuthService.js manquant')"></script>
+<script src="./GoogleAuthService.js" onerror="console.error('GoogleAuthService.js manquant')"></script>
+<script src="./MailService.js" onerror="console.error('MailService.js manquant')"></script>
+
+<!-- 5. CategoryManager -->
+<script src="./CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
+
+<!-- 6. TaskManager AVANT PageManager -->
+<script src="./TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
+
+<!-- 7. Autres Managers -->
+<script src="./EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
+<script src="./EmailDeduplicationManager.js" onerror="console.error('EmailDeduplicationManager.js manquant')"></script>
+<script src="./AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
+
+<!-- 8. DASHBOARD MODULE -->
+<script src="./dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
+
+<!-- 9. Page Manager APRÈS Dashboard et TaskManager -->
+<script src="./PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
+
+<!-- 10. Modules de pages -->
+<script src="./startscan.js" onerror="console.error('startscan.js manquant - utilisation de StartScan.js à la place')"></script>
+<script src="./StartScan.js" onerror="console.error('StartScan.js manquant')"></script>
+<script src="./DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
+<script src="./CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
+
+<!-- 11. Modules Optionnels -->
+<script src="./Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
+
+<!-- 12. Analytics -->
+<script src="./analytics.js" onerror="console.error('analytics.js manquant')"></script>
+
+<!-- 13. Application Principal EN DERNIER -->
+<script src="./app.js" onerror="console.error('app.js manquant')"></script>
+ 
     <!-- Scripts de gestion des événements -->
     <script>
         // Variable pour éviter les vérifications multiples
         let authCheckInProgress = false;
         let appAlreadyShown = false;
+
+        // Vérification précoce IMMÉDIATE de l'authentification
+        const earlyAuthCheck = () => {
+            try {
+                const msalAccount = localStorage.getItem('msal.account.keys');
+                const msalToken = localStorage.getItem('msal.token.keys');
+                const googleToken = localStorage.getItem('google_token_emailsortpro');
+                
+                if ((msalAccount && msalToken) || googleToken) {
+                    console.log('[EARLY_AUTH] App mode activated immediately');
+                    return true;
+                }
+            } catch (error) {
+                console.warn('[EARLY_AUTH] Error checking localStorage:', error);
+            }
+            
+            return false;
+        };
+
+        // Exécuter la vérification précoce TOUT DE SUITE
+        earlyAuthCheck();
+
+        // Fonction pour forcer l'affichage de l'app
+        window.forceShowApp = function() {
+            console.log('[FORCE] Forcing app display...');
+            
+            if (appAlreadyShown || document.body.classList.contains('app-active')) {
+                console.log('[FORCE] App already displayed, skipping force display');
+                return;
+            }
+            
+            document.body.classList.add('app-active');
+            
+            const loginPage = document.getElementById('loginPage');
+            if (loginPage) {
+                loginPage.style.display = 'none';
+            }
+            
+            appAlreadyShown = true;
+            console.log('[FORCE] App display activated');
+        };
 
         // Fonction pour masquer le loading et afficher l'app
         window.showApp = function() {
@@ -1158,9 +1403,10 @@
                 loginPage.style.display = 'none';
             }
             
-            // Charger le dashboard
+            // UTILISER LE NOUVEAU MODULE DASHBOARD
             window.setPageMode('dashboard');
             
+            // Charger le dashboard via le module
             if (window.dashboardModule) {
                 console.log('[SHOW_APP] Loading dashboard via dashboardModule...');
                 window.dashboardModule.render();
@@ -1173,20 +1419,283 @@
                 }, 500);
             }
             
+            setTimeout(() => {
+                window.checkScrollNeeded();
+            }, 1000);
+            
             appAlreadyShown = true;
             console.log('[SHOW_APP] App interface activated with dashboard module');
         };
 
-        // Gestion du formulaire de connexion
+        // Fonction pour vérifier si le scroll est nécessaire - OPTIMISÉE ET SILENCIEUSE
+        window.checkScrollNeeded = function() {
+            // Si l'app est active, laisser app.js gérer le scroll
+            if (document.body.classList.contains('app-active') && window.app) {
+                return;
+            }
+            
+            // Éviter les appels multiples
+            if (window.scrollCheckInProgress) return;
+            window.scrollCheckInProgress = true;
+            
+            setTimeout(() => {
+                const body = document.body;
+                const contentHeight = document.documentElement.scrollHeight;
+                const viewportHeight = window.innerHeight;
+                
+                if (contentHeight <= viewportHeight) {
+                    body.classList.add('page-short-content');
+                    body.style.overflow = 'hidden';
+                    body.style.overflowY = 'hidden';
+                } else {
+                    body.classList.remove('page-short-content');
+                    body.style.overflow = '';
+                    body.style.overflowY = '';
+                }
+                
+                window.scrollCheckInProgress = false;
+            }, 50);
+        };
+
+        // Ajouter une classe pour le mode login initial
+        document.body.classList.add('login-mode');
+
+        // Vérifier à chaque redimensionnement de fenêtre - OPTIMISÉ
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            // Si l'app est active, laisser app.js gérer le resize
+            if (document.body.classList.contains('app-active') && window.app) {
+                return;
+            }
+            
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(window.checkScrollNeeded, 150);
+        });
+
+        // Gestion des modes d'affichage pour les pages - SILENCIEUX
+        window.setPageMode = function(pageName) {
+            // Si l'app est active, laisser app.js gérer le scroll
+            if (document.body.classList.contains('app-active') && window.app) {
+                return;
+            }
+            
+            const appMain = document.querySelector('.app-main');
+            const pageContent = document.getElementById('pageContent');
+            const body = document.body;
+            
+            // Nettoyer les anciennes classes de page
+            body.classList.remove('page-dashboard', 'page-scanner', 'page-emails', 'page-tasks', 'page-ranger', 'page-settings', 'page-short-content', 'login-mode');
+            
+            if (pageName === 'dashboard') {
+                appMain.classList.remove('page-mode');
+                appMain.classList.add('dashboard-mode');
+                pageContent.classList.remove('non-dashboard');
+                body.classList.add('page-dashboard');
+            } else {
+                appMain.classList.remove('dashboard-mode');
+                appMain.classList.add('page-mode');
+                pageContent.classList.add('non-dashboard');
+                body.classList.add(`page-${pageName}`);
+            }
+            
+            // Gestion du scroll UNIQUEMENT si l'app n'est pas encore active
+            if (!document.body.classList.contains('app-active')) {
+                clearTimeout(window.scrollCheckTimeout);
+                window.scrollCheckTimeout = setTimeout(() => {
+                    const contentHeight = document.documentElement.scrollHeight;
+                    const viewportHeight = window.innerHeight;
+                    const bodyHeight = document.body.scrollHeight;
+                    
+                    if (bodyHeight <= viewportHeight || contentHeight <= viewportHeight) {
+                        body.classList.add('page-short-content');
+                        body.style.overflow = 'hidden';
+                        body.style.overflowY = 'hidden';
+                    } else {
+                        body.classList.remove('page-short-content');
+                        body.style.overflow = '';
+                        body.style.overflowY = '';
+                    }
+                }, 100);
+            }
+        };
+
+        // Intercepter la méthode loadPage du PageManager pour le dashboard
+        window.interceptDashboardLoad = function() {
+            if (window.pageManager && window.pageManager.loadPage) {
+                const originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
+                
+                window.pageManager.loadPage = function(pageName, ...args) {
+                    // Appliquer le mode d'affichage approprié pour TOUTES les pages
+                    window.setPageMode(pageName);
+                    
+                    if (pageName === 'dashboard') {
+                        // Mettre à jour la navigation pour marquer dashboard comme actif
+                        const navItems = document.querySelectorAll('.nav-item');
+                        navItems.forEach(item => {
+                            item.classList.remove('active');
+                            if (item.dataset.page === 'dashboard') {
+                                item.classList.add('active');
+                            }
+                        });
+                        
+                        // UTILISER LE MODULE DASHBOARD
+                        if (window.dashboardModule) {
+                            const pageContent = document.getElementById('pageContent');
+                            if (pageContent) {
+                                pageContent.style.display = 'block';
+                                pageContent.style.opacity = '1';
+                            }
+                            
+                            // Render dashboard via module
+                            window.dashboardModule.render();
+                        } else {
+                            return originalLoadPage(pageName, ...args);
+                        }
+                        
+                        // Vérifier le scroll après affichage du dashboard
+                        setTimeout(() => {
+                            if (window.app && window.app.checkScrollNeeded) {
+                                window.app.checkScrollNeeded();
+                            } else {
+                                window.checkScrollNeeded();
+                            }
+                        }, 300);
+                        
+                        return Promise.resolve();
+                    } else {
+                        // Pour toutes les autres pages, masquer le dashboard et utiliser la méthode originale
+                        const pageContent = document.getElementById('pageContent');
+                        if (pageContent && window.dashboardModule) {
+                            window.dashboardModule.hide();
+                        }
+                        
+                        return originalLoadPage(pageName, ...args);
+                    }
+                };
+            } else {
+                setTimeout(window.interceptDashboardLoad, 500);
+            }
+        };
+
+        // Lancer l'interception du dashboard
+        setTimeout(window.interceptDashboardLoad, 1000);
+
+        // Fonction pour gérer la déconnexion
+        window.handleLogout = async function() {
+            console.log('[LOGOUT] Starting logout process...');
+            
+            try {
+                // Déconnecter du service actuel
+                if (window.authService && window.authService.isAuthenticated()) {
+                    console.log('[LOGOUT] Logging out from Microsoft...');
+                    await window.authService.logout();
+                } else if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+                    console.log('[LOGOUT] Logging out from Google...');
+                    await window.googleAuthService.logout();
+                }
+                
+                // Reset tous les services
+                if (window.mailService) {
+                    window.mailService.reset();
+                }
+                
+                // Nettoyer l'état de l'app
+                document.body.classList.remove('app-active');
+                document.body.classList.add('login-mode');
+                
+                // Afficher la page de login
+                const loginPage = document.getElementById('loginPage');
+                if (loginPage) {
+                    loginPage.style.display = 'flex';
+                }
+                
+                // Masquer le header et la nav
+                const appHeader = document.querySelector('.app-header');
+                const appNav = document.querySelector('.app-nav');
+                if (appHeader) appHeader.style.display = 'none';
+                if (appNav) appNav.style.display = 'none';
+                
+                // Reset les variables d'état
+                appAlreadyShown = false;
+                authCheckInProgress = false;
+                
+                console.log('[LOGOUT] ✅ Logout complete');
+                
+            } catch (error) {
+                console.error('[LOGOUT] ❌ Error during logout:', error);
+                
+                // Force cleanup en cas d'erreur
+                if (window.authService && window.authService.forceCleanup) {
+                    window.authService.forceCleanup();
+                }
+                if (window.googleAuthService && window.googleAuthService.forceCleanup) {
+                    window.googleAuthService.forceCleanup();
+                }
+                
+                // Rediriger vers la page de login même en cas d'erreur
+                window.location.reload();
+            }
+        };
+
+        // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
             if (appAlreadyShown) {
                 return;
             }
             
+            // Fonction de vérification d'authentification sécurisée
+            const safeAuthCheck = () => {
+                if (authCheckInProgress || appAlreadyShown) {
+                    return false;
+                }
+                
+                if (document.body.classList.contains('app-active')) {
+                    appAlreadyShown = true;
+                    return true;
+                }
+                
+                try {
+                    // Vérifier Microsoft
+                    if (window.authService && typeof window.authService.isAuthenticated === 'function') {
+                        if (window.authService.isAuthenticated()) {
+                            window.showApp();
+                            return true;
+                        }
+                    }
+                    
+                    // Vérifier Google
+                    if (window.googleAuthService && typeof window.googleAuthService.isAuthenticated === 'function') {
+                        if (window.googleAuthService.isAuthenticated()) {
+                            window.showApp();
+                            return true;
+                        }
+                    }
+                } catch (error) {
+                    // Silencieux
+                }
+                return false;
+            };
+            
+            // Vérification avec délai
+            setTimeout(() => {
+                if (document.body.classList.contains('app-active')) {
+                    appAlreadyShown = true;
+                    return;
+                }
+                
+                if (!safeAuthCheck()) {
+                    setTimeout(() => {
+                        if (!document.body.classList.contains('app-active')) {
+                            safeAuthCheck();
+                        }
+                    }, 600);
+                }
+            }, 200);
+            
             // Bouton Microsoft
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
-                loginBtn.addEventListener('click', async function() {
+                loginBtn.addEventListener('click', function() {
                     if (authCheckInProgress) {
                         return;
                     }
@@ -1201,45 +1710,19 @@
                         loadingOverlay.classList.add('active');
                     }
                     
-                    try {
-                        // Utiliser directement authService au lieu de passer par app.login()
-                        if (window.authService && window.authService.login) {
-                            // Se connecter d'abord à Microsoft
-                            await window.authService.login();
-                            
-                            // Vérifier si connecté
-                            if (window.authService.isAuthenticated()) {
-                                const account = window.authService.getAccount();
-                                if (account && account.username) {
-                                    console.log('[LOGIN] Connexion Microsoft réussie:', account.username);
-                                    
-                                    // Mettre à jour l'état de l'app
-                                    if (window.app) {
-                                        window.app.state.authenticated = true;
-                                        window.app.state.user = {
-                                            provider: 'microsoft',
-                                            email: account.username,
-                                            name: account.name,
-                                            account: account
-                                        };
-                                    }
-                                    
-                                    // Afficher l'app
-                                    window.showApp();
-                                    
-                                    // Démarrer l'application si nécessaire
-                                    if (window.app && window.app.startApplication) {
-                                        await window.app.startApplication();
-                                    }
-                                }
+                    if (window.app && window.app.login) {
+                        window.app.login().then(() => {
+                            window.showApp();
+                            authCheckInProgress = false;
+                        }).catch((error) => {
+                            authCheckInProgress = false;
+                            this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
+                            this.disabled = false;
+                            if (loadingOverlay) {
+                                loadingOverlay.classList.remove('active');
                             }
-                        } else {
-                            throw new Error('Service Microsoft non disponible');
-                        }
-                    } catch (error) {
-                        console.error('[LOGIN] Erreur Microsoft:', error);
-                        alert('Erreur de connexion: ' + error.message);
-                    } finally {
+                        });
+                    } else {
                         authCheckInProgress = false;
                         this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
                         this.disabled = false;
@@ -1269,50 +1752,67 @@
                     }
                     
                     try {
-                        if (window.googleAuthService && window.googleAuthService.login) {
+                        if (window.googleAuthService) {
+                            await window.googleAuthService.initialize();
                             await window.googleAuthService.login();
-                            // Google redirige, donc la suite se fait au retour
+                            // La redirection va se produire, pas besoin de showApp() ici
+                        } else {
+                            throw new Error('GoogleAuthService not available');
                         }
                     } catch (error) {
-                        console.error('[LOGIN] Erreur Google:', error);
+                        console.error('[GOOGLE_LOGIN] Error:', error);
                         authCheckInProgress = false;
                         this.innerHTML = '<i class="fab fa-google"></i> Se connecter à Gmail';
                         this.disabled = false;
                         if (loadingOverlay) {
                             loadingOverlay.classList.remove('active');
                         }
+                        
+                        if (window.uiManager) {
+                            window.uiManager.showToast('Erreur de connexion Gmail: ' + error.message, 'error', 8000);
+                        }
+                    }
+                });
+            }
+            
+            // Ajouter un gestionnaire d'événements direct pour le bouton Dashboard
+            const dashboardBtn = document.querySelector('.nav-item[data-page="dashboard"]');
+            if (dashboardBtn) {
+                dashboardBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Forcer le retour au dashboard
+                    if (window.pageManager && window.pageManager.loadPage) {
+                        window.pageManager.loadPage('dashboard');
+                    } else {
+                        // Fallback: utiliser le module dashboard directement
+                        const navItems = document.querySelectorAll('.nav-item');
+                        navItems.forEach(item => item.classList.remove('active'));
+                        this.classList.add('active');
+                        
+                        if (window.dashboardModule) {
+                            window.dashboardModule.render();
+                        }
+                        
+                        window.setPageMode('dashboard');
                     }
                 });
             }
         });
-
-        // Gestion des modes d'affichage pour les pages
-        window.setPageMode = function(pageName) {
-            const appMain = document.querySelector('.app-main');
-            const pageContent = document.getElementById('pageContent');
-            const body = document.body;
-            
-            // Nettoyer les anciennes classes de page
-            body.classList.remove('page-dashboard', 'page-scanner', 'page-emails', 'page-tasks', 'page-ranger', 'page-settings', 'page-short-content', 'login-mode');
-            
-            if (pageName === 'dashboard') {
-                appMain.classList.remove('page-mode');
-                appMain.classList.add('dashboard-mode');
-                pageContent.classList.remove('non-dashboard');
-                body.classList.add('page-dashboard');
-            } else {
-                appMain.classList.remove('dashboard-mode');
-                appMain.classList.add('page-mode');
-                pageContent.classList.add('non-dashboard');
-                body.classList.add(`page-${pageName}`);
+        
+        // Fonction globale pour basculer vers l'app après connexion
+        window.onAuthSuccess = function() {
+            if (!appAlreadyShown && !document.body.classList.contains('app-active')) {
+                window.showApp();
             }
         };
 
-        // Fonction pour mettre à jour l'affichage utilisateur
+        // Fonction pour mettre à jour l'affichage utilisateur dans le header
         window.updateUserDisplay = function(user) {
             const authStatus = document.getElementById('authStatus');
             if (authStatus && user) {
-                const userName = user.displayName || user.name || user.email || 'Utilisateur';
+                // Utiliser le nom et email spécifiés ou ceux du profil
+                const userName = user.displayName || user.name || 'Utilisateur';
                 const userEmail = user.mail || user.userPrincipalName || user.email || 'Non spécifié';
                 const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
                 
@@ -1336,35 +1836,56 @@
             }
         };
 
-        // Fonction pour gérer la déconnexion
-        window.handleLogout = async function() {
-            if (!confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-                return;
-            }
+        // Fonction de diagnostic accessible globalement (silencieuse par défaut)
+        window.checkServices = function() {
+            return {
+                AppConfig: window.AppConfig ? 'OK' : 'MANQUANT',
+                authService: window.authService ? 'OK' : 'MANQUANT',
+                googleAuthService: window.googleAuthService ? 'OK' : 'MANQUANT',
+                mailService: window.mailService ? 'OK' : 'MANQUANT',
+                uiManager: window.uiManager ? 'OK' : 'MANQUANT',
+                taskManager: window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT',
+                tasksView: window.tasksView ? 'OK' : 'MANQUANT',
+                pageManager: window.pageManager ? 'OK' : 'MANQUANT',
+                categoryManager: window.categoryManager ? 'OK' : 'MANQUANT',
+                dashboardModule: window.dashboardModule ? 'OK' : 'MANQUANT',
+                hostname: window.location.hostname,
+                currentDomain: window.location.hostname,
+                authenticationStatus: {
+                    microsoft: window.authService ? window.authService.isAuthenticated() : false,
+                    google: window.googleAuthService ? window.googleAuthService.isAuthenticated() : false
+                }
+            };
+        };
 
-            try {
-                // Déconnecter de Microsoft
-                if (window.authService && window.authService.logout) {
-                    await window.authService.logout();
+        // Fonction pour vérifier les callbacks Google au chargement de la page
+        window.checkGoogleCallback = function() {
+            // Vérifier si nous revenons d'un callback Google OAuth2
+            const fragment = window.location.hash;
+            const search = window.location.search;
+            
+            if (fragment && fragment.includes('access_token')) {
+                console.log('[GOOGLE_CALLBACK] OAuth2 implicit flow callback detected');
+                
+                // Traiter le callback immédiatement
+                if (window.googleAuthService && window.googleAuthService.handleOAuthCallback) {
+                    window.googleAuthService.handleOAuthCallback(fragment).then(() => {
+                        console.log('[GOOGLE_CALLBACK] ✅ Google authentication successful');
+                        window.showApp();
+                    }).catch((error) => {
+                        console.error('[GOOGLE_CALLBACK] ❌ Error processing Google callback:', error);
+                    });
                 }
-                
-                // Déconnecter de Google
-                if (window.googleAuthService && window.googleAuthService.logout) {
-                    await window.googleAuthService.logout();
-                }
-                
-                // Nettoyer le stockage local
-                localStorage.removeItem('emailsortpro_user_email');
-                
-            } catch (error) {
-                console.error('[LOGOUT] Erreur:', error);
-            } finally {
-                // Toujours recharger la page
-                window.location.reload();
+            } else if (search && search.includes('code') && search.includes('state') && search.includes('google')) {
+                console.log('[GOOGLE_CALLBACK] OAuth2 code flow callback detected');
+                // Le callback sera traité par auth-callback.html
             }
         };
 
-        console.log('✅ Scripts de gestion des événements chargés');
+        // Vérifier les callbacks au chargement
+        setTimeout(() => {
+            window.checkGoogleCallback();
+        }, 500);
     </script>
 </body>
 </html>
