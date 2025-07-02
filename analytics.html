@@ -1278,7 +1278,7 @@
                 <i class="fas fa-chart-line"></i>
             </div>
             <h1 class="auth-title">Analytics EmailSortPro</h1>
-            <p class="auth-subtitle">Connectez-vous pour accéder aux analytics</p>
+            <p class="auth-subtitle">Accès réservé aux administrateurs</p>
             
             <form class="auth-form" id="authForm">
                 <input 
@@ -1296,43 +1296,6 @@
             </form>
             
             <div id="authMessage"></div>
-        </div>
-    </div>
-
-    <!-- Modal pour le choix du type de compte -->
-    <div class="account-type-modal" id="accountTypeModal">
-        <div class="account-type-card">
-            <h2 class="account-type-title">Bienvenue sur EmailSortPro !</h2>
-            <p class="account-type-subtitle">Comment souhaitez-vous utiliser EmailSortPro ?</p>
-            
-            <div class="account-type-options">
-                <div class="account-type-option" id="personalOption" onclick="selectAccountType('personal')">
-                    <i class="fas fa-user"></i>
-                    <h3>Personnel</h3>
-                    <p>Pour un usage individuel</p>
-                </div>
-                <div class="account-type-option" id="professionalOption" onclick="selectAccountType('professional')">
-                    <i class="fas fa-building"></i>
-                    <h3>Professionnel</h3>
-                    <p>Pour votre entreprise</p>
-                </div>
-            </div>
-            
-            <input 
-                type="text" 
-                class="company-name-input" 
-                id="companyNameInput" 
-                placeholder="Nom de votre entreprise"
-            >
-            
-            <div class="account-type-actions">
-                <button class="account-type-button secondary" onclick="closeAccountTypeModal()">
-                    Annuler
-                </button>
-                <button class="account-type-button primary" id="confirmAccountType" onclick="confirmAccountType()">
-                    Continuer
-                </button>
-            </div>
         </div>
     </div>
 
@@ -1541,90 +1504,14 @@
         let filteredUsers = [];
         let currentTab = 'overview';
         let authenticatedUser = null;
-        let selectedAccountType = null;
-        let pendingAuthEmail = null;
 
-        // Domaines personnels connus
-        const PERSONAL_DOMAINS = [
-            'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com',
-            'aol.com', 'icloud.com', 'protonmail.com', 'mail.com', 'gmx.com',
-            'yandex.com', 'zoho.com', 'fastmail.com', 'tutanota.com', 'hushmail.com',
-            'yahoo.fr', 'orange.fr', 'free.fr', 'sfr.fr', 'laposte.net',
-            'wanadoo.fr', 'bbox.fr', 'hotmail.fr', 'live.fr', 'outlook.fr'
-        ];
-
-        // Vérifier si un domaine est personnel
-        function isPersonalDomain(email) {
-            if (!email || !email.includes('@')) return false;
-            const domain = email.split('@')[1];
-            return PERSONAL_DOMAINS.includes(domain.toLowerCase());
+        function showAuthMessage(message, type) {
+            const messageDiv = document.getElementById('authMessage');
+            messageDiv.className = type === 'error' ? 'auth-error' : 'auth-success';
+            messageDiv.textContent = message;
         }
 
-        // Gestion du choix de type de compte
-        function selectAccountType(type) {
-            selectedAccountType = type;
-            
-            // Mettre à jour l'UI
-            document.querySelectorAll('.account-type-option').forEach(option => {
-                option.classList.remove('selected');
-            });
-            
-            if (type === 'personal') {
-                document.getElementById('personalOption').classList.add('selected');
-                document.getElementById('companyNameInput').classList.remove('visible');
-                document.getElementById('companyNameInput').value = '';
-            } else {
-                document.getElementById('professionalOption').classList.add('selected');
-                document.getElementById('companyNameInput').classList.add('visible');
-            }
-        }
-
-        function showAccountTypeModal(email) {
-            pendingAuthEmail = email;
-            document.getElementById('accountTypeModal').classList.add('active');
-            
-            // Pré-sélectionner personnel par défaut
-            selectAccountType('personal');
-        }
-
-        function closeAccountTypeModal() {
-            document.getElementById('accountTypeModal').classList.remove('active');
-            selectedAccountType = null;
-            pendingAuthEmail = null;
-            document.getElementById('companyNameInput').value = '';
-            
-            // Réactiver le bouton de connexion
-            const button = document.getElementById('authButton');
-            const buttonText = document.getElementById('authButtonText');
-            const spinner = document.getElementById('authSpinner');
-            button.disabled = false;
-            buttonText.style.display = 'block';
-            spinner.style.display = 'none';
-        }
-
-        async function confirmAccountType() {
-            if (!selectedAccountType || !pendingAuthEmail) {
-                console.error('[Auth] Missing account type or email');
-                return;
-            }
-            
-            let companyName = null;
-            if (selectedAccountType === 'professional') {
-                companyName = document.getElementById('companyNameInput').value.trim();
-                if (!companyName) {
-                    alert('Veuillez entrer le nom de votre entreprise');
-                    return;
-                }
-            }
-            
-            // Fermer le modal
-            closeAccountTypeModal();
-            
-            // Continuer l'authentification avec les infos
-            await continueAuthentication(pendingAuthEmail, selectedAccountType, companyName);
-        }
-
-        // Gestion de l'authentification
+        // Gestion de l'authentification simplifiée pour admin
         async function handleAuthentication(event) {
             event.preventDefault();
             
@@ -1654,90 +1541,26 @@
                 // Initialiser Supabase
                 await initializeSupabase();
                 
-                // Vérifier d'abord si l'utilisateur existe dans la base
-                const userExists = await licenseService.checkUserExists(email);
-                
-                if (!userExists) {
-                    // Nouvel utilisateur
-                    if (isPersonalDomain(email)) {
-                        // Réactiver le bouton avant d'afficher le modal
-                        button.disabled = false;
-                        buttonText.style.display = 'block';
-                        spinner.style.display = 'none';
-                        
-                        // Afficher le modal de choix
-                        showAccountTypeModal(email);
-                        return;
-                    } else {
-                        // Domaine professionnel, continuer avec type professionnel
-                        await continueAuthentication(email, 'professional');
-                    }
-                } else {
-                    // Utilisateur existant, pas besoin de demander le type
-                    await continueAuthentication(email, null);
-                }
-                
-            } catch (error) {
-                console.error('[Auth] Error:', error);
-                showAuthMessage('Erreur de connexion. Veuillez réessayer.', 'error');
-                
-                // Réactiver le bouton
-                button.disabled = false;
-                buttonText.style.display = 'block';
-                spinner.style.display = 'none';
-            }
-        }
-
-        async function continueAuthentication(email, accountType, companyName = null) {
-            if (!email) {
-                console.error('[Auth] No email provided');
-                return;
-            }
-            
-            const button = document.getElementById('authButton');
-            const buttonText = document.getElementById('authButtonText');
-            const spinner = document.getElementById('authSpinner');
-            
-            // Afficher le spinner
-            button.disabled = true;
-            buttonText.style.display = 'none';
-            spinner.style.display = 'block';
-            
-            try {
                 // S'assurer que le service est initialisé
-                if (!licenseService || !licenseService.initialized) {
+                if (!licenseService.initialized) {
                     await licenseService.initialize();
                 }
                 
-                // Passer les infos au service de licence seulement si on a un type
-                if (accountType) {
-                    licenseService.setAccountType(accountType, companyName);
-                }
-                
-                // Authentifier avec l'email
-                const result = await licenseService.authenticateWithEmail(email);
+                // Authentifier directement pour l'accès admin
+                const result = await licenseService.authenticateForAdmin(email);
                 
                 if (result.valid) {
-                    // Vérifier les permissions d'accès aux analytics
-                    const hasAccess = checkAnalyticsAccess(result.user);
+                    authenticatedUser = result.user;
+                    licenseService.currentUser = authenticatedUser;
                     
-                    if (hasAccess) {
-                        authenticatedUser = result.user;
-                        
-                        // Définir l'utilisateur actuel pour le service
-                        licenseService.currentUser = authenticatedUser;
-                        
-                        showAuthMessage('Connexion réussie !', 'success');
-                        
-                        // Attendre un peu avant de basculer
-                        setTimeout(() => {
-                            showAnalytics();
-                        }, 1000);
-                    } else {
-                        showAuthMessage('Accès refusé. Seuls les administrateurs et les comptes personnels peuvent accéder aux analytics.', 'error');
-                    }
+                    showAuthMessage('Connexion réussie !', 'success');
+                    
+                    // Attendre un peu avant de basculer
+                    setTimeout(() => {
+                        showAnalytics();
+                    }, 1000);
                 } else {
-                    showAuthMessage(result.message || 'Email non autorisé', 'error');
+                    showAuthMessage(result.message || 'Accès non autorisé', 'error');
                 }
                 
             } catch (error) {
@@ -1751,30 +1574,9 @@
             }
         }
 
-        // Vérifier les permissions d'accès aux analytics
-        function checkAnalyticsAccess(user) {
-            if (!user) return false;
-            
-            // Les admins ont toujours accès
-            if (user.role === 'company_admin' || user.role === 'super_admin') {
-                return true;
-            }
-            
-            // Les comptes personnels ont accès pour gérer leur licence
-            if (user.account_type === 'personal') {
-                return true;
-            }
-            
-            // Les autres n'ont pas accès
-            return false;
-        }
-
-        function showAuthMessage(message, type) {
-            const messageDiv = document.getElementById('authMessage');
-            messageDiv.className = type === 'error' ? 'auth-error' : 'auth-success';
-            messageDiv.textContent = message;
-        }
-
+        // Plus besoin de ces fonctions pour la création de compte
+        // On garde seulement pour le cas où on voudrait les réutiliser ailleurs
+        
         function showAnalytics() {
             // Cacher la page de connexion
             document.getElementById('authContainer').style.display = 'none';
@@ -1837,10 +1639,10 @@
                         
                         await initializeSupabase();
                         
-                        // Recharger l'utilisateur
-                        const result = await licenseService.authenticateWithEmail(data.email);
+                        // Recharger l'utilisateur avec la méthode admin
+                        const result = await licenseService.authenticateForAdmin(data.email);
                         
-                        if (result.valid && checkAnalyticsAccess(result.user)) {
+                        if (result.valid) {
                             authenticatedUser = result.user;
                             licenseService.currentUser = authenticatedUser;
                             showAnalytics();
