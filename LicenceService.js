@@ -1,5 +1,5 @@
 // LicenseService.js - Service de gestion des licences EmailSortPro
-// Version 2.0 avec support complet des licences d'essai et vérifications
+// Version 3.0 avec authentification par email et gestion complète des licences
 
 class LicenseService {
     constructor() {
@@ -7,8 +7,10 @@ class LicenseService {
         this.currentUser = null;
         this.initialized = false;
         this.initPromise = null;
+        this.cachedLicenseStatus = null;
+        this.cacheExpiry = null;
         
-        console.log('[LicenseService] Service created v2.0');
+        console.log('[LicenseService] Service created v3.0');
     }
 
     async initialize() {
@@ -75,7 +77,80 @@ class LicenseService {
         });
     }
 
-    // NOUVELLES MÉTHODES POUR LA VÉRIFICATION DES LICENCES
+    // NOUVELLE MÉTHODE PRINCIPALE POUR L'AUTHENTIFICATION PAR EMAIL
+    async authenticateWithEmail(email) {
+        try {
+            if (!this.initialized) {
+                await this.initialize();
+            }
+
+            console.log('[LicenseService] Authenticating user:', email);
+            
+            // Vérifier le cache d'abord
+            if (this.cachedLicenseStatus && this.cacheExpiry && new Date() < this.cacheExpiry) {
+                const cachedUser = this.cachedLicenseStatus.user;
+                if (cachedUser && cachedUser.email === email) {
+                    console.log('[LicenseService] Using cached license status');
+                    return this.cachedLicenseStatus;
+                }
+            }
+
+            // Vérifier si l'utilisateur existe
+            const userExists = await this.checkUserExists(email);
+            
+            if (!userExists) {
+                console.log('[LicenseService] New user detected, creating trial account');
+                // Créer un nouvel utilisateur avec période d'essai
+                const createResult = await this.createUserWithTrial({
+                    email: email,
+                    name: email.split('@')[0],
+                    trialDays: 15
+                });
+                
+                if (!createResult.success) {
+                    return {
+                        valid: false,
+                        status: 'error',
+                        message: 'Impossible de créer votre compte d\'essai',
+                        error: createResult.error
+                    };
+                }
+            }
+
+            // Vérifier le statut de la licence
+            const licenseStatus = await this.checkLicenseStatus(email);
+            
+            // Mettre en cache le résultat (1 heure)
+            if (licenseStatus.valid) {
+                this.cachedLicenseStatus = licenseStatus;
+                this.cacheExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 heure
+                this.currentUser = licenseStatus.user;
+            }
+            
+            // Mettre à jour la dernière connexion
+            if (licenseStatus.valid && licenseStatus.user) {
+                await this.updateLastLogin(licenseStatus.user.id);
+            }
+            
+            return licenseStatus;
+
+        } catch (error) {
+            console.error('[LicenseService] Authentication error:', error);
+            
+            // En cas d'erreur réseau, utiliser le cache si disponible
+            if (this.cachedLicenseStatus && error.message.includes('network')) {
+                console.log('[LicenseService] Network error, using cached status');
+                return { ...this.cachedLicenseStatus, offline: true };
+            }
+            
+            return {
+                valid: false,
+                status: 'error',
+                message: 'Erreur lors de la vérification de votre licence',
+                error: error.message
+            };
+        }
+    }
 
     async checkUserExists(email) {
         try {
@@ -216,7 +291,11 @@ class LicenseService {
                 if (error.code === 'PGRST116') {
                     // Utilisateur non trouvé
                     console.log('[LicenseService] User not found');
-                    return { valid: false, reason: 'not_found' };
+                    return { 
+                        valid: false, 
+                        status: 'not_found',
+                        message: 'Compte utilisateur non trouvé'
+                    };
                 }
                 throw error;
             }
@@ -232,12 +311,28 @@ class LicenseService {
                 is_expired: expiresAt ? expiresAt < now : false
             });
 
+            // Obtenir les infos de contact admin si disponibles
+            let adminContact = null;
+            if (user.company_id && user.company) {
+                const { data: adminData } = await this.supabase
+                    .from('users')
+                    .select('email, name')
+                    .eq('company_id', user.company_id)
+                    .eq('role', 'company_admin')
+                    .single();
+                
+                if (adminData) {
+                    adminContact = adminData;
+                }
+            }
+
             // Vérifier si bloqué
             if (status === 'blocked') {
                 return { 
                     valid: false, 
-                    reason: 'blocked',
-                    message: 'Votre compte a été bloqué'
+                    status: 'blocked',
+                    message: 'Votre compte a été bloqué. Contactez votre administrateur.',
+                    adminContact: adminContact
                 };
             }
 
@@ -248,9 +343,10 @@ class LicenseService {
                 
                 return { 
                     valid: false, 
-                    reason: 'expired',
-                    message: 'Votre licence a expiré',
-                    expiredAt: expiresAt
+                    status: 'expired',
+                    message: 'Votre période d\'essai a expiré',
+                    expiredAt: expiresAt,
+                    adminContact: adminContact
                 };
             }
 
@@ -266,13 +362,19 @@ class LicenseService {
                 status: status,
                 expiresAt: expiresAt,
                 daysRemaining: daysRemaining,
-                user: user
+                user: user,
+                message: status === 'trial' ? `Période d'essai - ${daysRemaining} jours restants` : 'Licence active'
             };
 
         } catch (error) {
             console.error('[LicenseService] Error checking license:', error);
             // En cas d'erreur, permettre l'accès pour ne pas bloquer
-            return { valid: true, error: error.message };
+            return { 
+                valid: true, 
+                status: 'error',
+                error: error.message,
+                message: 'Vérification temporairement indisponible'
+            };
         }
     }
 
@@ -292,6 +394,23 @@ class LicenseService {
 
         } catch (error) {
             console.error('[LicenseService] Error updating license status:', error);
+        }
+    }
+
+    async updateLastLogin(userId) {
+        try {
+            const { error } = await this.supabase
+                .from('users')
+                .update({
+                    last_login_at: new Date().toISOString(),
+                    login_count: this.supabase.sql`login_count + 1`
+                })
+                .eq('id', userId);
+
+            if (error) throw error;
+
+        } catch (error) {
+            console.error('[LicenseService] Error updating last login:', error);
         }
     }
 
@@ -375,13 +494,20 @@ class LicenseService {
     extractUserFromAuth() {
         // Microsoft Auth
         if (window.authService && window.authService.isAuthenticated()) {
-            return window.authService.getUser();
+            const account = window.authService.getAccount();
+            return {
+                email: account?.username,
+                name: account?.name
+            };
         }
 
         // Google Auth
         if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
-            const googleUser = window.googleAuthService.getUser();
-            return googleUser;
+            const googleUser = window.googleAuthService.getAccount();
+            return {
+                email: googleUser?.email,
+                name: googleUser?.name || googleUser?.displayName
+            };
         }
 
         return null;
@@ -479,6 +605,12 @@ class LicenseService {
                 new_expires_at: expiresAt
             });
 
+            // Invalider le cache si c'est l'utilisateur actuel
+            if (this.currentUser && this.currentUser.id === userId) {
+                this.cachedLicenseStatus = null;
+                this.cacheExpiry = null;
+            }
+
             return { success: true };
 
         } catch (error) {
@@ -535,16 +667,40 @@ class LicenseService {
         }
     }
 
+    clearCache() {
+        this.cachedLicenseStatus = null;
+        this.cacheExpiry = null;
+        console.log('[LicenseService] Cache cleared');
+    }
+
     reset() {
         this.supabase = null;
         this.currentUser = null;
         this.initialized = false;
         this.initPromise = null;
+        this.cachedLicenseStatus = null;
+        this.cacheExpiry = null;
         console.log('[LicenseService] Service reset');
+    }
+
+    // Nouvelle méthode de debug
+    async debug() {
+        return {
+            initialized: this.initialized,
+            hasSupabase: !!this.supabase,
+            currentUser: this.currentUser ? {
+                email: this.currentUser.email,
+                status: this.currentUser.license_status,
+                role: this.currentUser.role
+            } : null,
+            hasCachedStatus: !!this.cachedLicenseStatus,
+            cacheExpiry: this.cacheExpiry,
+            connectionTest: await this.testConnection()
+        };
     }
 }
 
 // Créer l'instance globale
 window.licenseService = new LicenseService();
 
-console.log('[LicenseService] ✅ Service loaded v2.0');
+console.log('[LicenseService] ✅ Service loaded v3.0 - Authentication by email');
