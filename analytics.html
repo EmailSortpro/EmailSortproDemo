@@ -1729,7 +1729,7 @@
             
             // Charger le service de licence
             const licenseScript = document.createElement('script');
-            licenseScript.src = './LicenceService.js';
+            licenseScript.src = './LicenseService.js'; // Changé de LicenceService.js à LicenseService.js
             licenseScript.onload = async () => {
                 console.log('[Analytics] LicenseService loaded');
                 licenseService = window.licenseService;
