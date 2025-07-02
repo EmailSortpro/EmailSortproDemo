@@ -1288,6 +1288,9 @@
                         authenticatedUser = result.user;
                         showAuthMessage('Connexion réussie !', 'success');
                         
+                        // Initialiser Supabase maintenant
+                        await initializeSupabase();
+                        
                         // Attendre un peu avant de basculer
                         setTimeout(() => {
                             showAnalytics();
@@ -1374,6 +1377,10 @@
                         
                         if (result.valid && (result.user.role === 'company_admin' || result.user.role === 'super_admin')) {
                             authenticatedUser = result.user;
+                            
+                            // Initialiser Supabase maintenant
+                            await initializeSupabase();
+                            
                             showAnalytics();
                             return;
                         }
@@ -1832,26 +1839,43 @@
                 return;
             }
 
+            // Initialiser Supabase si nécessaire
+            if (!supabaseClient) {
+                await initializeSupabase();
+            }
+
             let companyUsers = [];
             
-            // Charger les utilisateurs selon les permissions
-            if (authenticatedUser.role === 'super_admin') {
-                // Super admin voit tous les utilisateurs
-                const { data, error } = await supabaseClient
-                    .from('users')
-                    .select('*, company:companies(name)')
-                    .order('created_at', { ascending: false });
-                
-                companyUsers = data || [];
-            } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                // Admin de société voit seulement ses utilisateurs
-                const { data, error } = await supabaseClient
-                    .from('users')
-                    .select('*, company:companies(name)')
-                    .eq('company_id', authenticatedUser.company_id)
-                    .order('created_at', { ascending: false });
-                
-                companyUsers = data || [];
+            try {
+                // Charger les utilisateurs selon les permissions
+                if (authenticatedUser.role === 'super_admin') {
+                    // Super admin voit tous les utilisateurs
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .select('*, company:companies(name)')
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('[Analytics] Error loading all users:', error);
+                    } else {
+                        companyUsers = data || [];
+                    }
+                } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                    // Admin de société voit seulement ses utilisateurs
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .select('*, company:companies(name)')
+                        .eq('company_id', authenticatedUser.company_id)
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('[Analytics] Error loading company users:', error);
+                    } else {
+                        companyUsers = data || [];
+                    }
+                }
+            } catch (error) {
+                console.error('[Analytics] Failed to load users for license management:', error);
             }
 
             // Calculer les statistiques
@@ -1968,41 +1992,80 @@
                 return;
             }
 
-            const result = await window.licenseService.addUserToCompany(email);
-            
-            if (result.success) {
-                emailInput.value = '';
-                await loadLicenseManagement();
-                alert('Utilisateur ajouté avec succès');
-            } else {
-                alert('Erreur : ' + result.error);
+            try {
+                // Initialiser le service de licence s'il n'est pas déjà prêt
+                if (!window.licenseService.initialized) {
+                    await window.licenseService.initialize();
+                }
+
+                // Définir l'utilisateur actuel pour le service
+                window.licenseService.currentUser = authenticatedUser;
+
+                const result = await window.licenseService.addUserToCompany(email);
+                
+                if (result.success) {
+                    emailInput.value = '';
+                    await loadLicenseManagement();
+                    alert('Utilisateur ajouté avec succès');
+                } else {
+                    alert('Erreur : ' + result.error);
+                }
+            } catch (error) {
+                console.error('[Analytics] Error adding user:', error);
+                alert('Erreur lors de l\'ajout de l\'utilisateur');
             }
         }
 
         // Fonction pour mettre à jour le statut
         async function updateUserStatus(userId, newStatus) {
-            const result = await window.licenseService.updateUserLicense(userId, newStatus);
-            
-            if (result.success) {
-                await loadLicenseManagement();
-                alert('Statut mis à jour avec succès');
-            } else {
-                alert('Erreur : ' + result.error);
+            try {
+                // Initialiser le service de licence s'il n'est pas déjà prêt
+                if (!window.licenseService.initialized) {
+                    await window.licenseService.initialize();
+                }
+
+                // Définir l'utilisateur actuel pour le service
+                window.licenseService.currentUser = authenticatedUser;
+
+                const result = await window.licenseService.updateUserLicense(userId, newStatus);
+                
+                if (result.success) {
+                    await loadLicenseManagement();
+                    alert('Statut mis à jour avec succès');
+                } else {
+                    alert('Erreur : ' + result.error);
+                }
+            } catch (error) {
+                console.error('[Analytics] Error updating status:', error);
+                alert('Erreur lors de la mise à jour du statut');
             }
         }
 
         // Fonction pour étendre la licence
         async function extendLicense(userId) {
-            const newExpiry = new Date();
-            newExpiry.setDate(newExpiry.getDate() + 30);
-            
-            const result = await window.licenseService.updateUserLicense(userId, 'active', newExpiry);
-            
-            if (result.success) {
-                await loadLicenseManagement();
-                alert('Licence étendue de 30 jours');
-            } else {
-                alert('Erreur : ' + result.error);
+            try {
+                const newExpiry = new Date();
+                newExpiry.setDate(newExpiry.getDate() + 30);
+                
+                // Initialiser le service de licence s'il n'est pas déjà prêt
+                if (!window.licenseService.initialized) {
+                    await window.licenseService.initialize();
+                }
+
+                // Définir l'utilisateur actuel pour le service
+                window.licenseService.currentUser = authenticatedUser;
+
+                const result = await window.licenseService.updateUserLicense(userId, 'active', newExpiry);
+                
+                if (result.success) {
+                    await loadLicenseManagement();
+                    alert('Licence étendue de 30 jours');
+                } else {
+                    alert('Erreur : ' + result.error);
+                }
+            } catch (error) {
+                console.error('[Analytics] Error extending license:', error);
+                alert('Erreur lors de l\'extension de la licence');
             }
         }
 
