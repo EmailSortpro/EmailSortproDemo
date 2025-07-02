@@ -21,10 +21,134 @@
             line-height: 1.6;
         }
 
+        /* Styles pour la page de connexion */
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+        }
+
+        .auth-card {
+            background: white;
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .auth-logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 2rem;
+            color: white;
+        }
+
+        .auth-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .auth-subtitle {
+            color: #6b7280;
+            margin-bottom: 32px;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .auth-input {
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .auth-input:focus {
+            outline: none;
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .auth-button {
+            padding: 12px 24px;
+            background: #4F46E5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .auth-button:hover {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+
+        .auth-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-error {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            margin-top: 16px;
+        }
+
+        .auth-success {
+            background: #dcfce7;
+            color: #16a34a;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            margin-top: 16px;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Styles existants pour la page analytics */
         .analytics-standalone {
             max-width: 1400px;
             margin: 0 auto;
             padding: 40px 20px;
+            display: none;
+        }
+
+        .analytics-standalone.authenticated {
+            display: block;
         }
 
         .page-header {
@@ -53,6 +177,51 @@
             max-width: 600px;
             margin: 0 auto;
             line-height: 1.5;
+        }
+
+        .user-info-header {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.875rem;
+        }
+
+        .user-info-header .user-email {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .user-info-header .user-role {
+            background: #f3e8ff;
+            color: #7c3aed;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
         }
 
         .back-to-app {
@@ -878,11 +1047,48 @@
     </style>
 </head>
 <body>
-    <div class="analytics-standalone">
+    <!-- Page de connexion -->
+    <div class="auth-container" id="authContainer">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h1 class="auth-title">Analytics EmailSortPro</h1>
+            <p class="auth-subtitle">Connectez-vous pour accéder aux analytics</p>
+            
+            <form class="auth-form" id="authForm">
+                <input 
+                    type="email" 
+                    class="auth-input" 
+                    id="authEmail" 
+                    placeholder="Votre adresse email"
+                    required
+                    autocomplete="email"
+                >
+                <button type="submit" class="auth-button" id="authButton">
+                    <span id="authButtonText">Se connecter</span>
+                    <div class="loading-spinner" id="authSpinner" style="display: none;"></div>
+                </button>
+            </form>
+            
+            <div id="authMessage"></div>
+        </div>
+    </div>
+
+    <!-- Page Analytics (cachée par défaut) -->
+    <div class="analytics-standalone" id="analyticsContainer">
         <a href="./index.html" class="back-to-app">
             <i class="fas fa-arrow-left"></i>
             Retour à l'application
         </a>
+
+        <div class="user-info-header">
+            <span class="user-email" id="currentUserEmail">-</span>
+            <span class="user-role" id="currentUserRole">-</span>
+            <button class="logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Déconnexion
+            </button>
+        </div>
 
         <div class="page-header">
             <h1>
@@ -1044,6 +1250,165 @@
         let currentUsers = [];
         let filteredUsers = [];
         let currentTab = 'overview';
+        let authenticatedUser = null;
+
+        // Gestion de l'authentification
+        async function handleAuthentication(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('authEmail').value.trim();
+            const button = document.getElementById('authButton');
+            const buttonText = document.getElementById('authButtonText');
+            const spinner = document.getElementById('authSpinner');
+            const messageDiv = document.getElementById('authMessage');
+            
+            if (!email || !email.includes('@')) {
+                showAuthMessage('Veuillez entrer une adresse email valide', 'error');
+                return;
+            }
+            
+            // Afficher le spinner
+            button.disabled = true;
+            buttonText.style.display = 'none';
+            spinner.style.display = 'block';
+            messageDiv.innerHTML = '';
+            
+            try {
+                // Initialiser le service de licence
+                if (!licenseService) {
+                    await loadLicenseService();
+                }
+                
+                // Authentifier avec l'email
+                const result = await licenseService.authenticateWithEmail(email);
+                
+                if (result.valid) {
+                    // Vérifier si l'utilisateur a des droits d'admin
+                    if (result.user.role === 'company_admin' || result.user.role === 'super_admin') {
+                        authenticatedUser = result.user;
+                        showAuthMessage('Connexion réussie !', 'success');
+                        
+                        // Attendre un peu avant de basculer
+                        setTimeout(() => {
+                            showAnalytics();
+                        }, 1000);
+                    } else {
+                        showAuthMessage('Accès refusé. Seuls les administrateurs peuvent accéder aux analytics.', 'error');
+                    }
+                } else {
+                    showAuthMessage(result.message || 'Email non autorisé', 'error');
+                }
+                
+            } catch (error) {
+                console.error('[Auth] Error:', error);
+                showAuthMessage('Erreur de connexion. Veuillez réessayer.', 'error');
+            } finally {
+                // Réactiver le bouton
+                button.disabled = false;
+                buttonText.style.display = 'block';
+                spinner.style.display = 'none';
+            }
+        }
+
+        function showAuthMessage(message, type) {
+            const messageDiv = document.getElementById('authMessage');
+            messageDiv.className = type === 'error' ? 'auth-error' : 'auth-success';
+            messageDiv.textContent = message;
+        }
+
+        function showAnalytics() {
+            // Cacher la page de connexion
+            document.getElementById('authContainer').style.display = 'none';
+            
+            // Afficher la page analytics
+            document.getElementById('analyticsContainer').classList.add('authenticated');
+            
+            // Mettre à jour les infos utilisateur
+            document.getElementById('currentUserEmail').textContent = authenticatedUser.email;
+            document.getElementById('currentUserRole').textContent = authenticatedUser.role.replace('_', ' ');
+            
+            // Charger les données
+            loadAnalytics();
+            updateLastUpdated();
+            
+            // Sauvegarder la session
+            sessionStorage.setItem('analyticsAuth', JSON.stringify({
+                email: authenticatedUser.email,
+                role: authenticatedUser.role,
+                timestamp: Date.now()
+            }));
+        }
+
+        function logout() {
+            // Effacer la session
+            sessionStorage.removeItem('analyticsAuth');
+            
+            // Réinitialiser
+            authenticatedUser = null;
+            currentUsers = [];
+            filteredUsers = [];
+            
+            // Retourner à la page de connexion
+            document.getElementById('analyticsContainer').classList.remove('authenticated');
+            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('authEmail').value = '';
+            document.getElementById('authMessage').innerHTML = '';
+        }
+
+        // Vérifier la session au chargement
+        async function checkSession() {
+            const session = sessionStorage.getItem('analyticsAuth');
+            
+            if (session) {
+                try {
+                    const data = JSON.parse(session);
+                    
+                    // Vérifier que la session n'est pas trop vieille (24h)
+                    if (Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
+                        // Recharger l'utilisateur
+                        if (!licenseService) {
+                            await loadLicenseService();
+                        }
+                        
+                        const result = await licenseService.authenticateWithEmail(data.email);
+                        
+                        if (result.valid && (result.user.role === 'company_admin' || result.user.role === 'super_admin')) {
+                            authenticatedUser = result.user;
+                            showAnalytics();
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.error('[Session] Error:', error);
+                }
+                
+                // Session invalide
+                sessionStorage.removeItem('analyticsAuth');
+            }
+        }
+
+        // Charger le service de licence
+        async function loadLicenseService() {
+            // Charger la configuration Supabase d'abord
+            const configScript = document.createElement('script');
+            configScript.src = './config-supabase.js';
+            await new Promise((resolve, reject) => {
+                configScript.onload = resolve;
+                configScript.onerror = reject;
+                document.head.appendChild(configScript);
+            });
+            
+            // Charger le service de licence
+            const licenseScript = document.createElement('script');
+            licenseScript.src = './LicenceService.js';
+            await new Promise((resolve, reject) => {
+                licenseScript.onload = resolve;
+                licenseScript.onerror = reject;
+                document.head.appendChild(licenseScript);
+            });
+            
+            licenseService = window.licenseService;
+        }
 
         // Tab management
         function switchTab(tabName) {
@@ -1065,24 +1430,31 @@
             }
         }
 
-        // Users management - CORRIGÉ POUR UTILISER LES VRAIES DONNÉES
+        // Users management - avec filtrage selon les permissions
         async function loadUsers() {
             try {
-                console.log('[Analytics] Loading real users from database...');
+                console.log('[Analytics] Loading users with permissions check...');
                 
                 // Initialiser Supabase si nécessaire
                 if (!supabaseClient) {
                     await initializeSupabase();
                 }
                 
-                // Charger les utilisateurs depuis la base de données
-                const { data: users, error } = await supabaseClient
+                let query = supabaseClient
                     .from('users')
                     .select(`
                         *,
                         company:companies(name)
                     `)
                     .order('created_at', { ascending: false });
+                
+                // Si l'utilisateur est un admin de société, filtrer par sa société
+                if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                    query = query.eq('company_id', authenticatedUser.company_id);
+                }
+                // Si super admin, pas de filtre
+                
+                const { data: users, error } = await query;
 
                 if (error) {
                     console.error('[Analytics] Error loading users:', error);
@@ -1111,9 +1483,25 @@
             if (!supabaseClient) return;
             
             try {
-                const { data: stats, error } = await supabaseClient
+                let query = supabaseClient
                     .from('user_email_stats')
                     .select('*');
+                
+                // Filtrer par domaine si admin de société
+                if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                    // Récupérer le domaine de la société
+                    const { data: company } = await supabaseClient
+                        .from('companies')
+                        .select('domain')
+                        .eq('id', authenticatedUser.company_id)
+                        .single();
+                    
+                    if (company && company.domain) {
+                        query = query.eq('domain', company.domain);
+                    }
+                }
+                
+                const { data: stats, error } = await query;
 
                 if (!error && stats) {
                     // Fusionner les stats avec les utilisateurs
@@ -1121,7 +1509,7 @@
                         const userStats = stats.find(s => s.email === user.email);
                         return {
                             ...user,
-                            total_scans: userStats?.total_scans || 0,
+                            total_scans: userStats?.total_emails_scanned || 0,
                             total_sessions: userStats?.total_sessions || 0,
                             total_errors: userStats?.total_errors || 0
                         };
@@ -1429,41 +1817,42 @@
             updateLastUpdated();
         }
 
-        // License Management Functions
+        // License Management Functions - avec permissions
         async function loadLicenseManagement() {
             const container = document.getElementById('licenseManagement');
             
-            if (!window.licenseService) {
+            if (!window.licenseService || !authenticatedUser) {
                 container.innerHTML = `
                     <div class="no-permissions">
                         <i class="fas fa-exclamation-triangle"></i>
-                        <h3>Service de licence non disponible</h3>
-                        <p>Veuillez recharger la page</p>
+                        <h3>Service non disponible</h3>
+                        <p>Veuillez vous reconnecter</p>
                     </div>
                 `;
                 return;
             }
 
-            // Initialiser le service si nécessaire
-            if (!window.licenseService.initialized) {
-                await window.licenseService.initialize();
-            }
-
-            // Vérifier si l'utilisateur est admin
-            const currentUser = await window.licenseService.getCurrentUser();
+            let companyUsers = [];
             
-            if (!currentUser || !window.licenseService.isAdmin()) {
-                container.innerHTML = `
-                    <div class="no-permissions">
-                        <i class="fas fa-lock"></i>
-                        <h3>Accès refusé</h3>
-                        <p>Vous n'avez pas les droits d'administration</p>
-                    </div>
-                `;
-                return;
+            // Charger les utilisateurs selon les permissions
+            if (authenticatedUser.role === 'super_admin') {
+                // Super admin voit tous les utilisateurs
+                const { data, error } = await supabaseClient
+                    .from('users')
+                    .select('*, company:companies(name)')
+                    .order('created_at', { ascending: false });
+                
+                companyUsers = data || [];
+            } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                // Admin de société voit seulement ses utilisateurs
+                const { data, error } = await supabaseClient
+                    .from('users')
+                    .select('*, company:companies(name)')
+                    .eq('company_id', authenticatedUser.company_id)
+                    .order('created_at', { ascending: false });
+                
+                companyUsers = data || [];
             }
-
-            const companyUsers = await window.licenseService.getCompanyUsers();
 
             // Calculer les statistiques
             const stats = {
@@ -1484,10 +1873,10 @@
                     </button>
                 </div>
 
-                ${currentUser.company ? `
+                ${authenticatedUser.company_id && companyUsers.length > 0 && companyUsers[0].company ? `
                     <div class="company-info">
-                        <h3>${currentUser.company.name}</h3>
-                        <p>Administrateur : ${currentUser.name || currentUser.email}</p>
+                        <h3>${companyUsers[0].company.name}</h3>
+                        <p>Administrateur : ${authenticatedUser.name || authenticatedUser.email}</p>
                     </div>
                 ` : ''}
 
@@ -1584,11 +1973,7 @@
             if (result.success) {
                 emailInput.value = '';
                 await loadLicenseManagement();
-                if (window.uiManager) {
-                    window.uiManager.showToast('Utilisateur ajouté avec succès', 'success');
-                } else {
-                    alert('Utilisateur ajouté avec succès');
-                }
+                alert('Utilisateur ajouté avec succès');
             } else {
                 alert('Erreur : ' + result.error);
             }
@@ -1600,11 +1985,7 @@
             
             if (result.success) {
                 await loadLicenseManagement();
-                if (window.uiManager) {
-                    window.uiManager.showToast('Statut mis à jour', 'success');
-                } else {
-                    alert('Statut mis à jour avec succès');
-                }
+                alert('Statut mis à jour avec succès');
             } else {
                 alert('Erreur : ' + result.error);
             }
@@ -1619,11 +2000,7 @@
             
             if (result.success) {
                 await loadLicenseManagement();
-                if (window.uiManager) {
-                    window.uiManager.showToast('Licence étendue de 30 jours', 'success');
-                } else {
-                    alert('Licence étendue de 30 jours');
-                }
+                alert('Licence étendue de 30 jours');
             } else {
                 alert('Erreur : ' + result.error);
             }
@@ -1699,6 +2076,7 @@
         }
 
         // Event listeners
+        document.getElementById('authForm').addEventListener('submit', handleAuthentication);
         document.getElementById('userSearch').addEventListener('input', filterUsers);
         document.getElementById('statusFilter').addEventListener('change', filterUsers);
         document.getElementById('companyFilter').addEventListener('change', filterUsers);
@@ -1712,32 +2090,16 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('[Analytics Page] DOM loaded, initializing...');
+            console.log('[Analytics Page] DOM loaded, initializing with authentication...');
             
-            // Charger le service de licence
-            const licenseScript = document.createElement('script');
-            licenseScript.src = './LicenceService.js';
-            licenseScript.onload = async () => {
-                console.log('[Analytics] LicenseService loaded');
-                licenseService = window.licenseService;
-                
-                // Charger la configuration Supabase
-                const configScript = document.createElement('script');
-                configScript.src = './config-supabase.js';
-                configScript.onload = () => {
-                    console.log('[Analytics] Supabase config loaded');
-                };
-                document.head.appendChild(configScript);
-            };
-            document.head.appendChild(licenseScript);
-            
-            loadAnalytics();
-            updateLastUpdated();
+            // Vérifier la session existante
+            await checkSession();
         });
 
         // Debug function
         window.debugAnalytics = function() {
             console.log('=== ANALYTICS PAGE DEBUG ===');
+            console.log('Authenticated user:', authenticatedUser);
             console.log('Current tab:', currentTab);
             console.log('Current users:', currentUsers);
             console.log('Filtered users:', filteredUsers);
@@ -1747,6 +2109,8 @@
             console.log('Supabase client:', supabaseClient);
             
             return {
+                authenticated: !!authenticatedUser,
+                userRole: authenticatedUser?.role,
                 currentTab,
                 usersCount: currentUsers.length,
                 filteredCount: filteredUsers.length,
@@ -1754,11 +2118,11 @@
                 analyticsModule: !!analyticsModule,
                 licenseService: !!licenseService,
                 supabaseClient: !!supabaseClient,
-                realData: currentUsers.length > 0 && !currentUsers[0].mockData
+                realData: currentUsers.length > 0
             };
         };
 
-        console.log('[Analytics Page] ✅ Enhanced analytics page initialized with REAL DATABASE CONNECTION');
+        console.log('[Analytics Page] ✅ Analytics page with authentication and permissions initialized');
         console.log('[Analytics Page] Use debugAnalytics() for debug information');
     </script>
 </body>
