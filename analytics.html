@@ -1555,8 +1555,33 @@
 
         // Vérifier si un domaine est personnel
         function isPersonalDomain(email) {
+            if (!email || !email.includes('@')) return false;
             const domain = email.split('@')[1];
             return PERSONAL_DOMAINS.includes(domain.toLowerCase());
+        }
+
+        // Récupérer le type de compte stocké
+        function getStoredAccountType(email) {
+            if (!email) return null;
+            const stored = localStorage.getItem(`emailsortpro_account_type_${email}`);
+            if (stored) {
+                try {
+                    return JSON.parse(stored);
+                } catch (e) {
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        // Stocker le type de compte
+        function storeAccountType(email, accountType, companyName) {
+            if (!email) return;
+            localStorage.setItem(`emailsortpro_account_type_${email}`, JSON.stringify({
+                accountType: accountType,
+                companyName: companyName,
+                timestamp: Date.now()
+            }));
         }
 
         // Gestion du choix de type de compte
@@ -1571,6 +1596,7 @@
             if (type === 'personal') {
                 document.getElementById('personalOption').classList.add('selected');
                 document.getElementById('companyNameInput').classList.remove('visible');
+                document.getElementById('companyNameInput').value = '';
             } else {
                 document.getElementById('professionalOption').classList.add('selected');
                 document.getElementById('companyNameInput').classList.add('visible');
@@ -1590,10 +1616,19 @@
             selectedAccountType = null;
             pendingAuthEmail = null;
             document.getElementById('companyNameInput').value = '';
+            
+            // Réactiver le bouton de connexion
+            const button = document.getElementById('authButton');
+            const buttonText = document.getElementById('authButtonText');
+            const spinner = document.getElementById('authSpinner');
+            button.disabled = false;
+            buttonText.style.display = 'block';
+            spinner.style.display = 'none';
         }
 
         async function confirmAccountType() {
             if (!selectedAccountType || !pendingAuthEmail) {
+                console.error('[Auth] Missing account type or email');
                 return;
             }
             
@@ -1605,6 +1640,9 @@
                     return;
                 }
             }
+            
+            // Stocker le choix pour ne pas le redemander
+            storeAccountType(pendingAuthEmail, selectedAccountType, companyName);
             
             // Fermer le modal
             closeAccountTypeModal();
@@ -1643,8 +1681,17 @@
                 // Initialiser Supabase AVANT l'authentification
                 await initializeSupabase();
                 
-                // Vérifier si c'est un domaine personnel
+                // Vérifier si c'est un domaine personnel et si on a déjà stocké le choix
                 if (isPersonalDomain(email)) {
+                    const storedChoice = getStoredAccountType(email);
+                    
+                    if (storedChoice) {
+                        // On a déjà le choix, continuer directement
+                        await continueAuthentication(email, storedChoice.accountType, storedChoice.companyName);
+                        return;
+                    }
+                    
+                    // Sinon, demander le choix
                     // Réactiver le bouton avant d'afficher le modal
                     button.disabled = false;
                     buttonText.style.display = 'block';
@@ -1670,6 +1717,11 @@
         }
 
         async function continueAuthentication(email, accountType, companyName = null) {
+            if (!email) {
+                console.error('[Auth] No email provided');
+                return;
+            }
+            
             const button = document.getElementById('authButton');
             const buttonText = document.getElementById('authButtonText');
             const spinner = document.getElementById('authSpinner');
@@ -1680,6 +1732,11 @@
             spinner.style.display = 'block';
             
             try {
+                // S'assurer que le service est initialisé
+                if (!licenseService || !licenseService.initialized) {
+                    await licenseService.initialize();
+                }
+                
                 // Passer les infos au service de licence
                 licenseService.setAccountType(accountType, companyName);
                 
