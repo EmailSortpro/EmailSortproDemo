@@ -513,15 +513,7 @@
     // Exposer la fonction principale
     window.checkUserLicense = checkUserLicense;
     
-    // Lancer la vérification après un court délai
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(checkUserLicense, 500);
-        });
-    } else {
-        setTimeout(checkUserLicense, 500);
-    }
-    
-    console.log('[License Check] ✅ System ready v3.0');
+    // NE PAS lancer automatiquement la vérification - laisser app.js la gérer
+    console.log('[License Check] ✅ System ready v3.0 - Manual trigger only');
     
 })();
