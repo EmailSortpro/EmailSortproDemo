@@ -1947,6 +1947,67 @@
                     </button>
                 </div>
 
+                <!-- Nouvelle section pour l'import -->
+                <div class="import-section" style="margin-top: 20px; padding: 20px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
+                    <h3 style="margin-bottom: 16px; color: #0369a1;">
+                        <i class="fas fa-file-import"></i> Import en masse
+                    </h3>
+                    <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                        <input 
+                            type="file" 
+                            id="importFile" 
+                            accept=".csv,.xlsx,.xls"
+                            style="display: none;"
+                            onchange="handleFileImport(event)"
+                        >
+                        <button 
+                            onclick="document.getElementById('importFile').click()"
+                            style="padding: 10px 20px; background: #0ea5e9; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;"
+                        >
+                            <i class="fas fa-upload"></i> Importer un fichier Excel/CSV
+                        </button>
+                        <button 
+                            onclick="downloadTemplate()"
+                            style="padding: 10px 20px; background: #6366f1; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;"
+                        >
+                            <i class="fas fa-download"></i> Télécharger le modèle
+                        </button>
+                    </div>
+                    <div id="importStatus" style="margin-top: 16px; display: none;">
+                        <div style="padding: 12px; border-radius: 6px;" id="importMessage"></div>
+                    </div>
+                    <div id="importPreview" style="margin-top: 20px; display: none;">
+                        <h4 style="margin-bottom: 12px;">Aperçu de l'import :</h4>
+                        <div style="max-height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; background: white;">
+                            <table style="width: 100%; font-size: 0.875rem;">
+                                <thead style="background: #f8fafc; position: sticky; top: 0;">
+                                    <tr>
+                                        <th style="padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0;">Email</th>
+                                        <th style="padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0;">Nom</th>
+                                        <th style="padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0;">Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="importPreviewBody">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="margin-top: 16px; display: flex; gap: 12px;">
+                            <button 
+                                onclick="confirmImport()"
+                                style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;"
+                            >
+                                <i class="fas fa-check"></i> Confirmer l'import
+                            </button>
+                            <button 
+                                onclick="cancelImport()"
+                                style="padding: 10px 20px; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;"
+                            >
+                                <i class="fas fa-times"></i> Annuler
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="license-users-table">
                     <table>
                         <thead>
@@ -2084,6 +2145,235 @@
                 console.error('[Analytics] Error extending license:', error);
                 alert('Erreur lors de l\'extension de la licence');
             }
+        }
+
+        // Variables globales pour l'import
+        let importData = [];
+        let importInProgress = false;
+
+        // Fonction pour télécharger le modèle
+        function downloadTemplate() {
+            const template = 'Email,Nom\nexemple@societe.fr,Jean Dupont\nautre@societe.fr,Marie Martin';
+            const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'modele_import_utilisateurs.csv';
+            link.click();
+        }
+
+        // Fonction pour gérer l'import de fichier
+        async function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const fileType = file.name.split('.').pop().toLowerCase();
+            
+            showImportStatus('Lecture du fichier...', 'info');
+            
+            try {
+                if (fileType === 'csv') {
+                    await handleCSVImport(file);
+                } else if (fileType === 'xlsx' || fileType === 'xls') {
+                    await handleExcelImport(file);
+                } else {
+                    throw new Error('Format de fichier non supporté');
+                }
+            } catch (error) {
+                showImportStatus(`Erreur : ${error.message}`, 'error');
+                console.error('[Import] Error:', error);
+            }
+        }
+
+        // Import CSV
+        async function handleCSVImport(file) {
+            const text = await file.text();
+            const lines = text.split('\n').filter(line => line.trim());
+            
+            if (lines.length < 2) {
+                throw new Error('Le fichier est vide ou ne contient que l\'en-tête');
+            }
+
+            importData = [];
+            const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+            const emailIndex = headers.findIndex(h => h.includes('email') || h.includes('mail'));
+            const nameIndex = headers.findIndex(h => h.includes('nom') || h.includes('name'));
+
+            if (emailIndex === -1) {
+                throw new Error('Colonne "Email" non trouvée');
+            }
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                const email = values[emailIndex];
+                const name = nameIndex !== -1 ? values[nameIndex] : email.split('@')[0];
+
+                if (email && email.includes('@')) {
+                    importData.push({ email, name });
+                }
+            }
+
+            if (importData.length === 0) {
+                throw new Error('Aucun email valide trouvé dans le fichier');
+            }
+
+            showImportPreview();
+        }
+
+        // Import Excel (nécessite une librairie externe)
+        async function handleExcelImport(file) {
+            // Pour Excel, on aurait besoin d'une librairie comme SheetJS
+            // Pour l'instant, on affiche un message
+            showImportStatus('L\'import Excel nécessite une librairie supplémentaire. Utilisez le format CSV pour l\'instant.', 'error');
+        }
+
+        // Afficher le statut de l'import
+        function showImportStatus(message, type) {
+            const statusDiv = document.getElementById('importStatus');
+            const messageDiv = document.getElementById('importMessage');
+            
+            statusDiv.style.display = 'block';
+            messageDiv.textContent = message;
+            messageDiv.style.background = type === 'error' ? '#fef2f2' : 
+                                        type === 'success' ? '#dcfce7' : '#e0f2fe';
+            messageDiv.style.color = type === 'error' ? '#dc2626' : 
+                                    type === 'success' ? '#16a34a' : '#0369a1';
+        }
+
+        // Afficher l'aperçu de l'import
+        function showImportPreview() {
+            const previewDiv = document.getElementById('importPreview');
+            const previewBody = document.getElementById('importPreviewBody');
+            
+            // Vérifier les emails existants
+            const existingEmails = currentUsers.map(u => u.email.toLowerCase());
+            
+            previewBody.innerHTML = importData.map(user => {
+                const exists = existingEmails.includes(user.email.toLowerCase());
+                const domain = user.email.split('@')[1];
+                const companyDomain = authenticatedUser.company?.domain || authenticatedUser.email.split('@')[1];
+                const sameCompany = domain === companyDomain;
+                
+                let status = '';
+                let statusColor = '';
+                
+                if (exists) {
+                    status = 'Existe déjà';
+                    statusColor = '#dc2626';
+                } else if (!sameCompany && authenticatedUser.role === 'company_admin') {
+                    status = 'Domaine différent';
+                    statusColor = '#f59e0b';
+                } else {
+                    status = 'Prêt à importer';
+                    statusColor = '#16a34a';
+                }
+                
+                return `
+                    <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #f1f5f9;">${user.email}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #f1f5f9;">${user.name}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #f1f5f9; color: ${statusColor}; font-weight: 500;">${status}</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            previewDiv.style.display = 'block';
+            
+            const validUsers = importData.filter(user => {
+                const exists = existingEmails.includes(user.email.toLowerCase());
+                const domain = user.email.split('@')[1];
+                const companyDomain = authenticatedUser.company?.domain || authenticatedUser.email.split('@')[1];
+                const sameCompany = domain === companyDomain || authenticatedUser.role === 'super_admin';
+                return !exists && sameCompany;
+            });
+            
+            showImportStatus(`${validUsers.length} utilisateur(s) prêt(s) à être importé(s)`, 'info');
+        }
+
+        // Confirmer l'import
+        async function confirmImport() {
+            if (importInProgress) return;
+            
+            importInProgress = true;
+            const existingEmails = currentUsers.map(u => u.email.toLowerCase());
+            const companyDomain = authenticatedUser.company?.domain || authenticatedUser.email.split('@')[1];
+            
+            const usersToImport = importData.filter(user => {
+                const exists = existingEmails.includes(user.email.toLowerCase());
+                const domain = user.email.split('@')[1];
+                const sameCompany = domain === companyDomain || authenticatedUser.role === 'super_admin';
+                return !exists && sameCompany;
+            });
+
+            if (usersToImport.length === 0) {
+                showImportStatus('Aucun utilisateur à importer', 'error');
+                importInProgress = false;
+                return;
+            }
+
+            showImportStatus(`Import en cours de ${usersToImport.length} utilisateur(s)...`, 'info');
+            
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (const user of usersToImport) {
+                try {
+                    // Initialiser le service de licence s'il n'est pas déjà prêt
+                    if (!window.licenseService.initialized) {
+                        await window.licenseService.initialize();
+                    }
+
+                    // Définir l'utilisateur actuel pour le service
+                    window.licenseService.currentUser = authenticatedUser;
+
+                    const result = await window.licenseService.addUserToCompany(user.email);
+                    
+                    if (result.success) {
+                        successCount++;
+                        
+                        // Mettre à jour le nom si fourni
+                        if (user.name && user.name !== user.email.split('@')[0]) {
+                            await supabaseClient
+                                .from('users')
+                                .update({ name: user.name })
+                                .eq('email', user.email);
+                        }
+                    } else {
+                        errorCount++;
+                        console.error(`[Import] Failed for ${user.email}:`, result.error);
+                    }
+                } catch (error) {
+                    errorCount++;
+                    console.error(`[Import] Error for ${user.email}:`, error);
+                }
+                
+                // Mettre à jour le statut périodiquement
+                if ((successCount + errorCount) % 5 === 0) {
+                    showImportStatus(`Import en cours... ${successCount + errorCount}/${usersToImport.length}`, 'info');
+                }
+            }
+
+            showImportStatus(
+                `Import terminé : ${successCount} réussi(s), ${errorCount} échec(s)`, 
+                errorCount === 0 ? 'success' : 'info'
+            );
+            
+            // Recharger la liste
+            await loadLicenseManagement();
+            
+            // Réinitialiser
+            setTimeout(() => {
+                cancelImport();
+            }, 3000);
+            
+            importInProgress = false;
+        }
+
+        // Annuler l'import
+        function cancelImport() {
+            importData = [];
+            document.getElementById('importFile').value = '';
+            document.getElementById('importPreview').style.display = 'none';
+            document.getElementById('importStatus').style.display = 'none';
         }
 
         // Analytics loading (existing functionality)
