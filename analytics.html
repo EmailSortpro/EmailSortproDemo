@@ -8,9 +8,6 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Stripe.js -->
-    <script src="https://js.stripe.com/v3/"></script>
-    
     <style>
         * {
             margin: 0;
@@ -24,10 +21,134 @@
             line-height: 1.6;
         }
 
+        /* Styles pour la page de connexion */
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+        }
+
+        .auth-card {
+            background: white;
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .auth-logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 2rem;
+            color: white;
+        }
+
+        .auth-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .auth-subtitle {
+            color: #6b7280;
+            margin-bottom: 32px;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .auth-input {
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .auth-input:focus {
+            outline: none;
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .auth-button {
+            padding: 12px 24px;
+            background: #4F46E5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .auth-button:hover {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+
+        .auth-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-error {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            margin-top: 16px;
+        }
+
+        .auth-success {
+            background: #dcfce7;
+            color: #16a34a;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            margin-top: 16px;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Styles existants pour la page analytics */
         .analytics-standalone {
             max-width: 1400px;
             margin: 0 auto;
             padding: 40px 20px;
+            display: none;
+        }
+
+        .analytics-standalone.authenticated {
+            display: block;
         }
 
         .page-header {
@@ -38,6 +159,7 @@
             color: white;
             border-radius: 16px;
             margin: 0 0 48px 0;
+            position: relative;
         }
 
         .page-header h1 {
@@ -56,6 +178,51 @@
             max-width: 600px;
             margin: 0 auto;
             line-height: 1.5;
+        }
+
+        .user-info-header {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.875rem;
+        }
+
+        .user-info-header .user-email {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .user-info-header .user-role {
+            background: #f3e8ff;
+            color: #7c3aed;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
         }
 
         .back-to-app {
@@ -434,6 +601,110 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
+        /* User Details Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6b7280;
+            font-size: 1.25rem;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .detail-group {
+            margin-bottom: 24px;
+        }
+
+        .detail-group h4 {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .detail-item {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid #4F46E5;
+        }
+
+        .detail-item label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .detail-item value {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
         /* License Management */
         .license-management {
             padding: 24px;
@@ -615,295 +886,35 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        /* Payment Section Styles */
-        .payment-management {
-            padding: 24px;
+        .company-info {
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            border-left: 4px solid #4F46E5;
         }
 
-        .payment-header {
-            text-align: center;
-            margin-bottom: 48px;
-        }
-
-        .payment-header h2 {
-            font-size: 2rem;
-            color: #1f2937;
-            margin-bottom: 12px;
-        }
-
-        .payment-header p {
-            color: #6b7280;
+        .company-info h3 {
             font-size: 1.125rem;
-        }
-
-        .pricing-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 32px;
-            margin-bottom: 48px;
-            max-width: 900px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .pricing-card {
-            background: white;
-            border-radius: 16px;
-            padding: 32px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            position: relative;
-            transition: transform 0.2s ease;
-        }
-
-        .pricing-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-        }
-
-        .pricing-card.recommended {
-            border: 2px solid #4F46E5;
-        }
-
-        .recommended-badge {
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #4F46E5;
-            color: white;
-            padding: 4px 16px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .pricing-title {
-            font-size: 1.5rem;
-            font-weight: 700;
             color: #1f2937;
             margin-bottom: 8px;
         }
 
-        .pricing-price {
-            font-size: 3rem;
-            font-weight: 700;
-            color: #4F46E5;
-            margin-bottom: 8px;
-        }
-
-        .pricing-price span {
-            font-size: 1rem;
-            color: #6b7280;
-            font-weight: 400;
-        }
-
-        .pricing-description {
-            color: #6b7280;
-            margin-bottom: 24px;
-        }
-
-        .pricing-features {
-            list-style: none;
-            margin-bottom: 32px;
-            text-align: left;
-        }
-
-        .pricing-features li {
-            padding: 8px 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #374151;
-        }
-
-        .pricing-features i {
-            color: #10b981;
+        .company-info p {
+            color: #64748b;
             font-size: 0.875rem;
         }
 
-        .pricing-button {
-            width: 100%;
-            padding: 12px 24px;
-            background: #4F46E5;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .pricing-button:hover {
-            background: #4338ca;
-        }
-
-        .pricing-button.secondary {
-            background: #e5e7eb;
-            color: #374151;
-        }
-
-        .pricing-button.secondary:hover {
-            background: #d1d5db;
-        }
-
-        /* Stripe Payment Form */
-        .payment-form-container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: white;
-            padding: 32px;
-            border-radius: 16px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-        }
-
-        .payment-form-header {
+        .no-permissions {
             text-align: center;
-            margin-bottom: 32px;
+            padding: 60px;
+            color: #64748b;
         }
 
-        .payment-form-header h3 {
-            font-size: 1.5rem;
-            color: #1f2937;
-            margin-bottom: 8px;
-        }
-
-        .form-group {
-            margin-bottom: 24px;
-        }
-
-        .form-label {
-            display: block;
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 8px;
-            font-size: 0.875rem;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.2s ease;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: #4F46E5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
-
-        #card-element {
-            padding: 12px 16px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            background: white;
-        }
-
-        .payment-button {
-            width: 100%;
-            padding: 14px 24px;
-            background: #4F46E5;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .payment-button:hover:not(:disabled) {
-            background: #4338ca;
-        }
-
-        .payment-button:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-        }
-
-        .payment-error {
-            color: #dc2626;
-            font-size: 0.875rem;
-            margin-top: 8px;
-        }
-
-        .payment-success {
-            background: #dcfce7;
-            color: #16a34a;
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 24px;
-            text-align: center;
-        }
-
-        /* Modal */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 10000;
-            backdrop-filter: blur(4px);
-        }
-
-        .modal-overlay.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-            max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            padding: 24px;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header h3 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #1f2937;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #6b7280;
-            font-size: 1.25rem;
-            padding: 4px;
-            border-radius: 4px;
-            transition: all 0.2s ease;
-        }
-
-        .modal-close:hover {
-            background: #f3f4f6;
-            color: #374151;
-        }
-
-        .modal-body {
-            padding: 24px;
+        .no-permissions i {
+            font-size: 4rem;
+            color: #d1d5db;
+            margin-bottom: 16px;
         }
 
         /* Loading & Error States */
@@ -952,18 +963,6 @@
             font-size: 1.25rem;
             font-weight: 600;
             margin-bottom: 8px;
-        }
-
-        .no-permissions {
-            text-align: center;
-            padding: 60px;
-            color: #64748b;
-        }
-
-        .no-permissions i {
-            font-size: 4rem;
-            color: #d1d5db;
-            margin-bottom: 16px;
         }
 
         .last-updated {
@@ -1023,20 +1022,57 @@
                 margin: 20px;
             }
 
-            .pricing-cards {
+            .detail-grid {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <div class="analytics-standalone">
+    <!-- Page de connexion -->
+    <div class="auth-container" id="authContainer">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h1 class="auth-title">Analytics EmailSortPro</h1>
+            <p class="auth-subtitle">Connectez-vous pour accéder aux analytics</p>
+            
+            <form class="auth-form" id="authForm">
+                <input 
+                    type="email" 
+                    class="auth-input" 
+                    id="authEmail" 
+                    placeholder="Votre adresse email"
+                    required
+                    autocomplete="email"
+                >
+                <button type="submit" class="auth-button" id="authButton">
+                    <span id="authButtonText">Se connecter</span>
+                    <div class="loading-spinner" id="authSpinner" style="display: none;"></div>
+                </button>
+            </form>
+            
+            <div id="authMessage"></div>
+        </div>
+    </div>
+
+    <!-- Page Analytics (cachée par défaut) -->
+    <div class="analytics-standalone" id="analyticsContainer">
         <a href="./index.html" class="back-to-app">
             <i class="fas fa-arrow-left"></i>
             Retour à l'application
         </a>
 
         <div class="page-header">
+            <div class="user-info-header">
+                <span class="user-email" id="currentUserEmail">-</span>
+                <span class="user-role" id="currentUserRole">-</span>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </button>
+            </div>
+            
             <h1>
                 <i class="fas fa-chart-line"></i>
                 Analytics EmailSortPro
@@ -1096,10 +1132,6 @@
                 <button class="tab-button" onclick="switchTab('licenses')">
                     <i class="fas fa-key"></i>
                     Gestion licences
-                </button>
-                <button class="tab-button" onclick="switchTab('payment')">
-                    <i class="fas fa-credit-card"></i>
-                    Paiement
                 </button>
             </div>
 
@@ -1168,124 +1200,6 @@
                     <!-- Le contenu sera généré dynamiquement -->
                 </div>
             </div>
-
-            <!-- Payment Tab -->
-            <div class="tab-content" id="paymentTab">
-                <div class="payment-management">
-                    <div class="payment-header">
-                        <h2>Choisissez votre plan</h2>
-                        <p>Sélectionnez le plan qui correspond le mieux à vos besoins</p>
-                    </div>
-
-                    <div class="pricing-cards">
-                        <div class="pricing-card">
-                            <h3 class="pricing-title">Starter</h3>
-                            <div class="pricing-price">
-                                9€
-                                <span>/mois</span>
-                            </div>
-                            <p class="pricing-description">
-                                Parfait pour les freelances et petites équipes
-                            </p>
-                            <ul class="pricing-features">
-                                <li><i class="fas fa-check"></i> Jusqu'à 5 utilisateurs</li>
-                                <li><i class="fas fa-check"></i> 1000 scans/mois</li>
-                                <li><i class="fas fa-check"></i> Support par email</li>
-                                <li><i class="fas fa-check"></i> Statistiques de base</li>
-                            </ul>
-                            <button class="pricing-button secondary" onclick="selectPlan('starter', 9)">
-                                Sélectionner
-                            </button>
-                        </div>
-
-                        <div class="pricing-card recommended">
-                            <span class="recommended-badge">RECOMMANDÉ</span>
-                            <h3 class="pricing-title">Business</h3>
-                            <div class="pricing-price">
-                                29€
-                                <span>/mois</span>
-                            </div>
-                            <p class="pricing-description">
-                                Idéal pour les entreprises en croissance
-                            </p>
-                            <ul class="pricing-features">
-                                <li><i class="fas fa-check"></i> Jusqu'à 25 utilisateurs</li>
-                                <li><i class="fas fa-check"></i> Scans illimités</li>
-                                <li><i class="fas fa-check"></i> Support prioritaire</li>
-                                <li><i class="fas fa-check"></i> Analytics avancés</li>
-                                <li><i class="fas fa-check"></i> API Access</li>
-                            </ul>
-                            <button class="pricing-button" onclick="selectPlan('business', 29)">
-                                Sélectionner
-                            </button>
-                        </div>
-
-                        <div class="pricing-card">
-                            <h3 class="pricing-title">Enterprise</h3>
-                            <div class="pricing-price">
-                                99€
-                                <span>/mois</span>
-                            </div>
-                            <p class="pricing-description">
-                                Pour les grandes organisations
-                            </p>
-                            <ul class="pricing-features">
-                                <li><i class="fas fa-check"></i> Utilisateurs illimités</li>
-                                <li><i class="fas fa-check"></i> Scans illimités</li>
-                                <li><i class="fas fa-check"></i> Support dédié 24/7</li>
-                                <li><i class="fas fa-check"></i> Personnalisation complète</li>
-                                <li><i class="fas fa-check"></i> Formation équipe</li>
-                                <li><i class="fas fa-check"></i> SLA garanti</li>
-                            </ul>
-                            <button class="pricing-button" onclick="selectPlan('enterprise', 99)">
-                                Sélectionner
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="paymentFormContainer" style="display: none;">
-                        <div class="payment-form-container">
-                            <div class="payment-form-header">
-                                <h3>Finaliser votre abonnement</h3>
-                                <p id="selectedPlanInfo"></p>
-                            </div>
-
-                            <form id="payment-form">
-                                <div class="form-group">
-                                    <label class="form-label" for="email">Email</label>
-                                    <input type="email" id="paymentEmail" class="form-input" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label" for="name">Nom complet</label>
-                                    <input type="text" id="paymentName" class="form-input" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">Informations de carte</label>
-                                    <div id="card-element"></div>
-                                    <div id="card-errors" class="payment-error"></div>
-                                </div>
-
-                                <button type="submit" id="submit-payment" class="payment-button">
-                                    <span id="button-text">Payer maintenant</span>
-                                    <div class="spinner" id="spinner" style="display: none; width: 20px; height: 20px;"></div>
-                                </button>
-                            </form>
-
-                            <button onclick="cancelPayment()" style="margin-top: 16px; width: 100%; background: none; border: none; color: #6b7280; cursor: pointer;">
-                                Annuler
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="paymentSuccess" class="payment-success" style="display: none;">
-                        <i class="fas fa-check-circle" style="font-size: 3rem; margin-bottom: 16px;"></i>
-                        <h3>Paiement réussi !</h3>
-                        <p>Votre abonnement a été activé avec succès.</p>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <div class="last-updated">
@@ -1318,116 +1232,175 @@
         let currentUsers = [];
         let filteredUsers = [];
         let currentTab = 'overview';
-        let currentUser = null;
-        
-        // Stripe variables
-        let stripe = null;
-        let elements = null;
-        let cardElement = null;
-        let selectedPlan = null;
-        let selectedPrice = null;
+        let authenticatedUser = null;
 
-        // Initialisation des services au chargement
-        async function initializeServices() {
+        // Gestion de l'authentification
+        async function handleAuthentication(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('authEmail').value.trim();
+            const button = document.getElementById('authButton');
+            const buttonText = document.getElementById('authButtonText');
+            const spinner = document.getElementById('authSpinner');
+            const messageDiv = document.getElementById('authMessage');
+            
+            if (!email || !email.includes('@')) {
+                showAuthMessage('Veuillez entrer une adresse email valide', 'error');
+                return;
+            }
+            
+            // Afficher le spinner
+            button.disabled = true;
+            buttonText.style.display = 'none';
+            spinner.style.display = 'block';
+            messageDiv.innerHTML = '';
+            
             try {
-                console.log('[Analytics] Initializing services...');
-                
-                // 1. Charger Supabase Config
-                await loadScript('./config-supabase.js', 'Supabase Config');
-                
-                // 2. Charger License Service (essayer les deux noms possibles)
-                try {
-                    await loadScript('./LicenseService.js', 'License Service');
-                } catch (error) {
-                    console.log('[Analytics] Trying alternative filename...');
-                    await loadScript('./LicenceService.js', 'License Service');
+                // Initialiser le service de licence
+                if (!licenseService) {
+                    await loadLicenseService();
                 }
                 
-                // 3. Initialiser Supabase
+                // Initialiser Supabase AVANT l'authentification
                 await initializeSupabase();
                 
-                // 4. Initialiser le service de licence
-                if (window.licenseService) {
-                    licenseService = window.licenseService;
-                    if (!licenseService.initialized) {
-                        await licenseService.initialize();
+                // Authentifier avec l'email
+                const result = await licenseService.authenticateWithEmail(email);
+                
+                if (result.valid) {
+                    // Vérifier si l'utilisateur a des droits d'admin
+                    if (result.user.role === 'company_admin' || result.user.role === 'super_admin') {
+                        authenticatedUser = result.user;
+                        
+                        // Définir l'utilisateur actuel pour le service
+                        licenseService.currentUser = authenticatedUser;
+                        
+                        showAuthMessage('Connexion réussie !', 'success');
+                        
+                        // Attendre un peu avant de basculer
+                        setTimeout(() => {
+                            showAnalytics();
+                        }, 1000);
+                    } else {
+                        showAuthMessage('Accès refusé. Seuls les administrateurs peuvent accéder aux analytics.', 'error');
                     }
-                    
-                    // Récupérer l'utilisateur actuel
-                    currentUser = await licenseService.getCurrentUser();
-                    console.log('[Analytics] Current user:', currentUser?.email || 'Not authenticated');
+                } else {
+                    showAuthMessage(result.message || 'Email non autorisé', 'error');
                 }
                 
-                // 5. Initialiser Stripe (remplacez par votre clé publique)
-                initializeStripe();
-                
-                console.log('[Analytics] ✅ All services initialized');
-                
             } catch (error) {
-                console.error('[Analytics] Failed to initialize services:', error);
+                console.error('[Auth] Error:', error);
+                showAuthMessage('Erreur de connexion. Veuillez réessayer.', 'error');
+            } finally {
+                // Réactiver le bouton
+                button.disabled = false;
+                buttonText.style.display = 'block';
+                spinner.style.display = 'none';
             }
         }
 
-        // Fonction pour charger un script
-        async function loadScript(src, name) {
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = src;
-                script.onload = () => {
-                    console.log(`[Analytics] ${name} loaded`);
-                    resolve();
-                };
-                script.onerror = () => {
-                    console.error(`[Analytics] Failed to load ${name}`);
-                    reject(new Error(`Failed to load ${src}`));
-                };
-                document.head.appendChild(script);
-            });
+        function showAuthMessage(message, type) {
+            const messageDiv = document.getElementById('authMessage');
+            messageDiv.className = type === 'error' ? 'auth-error' : 'auth-success';
+            messageDiv.textContent = message;
         }
 
-        // Initialiser Stripe
-        function initializeStripe() {
-            // Remplacez par votre clé publique Stripe
-            const STRIPE_PUBLIC_KEY = 'pk_test_YOUR_STRIPE_PUBLIC_KEY';
+        function showAnalytics() {
+            // Cacher la page de connexion
+            document.getElementById('authContainer').style.display = 'none';
             
-            if (typeof Stripe !== 'undefined') {
-                stripe = Stripe(STRIPE_PUBLIC_KEY);
-                elements = stripe.elements();
-                
-                // Créer l'élément de carte
-                const style = {
-                    base: {
-                        color: '#32325d',
-                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                        fontSmoothing: 'antialiased',
-                        fontSize: '16px',
-                        '::placeholder': {
-                            color: '#aab7c4'
+            // Afficher la page analytics
+            document.getElementById('analyticsContainer').classList.add('authenticated');
+            
+            // Mettre à jour les infos utilisateur
+            document.getElementById('currentUserEmail').textContent = authenticatedUser.email;
+            document.getElementById('currentUserRole').textContent = authenticatedUser.role.replace('_', ' ');
+            
+            // Charger les données
+            loadAnalytics();
+            updateLastUpdated();
+            
+            // Sauvegarder la session
+            sessionStorage.setItem('analyticsAuth', JSON.stringify({
+                email: authenticatedUser.email,
+                role: authenticatedUser.role,
+                timestamp: Date.now()
+            }));
+        }
+
+        function logout() {
+            // Effacer la session
+            sessionStorage.removeItem('analyticsAuth');
+            
+            // Réinitialiser
+            authenticatedUser = null;
+            currentUsers = [];
+            filteredUsers = [];
+            
+            // Retourner à la page de connexion
+            document.getElementById('analyticsContainer').classList.remove('authenticated');
+            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('authEmail').value = '';
+            document.getElementById('authMessage').innerHTML = '';
+        }
+
+        // Vérifier la session au chargement
+        async function checkSession() {
+            const session = sessionStorage.getItem('analyticsAuth');
+            
+            if (session) {
+                try {
+                    const data = JSON.parse(session);
+                    
+                    // Vérifier que la session n'est pas trop vieille (24h)
+                    if (Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
+                        // Initialiser d'abord
+                        if (!licenseService) {
+                            await loadLicenseService();
                         }
-                    },
-                    invalid: {
-                        color: '#fa755a',
-                        iconColor: '#fa755a'
+                        
+                        await initializeSupabase();
+                        
+                        // Recharger l'utilisateur
+                        const result = await licenseService.authenticateWithEmail(data.email);
+                        
+                        if (result.valid && (result.user.role === 'company_admin' || result.user.role === 'super_admin')) {
+                            authenticatedUser = result.user;
+                            licenseService.currentUser = authenticatedUser;
+                            showAnalytics();
+                            return;
+                        }
                     }
-                };
+                } catch (error) {
+                    console.error('[Session] Error:', error);
+                }
                 
-                cardElement = elements.create('card', { style: style });
-                cardElement.mount('#card-element');
-                
-                // Gérer les erreurs
-                cardElement.on('change', function(event) {
-                    const displayError = document.getElementById('card-errors');
-                    if (event.error) {
-                        displayError.textContent = event.error.message;
-                    } else {
-                        displayError.textContent = '';
-                    }
-                });
-                
-                console.log('[Analytics] ✅ Stripe initialized');
-            } else {
-                console.warn('[Analytics] Stripe.js not loaded');
+                // Session invalide
+                sessionStorage.removeItem('analyticsAuth');
             }
+        }
+
+        // Charger le service de licence
+        async function loadLicenseService() {
+            // Charger la configuration Supabase d'abord
+            const configScript = document.createElement('script');
+            configScript.src = './config-supabase.js';
+            await new Promise((resolve, reject) => {
+                configScript.onload = resolve;
+                configScript.onerror = reject;
+                document.head.appendChild(configScript);
+            });
+            
+            // Charger le service de licence
+            const licenseScript = document.createElement('script');
+            licenseScript.src = './LicenceService.js';
+            await new Promise((resolve, reject) => {
+                licenseScript.onload = resolve;
+                licenseScript.onerror = reject;
+                document.head.appendChild(licenseScript);
+            });
+            
+            licenseService = window.licenseService;
         }
 
         // Tab management
@@ -1450,151 +1423,43 @@
             }
         }
 
-        // Payment functions
-        function selectPlan(planName, price) {
-            selectedPlan = planName;
-            selectedPrice = price;
-            
-            // Afficher le formulaire de paiement
-            document.getElementById('paymentFormContainer').style.display = 'block';
-            document.getElementById('selectedPlanInfo').textContent = `Plan ${planName} - ${price}€/mois`;
-            
-            // Pré-remplir l'email si l'utilisateur est connecté
-            if (currentUser && currentUser.email) {
-                document.getElementById('paymentEmail').value = currentUser.email;
-                document.getElementById('paymentName').value = currentUser.name || '';
-            }
-            
-            // Scroll vers le formulaire
-            document.getElementById('paymentFormContainer').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function cancelPayment() {
-            document.getElementById('paymentFormContainer').style.display = 'none';
-            selectedPlan = null;
-            selectedPrice = null;
-        }
-
-        // Gérer la soumission du paiement
-        document.getElementById('payment-form').addEventListener('submit', async (event) => {
-            event.preventDefault();
-            
-            if (!stripe || !cardElement) {
-                console.error('Stripe not initialized');
-                return;
-            }
-            
-            const submitButton = document.getElementById('submit-payment');
-            const buttonText = document.getElementById('button-text');
-            const spinner = document.getElementById('spinner');
-            
-            // Désactiver le bouton
-            submitButton.disabled = true;
-            buttonText.style.display = 'none';
-            spinner.style.display = 'block';
-            
-            try {
-                // Créer le payment intent côté serveur (vous devez implémenter cette API)
-                const response = await fetch('/.netlify/functions/create-payment-intent', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        amount: selectedPrice * 100, // Stripe utilise les centimes
-                        plan: selectedPlan,
-                        email: document.getElementById('paymentEmail').value,
-                        name: document.getElementById('paymentName').value
-                    }),
-                });
-                
-                const { clientSecret, error: serverError } = await response.json();
-                
-                if (serverError) {
-                    throw new Error(serverError);
-                }
-                
-                // Confirmer le paiement
-                const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-                    payment_method: {
-                        card: cardElement,
-                        billing_details: {
-                            name: document.getElementById('paymentName').value,
-                            email: document.getElementById('paymentEmail').value
-                        }
-                    }
-                });
-                
-                if (error) {
-                    // Afficher l'erreur
-                    document.getElementById('card-errors').textContent = error.message;
-                } else {
-                    // Paiement réussi
-                    await handlePaymentSuccess(paymentIntent);
-                }
-                
-            } catch (error) {
-                console.error('Payment error:', error);
-                document.getElementById('card-errors').textContent = 'Une erreur est survenue. Veuillez réessayer.';
-            } finally {
-                // Réactiver le bouton
-                submitButton.disabled = false;
-                buttonText.style.display = 'block';
-                spinner.style.display = 'none';
-            }
-        });
-
-        async function handlePaymentSuccess(paymentIntent) {
-            console.log('Payment successful:', paymentIntent);
-            
-            // Mettre à jour la licence de l'utilisateur
-            if (currentUser && licenseService) {
-                const expiresAt = new Date();
-                expiresAt.setMonth(expiresAt.getMonth() + 1); // +1 mois
-                
-                await licenseService.updateUserLicense(
-                    currentUser.id,
-                    'active',
-                    expiresAt
-                );
-            }
-            
-            // Afficher le succès
-            document.getElementById('paymentFormContainer').style.display = 'none';
-            document.getElementById('paymentSuccess').style.display = 'block';
-            
-            // Recharger les données après 3 secondes
-            setTimeout(() => {
-                document.getElementById('paymentSuccess').style.display = 'none';
-                loadUsers();
-                updateSummaryFromRealData();
-            }, 3000);
-        }
-
-        // Users management
+        // Users management - avec filtrage selon les permissions
         async function loadUsers() {
             try {
-                console.log('[Analytics] Loading users from database...');
+                console.log('[Analytics] Loading users with permissions check...');
                 
                 // Vérifier que Supabase est initialisé
                 if (!supabaseClient) {
-                    console.log('[Analytics] Waiting for Supabase initialization...');
-                    return;
+                    console.log('[Analytics] Supabase not ready, initializing...');
+                    await initializeSupabase();
                 }
                 
-                // Charger les utilisateurs depuis la base de données
+                // Construire la requête avec les bonnes colonnes
                 let query = supabaseClient
                     .from('users')
                     .select(`
-                        *,
-                        company:companies(name)
+                        id,
+                        email,
+                        name,
+                        role,
+                        license_status,
+                        license_expires_at,
+                        company_id,
+                        first_login_at,
+                        last_login_at,
+                        login_count,
+                        created_at,
+                        updated_at,
+                        company:companies(id, name, domain)
                     `)
                     .order('created_at', { ascending: false });
                 
                 // Si l'utilisateur est un admin de société, filtrer par sa société
-                if (currentUser && currentUser.role === 'company_admin' && currentUser.company_id) {
-                    query = query.eq('company_id', currentUser.company_id);
+                if (authenticatedUser && authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                    console.log('[Analytics] Filtering by company:', authenticatedUser.company_id);
+                    query = query.eq('company_id', authenticatedUser.company_id);
                 }
+                // Si super admin, pas de filtre
                 
                 const { data: users, error } = await query;
 
@@ -1625,9 +1490,25 @@
             if (!supabaseClient) return;
             
             try {
-                const { data: stats, error } = await supabaseClient
+                let query = supabaseClient
                     .from('user_email_stats')
                     .select('*');
+                
+                // Filtrer par domaine si admin de société
+                if (authenticatedUser && authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                    // Récupérer le domaine de la société
+                    const { data: company } = await supabaseClient
+                        .from('companies')
+                        .select('domain')
+                        .eq('id', authenticatedUser.company_id)
+                        .single();
+                    
+                    if (company && company.domain) {
+                        query = query.eq('domain', company.domain);
+                    }
+                }
+                
+                const { data: stats, error } = await query;
 
                 if (!error && stats) {
                     // Fusionner les stats avec les utilisateurs
@@ -1696,7 +1577,13 @@
             supabaseClient = window.supabase.createClient(
                 config.url,
                 config.anonKey,
-                config.auth
+                {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: false,
+                        detectSessionInUrl: false
+                    }
+                }
             );
             
             console.log('[Analytics] Supabase client initialized');
@@ -1777,6 +1664,7 @@
 
                 // Déterminer si l'utilisateur est actif
                 const lastLogin = user.last_login_at ? new Date(user.last_login_at) : null;
+                const isActive = lastLogin && (new Date() - lastLogin) < 7 * 24 * 60 * 60 * 1000; // 7 jours
 
                 return `
                     <tr>
@@ -1951,30 +1839,61 @@
         async function loadLicenseManagement() {
             const container = document.getElementById('licenseManagement');
             
-            if (!window.licenseService) {
+            if (!window.licenseService || !authenticatedUser) {
                 container.innerHTML = `
                     <div class="no-permissions">
                         <i class="fas fa-exclamation-triangle"></i>
-                        <h3>Service de licence non disponible</h3>
-                        <p>Veuillez recharger la page</p>
+                        <h3>Service non disponible</h3>
+                        <p>Veuillez vous reconnecter</p>
                     </div>
                 `;
                 return;
             }
 
-            // Vérifier si l'utilisateur actuel est admin
-            if (!currentUser || (currentUser.role !== 'company_admin' && currentUser.role !== 'super_admin')) {
-                container.innerHTML = `
-                    <div class="no-permissions">
-                        <i class="fas fa-lock"></i>
-                        <h3>Accès refusé</h3>
-                        <p>Vous n'avez pas les droits d'administration</p>
-                    </div>
-                `;
-                return;
+            // Vérifier que Supabase est initialisé
+            if (!supabaseClient) {
+                await initializeSupabase();
             }
 
-            const companyUsers = await window.licenseService.getCompanyUsers();
+            let companyUsers = [];
+            
+            try {
+                // Charger les utilisateurs selon les permissions
+                if (authenticatedUser.role === 'super_admin') {
+                    // Super admin voit tous les utilisateurs
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .select(`
+                            *,
+                            company:companies(name)
+                        `)
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('[Analytics] Error loading all users:', error);
+                    } else {
+                        companyUsers = data || [];
+                    }
+                } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                    // Admin de société voit seulement ses utilisateurs
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .select(`
+                            *,
+                            company:companies(name)
+                        `)
+                        .eq('company_id', authenticatedUser.company_id)
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('[Analytics] Error loading company users:', error);
+                    } else {
+                        companyUsers = data || [];
+                    }
+                }
+            } catch (error) {
+                console.error('[Analytics] Failed to load users for license management:', error);
+            }
 
             // Calculer les statistiques
             const stats = {
@@ -1995,10 +1914,10 @@
                     </button>
                 </div>
 
-                ${currentUser.company ? `
+                ${authenticatedUser.company_id && companyUsers.length > 0 && companyUsers[0].company ? `
                     <div class="company-info">
-                        <h3>${currentUser.company.name}</h3>
-                        <p>Administrateur : ${currentUser.name || currentUser.email}</p>
+                        <h3>${companyUsers[0].company.name}</h3>
+                        <p>Administrateur : ${authenticatedUser.name || authenticatedUser.email}</p>
                     </div>
                 ` : ''}
 
@@ -2090,41 +2009,80 @@
                 return;
             }
 
-            const result = await window.licenseService.addUserToCompany(email);
-            
-            if (result.success) {
-                emailInput.value = '';
-                await loadLicenseManagement();
-                alert('Utilisateur ajouté avec succès');
-            } else {
-                alert('Erreur : ' + result.error);
+            try {
+                // Initialiser le service de licence s'il n'est pas déjà prêt
+                if (!window.licenseService.initialized) {
+                    await window.licenseService.initialize();
+                }
+
+                // Définir l'utilisateur actuel pour le service
+                window.licenseService.currentUser = authenticatedUser;
+
+                const result = await window.licenseService.addUserToCompany(email);
+                
+                if (result.success) {
+                    emailInput.value = '';
+                    await loadLicenseManagement();
+                    alert('Utilisateur ajouté avec succès');
+                } else {
+                    alert('Erreur : ' + result.error);
+                }
+            } catch (error) {
+                console.error('[Analytics] Error adding user:', error);
+                alert('Erreur lors de l\'ajout de l\'utilisateur');
             }
         }
 
         // Fonction pour mettre à jour le statut
         async function updateUserStatus(userId, newStatus) {
-            const result = await window.licenseService.updateUserLicense(userId, newStatus);
-            
-            if (result.success) {
-                await loadLicenseManagement();
-                alert('Statut mis à jour avec succès');
-            } else {
-                alert('Erreur : ' + result.error);
+            try {
+                // Initialiser le service de licence s'il n'est pas déjà prêt
+                if (!window.licenseService.initialized) {
+                    await window.licenseService.initialize();
+                }
+
+                // Définir l'utilisateur actuel pour le service
+                window.licenseService.currentUser = authenticatedUser;
+
+                const result = await window.licenseService.updateUserLicense(userId, newStatus);
+                
+                if (result.success) {
+                    await loadLicenseManagement();
+                    alert('Statut mis à jour avec succès');
+                } else {
+                    alert('Erreur : ' + result.error);
+                }
+            } catch (error) {
+                console.error('[Analytics] Error updating status:', error);
+                alert('Erreur lors de la mise à jour du statut');
             }
         }
 
         // Fonction pour étendre la licence
         async function extendLicense(userId) {
-            const newExpiry = new Date();
-            newExpiry.setDate(newExpiry.getDate() + 30);
-            
-            const result = await window.licenseService.updateUserLicense(userId, 'active', newExpiry);
-            
-            if (result.success) {
-                await loadLicenseManagement();
-                alert('Licence étendue de 30 jours');
-            } else {
-                alert('Erreur : ' + result.error);
+            try {
+                const newExpiry = new Date();
+                newExpiry.setDate(newExpiry.getDate() + 30);
+                
+                // Initialiser le service de licence s'il n'est pas déjà prêt
+                if (!window.licenseService.initialized) {
+                    await window.licenseService.initialize();
+                }
+
+                // Définir l'utilisateur actuel pour le service
+                window.licenseService.currentUser = authenticatedUser;
+
+                const result = await window.licenseService.updateUserLicense(userId, 'active', newExpiry);
+                
+                if (result.success) {
+                    await loadLicenseManagement();
+                    alert('Licence étendue de 30 jours');
+                } else {
+                    alert('Erreur : ' + result.error);
+                }
+            } catch (error) {
+                console.error('[Analytics] Error extending license:', error);
+                alert('Erreur lors de l\'extension de la licence');
             }
         }
 
@@ -2198,6 +2156,7 @@
         }
 
         // Event listeners
+        document.getElementById('authForm').addEventListener('submit', handleAuthentication);
         document.getElementById('userSearch').addEventListener('input', filterUsers);
         document.getElementById('statusFilter').addEventListener('change', filterUsers);
         document.getElementById('companyFilter').addEventListener('change', filterUsers);
@@ -2211,19 +2170,16 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('[Analytics Page] DOM loaded, initializing...');
+            console.log('[Analytics Page] DOM loaded, initializing with authentication...');
             
-            // Initialiser tous les services
-            await initializeServices();
-            
-            // Charger les analytics
-            loadAnalytics();
-            updateLastUpdated();
+            // Vérifier la session existante
+            await checkSession();
         });
 
         // Debug function
         window.debugAnalytics = function() {
             console.log('=== ANALYTICS PAGE DEBUG ===');
+            console.log('Authenticated user:', authenticatedUser);
             console.log('Current tab:', currentTab);
             console.log('Current users:', currentUsers);
             console.log('Filtered users:', filteredUsers);
@@ -2231,10 +2187,10 @@
             console.log('Analytics module:', analyticsModule);
             console.log('License service:', licenseService);
             console.log('Supabase client:', supabaseClient);
-            console.log('Current user:', currentUser);
-            console.log('Stripe initialized:', !!stripe);
             
             return {
+                authenticated: !!authenticatedUser,
+                userRole: authenticatedUser?.role,
                 currentTab,
                 usersCount: currentUsers.length,
                 filteredCount: filteredUsers.length,
@@ -2242,13 +2198,11 @@
                 analyticsModule: !!analyticsModule,
                 licenseService: !!licenseService,
                 supabaseClient: !!supabaseClient,
-                currentUser: currentUser,
-                stripeReady: !!stripe,
                 realData: currentUsers.length > 0
             };
         };
 
-        console.log('[Analytics Page] ✅ Analytics page initialized with Stripe payment module');
+        console.log('[Analytics Page] ✅ Analytics page with authentication and permissions initialized');
         console.log('[Analytics Page] Use debugAnalytics() for debug information');
     </script>
 </body>
