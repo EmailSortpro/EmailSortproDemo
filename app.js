@@ -1,5 +1,5 @@
-// app.js - Application EmailSortPro avec intégration Analytics complète v4.2
-// Tracking des emails en clair et filtrage par domaine
+// app.js - Application EmailSortPro avec intégration Analytics et Contrôle de Licence v5.0
+// Tracking des emails en clair, filtrage par domaine et vérification des licences
 
 class App {
     constructor() {
@@ -13,8 +13,10 @@ class App {
         this.currentPage = 'dashboard';
         this.netlifyDomain = 'coruscating-dodol-f30e8d.netlify.app';
         this.isNetlifyEnv = window.location.hostname.includes('netlify.app');
+        this.licenseValid = false;
+        this.licenseStatus = null;
         
-        console.log('[App] Constructor - EmailSortPro v4.2 with analytics email tracking...');
+        console.log('[App] Constructor - EmailSortPro v5.0 with license control...');
         console.log('[App] Environment:', this.isNetlifyEnv ? 'Netlify' : 'Local');
         console.log('[App] Domain:', window.location.hostname);
         
@@ -56,7 +58,7 @@ class App {
     }
 
     async init() {
-        console.log('[App] Initializing dual provider application...');
+        console.log('[App] Initializing dual provider application with license control...');
         
         if (this.initializationPromise) {
             console.log('[App] Already initializing, waiting...');
@@ -136,7 +138,647 @@ class App {
     }
 
     // =====================================
-    // INITIALISATION DES MODULES CRITIQUES AVEC VERIFICATION ROBUSTE
+    // VÉRIFICATION DE L'AUTHENTIFICATION AVEC LICENCE
+    // =====================================
+    async checkAuthenticationStatus() {
+        console.log('[App] Checking authentication status for both providers...');
+        
+        // Vérifier d'abord s'il y a un callback Google à traiter
+        const googleCallbackHandled = await this.handleGoogleCallback();
+        if (googleCallbackHandled) {
+            // La vérification de licence sera faite dans verifyUserAccess
+            return;
+        }
+        
+        // Vérifier Microsoft d'abord
+        if (window.authService && window.authService.isAuthenticated()) {
+            const account = window.authService.getAccount();
+            if (account) {
+                console.log('[App] Microsoft authentication found, getting user info...');
+                try {
+                    this.user = await window.authService.getUserInfo();
+                    this.user.provider = 'microsoft';
+                    this.isAuthenticated = true;
+                    this.activeProvider = 'microsoft';
+                    
+                    // VÉRIFIER LA LICENCE AVANT D'AFFICHER L'APP
+                    const licenseValid = await this.verifyUserAccess(this.user);
+                    if (!licenseValid) {
+                        console.log('[App] ❌ License check failed, access denied');
+                        return; // Ne pas afficher l'app
+                    }
+                    
+                    // ANALYTICS: Track authentication avec email en clair
+                    this.trackUserAuthentication(this.user);
+                    
+                    console.log('[App] ✅ Microsoft user authenticated with valid license:', this.user.displayName || this.user.mail);
+                    this.showAppWithTransition();
+                    return;
+                } catch (userInfoError) {
+                    console.error('[App] Error getting Microsoft user info:', userInfoError);
+                    if (userInfoError.message.includes('401') || userInfoError.message.includes('403')) {
+                        console.log('[App] Microsoft token seems invalid, clearing auth');
+                        await window.authService.reset();
+                    }
+                }
+            }
+        }
+        
+        // Vérifier Google ensuite
+        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+            const account = window.googleAuthService.getAccount();
+            if (account) {
+                console.log('[App] Google authentication found, getting user info...');
+                try {
+                    this.user = await window.googleAuthService.getUserInfo();
+                    this.user.provider = 'google';
+                    this.isAuthenticated = true;
+                    this.activeProvider = 'google';
+                    
+                    // VÉRIFIER LA LICENCE AVANT D'AFFICHER L'APP
+                    const licenseValid = await this.verifyUserAccess(this.user);
+                    if (!licenseValid) {
+                        console.log('[App] ❌ License check failed, access denied');
+                        return; // Ne pas afficher l'app
+                    }
+                    
+                    // ANALYTICS: Track authentication avec email en clair
+                    this.trackUserAuthentication(this.user);
+                    
+                    console.log('[App] ✅ Google user authenticated with valid license:', this.user.displayName || this.user.email);
+                    this.showAppWithTransition();
+                    return;
+                } catch (userInfoError) {
+                    console.error('[App] Error getting Google user info:', userInfoError);
+                    await window.googleAuthService.reset();
+                }
+            }
+        }
+        
+        // Aucune authentification trouvée
+        console.log('[App] No valid authentication found');
+        this.showLogin();
+    }
+
+    // =====================================
+    // NOUVELLE MÉTHODE: VÉRIFICATION DE LICENCE
+    // =====================================
+    async verifyUserAccess(user) {
+        console.log('[App] Verifying user access with license check...');
+        
+        try {
+            // Extraire l'email selon le provider
+            const userEmail = user.email || user.mail || user.userPrincipalName;
+            
+            if (!userEmail) {
+                console.error('[App] No email found for user');
+                this.showLicenseError({
+                    status: 'error',
+                    message: 'Email utilisateur non trouvé'
+                });
+                return false;
+            }
+            
+            console.log('[App] Checking license for email:', userEmail);
+            
+            // Stocker l'email pour future utilisation
+            this.storeUserEmail(userEmail);
+            
+            // Vérifier si LicenseService est disponible
+            if (!window.licenseService) {
+                console.error('[App] License service not available');
+                this.showLicenseError({
+                    status: 'error',
+                    message: 'Service de licence non disponible'
+                });
+                return false;
+            }
+            
+            // Initialiser le service si nécessaire
+            if (!window.licenseService.initialized) {
+                console.log('[App] Initializing license service...');
+                await window.licenseService.initialize();
+            }
+            
+            // Vérifier la licence
+            const licenseResult = await window.licenseService.authenticateWithEmail(userEmail);
+            
+            console.log('[App] License result:', {
+                valid: licenseResult.valid,
+                status: licenseResult.status,
+                daysRemaining: licenseResult.daysRemaining
+            });
+            
+            // Stocker le résultat
+            this.licenseStatus = licenseResult;
+            this.licenseValid = licenseResult.valid;
+            
+            if (licenseResult.valid) {
+                // Stocker les infos utilisateur complètes
+                window.currentUser = licenseResult.user;
+                
+                // Afficher un avertissement si période d'essai proche de l'expiration
+                if (licenseResult.status === 'trial' && licenseResult.daysRemaining <= 3) {
+                    this.showTrialWarning(licenseResult.daysRemaining);
+                }
+                
+                // Tracker l'événement
+                this.trackEvent('license_check_success', {
+                    email: userEmail,
+                    status: licenseResult.status,
+                    daysRemaining: licenseResult.daysRemaining
+                });
+                
+                return true;
+            } else {
+                // Licence invalide
+                console.warn('[App] License invalid:', licenseResult);
+                
+                // Tracker l'échec
+                this.trackEvent('license_check_failed', {
+                    email: userEmail,
+                    status: licenseResult.status,
+                    message: licenseResult.message
+                });
+                
+                // Afficher l'erreur de licence
+                this.showLicenseError(licenseResult);
+                
+                return false;
+            }
+            
+        } catch (error) {
+            console.error('[App] Error verifying user access:', error);
+            
+            // Tracker l'erreur
+            this.trackError('license_verification_error', {
+                message: error.message,
+                userEmail: user.email || user.mail
+            });
+            
+            // En cas d'erreur, permettre l'accès par défaut (fail-open)
+            if (error.message.includes('network') || error.message.includes('fetch')) {
+                console.log('[App] Network error, allowing access');
+                this.showNetworkWarning();
+                return true;
+            }
+            
+            // Pour les autres erreurs, bloquer l'accès
+            this.showLicenseError({
+                status: 'error',
+                message: 'Erreur lors de la vérification de votre licence: ' + error.message
+            });
+            
+            return false;
+        }
+    }
+
+    // =====================================
+    // AFFICHAGE DES ERREURS DE LICENCE
+    // =====================================
+    showLicenseError(result) {
+        console.log('[App] Showing license error:', result);
+        
+        const { status, message, adminContact } = result;
+        
+        // Masquer le loading
+        this.hideModernLoading();
+        
+        // Supprimer les overlays existants
+        document.querySelectorAll('.license-error-overlay').forEach(el => el.remove());
+        
+        // Créer l'overlay d'erreur
+        const overlay = document.createElement('div');
+        overlay.className = 'license-error-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            backdrop-filter: blur(10px);
+        `;
+        
+        let icon = '⚠️';
+        let title = 'Accès refusé';
+        let actions = '';
+        
+        switch (status) {
+            case 'expired':
+                icon = '⏰';
+                title = 'Période d\'essai expirée';
+                actions = `
+                    <button onclick="window.app.retryAuthentication()" class="btn-primary">
+                        <i class="fas fa-refresh"></i> Réessayer
+                    </button>
+                    ${adminContact ? `
+                        <button onclick="window.app.contactAdmin()" class="btn-secondary">
+                            <i class="fas fa-envelope"></i> Contacter l'admin
+                        </button>
+                    ` : ''}
+                `;
+                break;
+                
+            case 'blocked':
+                icon = '🚫';
+                title = 'Accès bloqué';
+                actions = `
+                    ${adminContact ? `
+                        <button onclick="window.app.contactAdmin()" class="btn-secondary">
+                            <i class="fas fa-envelope"></i> Contacter l'admin
+                        </button>
+                    ` : ''}
+                `;
+                break;
+                
+            case 'not_found':
+                icon = '❓';
+                title = 'Compte non trouvé';
+                actions = `
+                    <button onclick="window.app.retryAuthentication()" class="btn-primary">
+                        <i class="fas fa-refresh"></i> Réessayer
+                    </button>
+                `;
+                break;
+                
+            default:
+                actions = `
+                    <button onclick="window.app.retryAuthentication()" class="btn-primary">
+                        <i class="fas fa-refresh"></i> Réessayer
+                    </button>
+                `;
+        }
+        
+        const errorBox = document.createElement('div');
+        errorBox.style.cssText = `
+            background: white;
+            padding: 2.5rem;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 550px;
+            width: 90%;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+            animation: slideInUp 0.3s ease-out;
+        `;
+        
+        errorBox.innerHTML = `
+            <div style="color: #dc2626; font-size: 4rem; margin-bottom: 1.5rem;">${icon}</div>
+            <h2 style="color: #1f2937; margin-bottom: 1rem; font-size: 1.75rem;">${title}</h2>
+            <p style="color: #6b7280; margin-bottom: 1.5rem; line-height: 1.6;">${message || 'Une erreur est survenue'}</p>
+            ${adminContact ? `
+                <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 16px; margin: 16px 0; text-align: left;">
+                    <h4 style="margin: 0 0 8px 0; color: #0c4a6e; font-size: 14px;">👤 Contactez votre administrateur :</h4>
+                    <p style="margin: 0; color: #0369a1;">
+                        <strong>${adminContact.name}</strong><br>
+                        📧 <a href="mailto:${adminContact.email}" style="color: #0284c7;">${adminContact.email}</a>
+                    </p>
+                </div>
+            ` : ''}
+            <div style="display: flex; gap: 12px; justify-content: center; margin-top: 24px;">
+                ${actions}
+                <button onclick="window.app.forceLogout()" class="btn-secondary">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </button>
+            </div>
+        `;
+        
+        overlay.appendChild(errorBox);
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+        
+        // Ajouter les styles si nécessaire
+        if (!document.getElementById('license-error-styles')) {
+            const styles = document.createElement('style');
+            styles.id = 'license-error-styles';
+            styles.textContent = `
+                @keyframes slideInUp {
+                    from { opacity: 0; transform: translateY(30px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .btn-primary {
+                    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    font-weight: 600;
+                    transition: all 0.2s ease;
+                }
+                .btn-primary:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+                }
+                .btn-secondary {
+                    background: #6b7280;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    font-weight: 600;
+                    transition: all 0.2s ease;
+                }
+                .btn-secondary:hover {
+                    background: #4b5563;
+                }
+            `;
+            document.head.appendChild(styles);
+        }
+        
+        // Masquer la page de login si visible
+        const loginPage = document.getElementById('loginPage');
+        if (loginPage) {
+            loginPage.style.display = 'none';
+        }
+    }
+
+    showTrialWarning(daysRemaining) {
+        console.log('[App] Showing trial warning:', daysRemaining, 'days remaining');
+        
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'trial-warning-banner';
+        warningDiv.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            z-index: 9999;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            animation: slideDown 0.3s ease-out;
+        `;
+        
+        warningDiv.innerHTML = `
+            ⏳ Attention : Votre période d'essai expire dans ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''} !
+            <button onclick="this.parentElement.remove()" style="
+                background: rgba(255,255,255,0.2);
+                border: none;
+                color: white;
+                padding: 4px 8px;
+                border-radius: 4px;
+                margin-left: 10px;
+                cursor: pointer;
+                font-weight: normal;
+            ">✕</button>
+        `;
+        
+        // Supprimer les avertissements existants
+        document.querySelectorAll('.trial-warning-banner').forEach(el => el.remove());
+        
+        document.body.insertBefore(warningDiv, document.body.firstChild);
+        
+        // Auto-hide après 10 secondes
+        setTimeout(() => {
+            if (warningDiv.parentNode) {
+                warningDiv.remove();
+            }
+        }, 10000);
+        
+        // Tracker l'avertissement
+        this.trackEvent('trial_warning_shown', {
+            daysRemaining: daysRemaining
+        });
+    }
+
+    showNetworkWarning() {
+        console.log('[App] Showing network warning');
+        
+        if (window.uiManager) {
+            window.uiManager.showToast(
+                'Vérification de licence impossible (réseau). Accès temporaire accordé.',
+                'warning',
+                5000
+            );
+        }
+    }
+
+    // =====================================
+    // MÉTHODES POUR LA GESTION DES LICENCES
+    // =====================================
+    
+    retryAuthentication() {
+        console.log('[App] Retry authentication requested');
+        
+        // Effacer le cache de licence
+        if (window.licenseService) {
+            window.licenseService.clearCache();
+        }
+        
+        // Recharger la page
+        window.location.reload();
+    }
+    
+    contactAdmin() {
+        console.log('[App] Contact admin requested');
+        
+        const adminContact = this.licenseStatus?.adminContact;
+        if (adminContact && adminContact.email) {
+            const subject = encodeURIComponent('Demande d\'accès EmailSortPro');
+            const body = encodeURIComponent(`Bonjour,\n\nJe souhaiterais obtenir l'accès à EmailSortPro.\n\nMon email: ${this.user?.email || this.user?.mail || ''}\n\nMerci,`);
+            window.open(`mailto:${adminContact.email}?subject=${subject}&body=${body}`);
+        } else {
+            alert('Informations de contact administrateur non disponibles.');
+        }
+    }
+    
+    forceLogout() {
+        console.log('[App] Force logout requested');
+        this.logout();
+    }
+    
+    storeUserEmail(email) {
+        try {
+            localStorage.setItem('emailsortpro_user_email', email);
+            localStorage.setItem('emailsortpro_last_check', new Date().toISOString());
+        } catch (error) {
+            console.warn('[App] Cannot store email:', error);
+        }
+    }
+
+    // =====================================
+    // TRACKING ANALYTICS AVEC EMAIL EN CLAIR
+    // =====================================
+    trackUserAuthentication(user) {
+        console.log('[App] Tracking user authentication for analytics...');
+        
+        if (!window.analyticsManager || typeof window.analyticsManager.trackAuthentication !== 'function') {
+            console.warn('[App] Analytics manager not available for authentication tracking');
+            return;
+        }
+        
+        try {
+            // Préparer les données utilisateur avec email en clair
+            const userInfo = {
+                displayName: user.displayName || user.name || 'Utilisateur',
+                mail: user.mail || user.email || user.userPrincipalName,
+                userPrincipalName: user.userPrincipalName || user.email,
+                email: user.email || user.mail || user.userPrincipalName, // Email explicite
+                provider: user.provider || 'unknown',
+                // Données supplémentaires si disponibles
+                homeAccountId: user.homeAccountId,
+                localAccountId: user.localAccountId,
+                tenantId: user.tenantId,
+                // Infos de licence
+                licenseStatus: this.licenseStatus?.status,
+                licenseDaysRemaining: this.licenseStatus?.daysRemaining
+            };
+            
+            console.log('[App] ✅ Tracking authentication with email:', {
+                email: userInfo.email,
+                name: userInfo.displayName,
+                provider: userInfo.provider,
+                licenseStatus: userInfo.licenseStatus
+            });
+            
+            // Appeler la méthode de tracking
+            window.analyticsManager.trackAuthentication(userInfo.provider, userInfo);
+            
+            console.log('[App] ✅ Authentication tracked successfully in analytics');
+            
+        } catch (error) {
+            console.warn('[App] Error tracking authentication:', error);
+        }
+    }
+
+    // =====================================
+    // TRACKING D'ÉVÉNEMENTS ANALYTICS
+    // =====================================
+    trackEvent(eventType, eventData = {}) {
+        if (!window.analyticsManager || typeof window.analyticsManager.trackEvent !== 'function') {
+            return;
+        }
+        
+        try {
+            // Ajouter automatiquement les infos utilisateur si disponibles
+            const enrichedData = {
+                ...eventData,
+                userEmail: this.user?.email || this.user?.mail || 'anonymous',
+                userName: this.user?.displayName || this.user?.name || 'Anonymous',
+                provider: this.activeProvider || 'unknown',
+                licenseStatus: this.licenseStatus?.status || 'unknown'
+            };
+            
+            window.analyticsManager.trackEvent(eventType, enrichedData);
+            console.log('[App] ✅ Event tracked:', eventType, enrichedData);
+        } catch (error) {
+            console.warn('[App] Error tracking event:', error);
+        }
+    }
+
+    trackPageChange(pageName) {
+        this.trackEvent('page_change', {
+            page: pageName,
+            previousPage: this.currentPage
+        });
+    }
+
+    trackError(errorType, errorData) {
+        if (!window.analyticsManager || typeof window.analyticsManager.onError !== 'function') {
+            return;
+        }
+        
+        try {
+            window.analyticsManager.onError(errorType, {
+                ...errorData,
+                userEmail: this.user?.email || this.user?.mail || 'anonymous',
+                provider: this.activeProvider || 'unknown',
+                licenseStatus: this.licenseStatus?.status || 'unknown'
+            });
+            console.log('[App] ✅ Error tracked:', errorType, errorData);
+        } catch (error) {
+            console.warn('[App] Error tracking error:', error);
+        }
+    }
+
+    // =====================================
+    // GESTION DU CALLBACK GOOGLE OAuth2
+    // =====================================
+    async handleGoogleCallback() {
+        console.log('[App] Handling Google OAuth2 callback...');
+        
+        try {
+            // Vérifier s'il y a des données de callback Google
+            const callbackDataStr = sessionStorage.getItem('google_callback_data');
+            if (!callbackDataStr) {
+                console.log('[App] No Google callback data found');
+                return false;
+            }
+            
+            const callbackData = JSON.parse(callbackDataStr);
+            console.log('[App] Found Google callback data:', callbackData);
+            
+            // Nettoyer les données de callback
+            sessionStorage.removeItem('google_callback_data');
+            
+            // Traiter le callback avec le service Google
+            const urlParams = new URLSearchParams();
+            urlParams.set('code', callbackData.code);
+            urlParams.set('state', callbackData.state);
+            
+            const success = await window.googleAuthService.handleOAuthCallback(urlParams);
+            
+            if (success) {
+                console.log('[App] ✅ Google callback handled successfully');
+                
+                // Obtenir les informations utilisateur
+                this.user = await window.googleAuthService.getUserInfo();
+                this.user.provider = 'google';
+                this.isAuthenticated = true;
+                this.activeProvider = 'google';
+                
+                // VÉRIFIER LA LICENCE
+                const licenseValid = await this.verifyUserAccess(this.user);
+                if (!licenseValid) {
+                    console.log('[App] ❌ License check failed after Google auth');
+                    return false;
+                }
+                
+                // ANALYTICS: Track authentication
+                this.trackUserAuthentication(this.user);
+                
+                console.log('[App] ✅ Google user authenticated with valid license:', this.user.displayName || this.user.email);
+                this.showAppWithTransition();
+                return true;
+            } else {
+                throw new Error('Google callback processing failed');
+            }
+            
+        } catch (error) {
+            console.error('[App] ❌ Error handling Google callback:', error);
+            
+            // ANALYTICS: Track error
+            this.trackError('google_callback_error', {
+                message: error.message
+            });
+            
+            if (window.uiManager) {
+                window.uiManager.showToast(
+                    'Erreur de traitement Google: ' + error.message,
+                    'error',
+                    8000
+                );
+            }
+            
+            return false;
+        }
+    }
+
+    // =====================================
+    // INITIALISATION DES MODULES CRITIQUES
     // =====================================
     async initializeCriticalModules() {
         console.log('[App] Initializing critical modules...');
@@ -167,255 +809,6 @@ class App {
         
         console.log('[App] Critical modules initialized');
     }
-
-    // [Le reste des méthodes reste identique jusqu'à checkAuthenticationStatus]
-
-    // =====================================
-    // VÉRIFICATION DE L'AUTHENTIFICATION AVEC ANALYTICS
-    // =====================================
-    async checkAuthenticationStatus() {
-        console.log('[App] Checking authentication status for both providers...');
-        
-        // Vérifier d'abord s'il y a un callback Google à traiter
-        const googleCallbackHandled = await this.handleGoogleCallback();
-        if (googleCallbackHandled) {
-            this.showAppWithTransition();
-            return;
-        }
-        
-        // Vérifier Microsoft d'abord
-        if (window.authService && window.authService.isAuthenticated()) {
-            const account = window.authService.getAccount();
-            if (account) {
-                console.log('[App] Microsoft authentication found, getting user info...');
-                try {
-                    this.user = await window.authService.getUserInfo();
-                    this.user.provider = 'microsoft';
-                    this.isAuthenticated = true;
-                    this.activeProvider = 'microsoft';
-                    
-                    // ANALYTICS: Track authentication avec email en clair
-                    this.trackUserAuthentication(this.user);
-                    
-                    console.log('[App] ✅ Microsoft user authenticated:', this.user.displayName || this.user.mail);
-                    this.showAppWithTransition();
-                    return;
-                } catch (userInfoError) {
-                    console.error('[App] Error getting Microsoft user info:', userInfoError);
-                    if (userInfoError.message.includes('401') || userInfoError.message.includes('403')) {
-                        console.log('[App] Microsoft token seems invalid, clearing auth');
-                        await window.authService.reset();
-                    }
-                }
-            }
-        }
-        
-        // Vérifier Google ensuite
-        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
-            const account = window.googleAuthService.getAccount();
-            if (account) {
-                console.log('[App] Google authentication found, getting user info...');
-                try {
-                    this.user = await window.googleAuthService.getUserInfo();
-                    this.user.provider = 'google';
-                    this.isAuthenticated = true;
-                    this.activeProvider = 'google';
-                    
-                    // ANALYTICS: Track authentication avec email en clair
-                    this.trackUserAuthentication(this.user);
-                    
-                    console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
-                    this.showAppWithTransition();
-                    return;
-                } catch (userInfoError) {
-                    console.error('[App] Error getting Google user info:', userInfoError);
-                    await window.googleAuthService.reset();
-                }
-            }
-        }
-        
-        // Aucune authentification trouvée
-        console.log('[App] No valid authentication found');
-        this.showLogin();
-    }
-
-    // =====================================
-    // TRACKING ANALYTICS AVEC EMAIL EN CLAIR
-    // =====================================
-    trackUserAuthentication(user) {
-        console.log('[App] Tracking user authentication for analytics...');
-        
-        if (!window.analyticsManager || typeof window.analyticsManager.trackAuthentication !== 'function') {
-            console.warn('[App] Analytics manager not available for authentication tracking');
-            return;
-        }
-        
-        try {
-            // Préparer les données utilisateur avec email en clair
-            const userInfo = {
-                displayName: user.displayName || user.name || 'Utilisateur',
-                mail: user.mail || user.email || user.userPrincipalName,
-                userPrincipalName: user.userPrincipalName || user.email,
-                email: user.email || user.mail || user.userPrincipalName, // Email explicite
-                provider: user.provider || 'unknown',
-                // Données supplémentaires si disponibles
-                homeAccountId: user.homeAccountId,
-                localAccountId: user.localAccountId,
-                tenantId: user.tenantId
-            };
-            
-            console.log('[App] ✅ Tracking authentication with email:', {
-                email: userInfo.email,
-                name: userInfo.displayName,
-                provider: userInfo.provider
-            });
-            
-            // Appeler la méthode de tracking
-            window.analyticsManager.trackAuthentication(userInfo.provider, userInfo);
-            
-            console.log('[App] ✅ Authentication tracked successfully in analytics');
-            
-        } catch (error) {
-            console.warn('[App] Error tracking authentication:', error);
-        }
-    }
-
-    // =====================================
-    // TRACKING D'ÉVÉNEMENTS ANALYTICS
-    // =====================================
-    trackEvent(eventType, eventData = {}) {
-        if (!window.analyticsManager || typeof window.analyticsManager.trackEvent !== 'function') {
-            return;
-        }
-        
-        try {
-            // Ajouter automatiquement les infos utilisateur si disponibles
-            const enrichedData = {
-                ...eventData,
-                userEmail: this.user?.email || this.user?.mail || 'anonymous',
-                userName: this.user?.displayName || this.user?.name || 'Anonymous',
-                provider: this.activeProvider || 'unknown'
-            };
-            
-            window.analyticsManager.trackEvent(eventType, enrichedData);
-            console.log('[App] ✅ Event tracked:', eventType, enrichedData);
-        } catch (error) {
-            console.warn('[App] Error tracking event:', error);
-        }
-    }
-
-    trackPageChange(pageName) {
-        this.trackEvent('page_change', {
-            page: pageName,
-            previousPage: this.currentPage
-        });
-    }
-
-    trackError(errorType, errorData) {
-        if (!window.analyticsManager || typeof window.analyticsManager.onError !== 'function') {
-            return;
-        }
-        
-        try {
-            window.analyticsManager.onError(errorType, {
-                ...errorData,
-                userEmail: this.user?.email || this.user?.mail || 'anonymous',
-                provider: this.activeProvider || 'unknown'
-            });
-            console.log('[App] ✅ Error tracked:', errorType, errorData);
-        } catch (error) {
-            console.warn('[App] Error tracking error:', error);
-        }
-    }
-
-    // [Les autres méthodes restent identiques...]
-
-    async ensureMailServiceReady() {
-        console.log('[App] Ensuring MailService is ready...');
-        
-        if (window.mailService && typeof window.mailService.getEmails === 'function') {
-            console.log('[App] ✅ MailService already ready');
-            return true;
-        }
-        
-        // Attendre le chargement du service
-        let attempts = 0;
-        const maxAttempts = 30;
-        
-        while ((!window.mailService || typeof window.mailService.getEmails !== 'function') && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.mailService || typeof window.mailService.getEmails !== 'function') {
-            console.warn('[App] MailService not ready, creating fallback...');
-            this.createMailServiceFallback();
-            return false;
-        }
-        
-        console.log('[App] ✅ MailService ready');
-        return true;
-    }
-
-    createMailServiceFallback() {
-        console.log('[App] Creating MailService fallback...');
-        
-        if (!window.mailService) {
-            window.mailService = {};
-        }
-        
-        // Créer des méthodes fallback sécurisées
-        const fallbackMethods = {
-            getEmails: async () => {
-                console.warn('[MailService] Fallback: getEmails called - returning empty array');
-                return [];
-            },
-            
-            getFolders: async () => {
-                console.warn('[MailService] Fallback: getFolders called - returning default folders');
-                return [
-                    { id: 'inbox', displayName: 'Boîte de réception', totalItemCount: 0 },
-                    { id: 'sent', displayName: 'Éléments envoyés', totalItemCount: 0 }
-                ];
-            },
-            
-            getEmailCount: async () => {
-                console.warn('[MailService] Fallback: getEmailCount called - returning 0');
-                return 0;
-            },
-            
-            searchEmails: async () => {
-                console.warn('[MailService] Fallback: searchEmails called - returning empty array');
-                return [];
-            },
-            
-            moveToFolder: async () => {
-                console.warn('[MailService] Fallback: moveToFolder called - operation skipped');
-                return true;
-            },
-            
-            markAsRead: async () => {
-                console.warn('[MailService] Fallback: markAsRead called - operation skipped');
-                return true;
-            },
-            
-            deleteEmail: async () => {
-                console.warn('[MailService] Fallback: deleteEmail called - operation skipped');
-                return true;
-            }
-        };
-        
-        // Ajouter les méthodes manquantes
-        Object.keys(fallbackMethods).forEach(method => {
-            if (typeof window.mailService[method] !== 'function') {
-                window.mailService[method] = fallbackMethods[method];
-            }
-        });
-        
-        console.log('[App] ✅ MailService fallback created');
-    }
-
-    // [Méthodes de vérification des modules identiques...]
 
     async ensureTaskManagerReady() {
         console.log('[App] Ensuring TaskManager is ready...');
@@ -525,6 +918,91 @@ class App {
         return true;
     }
 
+    async ensureMailServiceReady() {
+        console.log('[App] Ensuring MailService is ready...');
+        
+        if (window.mailService && typeof window.mailService.getEmails === 'function') {
+            console.log('[App] ✅ MailService already ready');
+            return true;
+        }
+        
+        // Attendre le chargement du service
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while ((!window.mailService || typeof window.mailService.getEmails !== 'function') && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.mailService || typeof window.mailService.getEmails !== 'function') {
+            console.warn('[App] MailService not ready, creating fallback...');
+            this.createMailServiceFallback();
+            return false;
+        }
+        
+        console.log('[App] ✅ MailService ready');
+        return true;
+    }
+
+    createMailServiceFallback() {
+        console.log('[App] Creating MailService fallback...');
+        
+        if (!window.mailService) {
+            window.mailService = {};
+        }
+        
+        // Créer des méthodes fallback sécurisées
+        const fallbackMethods = {
+            getEmails: async () => {
+                console.warn('[MailService] Fallback: getEmails called - returning empty array');
+                return [];
+            },
+            
+            getFolders: async () => {
+                console.warn('[MailService] Fallback: getFolders called - returning default folders');
+                return [
+                    { id: 'inbox', displayName: 'Boîte de réception', totalItemCount: 0 },
+                    { id: 'sent', displayName: 'Éléments envoyés', totalItemCount: 0 }
+                ];
+            },
+            
+            getEmailCount: async () => {
+                console.warn('[MailService] Fallback: getEmailCount called - returning 0');
+                return 0;
+            },
+            
+            searchEmails: async () => {
+                console.warn('[MailService] Fallback: searchEmails called - returning empty array');
+                return [];
+            },
+            
+            moveToFolder: async () => {
+                console.warn('[MailService] Fallback: moveToFolder called - operation skipped');
+                return true;
+            },
+            
+            markAsRead: async () => {
+                console.warn('[MailService] Fallback: markAsRead called - operation skipped');
+                return true;
+            },
+            
+            deleteEmail: async () => {
+                console.warn('[MailService] Fallback: deleteEmail called - operation skipped');
+                return true;
+            }
+        };
+        
+        // Ajouter les méthodes manquantes
+        Object.keys(fallbackMethods).forEach(method => {
+            if (typeof window.mailService[method] !== 'function') {
+                window.mailService[method] = fallbackMethods[method];
+            }
+        });
+        
+        console.log('[App] ✅ MailService fallback created');
+    }
+
     async ensureScanModulesReady() {
         console.log('[App] Ensuring scan modules are ready...');
         
@@ -623,7 +1101,7 @@ class App {
     }
 
     // =====================================
-    // GESTION INTELLIGENTE DU SCROLL AMELIOREE
+    // GESTION INTELLIGENTE DU SCROLL
     // =====================================
     initializeScrollManager() {
         console.log('[App] Initializing scroll manager...');
@@ -910,71 +1388,6 @@ class App {
         return true;
     }
 
-    // =====================================
-    // GESTION DU CALLBACK GOOGLE OAuth2
-    // =====================================
-    async handleGoogleCallback() {
-        console.log('[App] Handling Google OAuth2 callback...');
-        
-        try {
-            // Vérifier s'il y a des données de callback Google
-            const callbackDataStr = sessionStorage.getItem('google_callback_data');
-            if (!callbackDataStr) {
-                console.log('[App] No Google callback data found');
-                return false;
-            }
-            
-            const callbackData = JSON.parse(callbackDataStr);
-            console.log('[App] Found Google callback data:', callbackData);
-            
-            // Nettoyer les données de callback
-            sessionStorage.removeItem('google_callback_data');
-            
-            // Traiter le callback avec le service Google
-            const urlParams = new URLSearchParams();
-            urlParams.set('code', callbackData.code);
-            urlParams.set('state', callbackData.state);
-            
-            const success = await window.googleAuthService.handleOAuthCallback(urlParams);
-            
-            if (success) {
-                console.log('[App] ✅ Google callback handled successfully');
-                
-                // Obtenir les informations utilisateur
-                this.user = await window.googleAuthService.getUserInfo();
-                this.user.provider = 'google';
-                this.isAuthenticated = true;
-                this.activeProvider = 'google';
-                
-                // ANALYTICS: Track authentication
-                this.trackUserAuthentication(this.user);
-                
-                console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
-                return true;
-            } else {
-                throw new Error('Google callback processing failed');
-            }
-            
-        } catch (error) {
-            console.error('[App] ❌ Error handling Google callback:', error);
-            
-            // ANALYTICS: Track error
-            this.trackError('google_callback_error', {
-                message: error.message
-            });
-            
-            if (window.uiManager) {
-                window.uiManager.showToast(
-                    'Erreur de traitement Google: ' + error.message,
-                    'error',
-                    8000
-                );
-            }
-            
-            return false;
-        }
-    }
-
     async handleInitializationError(error) {
         console.error('[App] Initialization error:', error);
         
@@ -1013,13 +1426,23 @@ class App {
     setupEventListeners() {
         console.log('[App] Setting up event listeners...');
         
-        // NAVIGATION CORRIGÉE AVEC ANALYTICS
+        // NAVIGATION CORRIGÉE AVEC ANALYTICS ET LICENCE
         document.querySelectorAll('.nav-item').forEach(item => {
             const newItem = item.cloneNode(true);
             item.parentNode.replaceChild(newItem, item);
             
             newItem.addEventListener('click', (e) => {
                 try {
+                    // Vérifier la licence avant la navigation
+                    if (!this.licenseValid) {
+                        console.warn('[App] Navigation blocked - invalid license');
+                        this.showLicenseError(this.licenseStatus || {
+                            status: 'error',
+                            message: 'Licence invalide'
+                        });
+                        return;
+                    }
+                    
                     const page = e.currentTarget.dataset.page;
                     if (page && window.pageManager) {
                         this.currentPage = page;
@@ -1052,6 +1475,21 @@ class App {
                     }
                 }
             });
+        });
+
+        // Écouter les événements de licence
+        window.addEventListener('licenseCheckFailed', (event) => {
+            console.log('[App] License check failed event received:', event.detail);
+            this.licenseValid = false;
+            this.licenseStatus = event.detail;
+            this.showLicenseError(event.detail);
+        });
+
+        window.addEventListener('userAuthenticated', (event) => {
+            console.log('[App] User authenticated event received:', event.detail);
+            this.licenseValid = true;
+            this.licenseStatus = event.detail.status;
+            window.currentUser = event.detail.user;
         });
 
         // Gestion globale des erreurs avec analytics
@@ -1151,11 +1589,11 @@ class App {
             }
         });
 
-        console.log('[App] ✅ Event listeners set up with error handling and analytics');
+        console.log('[App] ✅ Event listeners set up with error handling, analytics and license control');
     }
 
     // =====================================
-    // MÉTHODES DE CONNEXION AVEC ANALYTICS
+    // MÉTHODES DE CONNEXION AVEC ANALYTICS ET LICENCE
     // =====================================
 
     // Méthode de connexion unifiée (backward compatibility)
@@ -1246,6 +1684,16 @@ class App {
             
             this.showModernLoading('Déconnexion...');
             
+            // Réinitialiser le statut de licence
+            this.licenseValid = false;
+            this.licenseStatus = null;
+            
+            // Effacer le cache de licence
+            if (window.licenseService) {
+                window.licenseService.clearCache();
+                window.licenseService.reset();
+            }
+            
             // Déconnexion selon le provider actif
             if (this.activeProvider === 'microsoft' && window.authService) {
                 await window.authService.logout();
@@ -1295,6 +1743,8 @@ class App {
         this.isInitializing = false;
         this.initializationPromise = null;
         this.currentPage = 'dashboard';
+        this.licenseValid = false;
+        this.licenseStatus = null;
         
         // Nettoyer les deux services d'authentification
         if (window.authService && typeof window.authService.forceCleanup === 'function') {
@@ -1303,6 +1753,11 @@ class App {
         
         if (window.googleAuthService && typeof window.googleAuthService.forceCleanup === 'function') {
             window.googleAuthService.forceCleanup();
+        }
+        
+        // Réinitialiser le service de licence
+        if (window.licenseService) {
+            window.licenseService.reset();
         }
         
         // Nettoyer le localStorage sélectivement
@@ -1327,6 +1782,10 @@ class App {
         } catch (e) {
             console.warn('[App] Error cleaning sessionStorage:', e);
         }
+        
+        // Nettoyer les variables globales
+        window.currentUser = null;
+        window.licenseStatus = null;
         
         setTimeout(() => {
             window.location.reload();
@@ -1359,7 +1818,8 @@ class App {
         // ANALYTICS: Track app display
         this.trackEvent('app_displayed', {
             provider: this.activeProvider,
-            userEmail: this.user?.email || this.user?.mail
+            userEmail: this.user?.email || this.user?.mail,
+            licenseStatus: this.licenseStatus?.status
         });
         
         this.hideModernLoading();
@@ -1411,7 +1871,12 @@ class App {
         
         // Mettre à jour l'interface utilisateur avec le provider
         if (window.uiManager && typeof window.uiManager.updateAuthStatus === 'function') {
-            window.uiManager.updateAuthStatus(this.user);
+            const userData = {
+                ...this.user,
+                licenseStatus: this.licenseStatus?.status,
+                licenseDaysRemaining: this.licenseStatus?.daysRemaining
+            };
+            window.uiManager.updateAuthStatus(userData);
         }
         
         // Mettre à jour l'affichage utilisateur avec badge provider
@@ -1465,7 +1930,7 @@ class App {
             window.checkScrollNeeded();
         }, 1000);
         
-        console.log(`[App] ✅ Application fully displayed with ${this.activeProvider} provider`);
+        console.log(`[App] ✅ Application fully displayed with ${this.activeProvider} provider and license control`);
     }
 
     showDashboardFallback() {
@@ -1515,6 +1980,19 @@ class App {
                             <i class="fas fa-${this.activeProvider === 'microsoft' ? 'envelope' : 'envelope'}"></i>
                             Connecté via ${this.activeProvider === 'microsoft' ? 'Microsoft Outlook' : 'Google Gmail'}
                         </div>
+                        ${this.licenseStatus ? `
+                            <div class="license-info">
+                                ${this.licenseStatus.status === 'trial' ? `
+                                    <span class="license-badge trial">
+                                        Période d'essai - ${this.licenseStatus.daysRemaining} jours restants
+                                    </span>
+                                ` : `
+                                    <span class="license-badge active">
+                                        Licence active
+                                    </span>
+                                `}
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
             </div>
@@ -1587,12 +2065,35 @@ class App {
                 border-radius: 25px;
                 font-weight: 600;
                 color: white;
+                margin: 0.5rem;
             }
             .provider-badge.microsoft {
                 background: linear-gradient(135deg, #0078d4, #106ebe);
             }
             .provider-badge.google {
                 background: linear-gradient(135deg, #4285f4, #34a853);
+            }
+            .license-info {
+                margin-top: 1rem;
+            }
+            .license-badge {
+                display: inline-block;
+                padding: 0.5rem 1rem;
+                border-radius: 20px;
+                font-size: 0.9rem;
+                font-weight: 600;
+            }
+            .license-badge.trial {
+                background: #f59e0b;
+                color: white;
+            }
+            .license-badge.active {
+                background: #10b981;
+                color: white;
+            }
+            @keyframes slideDown {
+                from { transform: translateY(-100%); }
+                to { transform: translateY(0); }
             }
         `;
         
@@ -1739,7 +2240,7 @@ class App {
     }
 
     // =====================================
-    // DIAGNOSTIC ET INFORMATIONS AVEC ANALYTICS
+    // DIAGNOSTIC ET INFORMATIONS AVEC ANALYTICS ET LICENCE
     // =====================================
     getDiagnosticInfo() {
         return {
@@ -1754,13 +2255,26 @@ class App {
                 activeProvider: this.activeProvider,
                 currentPage: this.currentPage,
                 isInitialized: !this.isInitializing,
-                initAttempts: this.initializationAttempts
+                initAttempts: this.initializationAttempts,
+                licenseValid: this.licenseValid,
+                licenseStatus: this.licenseStatus
             },
             user: this.user ? {
                 name: this.user.displayName || this.user.name,
                 email: this.user.mail || this.user.email,
                 provider: this.user.provider
             } : null,
+            license: {
+                valid: this.licenseValid,
+                status: this.licenseStatus?.status,
+                daysRemaining: this.licenseStatus?.daysRemaining,
+                message: this.licenseStatus?.message,
+                currentUser: window.currentUser ? {
+                    email: window.currentUser.email,
+                    role: window.currentUser.role,
+                    licenseStatus: window.currentUser.license_status
+                } : null
+            },
             analytics: {
                 available: !!window.analyticsManager,
                 tracking: !!window.analyticsManager && typeof window.analyticsManager.trackEvent === 'function',
@@ -1778,6 +2292,11 @@ class App {
                     isAuthenticated: window.googleAuthService.isAuthenticated(),
                     method: 'Direct OAuth2 (sans iframe)',
                     avoidsiFrameError: true
+                } : { available: false },
+                licenseService: window.licenseService ? {
+                    available: true,
+                    isInitialized: window.licenseService.initialized,
+                    hasCache: !!window.licenseService.cachedLicenseStatus
                 } : { available: false },
                 mailService: window.mailService ? {
                     available: true,
@@ -1824,7 +2343,9 @@ class App {
                 googleCallback: !!sessionStorage.getItem('google_callback_data'),
                 googleToken: !!localStorage.getItem('google_token_emailsortpro'),
                 directToken: !!sessionStorage.getItem('direct_token_data'),
-                googleOAuthState: !!sessionStorage.getItem('google_oauth_state')
+                googleOAuthState: !!sessionStorage.getItem('google_oauth_state'),
+                userEmail: localStorage.getItem('emailsortpro_user_email'),
+                lastCheck: localStorage.getItem('emailsortpro_last_check')
             },
             errors: {
                 lastGlobalError: window.lastGlobalError || null,
@@ -1833,9 +2354,9 @@ class App {
         };
     }
 
-    // Méthode de test pour vérifier les services critiques avec analytics
+    // Méthode de test pour vérifier les services critiques avec analytics et licence
     testCriticalServices() {
-        console.group('🧪 Test des services critiques avec analytics');
+        console.group('🧪 Test des services critiques avec analytics et licence');
         
         const tests = [];
         
@@ -1872,6 +2393,17 @@ class App {
             tests.push({ service: 'TaskManager', status: '❌ ERROR', details: error.message });
         }
         
+        // Test License Service
+        try {
+            if (window.licenseService && window.licenseService.initialized) {
+                tests.push({ service: 'License Service', status: '✅ OK', details: 'Initialisé' });
+            } else {
+                tests.push({ service: 'License Service', status: '⚠️ WARNING', details: 'Non initialisé' });
+            }
+        } catch (error) {
+            tests.push({ service: 'License Service', status: '❌ ERROR', details: error.message });
+        }
+        
         // Test Auth Services
         try {
             if (window.authService && window.authService.isInitialized) {
@@ -1904,6 +2436,13 @@ class App {
             tests.push({ service: 'Analytics Manager', status: '❌ ERROR', details: error.message });
         }
         
+        // Test License Status
+        tests.push({ 
+            service: 'License Status', 
+            status: this.licenseValid ? '✅ VALID' : '❌ INVALID', 
+            details: this.licenseStatus?.message || 'No status' 
+        });
+        
         tests.forEach(test => {
             console.log(`${test.status} ${test.service}: ${test.details}`);
         });
@@ -1914,7 +2453,7 @@ class App {
 }
 
 // =====================================
-// FONCTIONS GLOBALES D'URGENCE AVEC ANALYTICS
+// FONCTIONS GLOBALES D'URGENCE AVEC ANALYTICS ET LICENCE
 // =====================================
 
 window.emergencyReset = function() {
@@ -1945,13 +2484,31 @@ window.emergencyReset = function() {
         console.warn('[Emergency] Error clearing sessionStorage:', e);
     }
     
+    // Reset license service
+    if (window.licenseService) {
+        window.licenseService.reset();
+    }
+    
     window.location.reload();
 };
 
 window.forceShowApp = function() {
     console.log('[Global] Force show app triggered');
-    if (window.app && typeof window.app.showAppWithTransition === 'function') {
-        window.app.showAppWithTransition();
+    
+    // Bypass license check for emergency access
+    console.warn('[Global] ⚠️ WARNING: Bypassing license check for emergency access');
+    
+    if (window.app) {
+        window.app.licenseValid = true;
+        window.app.licenseStatus = { 
+            valid: true, 
+            status: 'emergency', 
+            message: 'Emergency access granted' 
+        };
+        
+        if (typeof window.app.showAppWithTransition === 'function') {
+            window.app.showAppWithTransition();
+        }
     } else {
         document.body.classList.add('app-active');
         document.body.classList.remove('login-mode');
@@ -2006,13 +2563,39 @@ window.repairScanModule = function() {
     }
 };
 
+window.testLicense = async function() {
+    console.log('[Global] Testing license service...');
+    
+    if (!window.licenseService) {
+        console.error('[Global] License service not available');
+        return null;
+    }
+    
+    try {
+        const debug = await window.licenseService.debug();
+        console.log('[Global] License service debug:', debug);
+        
+        // Test avec un email
+        const testEmail = localStorage.getItem('emailsortpro_user_email') || 'test@example.com';
+        console.log('[Global] Testing with email:', testEmail);
+        
+        const result = await window.licenseService.authenticateWithEmail(testEmail);
+        console.log('[Global] License test result:', result);
+        
+        return result;
+    } catch (error) {
+        console.error('[Global] License test error:', error);
+        return { error: error.message };
+    }
+};
+
 // =====================================
-// VÉRIFICATION DES SERVICES AVEC ANALYTICS
+// VÉRIFICATION DES SERVICES AVEC ANALYTICS ET LICENCE
 // =====================================
 function checkServicesReady() {
     const requiredServices = ['uiManager'];
     const authServices = ['authService', 'googleAuthService'];
-    const optionalServices = ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule', 'analyticsManager'];
+    const optionalServices = ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule', 'analyticsManager', 'licenseService'];
     
     try {
         const missingRequired = requiredServices.filter(service => !window[service]);
@@ -2040,6 +2623,7 @@ function checkServicesReady() {
         
         console.log('[App] Available auth services:', availableAuthServices);
         console.log('[App] Analytics available:', !!window.analyticsManager);
+        console.log('[App] License service available:', !!window.licenseService);
         return true;
     } catch (error) {
         console.error('[App] Error checking services:', error);
@@ -2052,7 +2636,8 @@ window.checkServices = function() {
         required: ['uiManager', 'AppConfig'],
         auth: ['authService', 'googleAuthService'],
         optional: ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule', 'pageManager', 'taskManager'],
-        analytics: ['analyticsManager']
+        analytics: ['analyticsManager'],
+        license: ['licenseService']
     };
     
     const result = {
@@ -2126,11 +2711,11 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 // =====================================
-// INITIALISATION PRINCIPALE AVEC ANALYTICS
+// INITIALISATION PRINCIPALE AVEC ANALYTICS ET LICENCE
 // =====================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[App] DOM loaded, creating dual provider app instance with analytics...');
+    console.log('[App] DOM loaded, creating dual provider app instance with analytics and license control...');
     
     try {
         document.body.classList.add('login-mode');
@@ -2142,7 +2727,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             try {
                 if (checkServicesReady()) {
-                    console.log('[App] All required services ready, initializing dual provider app with analytics...');
+                    console.log('[App] All required services ready, initializing dual provider app with analytics and license control...');
                     
                     setTimeout(() => {
                         try {
@@ -2240,10 +2825,10 @@ window.addEventListener('load', () => {
 });
 
 // =====================================
-// DIAGNOSTIC GLOBAL AVEC ANALYTICS
+// DIAGNOSTIC GLOBAL AVEC ANALYTICS ET LICENCE
 // =====================================
 window.diagnoseApp = function() {
-    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER + ANALYTICS - EmailSortPro v4.2');
+    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER + ANALYTICS + LICENSE - EmailSortPro v5.0');
     
     try {
         if (window.app) {
@@ -2252,6 +2837,7 @@ window.diagnoseApp = function() {
             console.log('🌐 Environment:', appDiag.environment);
             console.log('📱 App Status:', appDiag.app);
             console.log('👤 User:', appDiag.user);
+            console.log('🔐 License:', appDiag.license);
             console.log('📊 Analytics:', appDiag.analytics);
             console.log('🛠️ Services:', appDiag.services);
             console.log('🏗️ DOM Elements:', appDiag.dom);
@@ -2272,6 +2858,13 @@ window.diagnoseApp = function() {
                 console.log('🏢 Company Stats:', window.analyticsManager.getAllCompanies().length + ' sociétés');
             }
             
+            // Diagnostic licence spécifique
+            if (window.licenseService && window.licenseService.debug) {
+                window.licenseService.debug().then(licenseDebug => {
+                    console.log('🔐 License Debug:', licenseDebug);
+                });
+            }
+            
             return appDiag;
         } else {
             console.log('❌ App instance not available');
@@ -2283,6 +2876,10 @@ window.diagnoseApp = function() {
                 analytics: {
                     available: !!window.analyticsManager,
                     hasData: window.analyticsManager ? !!window.analyticsManager.getGlobalStats : false
+                },
+                license: {
+                    available: !!window.licenseService,
+                    initialized: window.licenseService ? window.licenseService.initialized : false
                 },
                 dom: {
                     loginPage: !!document.getElementById('loginPage'),
@@ -2307,7 +2904,7 @@ window.diagnoseApp = function() {
 };
 
 // =====================================
-// FONCTIONS D'AIDE POUR NETLIFY AVEC ANALYTICS
+// FONCTIONS D'AIDE POUR NETLIFY AVEC ANALYTICS ET LICENCE
 // =====================================
 window.netlifyHelpers = {
     checkDomain: () => {
@@ -2381,6 +2978,31 @@ window.netlifyHelpers = {
         }
         
         console.log('Analytics test results:', results);
+        return results;
+    },
+    
+    testLicense: async () => {
+        const results = {
+            available: !!window.licenseService,
+            initialized: false,
+            debug: null,
+            testAuth: null
+        };
+        
+        if (window.licenseService) {
+            try {
+                results.initialized = window.licenseService.initialized;
+                results.debug = await window.licenseService.debug();
+                
+                // Test avec un email
+                const testEmail = localStorage.getItem('emailsortpro_user_email') || 'test@example.com';
+                results.testAuth = await window.licenseService.authenticateWithEmail(testEmail);
+            } catch (error) {
+                results.error = error.message;
+            }
+        }
+        
+        console.log('License test results:', results);
         return results;
     }
 };
@@ -2511,8 +3133,8 @@ window.analyticsHelpers = {
     }
 };
 
-console.log('✅ App v4.2 loaded - DUAL PROVIDER (Microsoft + Google) + ANALYTICS INTEGRATION');
-console.log('🔧 Fonctions globales disponibles: window.diagnoseApp(), window.testServices(), window.repairMailService(), window.repairScanModule()');
+console.log('✅ App v5.0 loaded - DUAL PROVIDER (Microsoft + Google) + ANALYTICS + LICENSE CONTROL');
+console.log('🔧 Fonctions globales disponibles: window.diagnoseApp(), window.testServices(), window.testLicense(), window.repairMailService(), window.repairScanModule()');
 console.log('🌐 Helpers Netlify: window.netlifyHelpers');
 console.log('📊 Helpers Analytics: window.analyticsHelpers');
-console.log('📈 Analytics tracking: Email en clair, filtrage par domaine et par société');
+console.log('🔐 Contrôle de licence: Email-based authentication with trial support');
