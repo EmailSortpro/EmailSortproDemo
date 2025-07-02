@@ -966,8 +966,9 @@
                     <select class="filter-select" id="statusFilter">
                         <option value="">Tous les statuts</option>
                         <option value="active">Actifs</option>
-                        <option value="inactive">Inactifs</option>
-                        <option value="error">Avec erreurs</option>
+                        <option value="trial">En essai</option>
+                        <option value="expired">Expirés</option>
+                        <option value="blocked">Bloqués</option>
                     </select>
                     <select class="filter-select" id="companyFilter">
                         <option value="">Toutes les sociétés</option>
@@ -986,8 +987,8 @@
                                 <th>Société</th>
                                 <th>Statut</th>
                                 <th>Dernière connexion</th>
-                                <th>Scans</th>
-                                <th>Erreurs</th>
+                                <th>Connexions</th>
+                                <th>Rôle</th>
                                 <th>Licence</th>
                                 <th>Actions</th>
                             </tr>
@@ -1039,55 +1040,10 @@
         let analyticsManager = null;
         let analyticsModule = null;
         let licenseService = null;
+        let supabaseClient = null;
         let currentUsers = [];
         let filteredUsers = [];
         let currentTab = 'overview';
-
-        // Mock data for demonstration (will be replaced by real data)
-        const mockUsers = [
-            {
-                id: 'user1',
-                email: 'john.doe@company1.com',
-                name: 'John Doe',
-                company: 'Company One',
-                status: 'active',
-                lastLogin: new Date(Date.now() - 2 * 60 * 60 * 1000),
-                scansCount: 145,
-                errorsCount: 2,
-                license: { type: 'premium', status: 'active', expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) },
-                errors: [
-                    { timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), message: 'Connexion IMAP échouée' },
-                    { timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000), message: 'Limite de taux atteinte' }
-                ]
-            },
-            {
-                id: 'user2',
-                email: 'jane.smith@company2.com',
-                name: 'Jane Smith',
-                company: 'Company Two',
-                status: 'active',
-                lastLogin: new Date(Date.now() - 30 * 60 * 1000),
-                scansCount: 89,
-                errorsCount: 0,
-                license: { type: 'trial', status: 'active', expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
-                errors: []
-            },
-            {
-                id: 'user3',
-                email: 'bob.wilson@company1.com',
-                name: 'Bob Wilson',
-                company: 'Company One',
-                status: 'inactive',
-                lastLogin: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-                scansCount: 234,
-                errorsCount: 5,
-                license: { type: 'basic', status: 'expired', expires: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
-                errors: [
-                    { timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), message: 'Licence expirée' },
-                    { timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), message: 'Accès refusé' }
-                ]
-            }
-        ];
 
         // Tab management
         function switchTab(tabName) {
@@ -1109,15 +1065,139 @@
             }
         }
 
-        // Users management
-        function loadUsers() {
-            currentUsers = mockUsers; // In real app, load from analyticsManager
-            populateCompanyFilter();
-            filterUsers();
+        // Users management - CORRIGÉ POUR UTILISER LES VRAIES DONNÉES
+        async function loadUsers() {
+            try {
+                console.log('[Analytics] Loading real users from database...');
+                
+                // Initialiser Supabase si nécessaire
+                if (!supabaseClient) {
+                    await initializeSupabase();
+                }
+                
+                // Charger les utilisateurs depuis la base de données
+                const { data: users, error } = await supabaseClient
+                    .from('users')
+                    .select(`
+                        *,
+                        company:companies(name)
+                    `)
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    console.error('[Analytics] Error loading users:', error);
+                    currentUsers = [];
+                } else {
+                    console.log('[Analytics] Loaded users:', users.length);
+                    currentUsers = users || [];
+                }
+                
+                // Charger aussi les stats analytics si disponibles
+                await loadUserStats();
+                
+                populateCompanyFilter();
+                filterUsers();
+                updateSummaryFromRealData();
+                
+            } catch (error) {
+                console.error('[Analytics] Failed to load users:', error);
+                currentUsers = [];
+                filterUsers();
+            }
+        }
+
+        // Charger les statistiques des utilisateurs
+        async function loadUserStats() {
+            if (!supabaseClient) return;
+            
+            try {
+                const { data: stats, error } = await supabaseClient
+                    .from('user_email_stats')
+                    .select('*');
+
+                if (!error && stats) {
+                    // Fusionner les stats avec les utilisateurs
+                    currentUsers = currentUsers.map(user => {
+                        const userStats = stats.find(s => s.email === user.email);
+                        return {
+                            ...user,
+                            total_scans: userStats?.total_scans || 0,
+                            total_sessions: userStats?.total_sessions || 0,
+                            total_errors: userStats?.total_errors || 0
+                        };
+                    });
+                }
+            } catch (error) {
+                console.error('[Analytics] Error loading user stats:', error);
+            }
+        }
+
+        // Mettre à jour le résumé avec les vraies données
+        function updateSummaryFromRealData() {
+            // Utilisateurs actifs
+            const activeUsers = currentUsers.filter(u => 
+                u.license_status === 'active' || u.license_status === 'trial'
+            ).length;
+            document.getElementById('summaryUsers').textContent = activeUsers;
+            
+            // Total des scans
+            const totalScans = currentUsers.reduce((sum, user) => 
+                sum + (user.total_scans || 0), 0
+            );
+            document.getElementById('summaryScans').textContent = totalScans.toLocaleString();
+
+            // Total des erreurs
+            const totalErrors = currentUsers.reduce((sum, user) => 
+                sum + (user.total_errors || 0), 0
+            );
+            document.getElementById('summaryErrors').textContent = totalErrors;
+
+            // Licences actives
+            const activeLicenses = currentUsers.filter(u => 
+                u.license_status === 'active'
+            ).length;
+            document.getElementById('summaryLicenses').textContent = activeLicenses;
+        }
+
+        // Initialiser Supabase
+        async function initializeSupabase() {
+            if (!window.supabaseConfig) {
+                console.error('[Analytics] Supabase config not loaded');
+                return;
+            }
+
+            if (!window.supabase) {
+                // Charger la librairie Supabase
+                await loadSupabaseLibrary();
+            }
+
+            await window.initializeSupabaseConfig();
+            const config = window.supabaseConfig.getConfig();
+            
+            supabaseClient = window.supabase.createClient(
+                config.url,
+                config.anonKey,
+                config.auth
+            );
+            
+            console.log('[Analytics] Supabase client initialized');
+        }
+
+        // Charger la librairie Supabase
+        function loadSupabaseLibrary() {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
         }
 
         function populateCompanyFilter() {
-            const companies = [...new Set(currentUsers.map(user => user.company))];
+            const companies = [...new Set(currentUsers.map(user => 
+                user.company?.name || user.domain || 'Sans société'
+            ))];
             const filter = document.getElementById('companyFilter');
             
             // Clear existing options except first one
@@ -1137,12 +1217,15 @@
             const companyFilter = document.getElementById('companyFilter').value;
 
             filteredUsers = currentUsers.filter(user => {
-                const matchesSearch = user.name.toLowerCase().includes(searchTerm) || 
-                                    user.email.toLowerCase().includes(searchTerm) ||
-                                    user.company.toLowerCase().includes(searchTerm);
+                const userName = user.name || user.email.split('@')[0];
+                const companyName = user.company?.name || user.domain || 'Sans société';
                 
-                const matchesStatus = !statusFilter || user.status === statusFilter;
-                const matchesCompany = !companyFilter || user.company === companyFilter;
+                const matchesSearch = userName.toLowerCase().includes(searchTerm) || 
+                                    user.email.toLowerCase().includes(searchTerm) ||
+                                    companyName.toLowerCase().includes(searchTerm);
+                
+                const matchesStatus = !statusFilter || user.license_status === statusFilter;
+                const matchesCompany = !companyFilter || companyName === companyFilter;
 
                 return matchesSearch && matchesStatus && matchesCompany;
             });
@@ -1163,12 +1246,19 @@
             emptyState.style.display = 'none';
 
             tbody.innerHTML = filteredUsers.map(user => {
-                const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
-                const statusClass = user.status === 'active' ? 'active' : 
-                                  user.status === 'inactive' ? 'inactive' : 'error';
+                const userName = user.name || user.email.split('@')[0];
+                const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                const companyName = user.company?.name || user.domain || 'Sans société';
                 
-                const licenseClass = user.license.status === 'active' ? 'active' : 
-                                   user.license.status === 'expired' ? 'expired' : 'trial';
+                // Déterminer le statut de licence
+                const licenseClass = user.license_status === 'active' ? 'active' : 
+                                   user.license_status === 'expired' ? 'expired' : 
+                                   user.license_status === 'blocked' ? 'blocked' :
+                                   'trial';
+
+                // Déterminer si l'utilisateur est actif
+                const lastLogin = user.last_login_at ? new Date(user.last_login_at) : null;
+                const isActive = lastLogin && (new Date() - lastLogin) < 7 * 24 * 60 * 60 * 1000; // 7 jours
 
                 return `
                     <tr>
@@ -1176,24 +1266,21 @@
                             <div class="user-info">
                                 <div class="user-avatar">${initials}</div>
                                 <div class="user-details">
-                                    <h4>${user.name}</h4>
+                                    <h4>${userName}</h4>
                                     <p>${user.email}</p>
                                 </div>
                             </div>
                         </td>
-                        <td>${user.company}</td>
-                        <td><span class="status-badge ${statusClass}">${user.status}</span></td>
-                        <td>${formatLastLogin(user.lastLogin)}</td>
-                        <td>${user.scansCount.toLocaleString()}</td>
-                        <td>
-                            ${user.errorsCount > 0 ? 
-                                `<span style="color: #dc2626; font-weight: 600;">${user.errorsCount}</span>` : 
-                                `<span style="color: #16a34a;">0</span>`
-                            }
-                        </td>
+                        <td>${companyName}</td>
+                        <td><span class="status-badge ${licenseClass}">${user.license_status || 'trial'}</span></td>
+                        <td>${formatLastLogin(lastLogin)}</td>
+                        <td>${user.login_count || 0}</td>
+                        <td>${user.role || 'user'}</td>
                         <td>
                             <div class="license-info">
-                                <span class="license-badge ${licenseClass}">${user.license.type}</span>
+                                <span class="license-badge ${licenseClass}">
+                                    ${user.license_expires_at ? calculateDaysRemaining(new Date(user.license_expires_at)) : 'Illimitée'}
+                                </span>
                             </div>
                         </td>
                         <td>
@@ -1212,6 +1299,8 @@
         }
 
         function formatLastLogin(date) {
+            if (!date) return 'Jamais';
+            
             const now = new Date();
             const diff = now - date;
             const minutes = Math.floor(diff / 60000);
@@ -1233,7 +1322,8 @@
             const user = currentUsers.find(u => u.id === userId);
             if (!user) return;
 
-            document.getElementById('modalTitle').textContent = `Détails - ${user.name}`;
+            const userName = user.name || user.email.split('@')[0];
+            document.getElementById('modalTitle').textContent = `Détails - ${userName}`;
             
             const modalBody = document.getElementById('modalBody');
             modalBody.innerHTML = `
@@ -1242,7 +1332,7 @@
                     <div class="detail-grid">
                         <div class="detail-item">
                             <label>Nom complet</label>
-                            <value>${user.name}</value>
+                            <value>${userName}</value>
                         </div>
                         <div class="detail-item">
                             <label>Email</label>
@@ -1250,11 +1340,11 @@
                         </div>
                         <div class="detail-item">
                             <label>Société</label>
-                            <value>${user.company}</value>
+                            <value>${user.company?.name || user.domain || 'Non définie'}</value>
                         </div>
                         <div class="detail-item">
-                            <label>Statut</label>
-                            <value><span class="status-badge ${user.status}">${user.status}</span></value>
+                            <label>Rôle</label>
+                            <value>${user.role || 'user'}</value>
                         </div>
                     </div>
                 </div>
@@ -1263,20 +1353,20 @@
                     <h4><i class="fas fa-chart-line"></i> Statistiques d'utilisation</h4>
                     <div class="detail-grid">
                         <div class="detail-item">
+                            <label>Première connexion</label>
+                            <value>${user.first_login_at ? new Date(user.first_login_at).toLocaleString('fr-FR') : 'N/A'}</value>
+                        </div>
+                        <div class="detail-item">
                             <label>Dernière connexion</label>
-                            <value>${user.lastLogin.toLocaleString('fr-FR')}</value>
+                            <value>${user.last_login_at ? new Date(user.last_login_at).toLocaleString('fr-FR') : 'Jamais'}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Nombre de connexions</label>
+                            <value>${user.login_count || 0}</value>
                         </div>
                         <div class="detail-item">
                             <label>Scans effectués</label>
-                            <value>${user.scansCount.toLocaleString()}</value>
-                        </div>
-                        <div class="detail-item">
-                            <label>Erreurs rencontrées</label>
-                            <value style="color: ${user.errorsCount > 0 ? '#dc2626' : '#16a34a'}">${user.errorsCount}</value>
-                        </div>
-                        <div class="detail-item">
-                            <label>Temps d'activité</label>
-                            <value>${calculateActiveTime(user)}</value>
+                            <value>${user.total_scans || 0}</value>
                         </div>
                     </div>
                 </div>
@@ -1285,46 +1375,26 @@
                     <h4><i class="fas fa-key"></i> Informations licence</h4>
                     <div class="detail-grid">
                         <div class="detail-item">
-                            <label>Type de licence</label>
-                            <value><span class="license-badge ${user.license.status}">${user.license.type}</span></value>
+                            <label>Statut de licence</label>
+                            <value><span class="license-badge ${user.license_status}">${user.license_status || 'trial'}</span></value>
                         </div>
                         <div class="detail-item">
-                            <label>Statut</label>
-                            <value><span class="license-badge ${user.license.status}">${user.license.status}</span></value>
+                            <label>Date de création</label>
+                            <value>${new Date(user.created_at).toLocaleDateString('fr-FR')}</value>
                         </div>
                         <div class="detail-item">
                             <label>Date d'expiration</label>
-                            <value>${user.license.expires.toLocaleDateString('fr-FR')}</value>
+                            <value>${user.license_expires_at ? new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 'N/A'}</value>
                         </div>
                         <div class="detail-item">
-                            <label>Jours restants</label>
-                            <value>${calculateDaysRemaining(user.license.expires)}</value>
+                            <label>Statut</label>
+                            <value>${user.license_expires_at ? calculateDaysRemaining(new Date(user.license_expires_at)) : 'Illimitée'}</value>
                         </div>
                     </div>
                 </div>
-
-                ${user.errors.length > 0 ? `
-                <div class="detail-group">
-                    <h4><i class="fas fa-exclamation-triangle"></i> Erreurs récentes</h4>
-                    <div class="error-list">
-                        ${user.errors.map(error => `
-                            <div class="error-item">
-                                <div class="error-time">${error.timestamp.toLocaleString('fr-FR')}</div>
-                                <div class="error-message">${error.message}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-                ` : ''}
             `;
 
             document.getElementById('userModal').classList.add('active');
-        }
-
-        function calculateActiveTime(user) {
-            // Mock calculation - in real app, calculate from actual data
-            const days = Math.floor((Date.now() - (Date.now() - 30 * 24 * 60 * 60 * 1000)) / (24 * 60 * 60 * 1000));
-            return `${days} jours`;
         }
 
         function calculateDaysRemaining(expirationDate) {
@@ -1353,10 +1423,9 @@
             switchTab('licenses');
         }
 
-        function refreshUsers() {
-            // In real app, reload from server
+        async function refreshUsers() {
             console.log('Refreshing users data...');
-            loadUsers();
+            await loadUsers();
             updateLastUpdated();
         }
 
@@ -1375,8 +1444,15 @@
                 return;
             }
 
+            // Initialiser le service si nécessaire
+            if (!window.licenseService.initialized) {
+                await window.licenseService.initialize();
+            }
+
             // Vérifier si l'utilisateur est admin
-            if (!window.licenseService.isAdmin()) {
+            const currentUser = await window.licenseService.getCurrentUser();
+            
+            if (!currentUser || !window.licenseService.isAdmin()) {
                 container.innerHTML = `
                     <div class="no-permissions">
                         <i class="fas fa-lock"></i>
@@ -1387,7 +1463,6 @@
                 return;
             }
 
-            const currentUser = window.licenseService.getCurrentUser();
             const companyUsers = await window.licenseService.getCompanyUsers();
 
             // Calculer les statistiques
@@ -1464,7 +1539,7 @@
                                             ${user.license_status}
                                         </span>
                                     </td>
-                                    <td>${new Date(user.license_expires_at).toLocaleDateString('fr-FR')}</td>
+                                    <td>${user.license_expires_at ? new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 'N/A'}</td>
                                     <td>${user.last_login_at ? new Date(user.last_login_at).toLocaleDateString('fr-FR') : 'Jamais'}</td>
                                     <td>
                                         <div class="license-actions">
@@ -1511,6 +1586,8 @@
                 await loadLicenseManagement();
                 if (window.uiManager) {
                     window.uiManager.showToast('Utilisateur ajouté avec succès', 'success');
+                } else {
+                    alert('Utilisateur ajouté avec succès');
                 }
             } else {
                 alert('Erreur : ' + result.error);
@@ -1525,6 +1602,8 @@
                 await loadLicenseManagement();
                 if (window.uiManager) {
                     window.uiManager.showToast('Statut mis à jour', 'success');
+                } else {
+                    alert('Statut mis à jour avec succès');
                 }
             } else {
                 alert('Erreur : ' + result.error);
@@ -1542,6 +1621,8 @@
                 await loadLicenseManagement();
                 if (window.uiManager) {
                     window.uiManager.showToast('Licence étendue de 30 jours', 'success');
+                } else {
+                    alert('Licence étendue de 30 jours');
                 }
             } else {
                 alert('Erreur : ' + result.error);
@@ -1584,7 +1665,6 @@
                 analyticsModule = window.analyticsModule;
 
                 const data = analyticsManager ? analyticsManager.getAnalyticsData() : {};
-                updateSummary(data);
 
                 const analyticsContent = document.getElementById('analyticsContent');
                 const pageContent = document.createElement('div');
@@ -1613,23 +1693,6 @@
             }
         }
 
-        function updateSummary(data = {}) {
-            // Users summary
-            document.getElementById('summaryUsers').textContent = mockUsers.filter(u => u.status === 'active').length;
-            
-            // Scans summary
-            const totalScans = mockUsers.reduce((sum, user) => sum + user.scansCount, 0);
-            document.getElementById('summaryScans').textContent = totalScans.toLocaleString();
-
-            // Errors summary
-            const totalErrors = mockUsers.reduce((sum, user) => sum + user.errorsCount, 0);
-            document.getElementById('summaryErrors').textContent = totalErrors;
-
-            // Licenses summary
-            const activeLicenses = mockUsers.filter(u => u.license.status === 'active').length;
-            document.getElementById('summaryLicenses').textContent = activeLicenses;
-        }
-
         function updateLastUpdated() {
             const now = new Date();
             document.getElementById('lastUpdated').textContent = now.toLocaleString('fr-FR');
@@ -1653,7 +1716,7 @@
             
             // Charger le service de licence
             const licenseScript = document.createElement('script');
-            licenseScript.src = './LicenseService.js';
+            licenseScript.src = './LicenceService.js';
             licenseScript.onload = async () => {
                 console.log('[Analytics] LicenseService loaded');
                 licenseService = window.licenseService;
@@ -1681,6 +1744,7 @@
             console.log('Analytics manager:', analyticsManager);
             console.log('Analytics module:', analyticsModule);
             console.log('License service:', licenseService);
+            console.log('Supabase client:', supabaseClient);
             
             return {
                 currentTab,
@@ -1688,11 +1752,13 @@
                 filteredCount: filteredUsers.length,
                 analyticsManager: !!analyticsManager,
                 analyticsModule: !!analyticsModule,
-                licenseService: !!licenseService
+                licenseService: !!licenseService,
+                supabaseClient: !!supabaseClient,
+                realData: currentUsers.length > 0 && !currentUsers[0].mockData
             };
         };
 
-        console.log('[Analytics Page] ✅ Enhanced analytics page initialized with license management');
+        console.log('[Analytics Page] ✅ Enhanced analytics page initialized with REAL DATABASE CONNECTION');
         console.log('[Analytics Page] Use debugAnalytics() for debug information');
     </script>
 </body>
