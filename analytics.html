@@ -159,6 +159,7 @@
             color: white;
             border-radius: 16px;
             margin: 0 0 48px 0;
+            position: relative;
         }
 
         .page-header h1 {
@@ -527,14 +528,19 @@
             color: #16a34a;
         }
 
-        .status-badge.inactive {
-            background: #f3f4f6;
-            color: #6b7280;
+        .status-badge.trial {
+            background: #fef3c7;
+            color: #d97706;
         }
 
-        .status-badge.error {
+        .status-badge.expired {
             background: #fef2f2;
             color: #dc2626;
+        }
+
+        .status-badge.blocked {
+            background: #f3f4f6;
+            color: #6b7280;
         }
 
         .license-info {
@@ -697,30 +703,6 @@
         .detail-item value {
             font-weight: 600;
             color: #1f2937;
-        }
-
-        .error-list {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .error-item {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 8px;
-        }
-
-        .error-item .error-time {
-            font-size: 0.75rem;
-            color: #6b7280;
-            margin-bottom: 4px;
-        }
-
-        .error-item .error-message {
-            color: #dc2626;
-            font-weight: 500;
         }
 
         /* License Management */
@@ -1082,15 +1064,15 @@
             Retour à l'application
         </a>
 
-        <div class="user-info-header">
-            <span class="user-email" id="currentUserEmail">-</span>
-            <span class="user-role" id="currentUserRole">-</span>
-            <button class="logout-btn" onclick="logout()">
-                <i class="fas fa-sign-out-alt"></i> Déconnexion
-            </button>
-        </div>
-
         <div class="page-header">
+            <div class="user-info-header">
+                <span class="user-email" id="currentUserEmail">-</span>
+                <span class="user-role" id="currentUserRole">-</span>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </button>
+            </div>
+            
             <h1>
                 <i class="fas fa-chart-line"></i>
                 Analytics EmailSortPro
@@ -1279,6 +1261,9 @@
                     await loadLicenseService();
                 }
                 
+                // Initialiser Supabase AVANT l'authentification
+                await initializeSupabase();
+                
                 // Authentifier avec l'email
                 const result = await licenseService.authenticateWithEmail(email);
                 
@@ -1286,10 +1271,11 @@
                     // Vérifier si l'utilisateur a des droits d'admin
                     if (result.user.role === 'company_admin' || result.user.role === 'super_admin') {
                         authenticatedUser = result.user;
-                        showAuthMessage('Connexion réussie !', 'success');
                         
-                        // Initialiser Supabase maintenant
-                        await initializeSupabase();
+                        // Définir l'utilisateur actuel pour le service
+                        licenseService.currentUser = authenticatedUser;
+                        
+                        showAuthMessage('Connexion réussie !', 'success');
                         
                         // Attendre un peu avant de basculer
                         setTimeout(() => {
@@ -1368,19 +1354,19 @@
                     
                     // Vérifier que la session n'est pas trop vieille (24h)
                     if (Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
-                        // Recharger l'utilisateur
+                        // Initialiser d'abord
                         if (!licenseService) {
                             await loadLicenseService();
                         }
                         
+                        await initializeSupabase();
+                        
+                        // Recharger l'utilisateur
                         const result = await licenseService.authenticateWithEmail(data.email);
                         
                         if (result.valid && (result.user.role === 'company_admin' || result.user.role === 'super_admin')) {
                             authenticatedUser = result.user;
-                            
-                            // Initialiser Supabase maintenant
-                            await initializeSupabase();
-                            
+                            licenseService.currentUser = authenticatedUser;
                             showAnalytics();
                             return;
                         }
@@ -1442,21 +1428,35 @@
             try {
                 console.log('[Analytics] Loading users with permissions check...');
                 
-                // Initialiser Supabase si nécessaire
+                // Vérifier que Supabase est initialisé
                 if (!supabaseClient) {
+                    console.log('[Analytics] Supabase not ready, initializing...');
                     await initializeSupabase();
                 }
                 
+                // Construire la requête avec les bonnes colonnes
                 let query = supabaseClient
                     .from('users')
                     .select(`
-                        *,
-                        company:companies(name)
+                        id,
+                        email,
+                        name,
+                        role,
+                        license_status,
+                        license_expires_at,
+                        company_id,
+                        first_login_at,
+                        last_login_at,
+                        login_count,
+                        created_at,
+                        updated_at,
+                        company:companies(id, name, domain)
                     `)
                     .order('created_at', { ascending: false });
                 
                 // Si l'utilisateur est un admin de société, filtrer par sa société
-                if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                if (authenticatedUser && authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                    console.log('[Analytics] Filtering by company:', authenticatedUser.company_id);
                     query = query.eq('company_id', authenticatedUser.company_id);
                 }
                 // Si super admin, pas de filtre
@@ -1467,7 +1467,7 @@
                     console.error('[Analytics] Error loading users:', error);
                     currentUsers = [];
                 } else {
-                    console.log('[Analytics] Loaded users:', users.length);
+                    console.log('[Analytics] Loaded users:', users?.length || 0);
                     currentUsers = users || [];
                 }
                 
@@ -1495,7 +1495,7 @@
                     .select('*');
                 
                 // Filtrer par domaine si admin de société
-                if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                if (authenticatedUser && authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
                     // Récupérer le domaine de la société
                     const { data: company } = await supabaseClient
                         .from('companies')
@@ -1556,6 +1556,11 @@
 
         // Initialiser Supabase
         async function initializeSupabase() {
+            if (supabaseClient) {
+                console.log('[Analytics] Supabase already initialized');
+                return;
+            }
+
             if (!window.supabaseConfig) {
                 console.error('[Analytics] Supabase config not loaded');
                 return;
@@ -1572,7 +1577,13 @@
             supabaseClient = window.supabase.createClient(
                 config.url,
                 config.anonKey,
-                config.auth
+                {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: false,
+                        detectSessionInUrl: false
+                    }
+                }
             );
             
             console.log('[Analytics] Supabase client initialized');
@@ -1839,7 +1850,7 @@
                 return;
             }
 
-            // Initialiser Supabase si nécessaire
+            // Vérifier que Supabase est initialisé
             if (!supabaseClient) {
                 await initializeSupabase();
             }
@@ -1852,7 +1863,10 @@
                     // Super admin voit tous les utilisateurs
                     const { data, error } = await supabaseClient
                         .from('users')
-                        .select('*, company:companies(name)')
+                        .select(`
+                            *,
+                            company:companies(name)
+                        `)
                         .order('created_at', { ascending: false });
                     
                     if (error) {
@@ -1864,7 +1878,10 @@
                     // Admin de société voit seulement ses utilisateurs
                     const { data, error } = await supabaseClient
                         .from('users')
-                        .select('*, company:companies(name)')
+                        .select(`
+                            *,
+                            company:companies(name)
+                        `)
                         .eq('company_id', authenticatedUser.company_id)
                         .order('created_at', { ascending: false });
                     
