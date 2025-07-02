@@ -21,8 +21,10 @@ class EmailSortProApp {
                 return;
             }
 
-            // AJOUT : Initialiser le système de licence
-            await this.initializeLicenseSystem();
+            // AJOUT : Initialiser le système de licence si disponible
+            if (window.licenseService || window.supabaseConfig) {
+                await this.initializeLicenseSystem();
+            }
 
             // Vérifier l'authentification existante
             const isAuthenticated = await this.checkExistingAuth();
@@ -30,15 +32,17 @@ class EmailSortProApp {
             if (isAuthenticated) {
                 console.log('[App] User already authenticated');
                 
-                // AJOUT : Vérifier la licence
-                const licenseValid = await this.verifyUserLicense();
-                
-                if (licenseValid) {
-                    await this.showApplication();
-                    this.startLicenseMonitoring(); // AJOUT : Démarrer la surveillance
-                } else {
-                    await this.handleLicenseError(); // AJOUT : Gérer l'erreur de licence
+                // AJOUT : Vérifier la licence si le service est disponible
+                if (window.licenseService && window.licenseService.initialized) {
+                    const licenseValid = await this.verifyUserLicense();
+                    if (!licenseValid) {
+                        await this.handleLicenseError();
+                        return;
+                    }
+                    this.startLicenseMonitoring();
                 }
+                
+                await this.showApplication();
             } else {
                 console.log('[App] No existing authentication found');
                 this.showLoginPage();
@@ -65,7 +69,7 @@ class EmailSortProApp {
         }
     }
 
-    // NOUVELLE MÉTHODE : Initialiser le système de licence
+    // AJOUT : Méthode pour initialiser le système de licence
     async initializeLicenseSystem() {
         try {
             if (window.supabaseConfig && !window.supabaseConfig.initialized) {
@@ -79,7 +83,7 @@ class EmailSortProApp {
             }
         } catch (error) {
             console.error('[App] License system initialization error:', error);
-            // Continuer sans système de licence (mode dégradé)
+            // Continuer sans système de licence
         }
     }
 
@@ -87,7 +91,11 @@ class EmailSortProApp {
         try {
             // Vérifier Microsoft Auth
             if (window.authService) {
-                await window.authService.initialize();
+                // NE PAS réinitialiser si déjà fait
+                if (!window.authService.initialized) {
+                    await window.authService.initialize();
+                }
+                
                 if (window.authService.isAuthenticated()) {
                     this.currentProvider = 'microsoft';
                     
@@ -127,12 +135,11 @@ class EmailSortProApp {
         }
     }
 
-    // NOUVELLE MÉTHODE : Vérifier la licence utilisateur
+    // AJOUT : Méthode pour vérifier la licence
     async verifyUserLicense() {
         try {
             if (!window.licenseService || !window.licenseService.initialized) {
-                console.log('[App] License service not available, allowing access');
-                return true;
+                return true; // Permettre l'accès si pas de service
             }
 
             let userEmail = null;
@@ -146,14 +153,10 @@ class EmailSortProApp {
             }
 
             if (!userEmail) {
-                console.error('[App] No user email found');
-                return true;
+                return true; // Permettre l'accès si pas d'email
             }
 
             const licenseStatus = await window.licenseService.checkLicenseStatus(userEmail);
-            
-            console.log('[App] License status:', licenseStatus);
-            
             return licenseStatus.valid;
 
         } catch (error) {
@@ -162,7 +165,7 @@ class EmailSortProApp {
         }
     }
 
-    // NOUVELLE MÉTHODE : Gérer les erreurs de licence
+    // AJOUT : Méthode pour gérer les erreurs de licence
     async handleLicenseError(errorType = 'LICENSE_EXPIRED') {
         console.log('[App] Handling license error:', errorType);
         
@@ -185,7 +188,7 @@ class EmailSortProApp {
         }, 2000);
     }
 
-    // NOUVELLE MÉTHODE : Afficher overlay licence expirée
+    // AJOUT : Afficher overlay licence expirée
     showLicenseExpiredOverlay() {
         const existingOverlay = document.getElementById('license-overlay');
         if (existingOverlay) {
@@ -280,7 +283,7 @@ class EmailSortProApp {
         document.body.appendChild(overlay);
     }
 
-    // NOUVELLE MÉTHODE : Afficher overlay licence bloquée
+    // AJOUT : Afficher overlay licence bloquée
     showLicenseBlockedOverlay() {
         const existingOverlay = document.getElementById('license-overlay');
         if (existingOverlay) {
@@ -358,8 +361,10 @@ class EmailSortProApp {
         document.body.appendChild(overlay);
     }
 
-    // NOUVELLE MÉTHODE : Démarrer la surveillance de licence
+    // AJOUT : Démarrer la surveillance de licence
     startLicenseMonitoring() {
+        if (!window.licenseService) return;
+        
         this.licenseCheckInterval = setInterval(async () => {
             const licenseValid = await this.verifyUserLicense();
             if (!licenseValid) {
@@ -377,19 +382,28 @@ class EmailSortProApp {
                 throw new Error('AuthService not available');
             }
 
+            // IMPORTANT : Attendre que l'app soit initialisée
+            if (!this.initialized) {
+                console.log('[App] Waiting for initialization...');
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
             const result = await window.authService.login();
             
             if (result) {
                 this.currentProvider = 'microsoft';
                 
-                // AJOUT : Vérifier la licence après connexion
-                const licenseValid = await this.verifyUserLicense();
-                if (licenseValid) {
-                    await this.showApplication();
+                // AJOUT : Vérifier la licence si disponible
+                if (window.licenseService && window.licenseService.initialized) {
+                    const licenseValid = await this.verifyUserLicense();
+                    if (!licenseValid) {
+                        await this.handleLicenseError();
+                        return;
+                    }
                     this.startLicenseMonitoring();
-                } else {
-                    await this.handleLicenseError();
                 }
+                
+                await this.showApplication();
             }
 
         } catch (error) {
@@ -538,7 +552,7 @@ class EmailSortProApp {
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden && this.initialized) {
                 // AJOUT : Vérifier la licence quand l'utilisateur revient
-                if (this.licenseCheckInterval) {
+                if (this.licenseCheckInterval && window.licenseService) {
                     this.verifyUserLicense();
                 }
             }
