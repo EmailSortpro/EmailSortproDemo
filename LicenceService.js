@@ -250,17 +250,24 @@ class LicenseService {
         try {
             console.log('[LicenseService] Updating existing user trial');
             
+            // D'abord récupérer l'utilisateur pour avoir son login_count actuel
+            const { data: currentUser, error: fetchError } = await this.supabase
+                .from('users')
+                .select('login_count')
+                .eq('email', email)
+                .single();
+            
+            if (fetchError) throw fetchError;
+            
             const { data, error } = await this.supabase
                 .from('users')
                 .update({
                     license_status: 'trial',
                     license_expires_at: expiresAt.toISOString(),
                     last_login_at: new Date().toISOString(),
-                    login_count: this.supabase.sql`login_count + 1`
+                    login_count: (currentUser?.login_count || 0) + 1
                 })
-                .eq('email', email)
-                .select()
-                .single();
+                .
 
             if (error) throw error;
 
