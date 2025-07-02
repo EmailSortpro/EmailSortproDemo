@@ -209,11 +209,6 @@
             text-transform: uppercase;
         }
 
-        .user-info-header .user-company {
-            color: #6b7280;
-            font-size: 0.75rem;
-        }
-
         .logout-btn {
             background: #ef4444;
             color: white;
@@ -383,7 +378,7 @@
             font-weight: 500;
         }
 
-        /* Users Controls */
+        /* Users Management */
         .users-controls {
             display: flex;
             gap: 16px;
@@ -910,18 +905,6 @@
             font-size: 0.875rem;
         }
 
-        .domain-restriction-notice {
-            background: #fef3c7;
-            color: #92400e;
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            font-size: 0.875rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
         .no-permissions {
             text-align: center;
             padding: 60px;
@@ -1008,13 +991,6 @@
                 gap: 12px;
             }
 
-            .user-info-header {
-                position: static;
-                margin-top: 20px;
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
             .tabs-nav {
                 flex-direction: column;
             }
@@ -1092,7 +1068,6 @@
             <div class="user-info-header">
                 <span class="user-email" id="currentUserEmail">-</span>
                 <span class="user-role" id="currentUserRole">-</span>
-                <span class="user-company" id="currentUserCompany">-</span>
                 <button class="logout-btn" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i> Déconnexion
                 </button>
@@ -1248,6 +1223,987 @@
         </div>
     </div>
 
-    <script src="./analytics-page.js"></script>
+    <script>
+        // Global variables
+        let analyticsManager = null;
+        let analyticsModule = null;
+        let licenseService = null;
+        let supabaseClient = null;
+        let currentUsers = [];
+        let filteredUsers = [];
+        let currentTab = 'overview';
+        let authenticatedUser = null;
+
+        // Gestion de l'authentification
+        async function handleAuthentication(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('authEmail').value.trim();
+            const button = document.getElementById('authButton');
+            const buttonText = document.getElementById('authButtonText');
+            const spinner = document.getElementById('authSpinner');
+            const messageDiv = document.getElementById('authMessage');
+            
+            if (!email || !email.includes('@')) {
+                showAuthMessage('Veuillez entrer une adresse email valide', 'error');
+                return;
+            }
+            
+            // Afficher le spinner
+            button.disabled = true;
+            buttonText.style.display = 'none';
+            spinner.style.display = 'block';
+            messageDiv.innerHTML = '';
+            
+            try {
+                // Initialiser le service de licence
+                if (!licenseService) {
+                    await loadLicenseService();
+                }
+                
+                // Initialiser Supabase AVANT l'authentification
+                await initializeSupabase();
+                
+                // Authentifier avec l'email
+                const result = await licenseService.authenticateWithEmail(email);
+                
+                if (result.valid) {
+                    // Vérifier si l'utilisateur a des droits d'admin
+                    if (result.user.role === 'company_admin' || result.user.role === 'super_admin') {
+                        authenticatedUser = result.user;
+                        
+                        // Définir l'utilisateur actuel pour le service
+                        licenseService.currentUser = authenticatedUser;
+                        
+                        showAuthMessage('Connexion réussie !', 'success');
+                        
+                        // Attendre un peu avant de basculer
+                        setTimeout(() => {
+                            showAnalytics();
+                        }, 1000);
+                    } else {
+                        showAuthMessage('Accès refusé. Seuls les administrateurs peuvent accéder aux analytics.', 'error');
+                    }
+                } else {
+                    showAuthMessage(result.message || 'Email non autorisé', 'error');
+                }
+                
+            } catch (error) {
+                console.error('[Auth] Error:', error);
+                showAuthMessage('Erreur de connexion. Veuillez réessayer.', 'error');
+            } finally {
+                // Réactiver le bouton
+                button.disabled = false;
+                buttonText.style.display = 'block';
+                spinner.style.display = 'none';
+            }
+        }
+
+        function showAuthMessage(message, type) {
+            const messageDiv = document.getElementById('authMessage');
+            messageDiv.className = type === 'error' ? 'auth-error' : 'auth-success';
+            messageDiv.textContent = message;
+        }
+
+        function showAnalytics() {
+            // Cacher la page de connexion
+            document.getElementById('authContainer').style.display = 'none';
+            
+            // Afficher la page analytics
+            document.getElementById('analyticsContainer').classList.add('authenticated');
+            
+            // Mettre à jour les infos utilisateur
+            document.getElementById('currentUserEmail').textContent = authenticatedUser.email;
+            document.getElementById('currentUserRole').textContent = authenticatedUser.role.replace('_', ' ');
+            
+            // Charger les données
+            loadAnalytics();
+            updateLastUpdated();
+            
+            // Sauvegarder la session
+            sessionStorage.setItem('analyticsAuth', JSON.stringify({
+                email: authenticatedUser.email,
+                role: authenticatedUser.role,
+                timestamp: Date.now()
+            }));
+        }
+
+        function logout() {
+            // Effacer la session
+            sessionStorage.removeItem('analyticsAuth');
+            
+            // Réinitialiser
+            authenticatedUser = null;
+            currentUsers = [];
+            filteredUsers = [];
+            
+            // Retourner à la page de connexion
+            document.getElementById('analyticsContainer').classList.remove('authenticated');
+            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('authEmail').value = '';
+            document.getElementById('authMessage').innerHTML = '';
+        }
+
+        // Vérifier la session au chargement
+        async function checkSession() {
+            const session = sessionStorage.getItem('analyticsAuth');
+            
+            if (session) {
+                try {
+                    const data = JSON.parse(session);
+                    
+                    // Vérifier que la session n'est pas trop vieille (24h)
+                    if (Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
+                        // Initialiser d'abord
+                        if (!licenseService) {
+                            await loadLicenseService();
+                        }
+                        
+                        await initializeSupabase();
+                        
+                        // Recharger l'utilisateur
+                        const result = await licenseService.authenticateWithEmail(data.email);
+                        
+                        if (result.valid && (result.user.role === 'company_admin' || result.user.role === 'super_admin')) {
+                            authenticatedUser = result.user;
+                            licenseService.currentUser = authenticatedUser;
+                            showAnalytics();
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.error('[Session] Error:', error);
+                }
+                
+                // Session invalide
+                sessionStorage.removeItem('analyticsAuth');
+            }
+        }
+
+        // Charger le service de licence
+        async function loadLicenseService() {
+            // Charger la configuration Supabase d'abord
+            const configScript = document.createElement('script');
+            configScript.src = './config-supabase.js';
+            await new Promise((resolve, reject) => {
+                configScript.onload = resolve;
+                configScript.onerror = reject;
+                document.head.appendChild(configScript);
+            });
+            
+            // Charger le service de licence
+            const licenseScript = document.createElement('script');
+            licenseScript.src = './LicenceService.js';
+            await new Promise((resolve, reject) => {
+                licenseScript.onload = resolve;
+                licenseScript.onerror = reject;
+                document.head.appendChild(licenseScript);
+            });
+            
+            licenseService = window.licenseService;
+        }
+
+        // Tab management
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+
+            currentTab = tabName;
+
+            // Load content based on tab
+            if (tabName === 'users') {
+                loadUsers();
+            } else if (tabName === 'licenses') {
+                loadLicenseManagement();
+            }
+        }
+
+        // Users management - avec filtrage selon les permissions
+        async function loadUsers() {
+            try {
+                console.log('[Analytics] Loading users with permissions check...');
+                
+                // Vérifier que Supabase est initialisé
+                if (!supabaseClient) {
+                    console.log('[Analytics] Supabase not ready, initializing...');
+                    await initializeSupabase();
+                }
+                
+                // Construire la requête avec les bonnes colonnes
+                let query = supabaseClient
+                    .from('users')
+                    .select(`
+                        id,
+                        email,
+                        name,
+                        role,
+                        license_status,
+                        license_expires_at,
+                        company_id,
+                        first_login_at,
+                        last_login_at,
+                        login_count,
+                        created_at,
+                        updated_at,
+                        company:companies(id, name, domain)
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                // Si l'utilisateur est un admin de société, filtrer par sa société
+                if (authenticatedUser && authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                    console.log('[Analytics] Filtering by company:', authenticatedUser.company_id);
+                    query = query.eq('company_id', authenticatedUser.company_id);
+                }
+                // Si super admin, pas de filtre
+                
+                const { data: users, error } = await query;
+
+                if (error) {
+                    console.error('[Analytics] Error loading users:', error);
+                    currentUsers = [];
+                } else {
+                    console.log('[Analytics] Loaded users:', users?.length || 0);
+                    currentUsers = users || [];
+                }
+                
+                // Charger aussi les stats analytics si disponibles
+                await loadUserStats();
+                
+                populateCompanyFilter();
+                filterUsers();
+                updateSummaryFromRealData();
+                
+            } catch (error) {
+                console.error('[Analytics] Failed to load users:', error);
+                currentUsers = [];
+                filterUsers();
+            }
+        }
+
+        // Charger les statistiques des utilisateurs
+        async function loadUserStats() {
+            if (!supabaseClient) return;
+            
+            try {
+                let query = supabaseClient
+                    .from('user_email_stats')
+                    .select('*');
+                
+                // Filtrer par domaine si admin de société
+                if (authenticatedUser && authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                    // Récupérer le domaine de la société
+                    const { data: company } = await supabaseClient
+                        .from('companies')
+                        .select('domain')
+                        .eq('id', authenticatedUser.company_id)
+                        .single();
+                    
+                    if (company && company.domain) {
+                        query = query.eq('domain', company.domain);
+                    }
+                }
+                
+                const { data: stats, error } = await query;
+
+                if (!error && stats) {
+                    // Fusionner les stats avec les utilisateurs
+                    currentUsers = currentUsers.map(user => {
+                        const userStats = stats.find(s => s.email === user.email);
+                        return {
+                            ...user,
+                            total_scans: userStats?.total_emails_scanned || 0,
+                            total_sessions: userStats?.total_sessions || 0,
+                            total_errors: userStats?.total_errors || 0
+                        };
+                    });
+                }
+            } catch (error) {
+                console.error('[Analytics] Error loading user stats:', error);
+            }
+        }
+
+        // Mettre à jour le résumé avec les vraies données
+        function updateSummaryFromRealData() {
+            // Utilisateurs actifs
+            const activeUsers = currentUsers.filter(u => 
+                u.license_status === 'active' || u.license_status === 'trial'
+            ).length;
+            document.getElementById('summaryUsers').textContent = activeUsers;
+            
+            // Total des scans
+            const totalScans = currentUsers.reduce((sum, user) => 
+                sum + (user.total_scans || 0), 0
+            );
+            document.getElementById('summaryScans').textContent = totalScans.toLocaleString();
+
+            // Total des erreurs
+            const totalErrors = currentUsers.reduce((sum, user) => 
+                sum + (user.total_errors || 0), 0
+            );
+            document.getElementById('summaryErrors').textContent = totalErrors;
+
+            // Licences actives
+            const activeLicenses = currentUsers.filter(u => 
+                u.license_status === 'active'
+            ).length;
+            document.getElementById('summaryLicenses').textContent = activeLicenses;
+        }
+
+        // Initialiser Supabase
+        async function initializeSupabase() {
+            if (supabaseClient) {
+                console.log('[Analytics] Supabase already initialized');
+                return;
+            }
+
+            if (!window.supabaseConfig) {
+                console.error('[Analytics] Supabase config not loaded');
+                return;
+            }
+
+            if (!window.supabase) {
+                // Charger la librairie Supabase
+                await loadSupabaseLibrary();
+            }
+
+            await window.initializeSupabaseConfig();
+            const config = window.supabaseConfig.getConfig();
+            
+            supabaseClient = window.supabase.createClient(
+                config.url,
+                config.anonKey,
+                {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: false,
+                        detectSessionInUrl: false
+                    }
+                }
+            );
+            
+            console.log('[Analytics] Supabase client initialized');
+        }
+
+        // Charger la librairie Supabase
+        function loadSupabaseLibrary() {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        function populateCompanyFilter() {
+            const companies = [...new Set(currentUsers.map(user => 
+                user.company?.name || user.domain || 'Sans société'
+            ))];
+            const filter = document.getElementById('companyFilter');
+            
+            // Clear existing options except first one
+            filter.innerHTML = '<option value="">Toutes les sociétés</option>';
+            
+            companies.forEach(company => {
+                const option = document.createElement('option');
+                option.value = company;
+                option.textContent = company;
+                filter.appendChild(option);
+            });
+        }
+
+        function filterUsers() {
+            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const companyFilter = document.getElementById('companyFilter').value;
+
+            filteredUsers = currentUsers.filter(user => {
+                const userName = user.name || user.email.split('@')[0];
+                const companyName = user.company?.name || user.domain || 'Sans société';
+                
+                const matchesSearch = userName.toLowerCase().includes(searchTerm) || 
+                                    user.email.toLowerCase().includes(searchTerm) ||
+                                    companyName.toLowerCase().includes(searchTerm);
+                
+                const matchesStatus = !statusFilter || user.license_status === statusFilter;
+                const matchesCompany = !companyFilter || companyName === companyFilter;
+
+                return matchesSearch && matchesStatus && matchesCompany;
+            });
+
+            renderUsersTable();
+        }
+
+        function renderUsersTable() {
+            const tbody = document.getElementById('usersTableBody');
+            const emptyState = document.getElementById('usersEmptyState');
+
+            if (filteredUsers.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            tbody.innerHTML = filteredUsers.map(user => {
+                const userName = user.name || user.email.split('@')[0];
+                const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                const companyName = user.company?.name || user.domain || 'Sans société';
+                
+                // Déterminer le statut de licence
+                const licenseClass = user.license_status === 'active' ? 'active' : 
+                                   user.license_status === 'expired' ? 'expired' : 
+                                   user.license_status === 'blocked' ? 'blocked' :
+                                   'trial';
+
+                // Déterminer si l'utilisateur est actif
+                const lastLogin = user.last_login_at ? new Date(user.last_login_at) : null;
+                const isActive = lastLogin && (new Date() - lastLogin) < 7 * 24 * 60 * 60 * 1000; // 7 jours
+
+                return `
+                    <tr>
+                        <td>
+                            <div class="user-info">
+                                <div class="user-avatar">${initials}</div>
+                                <div class="user-details">
+                                    <h4>${userName}</h4>
+                                    <p>${user.email}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${companyName}</td>
+                        <td><span class="status-badge ${licenseClass}">${user.license_status || 'trial'}</span></td>
+                        <td>${formatLastLogin(lastLogin)}</td>
+                        <td>${user.login_count || 0}</td>
+                        <td>${user.role || 'user'}</td>
+                        <td>
+                            <div class="license-info">
+                                <span class="license-badge ${licenseClass}">
+                                    ${user.license_expires_at ? calculateDaysRemaining(new Date(user.license_expires_at)) : 'Illimitée'}
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="actions-cell">
+                                <button class="action-btn edit" onclick="viewUserDetails('${user.id}')">
+                                    <i class="fas fa-eye"></i> Voir
+                                </button>
+                                <button class="action-btn license" onclick="manageLicense('${user.id}')">
+                                    <i class="fas fa-key"></i> Licence
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function formatLastLogin(date) {
+            if (!date) return 'Jamais';
+            
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+
+            if (minutes < 60) {
+                return `Il y a ${minutes} min`;
+            } else if (hours < 24) {
+                return `Il y a ${hours}h`;
+            } else if (days < 7) {
+                return `Il y a ${days} jour${days > 1 ? 's' : ''}`;
+            } else {
+                return date.toLocaleDateString('fr-FR');
+            }
+        }
+
+        function viewUserDetails(userId) {
+            const user = currentUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            const userName = user.name || user.email.split('@')[0];
+            document.getElementById('modalTitle').textContent = `Détails - ${userName}`;
+            
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <div class="detail-group">
+                    <h4><i class="fas fa-user"></i> Informations générales</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Nom complet</label>
+                            <value>${userName}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Email</label>
+                            <value>${user.email}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Société</label>
+                            <value>${user.company?.name || user.domain || 'Non définie'}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Rôle</label>
+                            <value>${user.role || 'user'}</value>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-group">
+                    <h4><i class="fas fa-chart-line"></i> Statistiques d'utilisation</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Première connexion</label>
+                            <value>${user.first_login_at ? new Date(user.first_login_at).toLocaleString('fr-FR') : 'N/A'}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Dernière connexion</label>
+                            <value>${user.last_login_at ? new Date(user.last_login_at).toLocaleString('fr-FR') : 'Jamais'}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Nombre de connexions</label>
+                            <value>${user.login_count || 0}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Scans effectués</label>
+                            <value>${user.total_scans || 0}</value>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-group">
+                    <h4><i class="fas fa-key"></i> Informations licence</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Statut de licence</label>
+                            <value><span class="license-badge ${user.license_status}">${user.license_status || 'trial'}</span></value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Date de création</label>
+                            <value>${new Date(user.created_at).toLocaleDateString('fr-FR')}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Date d'expiration</label>
+                            <value>${user.license_expires_at ? new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 'N/A'}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Statut</label>
+                            <value>${user.license_expires_at ? calculateDaysRemaining(new Date(user.license_expires_at)) : 'Illimitée'}</value>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('userModal').classList.add('active');
+        }
+
+        function calculateDaysRemaining(expirationDate) {
+            const now = new Date();
+            const diff = expirationDate - now;
+            const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
+            
+            if (days < 0) {
+                return `Expirée depuis ${Math.abs(days)} jour${Math.abs(days) > 1 ? 's' : ''}`;
+            } else if (days === 0) {
+                return 'Expire aujourd\'hui';
+            } else {
+                return `${days} jour${days > 1 ? 's' : ''}`;
+            }
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').classList.remove('active');
+        }
+
+        function manageLicense(userId) {
+            const user = currentUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            // Pour l'instant, basculer vers l'onglet licences
+            switchTab('licenses');
+        }
+
+        async function refreshUsers() {
+            console.log('Refreshing users data...');
+            await loadUsers();
+            updateLastUpdated();
+        }
+
+        // License Management Functions - avec permissions
+        async function loadLicenseManagement() {
+            const container = document.getElementById('licenseManagement');
+            
+            if (!window.licenseService || !authenticatedUser) {
+                container.innerHTML = `
+                    <div class="no-permissions">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Service non disponible</h3>
+                        <p>Veuillez vous reconnecter</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Vérifier que Supabase est initialisé
+            if (!supabaseClient) {
+                await initializeSupabase();
+            }
+
+            let companyUsers = [];
+            
+            try {
+                // Charger les utilisateurs selon les permissions
+                if (authenticatedUser.role === 'super_admin') {
+                    // Super admin voit tous les utilisateurs
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .select(`
+                            *,
+                            company:companies(name)
+                        `)
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('[Analytics] Error loading all users:', error);
+                    } else {
+                        companyUsers = data || [];
+                    }
+                } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                    // Admin de société voit seulement ses utilisateurs
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .select(`
+                            *,
+                            company:companies(name)
+                        `)
+                        .eq('company_id', authenticatedUser.company_id)
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('[Analytics] Error loading company users:', error);
+                    } else {
+                        companyUsers = data || [];
+                    }
+                }
+            } catch (error) {
+                console.error('[Analytics] Failed to load users for license management:', error);
+            }
+
+            // Calculer les statistiques
+            const stats = {
+                total: companyUsers.length,
+                active: companyUsers.filter(u => u.license_status === 'active').length,
+                trial: companyUsers.filter(u => u.license_status === 'trial').length,
+                expired: companyUsers.filter(u => u.license_status === 'expired').length
+            };
+
+            container.innerHTML = `
+                <div class="license-header">
+                    <h2>
+                        <i class="fas fa-key"></i>
+                        Gestion des licences
+                    </h2>
+                    <button class="refresh-btn" onclick="loadLicenseManagement()">
+                        <i class="fas fa-sync-alt"></i> Actualiser
+                    </button>
+                </div>
+
+                ${authenticatedUser.company_id && companyUsers.length > 0 && companyUsers[0].company ? `
+                    <div class="company-info">
+                        <h3>${companyUsers[0].company.name}</h3>
+                        <p>Administrateur : ${authenticatedUser.name || authenticatedUser.email}</p>
+                    </div>
+                ` : ''}
+
+                <div class="license-stats">
+                    <div class="license-stat-card">
+                        <div class="license-stat-value">${stats.total}</div>
+                        <div class="license-stat-label">Utilisateurs total</div>
+                    </div>
+                    <div class="license-stat-card">
+                        <div class="license-stat-value">${stats.active}</div>
+                        <div class="license-stat-label">Licences actives</div>
+                    </div>
+                    <div class="license-stat-card">
+                        <div class="license-stat-value">${stats.trial}</div>
+                        <div class="license-stat-label">Essais gratuits</div>
+                    </div>
+                    <div class="license-stat-card">
+                        <div class="license-stat-value">${stats.expired}</div>
+                        <div class="license-stat-label">Licences expirées</div>
+                    </div>
+                </div>
+
+                <div class="add-user-form">
+                    <input type="email" id="newUserEmail" placeholder="Email du nouvel utilisateur">
+                    <button onclick="addNewUser()">
+                        <i class="fas fa-user-plus"></i> Ajouter un utilisateur
+                    </button>
+                </div>
+
+                <div class="license-users-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Utilisateur</th>
+                                <th>Email</th>
+                                <th>Statut</th>
+                                <th>Expiration</th>
+                                <th>Dernière connexion</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${companyUsers.map(user => `
+                                <tr>
+                                    <td>${user.name || 'Non défini'}</td>
+                                    <td class="user-email">${user.email}</td>
+                                    <td>
+                                        <span class="license-status ${user.license_status}">
+                                            ${user.license_status}
+                                        </span>
+                                    </td>
+                                    <td>${user.license_expires_at ? new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 'N/A'}</td>
+                                    <td>${user.last_login_at ? new Date(user.last_login_at).toLocaleDateString('fr-FR') : 'Jamais'}</td>
+                                    <td>
+                                        <div class="license-actions">
+                                            ${user.license_status !== 'active' ? `
+                                                <button class="license-action-btn activate" 
+                                                        onclick="updateUserStatus('${user.id}', 'active')">
+                                                    Activer
+                                                </button>
+                                            ` : ''}
+                                            ${user.license_status === 'active' ? `
+                                                <button class="license-action-btn block" 
+                                                        onclick="updateUserStatus('${user.id}', 'blocked')">
+                                                    Bloquer
+                                                </button>
+                                            ` : ''}
+                                            <button class="license-action-btn extend" 
+                                                    onclick="extendLicense('${user.id}')">
+                                                +30 jours
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Fonction pour ajouter un utilisateur
+        async function addNewUser() {
+            const emailInput = document.getElementById('newUserEmail');
+            const email = emailInput.value.trim();
+
+            if (!email || !email.includes('@')) {
+                alert('Veuillez entrer une adresse email valide');
+                return;
+            }
+
+            try {
+                // Initialiser le service de licence s'il n'est pas déjà prêt
+                if (!window.licenseService.initialized) {
+                    await window.licenseService.initialize();
+                }
+
+                // Définir l'utilisateur actuel pour le service
+                window.licenseService.currentUser = authenticatedUser;
+
+                const result = await window.licenseService.addUserToCompany(email);
+                
+                if (result.success) {
+                    emailInput.value = '';
+                    await loadLicenseManagement();
+                    alert('Utilisateur ajouté avec succès');
+                } else {
+                    alert('Erreur : ' + result.error);
+                }
+            } catch (error) {
+                console.error('[Analytics] Error adding user:', error);
+                alert('Erreur lors de l\'ajout de l\'utilisateur');
+            }
+        }
+
+        // Fonction pour mettre à jour le statut
+        async function updateUserStatus(userId, newStatus) {
+            try {
+                // Initialiser le service de licence s'il n'est pas déjà prêt
+                if (!window.licenseService.initialized) {
+                    await window.licenseService.initialize();
+                }
+
+                // Définir l'utilisateur actuel pour le service
+                window.licenseService.currentUser = authenticatedUser;
+
+                const result = await window.licenseService.updateUserLicense(userId, newStatus);
+                
+                if (result.success) {
+                    await loadLicenseManagement();
+                    alert('Statut mis à jour avec succès');
+                } else {
+                    alert('Erreur : ' + result.error);
+                }
+            } catch (error) {
+                console.error('[Analytics] Error updating status:', error);
+                alert('Erreur lors de la mise à jour du statut');
+            }
+        }
+
+        // Fonction pour étendre la licence
+        async function extendLicense(userId) {
+            try {
+                const newExpiry = new Date();
+                newExpiry.setDate(newExpiry.getDate() + 30);
+                
+                // Initialiser le service de licence s'il n'est pas déjà prêt
+                if (!window.licenseService.initialized) {
+                    await window.licenseService.initialize();
+                }
+
+                // Définir l'utilisateur actuel pour le service
+                window.licenseService.currentUser = authenticatedUser;
+
+                const result = await window.licenseService.updateUserLicense(userId, 'active', newExpiry);
+                
+                if (result.success) {
+                    await loadLicenseManagement();
+                    alert('Licence étendue de 30 jours');
+                } else {
+                    alert('Erreur : ' + result.error);
+                }
+            } catch (error) {
+                console.error('[Analytics] Error extending license:', error);
+                alert('Erreur lors de l\'extension de la licence');
+            }
+        }
+
+        // Analytics loading (existing functionality)
+        async function loadAnalyticsScript() {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = './analytics.js';
+                script.onload = () => {
+                    console.log('[Analytics Page] Analytics script loaded successfully');
+                    resolve();
+                };
+                script.onerror = () => {
+                    console.error('[Analytics Page] Failed to load analytics script');
+                    reject(new Error('Failed to load analytics.js'));
+                };
+                document.head.appendChild(script);
+            });
+        }
+
+        async function loadAnalytics() {
+            try {
+                console.log('[Analytics Page] Starting analytics load...');
+                
+                if (!window.analyticsManager || !window.analyticsModule) {
+                    console.log('[Analytics Page] Loading analytics script...');
+                    await loadAnalyticsScript();
+                    
+                    let attempts = 0;
+                    while ((!window.analyticsManager || !window.analyticsModule) && attempts < 10) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        attempts++;
+                    }
+                }
+
+                analyticsManager = window.analyticsManager;
+                analyticsModule = window.analyticsModule;
+
+                const data = analyticsManager ? analyticsManager.getAnalyticsData() : {};
+
+                const analyticsContent = document.getElementById('analyticsContent');
+                const pageContent = document.createElement('div');
+                pageContent.id = 'pageContent';
+                analyticsContent.innerHTML = '';
+                analyticsContent.appendChild(pageContent);
+
+                if (analyticsModule) {
+                    analyticsModule.render();
+                }
+
+                document.getElementById('loadingContainer').style.display = 'none';
+                updateLastUpdated();
+
+                console.log('[Analytics Page] ✅ Analytics loaded successfully');
+
+            } catch (error) {
+                console.error('[Analytics Page] ❌ Error loading analytics:', error);
+                document.getElementById('loadingContainer').innerHTML = `
+                    <div style="text-align: center; color: #dc2626;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 16px;"></i>
+                        <h3>Erreur de chargement</h3>
+                        <p>Impossible de charger les données analytics</p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateLastUpdated() {
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = now.toLocaleString('fr-FR');
+        }
+
+        // Event listeners
+        document.getElementById('authForm').addEventListener('submit', handleAuthentication);
+        document.getElementById('userSearch').addEventListener('input', filterUsers);
+        document.getElementById('statusFilter').addEventListener('change', filterUsers);
+        document.getElementById('companyFilter').addEventListener('change', filterUsers);
+
+        // Close modal when clicking outside
+        document.getElementById('userModal').addEventListener('click', (e) => {
+            if (e.target.id === 'userModal') {
+                closeUserModal();
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('[Analytics Page] DOM loaded, initializing with authentication...');
+            
+            // Vérifier la session existante
+            await checkSession();
+        });
+
+        // Debug function
+        window.debugAnalytics = function() {
+            console.log('=== ANALYTICS PAGE DEBUG ===');
+            console.log('Authenticated user:', authenticatedUser);
+            console.log('Current tab:', currentTab);
+            console.log('Current users:', currentUsers);
+            console.log('Filtered users:', filteredUsers);
+            console.log('Analytics manager:', analyticsManager);
+            console.log('Analytics module:', analyticsModule);
+            console.log('License service:', licenseService);
+            console.log('Supabase client:', supabaseClient);
+            
+            return {
+                authenticated: !!authenticatedUser,
+                userRole: authenticatedUser?.role,
+                currentTab,
+                usersCount: currentUsers.length,
+                filteredCount: filteredUsers.length,
+                analyticsManager: !!analyticsManager,
+                analyticsModule: !!analyticsModule,
+                licenseService: !!licenseService,
+                supabaseClient: !!supabaseClient,
+                realData: currentUsers.length > 0
+            };
+        };
+
+        console.log('[Analytics Page] ✅ Analytics page with authentication and permissions initialized');
+        console.log('[Analytics Page] Use debugAnalytics() for debug information');
+    </script>
 </body>
 </html>
