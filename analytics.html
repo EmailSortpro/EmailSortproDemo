@@ -21,134 +21,10 @@
             line-height: 1.6;
         }
 
-        /* Styles pour la page de connexion */
-        .auth-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-        }
-
-        .auth-card {
-            background: white;
-            padding: 48px;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-
-        .auth-logo {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-            font-size: 2rem;
-            color: white;
-        }
-
-        .auth-title {
-            font-size: 1.875rem;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 8px;
-        }
-
-        .auth-subtitle {
-            color: #6b7280;
-            margin-bottom: 32px;
-        }
-
-        .auth-form {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .auth-input {
-            padding: 12px 16px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.2s ease;
-        }
-
-        .auth-input:focus {
-            outline: none;
-            border-color: #4F46E5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
-
-        .auth-button {
-            padding: 12px 24px;
-            background: #4F46E5;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .auth-button:hover {
-            background: #4338ca;
-            transform: translateY(-1px);
-        }
-
-        .auth-button:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .auth-error {
-            background: #fef2f2;
-            color: #dc2626;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            margin-top: 16px;
-        }
-
-        .auth-success {
-            background: #dcfce7;
-            color: #16a34a;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            margin-top: 16px;
-        }
-
-        .loading-spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid #ffffff;
-            border-top: 2px solid transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        /* Styles existants pour la page analytics */
         .analytics-standalone {
             max-width: 1400px;
             margin: 0 auto;
             padding: 40px 20px;
-            display: none;
-        }
-
-        .analytics-standalone.authenticated {
-            display: block;
         }
 
         .page-header {
@@ -159,7 +35,6 @@
             color: white;
             border-radius: 16px;
             margin: 0 0 48px 0;
-            position: relative;
         }
 
         .page-header h1 {
@@ -178,51 +53,6 @@
             max-width: 600px;
             margin: 0 auto;
             line-height: 1.5;
-        }
-
-        .user-info-header {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 0.875rem;
-        }
-
-        .user-info-header .user-email {
-            font-weight: 600;
-            color: #1f2937;
-        }
-
-        .user-info-header .user-role {
-            background: #f3e8ff;
-            color: #7c3aed;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .logout-btn {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-
-        .logout-btn:hover {
-            background: #dc2626;
         }
 
         .back-to-app {
@@ -528,19 +358,14 @@
             color: #16a34a;
         }
 
-        .status-badge.trial {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
-        .status-badge.expired {
-            background: #fef2f2;
-            color: #dc2626;
-        }
-
-        .status-badge.blocked {
+        .status-badge.inactive {
             background: #f3f4f6;
             color: #6b7280;
+        }
+
+        .status-badge.error {
+            background: #fef2f2;
+            color: #dc2626;
         }
 
         .license-info {
@@ -703,6 +528,30 @@
         .detail-item value {
             font-weight: 600;
             color: #1f2937;
+        }
+
+        .error-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .error-item {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .error-item .error-time {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .error-item .error-message {
+            color: #dc2626;
+            font-weight: 500;
         }
 
         /* License Management */
@@ -1029,50 +878,13 @@
     </style>
 </head>
 <body>
-    <!-- Page de connexion -->
-    <div class="auth-container" id="authContainer">
-        <div class="auth-card">
-            <div class="auth-logo">
-                <i class="fas fa-chart-line"></i>
-            </div>
-            <h1 class="auth-title">Analytics EmailSortPro</h1>
-            <p class="auth-subtitle">Connectez-vous pour accéder aux analytics</p>
-            
-            <form class="auth-form" id="authForm">
-                <input 
-                    type="email" 
-                    class="auth-input" 
-                    id="authEmail" 
-                    placeholder="Votre adresse email"
-                    required
-                    autocomplete="email"
-                >
-                <button type="submit" class="auth-button" id="authButton">
-                    <span id="authButtonText">Se connecter</span>
-                    <div class="loading-spinner" id="authSpinner" style="display: none;"></div>
-                </button>
-            </form>
-            
-            <div id="authMessage"></div>
-        </div>
-    </div>
-
-    <!-- Page Analytics (cachée par défaut) -->
-    <div class="analytics-standalone" id="analyticsContainer">
+    <div class="analytics-standalone">
         <a href="./index.html" class="back-to-app">
             <i class="fas fa-arrow-left"></i>
             Retour à l'application
         </a>
 
         <div class="page-header">
-            <div class="user-info-header">
-                <span class="user-email" id="currentUserEmail">-</span>
-                <span class="user-role" id="currentUserRole">-</span>
-                <button class="logout-btn" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> Déconnexion
-                </button>
-            </div>
-            
             <h1>
                 <i class="fas fa-chart-line"></i>
                 Analytics EmailSortPro
@@ -1232,176 +1044,7 @@
         let currentUsers = [];
         let filteredUsers = [];
         let currentTab = 'overview';
-        let authenticatedUser = null;
-
-        // Gestion de l'authentification
-        async function handleAuthentication(event) {
-            event.preventDefault();
-            
-            const email = document.getElementById('authEmail').value.trim();
-            const button = document.getElementById('authButton');
-            const buttonText = document.getElementById('authButtonText');
-            const spinner = document.getElementById('authSpinner');
-            const messageDiv = document.getElementById('authMessage');
-            
-            if (!email || !email.includes('@')) {
-                showAuthMessage('Veuillez entrer une adresse email valide', 'error');
-                return;
-            }
-            
-            // Afficher le spinner
-            button.disabled = true;
-            buttonText.style.display = 'none';
-            spinner.style.display = 'block';
-            messageDiv.innerHTML = '';
-            
-            try {
-                // Initialiser le service de licence
-                if (!licenseService) {
-                    await loadLicenseService();
-                }
-                
-                // Initialiser Supabase AVANT l'authentification
-                await initializeSupabase();
-                
-                // Authentifier avec l'email
-                const result = await licenseService.authenticateWithEmail(email);
-                
-                if (result.valid) {
-                    // Vérifier si l'utilisateur a des droits d'admin
-                    if (result.user.role === 'company_admin' || result.user.role === 'super_admin') {
-                        authenticatedUser = result.user;
-                        
-                        // Définir l'utilisateur actuel pour le service
-                        licenseService.currentUser = authenticatedUser;
-                        
-                        showAuthMessage('Connexion réussie !', 'success');
-                        
-                        // Attendre un peu avant de basculer
-                        setTimeout(() => {
-                            showAnalytics();
-                        }, 1000);
-                    } else {
-                        showAuthMessage('Accès refusé. Seuls les administrateurs peuvent accéder aux analytics.', 'error');
-                    }
-                } else {
-                    showAuthMessage(result.message || 'Email non autorisé', 'error');
-                }
-                
-            } catch (error) {
-                console.error('[Auth] Error:', error);
-                showAuthMessage('Erreur de connexion. Veuillez réessayer.', 'error');
-            } finally {
-                // Réactiver le bouton
-                button.disabled = false;
-                buttonText.style.display = 'block';
-                spinner.style.display = 'none';
-            }
-        }
-
-        function showAuthMessage(message, type) {
-            const messageDiv = document.getElementById('authMessage');
-            messageDiv.className = type === 'error' ? 'auth-error' : 'auth-success';
-            messageDiv.textContent = message;
-        }
-
-        function showAnalytics() {
-            // Cacher la page de connexion
-            document.getElementById('authContainer').style.display = 'none';
-            
-            // Afficher la page analytics
-            document.getElementById('analyticsContainer').classList.add('authenticated');
-            
-            // Mettre à jour les infos utilisateur
-            document.getElementById('currentUserEmail').textContent = authenticatedUser.email;
-            document.getElementById('currentUserRole').textContent = authenticatedUser.role.replace('_', ' ');
-            
-            // Charger les données
-            loadAnalytics();
-            updateLastUpdated();
-            
-            // Sauvegarder la session
-            sessionStorage.setItem('analyticsAuth', JSON.stringify({
-                email: authenticatedUser.email,
-                role: authenticatedUser.role,
-                timestamp: Date.now()
-            }));
-        }
-
-        function logout() {
-            // Effacer la session
-            sessionStorage.removeItem('analyticsAuth');
-            
-            // Réinitialiser
-            authenticatedUser = null;
-            currentUsers = [];
-            filteredUsers = [];
-            
-            // Retourner à la page de connexion
-            document.getElementById('analyticsContainer').classList.remove('authenticated');
-            document.getElementById('authContainer').style.display = 'flex';
-            document.getElementById('authEmail').value = '';
-            document.getElementById('authMessage').innerHTML = '';
-        }
-
-        // Vérifier la session au chargement
-        async function checkSession() {
-            const session = sessionStorage.getItem('analyticsAuth');
-            
-            if (session) {
-                try {
-                    const data = JSON.parse(session);
-                    
-                    // Vérifier que la session n'est pas trop vieille (24h)
-                    if (Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
-                        // Initialiser d'abord
-                        if (!licenseService) {
-                            await loadLicenseService();
-                        }
-                        
-                        await initializeSupabase();
-                        
-                        // Recharger l'utilisateur
-                        const result = await licenseService.authenticateWithEmail(data.email);
-                        
-                        if (result.valid && (result.user.role === 'company_admin' || result.user.role === 'super_admin')) {
-                            authenticatedUser = result.user;
-                            licenseService.currentUser = authenticatedUser;
-                            showAnalytics();
-                            return;
-                        }
-                    }
-                } catch (error) {
-                    console.error('[Session] Error:', error);
-                }
-                
-                // Session invalide
-                sessionStorage.removeItem('analyticsAuth');
-            }
-        }
-
-        // Charger le service de licence
-        async function loadLicenseService() {
-            // Charger la configuration Supabase d'abord
-            const configScript = document.createElement('script');
-            configScript.src = './config-supabase.js';
-            await new Promise((resolve, reject) => {
-                configScript.onload = resolve;
-                configScript.onerror = reject;
-                document.head.appendChild(configScript);
-            });
-            
-            // Charger le service de licence
-            const licenseScript = document.createElement('script');
-            licenseScript.src = './LicenceService.js';
-            await new Promise((resolve, reject) => {
-                licenseScript.onload = resolve;
-                licenseScript.onerror = reject;
-                document.head.appendChild(licenseScript);
-            });
-            
-            licenseService = window.licenseService;
-        }
+        let currentUser = null;
 
         // Tab management
         function switchTab(tabName) {
@@ -1426,40 +1069,31 @@
         // Users management - avec filtrage selon les permissions
         async function loadUsers() {
             try {
-                console.log('[Analytics] Loading users with permissions check...');
+                console.log('[Analytics] Loading users from database...');
                 
-                // Vérifier que Supabase est initialisé
+                // Initialiser Supabase si nécessaire
                 if (!supabaseClient) {
-                    console.log('[Analytics] Supabase not ready, initializing...');
                     await initializeSupabase();
                 }
                 
-                // Construire la requête avec les bonnes colonnes
+                // Récupérer le current user depuis le service de licence
+                if (!currentUser && window.licenseService) {
+                    currentUser = await window.licenseService.getCurrentUser();
+                }
+                
+                // Charger les utilisateurs depuis la base de données
                 let query = supabaseClient
                     .from('users')
                     .select(`
-                        id,
-                        email,
-                        name,
-                        role,
-                        license_status,
-                        license_expires_at,
-                        company_id,
-                        first_login_at,
-                        last_login_at,
-                        login_count,
-                        created_at,
-                        updated_at,
-                        company:companies(id, name, domain)
+                        *,
+                        company:companies(name)
                     `)
                     .order('created_at', { ascending: false });
                 
                 // Si l'utilisateur est un admin de société, filtrer par sa société
-                if (authenticatedUser && authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                    console.log('[Analytics] Filtering by company:', authenticatedUser.company_id);
-                    query = query.eq('company_id', authenticatedUser.company_id);
+                if (currentUser && currentUser.role === 'company_admin' && currentUser.company_id) {
+                    query = query.eq('company_id', currentUser.company_id);
                 }
-                // Si super admin, pas de filtre
                 
                 const { data: users, error } = await query;
 
@@ -1490,25 +1124,9 @@
             if (!supabaseClient) return;
             
             try {
-                let query = supabaseClient
+                const { data: stats, error } = await supabaseClient
                     .from('user_email_stats')
                     .select('*');
-                
-                // Filtrer par domaine si admin de société
-                if (authenticatedUser && authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                    // Récupérer le domaine de la société
-                    const { data: company } = await supabaseClient
-                        .from('companies')
-                        .select('domain')
-                        .eq('id', authenticatedUser.company_id)
-                        .single();
-                    
-                    if (company && company.domain) {
-                        query = query.eq('domain', company.domain);
-                    }
-                }
-                
-                const { data: stats, error } = await query;
 
                 if (!error && stats) {
                     // Fusionner les stats avec les utilisateurs
@@ -1556,11 +1174,6 @@
 
         // Initialiser Supabase
         async function initializeSupabase() {
-            if (supabaseClient) {
-                console.log('[Analytics] Supabase already initialized');
-                return;
-            }
-
             if (!window.supabaseConfig) {
                 console.error('[Analytics] Supabase config not loaded');
                 return;
@@ -1577,13 +1190,7 @@
             supabaseClient = window.supabase.createClient(
                 config.url,
                 config.anonKey,
-                {
-                    auth: {
-                        autoRefreshToken: true,
-                        persistSession: false,
-                        detectSessionInUrl: false
-                    }
-                }
+                config.auth
             );
             
             console.log('[Analytics] Supabase client initialized');
@@ -1839,61 +1446,37 @@
         async function loadLicenseManagement() {
             const container = document.getElementById('licenseManagement');
             
-            if (!window.licenseService || !authenticatedUser) {
+            if (!window.licenseService) {
                 container.innerHTML = `
                     <div class="no-permissions">
                         <i class="fas fa-exclamation-triangle"></i>
-                        <h3>Service non disponible</h3>
-                        <p>Veuillez vous reconnecter</p>
+                        <h3>Service de licence non disponible</h3>
+                        <p>Veuillez recharger la page</p>
                     </div>
                 `;
                 return;
             }
 
-            // Vérifier que Supabase est initialisé
-            if (!supabaseClient) {
-                await initializeSupabase();
+            // Initialiser le service si nécessaire
+            if (!window.licenseService.initialized) {
+                await window.licenseService.initialize();
             }
 
-            let companyUsers = [];
+            // Récupérer l'utilisateur actuel
+            const currentUser = await window.licenseService.getCurrentUser();
             
-            try {
-                // Charger les utilisateurs selon les permissions
-                if (authenticatedUser.role === 'super_admin') {
-                    // Super admin voit tous les utilisateurs
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .select(`
-                            *,
-                            company:companies(name)
-                        `)
-                        .order('created_at', { ascending: false });
-                    
-                    if (error) {
-                        console.error('[Analytics] Error loading all users:', error);
-                    } else {
-                        companyUsers = data || [];
-                    }
-                } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                    // Admin de société voit seulement ses utilisateurs
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .select(`
-                            *,
-                            company:companies(name)
-                        `)
-                        .eq('company_id', authenticatedUser.company_id)
-                        .order('created_at', { ascending: false });
-                    
-                    if (error) {
-                        console.error('[Analytics] Error loading company users:', error);
-                    } else {
-                        companyUsers = data || [];
-                    }
-                }
-            } catch (error) {
-                console.error('[Analytics] Failed to load users for license management:', error);
+            if (!currentUser || !window.licenseService.isAdmin()) {
+                container.innerHTML = `
+                    <div class="no-permissions">
+                        <i class="fas fa-lock"></i>
+                        <h3>Accès refusé</h3>
+                        <p>Vous n'avez pas les droits d'administration</p>
+                    </div>
+                `;
+                return;
             }
+
+            const companyUsers = await window.licenseService.getCompanyUsers();
 
             // Calculer les statistiques
             const stats = {
@@ -1914,10 +1497,10 @@
                     </button>
                 </div>
 
-                ${authenticatedUser.company_id && companyUsers.length > 0 && companyUsers[0].company ? `
+                ${currentUser.company ? `
                     <div class="company-info">
-                        <h3>${companyUsers[0].company.name}</h3>
-                        <p>Administrateur : ${authenticatedUser.name || authenticatedUser.email}</p>
+                        <h3>${currentUser.company.name}</h3>
+                        <p>Administrateur : ${currentUser.name || currentUser.email}</p>
                     </div>
                 ` : ''}
 
@@ -1945,67 +1528,6 @@
                     <button onclick="addNewUser()">
                         <i class="fas fa-user-plus"></i> Ajouter un utilisateur
                     </button>
-                </div>
-
-                <!-- Nouvelle section pour l'import -->
-                <div class="import-section" style="margin-top: 20px; padding: 20px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
-                    <h3 style="margin-bottom: 16px; color: #0369a1;">
-                        <i class="fas fa-file-import"></i> Import en masse
-                    </h3>
-                    <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
-                        <input 
-                            type="file" 
-                            id="importFile" 
-                            accept=".csv,.xlsx,.xls"
-                            style="display: none;"
-                            onchange="handleFileImport(event)"
-                        >
-                        <button 
-                            onclick="document.getElementById('importFile').click()"
-                            style="padding: 10px 20px; background: #0ea5e9; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;"
-                        >
-                            <i class="fas fa-upload"></i> Importer un fichier Excel/CSV
-                        </button>
-                        <button 
-                            onclick="downloadTemplate()"
-                            style="padding: 10px 20px; background: #6366f1; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;"
-                        >
-                            <i class="fas fa-download"></i> Télécharger le modèle
-                        </button>
-                    </div>
-                    <div id="importStatus" style="margin-top: 16px; display: none;">
-                        <div style="padding: 12px; border-radius: 6px;" id="importMessage"></div>
-                    </div>
-                    <div id="importPreview" style="margin-top: 20px; display: none;">
-                        <h4 style="margin-bottom: 12px;">Aperçu de l'import :</h4>
-                        <div style="max-height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; background: white;">
-                            <table style="width: 100%; font-size: 0.875rem;">
-                                <thead style="background: #f8fafc; position: sticky; top: 0;">
-                                    <tr>
-                                        <th style="padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0;">Email</th>
-                                        <th style="padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0;">Nom</th>
-                                        <th style="padding: 8px; text-align: left; border-bottom: 1px solid #e2e8f0;">Statut</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="importPreviewBody">
-                                </tbody>
-                            </table>
-                        </div>
-                        <div style="margin-top: 16px; display: flex; gap: 12px;">
-                            <button 
-                                onclick="confirmImport()"
-                                style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;"
-                            >
-                                <i class="fas fa-check"></i> Confirmer l'import
-                            </button>
-                            <button 
-                                onclick="cancelImport()"
-                                style="padding: 10px 20px; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;"
-                            >
-                                <i class="fas fa-times"></i> Annuler
-                            </button>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="license-users-table">
@@ -2070,310 +1592,54 @@
                 return;
             }
 
-            try {
-                // Initialiser le service de licence s'il n'est pas déjà prêt
-                if (!window.licenseService.initialized) {
-                    await window.licenseService.initialize();
-                }
-
-                // Définir l'utilisateur actuel pour le service
-                window.licenseService.currentUser = authenticatedUser;
-
-                const result = await window.licenseService.addUserToCompany(email);
-                
-                if (result.success) {
-                    emailInput.value = '';
-                    await loadLicenseManagement();
-                    alert('Utilisateur ajouté avec succès');
+            const result = await window.licenseService.addUserToCompany(email);
+            
+            if (result.success) {
+                emailInput.value = '';
+                await loadLicenseManagement();
+                if (window.uiManager) {
+                    window.uiManager.showToast('Utilisateur ajouté avec succès', 'success');
                 } else {
-                    alert('Erreur : ' + result.error);
+                    alert('Utilisateur ajouté avec succès');
                 }
-            } catch (error) {
-                console.error('[Analytics] Error adding user:', error);
-                alert('Erreur lors de l\'ajout de l\'utilisateur');
+            } else {
+                alert('Erreur : ' + result.error);
             }
         }
 
         // Fonction pour mettre à jour le statut
         async function updateUserStatus(userId, newStatus) {
-            try {
-                // Initialiser le service de licence s'il n'est pas déjà prêt
-                if (!window.licenseService.initialized) {
-                    await window.licenseService.initialize();
-                }
-
-                // Définir l'utilisateur actuel pour le service
-                window.licenseService.currentUser = authenticatedUser;
-
-                const result = await window.licenseService.updateUserLicense(userId, newStatus);
-                
-                if (result.success) {
-                    await loadLicenseManagement();
-                    alert('Statut mis à jour avec succès');
+            const result = await window.licenseService.updateUserLicense(userId, newStatus);
+            
+            if (result.success) {
+                await loadLicenseManagement();
+                if (window.uiManager) {
+                    window.uiManager.showToast('Statut mis à jour', 'success');
                 } else {
-                    alert('Erreur : ' + result.error);
+                    alert('Statut mis à jour avec succès');
                 }
-            } catch (error) {
-                console.error('[Analytics] Error updating status:', error);
-                alert('Erreur lors de la mise à jour du statut');
+            } else {
+                alert('Erreur : ' + result.error);
             }
         }
 
         // Fonction pour étendre la licence
         async function extendLicense(userId) {
-            try {
-                const newExpiry = new Date();
-                newExpiry.setDate(newExpiry.getDate() + 30);
-                
-                // Initialiser le service de licence s'il n'est pas déjà prêt
-                if (!window.licenseService.initialized) {
-                    await window.licenseService.initialize();
-                }
-
-                // Définir l'utilisateur actuel pour le service
-                window.licenseService.currentUser = authenticatedUser;
-
-                const result = await window.licenseService.updateUserLicense(userId, 'active', newExpiry);
-                
-                if (result.success) {
-                    await loadLicenseManagement();
+            const newExpiry = new Date();
+            newExpiry.setDate(newExpiry.getDate() + 30);
+            
+            const result = await window.licenseService.updateUserLicense(userId, 'active', newExpiry);
+            
+            if (result.success) {
+                await loadLicenseManagement();
+                if (window.uiManager) {
+                    window.uiManager.showToast('Licence étendue de 30 jours', 'success');
+                } else {
                     alert('Licence étendue de 30 jours');
-                } else {
-                    alert('Erreur : ' + result.error);
                 }
-            } catch (error) {
-                console.error('[Analytics] Error extending license:', error);
-                alert('Erreur lors de l\'extension de la licence');
+            } else {
+                alert('Erreur : ' + result.error);
             }
-        }
-
-        // Variables globales pour l'import
-        let importData = [];
-        let importInProgress = false;
-
-        // Fonction pour télécharger le modèle
-        function downloadTemplate() {
-            const template = 'Email,Nom\nexemple@societe.fr,Jean Dupont\nautre@societe.fr,Marie Martin';
-            const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'modele_import_utilisateurs.csv';
-            link.click();
-        }
-
-        // Fonction pour gérer l'import de fichier
-        async function handleFileImport(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const fileType = file.name.split('.').pop().toLowerCase();
-            
-            showImportStatus('Lecture du fichier...', 'info');
-            
-            try {
-                if (fileType === 'csv') {
-                    await handleCSVImport(file);
-                } else if (fileType === 'xlsx' || fileType === 'xls') {
-                    await handleExcelImport(file);
-                } else {
-                    throw new Error('Format de fichier non supporté');
-                }
-            } catch (error) {
-                showImportStatus(`Erreur : ${error.message}`, 'error');
-                console.error('[Import] Error:', error);
-            }
-        }
-
-        // Import CSV
-        async function handleCSVImport(file) {
-            const text = await file.text();
-            const lines = text.split('\n').filter(line => line.trim());
-            
-            if (lines.length < 2) {
-                throw new Error('Le fichier est vide ou ne contient que l\'en-tête');
-            }
-
-            importData = [];
-            const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
-            const emailIndex = headers.findIndex(h => h.includes('email') || h.includes('mail'));
-            const nameIndex = headers.findIndex(h => h.includes('nom') || h.includes('name'));
-
-            if (emailIndex === -1) {
-                throw new Error('Colonne "Email" non trouvée');
-            }
-
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',').map(v => v.trim());
-                const email = values[emailIndex];
-                const name = nameIndex !== -1 ? values[nameIndex] : email.split('@')[0];
-
-                if (email && email.includes('@')) {
-                    importData.push({ email, name });
-                }
-            }
-
-            if (importData.length === 0) {
-                throw new Error('Aucun email valide trouvé dans le fichier');
-            }
-
-            showImportPreview();
-        }
-
-        // Import Excel (nécessite une librairie externe)
-        async function handleExcelImport(file) {
-            // Pour Excel, on aurait besoin d'une librairie comme SheetJS
-            // Pour l'instant, on affiche un message
-            showImportStatus('L\'import Excel nécessite une librairie supplémentaire. Utilisez le format CSV pour l\'instant.', 'error');
-        }
-
-        // Afficher le statut de l'import
-        function showImportStatus(message, type) {
-            const statusDiv = document.getElementById('importStatus');
-            const messageDiv = document.getElementById('importMessage');
-            
-            statusDiv.style.display = 'block';
-            messageDiv.textContent = message;
-            messageDiv.style.background = type === 'error' ? '#fef2f2' : 
-                                        type === 'success' ? '#dcfce7' : '#e0f2fe';
-            messageDiv.style.color = type === 'error' ? '#dc2626' : 
-                                    type === 'success' ? '#16a34a' : '#0369a1';
-        }
-
-        // Afficher l'aperçu de l'import
-        function showImportPreview() {
-            const previewDiv = document.getElementById('importPreview');
-            const previewBody = document.getElementById('importPreviewBody');
-            
-            // Vérifier les emails existants
-            const existingEmails = currentUsers.map(u => u.email.toLowerCase());
-            
-            previewBody.innerHTML = importData.map(user => {
-                const exists = existingEmails.includes(user.email.toLowerCase());
-                const domain = user.email.split('@')[1];
-                const companyDomain = authenticatedUser.company?.domain || authenticatedUser.email.split('@')[1];
-                const sameCompany = domain === companyDomain;
-                
-                let status = '';
-                let statusColor = '';
-                
-                if (exists) {
-                    status = 'Existe déjà';
-                    statusColor = '#dc2626';
-                } else if (!sameCompany && authenticatedUser.role === 'company_admin') {
-                    status = 'Domaine différent';
-                    statusColor = '#f59e0b';
-                } else {
-                    status = 'Prêt à importer';
-                    statusColor = '#16a34a';
-                }
-                
-                return `
-                    <tr>
-                        <td style="padding: 8px; border-bottom: 1px solid #f1f5f9;">${user.email}</td>
-                        <td style="padding: 8px; border-bottom: 1px solid #f1f5f9;">${user.name}</td>
-                        <td style="padding: 8px; border-bottom: 1px solid #f1f5f9; color: ${statusColor}; font-weight: 500;">${status}</td>
-                    </tr>
-                `;
-            }).join('');
-            
-            previewDiv.style.display = 'block';
-            
-            const validUsers = importData.filter(user => {
-                const exists = existingEmails.includes(user.email.toLowerCase());
-                const domain = user.email.split('@')[1];
-                const companyDomain = authenticatedUser.company?.domain || authenticatedUser.email.split('@')[1];
-                const sameCompany = domain === companyDomain || authenticatedUser.role === 'super_admin';
-                return !exists && sameCompany;
-            });
-            
-            showImportStatus(`${validUsers.length} utilisateur(s) prêt(s) à être importé(s)`, 'info');
-        }
-
-        // Confirmer l'import
-        async function confirmImport() {
-            if (importInProgress) return;
-            
-            importInProgress = true;
-            const existingEmails = currentUsers.map(u => u.email.toLowerCase());
-            const companyDomain = authenticatedUser.company?.domain || authenticatedUser.email.split('@')[1];
-            
-            const usersToImport = importData.filter(user => {
-                const exists = existingEmails.includes(user.email.toLowerCase());
-                const domain = user.email.split('@')[1];
-                const sameCompany = domain === companyDomain || authenticatedUser.role === 'super_admin';
-                return !exists && sameCompany;
-            });
-
-            if (usersToImport.length === 0) {
-                showImportStatus('Aucun utilisateur à importer', 'error');
-                importInProgress = false;
-                return;
-            }
-
-            showImportStatus(`Import en cours de ${usersToImport.length} utilisateur(s)...`, 'info');
-            
-            let successCount = 0;
-            let errorCount = 0;
-
-            for (const user of usersToImport) {
-                try {
-                    // Initialiser le service de licence s'il n'est pas déjà prêt
-                    if (!window.licenseService.initialized) {
-                        await window.licenseService.initialize();
-                    }
-
-                    // Définir l'utilisateur actuel pour le service
-                    window.licenseService.currentUser = authenticatedUser;
-
-                    const result = await window.licenseService.addUserToCompany(user.email);
-                    
-                    if (result.success) {
-                        successCount++;
-                        
-                        // Mettre à jour le nom si fourni
-                        if (user.name && user.name !== user.email.split('@')[0]) {
-                            await supabaseClient
-                                .from('users')
-                                .update({ name: user.name })
-                                .eq('email', user.email);
-                        }
-                    } else {
-                        errorCount++;
-                        console.error(`[Import] Failed for ${user.email}:`, result.error);
-                    }
-                } catch (error) {
-                    errorCount++;
-                    console.error(`[Import] Error for ${user.email}:`, error);
-                }
-                
-                // Mettre à jour le statut périodiquement
-                if ((successCount + errorCount) % 5 === 0) {
-                    showImportStatus(`Import en cours... ${successCount + errorCount}/${usersToImport.length}`, 'info');
-                }
-            }
-
-            showImportStatus(
-                `Import terminé : ${successCount} réussi(s), ${errorCount} échec(s)`, 
-                errorCount === 0 ? 'success' : 'info'
-            );
-            
-            // Recharger la liste
-            await loadLicenseManagement();
-            
-            // Réinitialiser
-            setTimeout(() => {
-                cancelImport();
-            }, 3000);
-            
-            importInProgress = false;
-        }
-
-        // Annuler l'import
-        function cancelImport() {
-            importData = [];
-            document.getElementById('importFile').value = '';
-            document.getElementById('importPreview').style.display = 'none';
-            document.getElementById('importStatus').style.display = 'none';
         }
 
         // Analytics loading (existing functionality)
@@ -2446,7 +1712,6 @@
         }
 
         // Event listeners
-        document.getElementById('authForm').addEventListener('submit', handleAuthentication);
         document.getElementById('userSearch').addEventListener('input', filterUsers);
         document.getElementById('statusFilter').addEventListener('change', filterUsers);
         document.getElementById('companyFilter').addEventListener('change', filterUsers);
@@ -2460,16 +1725,32 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('[Analytics Page] DOM loaded, initializing with authentication...');
+            console.log('[Analytics Page] DOM loaded, initializing...');
             
-            // Vérifier la session existante
-            await checkSession();
+            // Charger le service de licence
+            const licenseScript = document.createElement('script');
+            licenseScript.src = './LicenceService.js';
+            licenseScript.onload = async () => {
+                console.log('[Analytics] LicenseService loaded');
+                licenseService = window.licenseService;
+                
+                // Charger la configuration Supabase
+                const configScript = document.createElement('script');
+                configScript.src = './config-supabase.js';
+                configScript.onload = () => {
+                    console.log('[Analytics] Supabase config loaded');
+                };
+                document.head.appendChild(configScript);
+            };
+            document.head.appendChild(licenseScript);
+            
+            loadAnalytics();
+            updateLastUpdated();
         });
 
         // Debug function
         window.debugAnalytics = function() {
             console.log('=== ANALYTICS PAGE DEBUG ===');
-            console.log('Authenticated user:', authenticatedUser);
             console.log('Current tab:', currentTab);
             console.log('Current users:', currentUsers);
             console.log('Filtered users:', filteredUsers);
@@ -2477,10 +1758,9 @@
             console.log('Analytics module:', analyticsModule);
             console.log('License service:', licenseService);
             console.log('Supabase client:', supabaseClient);
+            console.log('Current user:', currentUser);
             
             return {
-                authenticated: !!authenticatedUser,
-                userRole: authenticatedUser?.role,
                 currentTab,
                 usersCount: currentUsers.length,
                 filteredCount: filteredUsers.length,
@@ -2488,11 +1768,12 @@
                 analyticsModule: !!analyticsModule,
                 licenseService: !!licenseService,
                 supabaseClient: !!supabaseClient,
+                currentUser: currentUser,
                 realData: currentUsers.length > 0
             };
         };
 
-        console.log('[Analytics Page] ✅ Analytics page with authentication and permissions initialized');
+        console.log('[Analytics Page] ✅ Analytics page initialized - Direct access without authentication');
         console.log('[Analytics Page] Use debugAnalytics() for debug information');
     </script>
 </body>
