@@ -8,6 +8,9 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Stripe.js -->
+    <script src="https://js.stripe.com/v3/"></script>
+    
     <style>
         * {
             margin: 0;
@@ -358,14 +361,19 @@
             color: #16a34a;
         }
 
-        .status-badge.inactive {
-            background: #f3f4f6;
-            color: #6b7280;
+        .status-badge.trial {
+            background: #fef3c7;
+            color: #d97706;
         }
 
-        .status-badge.error {
+        .status-badge.expired {
             background: #fef2f2;
             color: #dc2626;
+        }
+
+        .status-badge.blocked {
+            background: #f3f4f6;
+            color: #6b7280;
         }
 
         .license-info {
@@ -424,134 +432,6 @@
         .action-btn:hover {
             transform: translateY(-1px);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        /* User Details Modal */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 10000;
-            backdrop-filter: blur(4px);
-        }
-
-        .modal-overlay.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-            max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            padding: 24px;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header h3 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #1f2937;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #6b7280;
-            font-size: 1.25rem;
-            padding: 4px;
-            border-radius: 4px;
-            transition: all 0.2s ease;
-        }
-
-        .modal-close:hover {
-            background: #f3f4f6;
-            color: #374151;
-        }
-
-        .modal-body {
-            padding: 24px;
-        }
-
-        .detail-group {
-            margin-bottom: 24px;
-        }
-
-        .detail-group h4 {
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .detail-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-        }
-
-        .detail-item {
-            background: #f8fafc;
-            padding: 16px;
-            border-radius: 8px;
-            border-left: 4px solid #4F46E5;
-        }
-
-        .detail-item label {
-            font-size: 0.75rem;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-weight: 600;
-            margin-bottom: 4px;
-            display: block;
-        }
-
-        .detail-item value {
-            font-weight: 600;
-            color: #1f2937;
-        }
-
-        .error-list {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .error-item {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 8px;
-        }
-
-        .error-item .error-time {
-            font-size: 0.75rem;
-            color: #6b7280;
-            margin-bottom: 4px;
-        }
-
-        .error-item .error-message {
-            color: #dc2626;
-            font-weight: 500;
         }
 
         /* License Management */
@@ -735,35 +615,295 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        .company-info {
-            padding: 20px;
-            background: #f8fafc;
-            border-radius: 8px;
-            margin-bottom: 24px;
-            border-left: 4px solid #4F46E5;
+        /* Payment Section Styles */
+        .payment-management {
+            padding: 24px;
         }
 
-        .company-info h3 {
+        .payment-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .payment-header h2 {
+            font-size: 2rem;
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+
+        .payment-header p {
+            color: #6b7280;
             font-size: 1.125rem;
+        }
+
+        .pricing-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 32px;
+            margin-bottom: 48px;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .pricing-card {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            position: relative;
+            transition: transform 0.2s ease;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .pricing-card.recommended {
+            border: 2px solid #4F46E5;
+        }
+
+        .recommended-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4F46E5;
+            color: white;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .pricing-title {
+            font-size: 1.5rem;
+            font-weight: 700;
             color: #1f2937;
             margin-bottom: 8px;
         }
 
-        .company-info p {
-            color: #64748b;
+        .pricing-price {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #4F46E5;
+            margin-bottom: 8px;
+        }
+
+        .pricing-price span {
+            font-size: 1rem;
+            color: #6b7280;
+            font-weight: 400;
+        }
+
+        .pricing-description {
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin-bottom: 32px;
+            text-align: left;
+        }
+
+        .pricing-features li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #374151;
+        }
+
+        .pricing-features i {
+            color: #10b981;
             font-size: 0.875rem;
         }
 
-        .no-permissions {
-            text-align: center;
-            padding: 60px;
-            color: #64748b;
+        .pricing-button {
+            width: 100%;
+            padding: 12px 24px;
+            background: #4F46E5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
-        .no-permissions i {
-            font-size: 4rem;
-            color: #d1d5db;
-            margin-bottom: 16px;
+        .pricing-button:hover {
+            background: #4338ca;
+        }
+
+        .pricing-button.secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .pricing-button.secondary:hover {
+            background: #d1d5db;
+        }
+
+        /* Stripe Payment Form */
+        .payment-form-container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .payment-form-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .payment-form-header h3 {
+            font-size: 1.5rem;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 0.875rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        #card-element {
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .payment-button {
+            width: 100%;
+            padding: 14px 24px;
+            background: #4F46E5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .payment-button:hover:not(:disabled) {
+            background: #4338ca;
+        }
+
+        .payment-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .payment-error {
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-top: 8px;
+        }
+
+        .payment-success {
+            background: #dcfce7;
+            color: #16a34a;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6b7280;
+            font-size: 1.25rem;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .modal-body {
+            padding: 24px;
         }
 
         /* Loading & Error States */
@@ -812,6 +952,18 @@
             font-size: 1.25rem;
             font-weight: 600;
             margin-bottom: 8px;
+        }
+
+        .no-permissions {
+            text-align: center;
+            padding: 60px;
+            color: #64748b;
+        }
+
+        .no-permissions i {
+            font-size: 4rem;
+            color: #d1d5db;
+            margin-bottom: 16px;
         }
 
         .last-updated {
@@ -871,7 +1023,7 @@
                 margin: 20px;
             }
 
-            .detail-grid {
+            .pricing-cards {
                 grid-template-columns: 1fr;
             }
         }
@@ -945,6 +1097,10 @@
                     <i class="fas fa-key"></i>
                     Gestion licences
                 </button>
+                <button class="tab-button" onclick="switchTab('payment')">
+                    <i class="fas fa-credit-card"></i>
+                    Paiement
+                </button>
             </div>
 
             <!-- Overview Tab -->
@@ -1012,6 +1168,124 @@
                     <!-- Le contenu sera généré dynamiquement -->
                 </div>
             </div>
+
+            <!-- Payment Tab -->
+            <div class="tab-content" id="paymentTab">
+                <div class="payment-management">
+                    <div class="payment-header">
+                        <h2>Choisissez votre plan</h2>
+                        <p>Sélectionnez le plan qui correspond le mieux à vos besoins</p>
+                    </div>
+
+                    <div class="pricing-cards">
+                        <div class="pricing-card">
+                            <h3 class="pricing-title">Starter</h3>
+                            <div class="pricing-price">
+                                9€
+                                <span>/mois</span>
+                            </div>
+                            <p class="pricing-description">
+                                Parfait pour les freelances et petites équipes
+                            </p>
+                            <ul class="pricing-features">
+                                <li><i class="fas fa-check"></i> Jusqu'à 5 utilisateurs</li>
+                                <li><i class="fas fa-check"></i> 1000 scans/mois</li>
+                                <li><i class="fas fa-check"></i> Support par email</li>
+                                <li><i class="fas fa-check"></i> Statistiques de base</li>
+                            </ul>
+                            <button class="pricing-button secondary" onclick="selectPlan('starter', 9)">
+                                Sélectionner
+                            </button>
+                        </div>
+
+                        <div class="pricing-card recommended">
+                            <span class="recommended-badge">RECOMMANDÉ</span>
+                            <h3 class="pricing-title">Business</h3>
+                            <div class="pricing-price">
+                                29€
+                                <span>/mois</span>
+                            </div>
+                            <p class="pricing-description">
+                                Idéal pour les entreprises en croissance
+                            </p>
+                            <ul class="pricing-features">
+                                <li><i class="fas fa-check"></i> Jusqu'à 25 utilisateurs</li>
+                                <li><i class="fas fa-check"></i> Scans illimités</li>
+                                <li><i class="fas fa-check"></i> Support prioritaire</li>
+                                <li><i class="fas fa-check"></i> Analytics avancés</li>
+                                <li><i class="fas fa-check"></i> API Access</li>
+                            </ul>
+                            <button class="pricing-button" onclick="selectPlan('business', 29)">
+                                Sélectionner
+                            </button>
+                        </div>
+
+                        <div class="pricing-card">
+                            <h3 class="pricing-title">Enterprise</h3>
+                            <div class="pricing-price">
+                                99€
+                                <span>/mois</span>
+                            </div>
+                            <p class="pricing-description">
+                                Pour les grandes organisations
+                            </p>
+                            <ul class="pricing-features">
+                                <li><i class="fas fa-check"></i> Utilisateurs illimités</li>
+                                <li><i class="fas fa-check"></i> Scans illimités</li>
+                                <li><i class="fas fa-check"></i> Support dédié 24/7</li>
+                                <li><i class="fas fa-check"></i> Personnalisation complète</li>
+                                <li><i class="fas fa-check"></i> Formation équipe</li>
+                                <li><i class="fas fa-check"></i> SLA garanti</li>
+                            </ul>
+                            <button class="pricing-button" onclick="selectPlan('enterprise', 99)">
+                                Sélectionner
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="paymentFormContainer" style="display: none;">
+                        <div class="payment-form-container">
+                            <div class="payment-form-header">
+                                <h3>Finaliser votre abonnement</h3>
+                                <p id="selectedPlanInfo"></p>
+                            </div>
+
+                            <form id="payment-form">
+                                <div class="form-group">
+                                    <label class="form-label" for="email">Email</label>
+                                    <input type="email" id="paymentEmail" class="form-input" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="name">Nom complet</label>
+                                    <input type="text" id="paymentName" class="form-input" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Informations de carte</label>
+                                    <div id="card-element"></div>
+                                    <div id="card-errors" class="payment-error"></div>
+                                </div>
+
+                                <button type="submit" id="submit-payment" class="payment-button">
+                                    <span id="button-text">Payer maintenant</span>
+                                    <div class="spinner" id="spinner" style="display: none; width: 20px; height: 20px;"></div>
+                                </button>
+                            </form>
+
+                            <button onclick="cancelPayment()" style="margin-top: 16px; width: 100%; background: none; border: none; color: #6b7280; cursor: pointer;">
+                                Annuler
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="paymentSuccess" class="payment-success" style="display: none;">
+                        <i class="fas fa-check-circle" style="font-size: 3rem; margin-bottom: 16px;"></i>
+                        <h3>Paiement réussi !</h3>
+                        <p>Votre abonnement a été activé avec succès.</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="last-updated">
@@ -1045,6 +1319,116 @@
         let filteredUsers = [];
         let currentTab = 'overview';
         let currentUser = null;
+        
+        // Stripe variables
+        let stripe = null;
+        let elements = null;
+        let cardElement = null;
+        let selectedPlan = null;
+        let selectedPrice = null;
+
+        // Initialisation des services au chargement
+        async function initializeServices() {
+            try {
+                console.log('[Analytics] Initializing services...');
+                
+                // 1. Charger Supabase Config
+                await loadScript('./config-supabase.js', 'Supabase Config');
+                
+                // 2. Charger License Service (essayer les deux noms possibles)
+                try {
+                    await loadScript('./LicenseService.js', 'License Service');
+                } catch (error) {
+                    console.log('[Analytics] Trying alternative filename...');
+                    await loadScript('./LicenceService.js', 'License Service');
+                }
+                
+                // 3. Initialiser Supabase
+                await initializeSupabase();
+                
+                // 4. Initialiser le service de licence
+                if (window.licenseService) {
+                    licenseService = window.licenseService;
+                    if (!licenseService.initialized) {
+                        await licenseService.initialize();
+                    }
+                    
+                    // Récupérer l'utilisateur actuel
+                    currentUser = await licenseService.getCurrentUser();
+                    console.log('[Analytics] Current user:', currentUser?.email || 'Not authenticated');
+                }
+                
+                // 5. Initialiser Stripe (remplacez par votre clé publique)
+                initializeStripe();
+                
+                console.log('[Analytics] ✅ All services initialized');
+                
+            } catch (error) {
+                console.error('[Analytics] Failed to initialize services:', error);
+            }
+        }
+
+        // Fonction pour charger un script
+        async function loadScript(src, name) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = () => {
+                    console.log(`[Analytics] ${name} loaded`);
+                    resolve();
+                };
+                script.onerror = () => {
+                    console.error(`[Analytics] Failed to load ${name}`);
+                    reject(new Error(`Failed to load ${src}`));
+                };
+                document.head.appendChild(script);
+            });
+        }
+
+        // Initialiser Stripe
+        function initializeStripe() {
+            // Remplacez par votre clé publique Stripe
+            const STRIPE_PUBLIC_KEY = 'pk_test_YOUR_STRIPE_PUBLIC_KEY';
+            
+            if (typeof Stripe !== 'undefined') {
+                stripe = Stripe(STRIPE_PUBLIC_KEY);
+                elements = stripe.elements();
+                
+                // Créer l'élément de carte
+                const style = {
+                    base: {
+                        color: '#32325d',
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                        fontSmoothing: 'antialiased',
+                        fontSize: '16px',
+                        '::placeholder': {
+                            color: '#aab7c4'
+                        }
+                    },
+                    invalid: {
+                        color: '#fa755a',
+                        iconColor: '#fa755a'
+                    }
+                };
+                
+                cardElement = elements.create('card', { style: style });
+                cardElement.mount('#card-element');
+                
+                // Gérer les erreurs
+                cardElement.on('change', function(event) {
+                    const displayError = document.getElementById('card-errors');
+                    if (event.error) {
+                        displayError.textContent = event.error.message;
+                    } else {
+                        displayError.textContent = '';
+                    }
+                });
+                
+                console.log('[Analytics] ✅ Stripe initialized');
+            } else {
+                console.warn('[Analytics] Stripe.js not loaded');
+            }
+        }
 
         // Tab management
         function switchTab(tabName) {
@@ -1066,19 +1450,136 @@
             }
         }
 
-        // Users management - avec filtrage selon les permissions
+        // Payment functions
+        function selectPlan(planName, price) {
+            selectedPlan = planName;
+            selectedPrice = price;
+            
+            // Afficher le formulaire de paiement
+            document.getElementById('paymentFormContainer').style.display = 'block';
+            document.getElementById('selectedPlanInfo').textContent = `Plan ${planName} - ${price}€/mois`;
+            
+            // Pré-remplir l'email si l'utilisateur est connecté
+            if (currentUser && currentUser.email) {
+                document.getElementById('paymentEmail').value = currentUser.email;
+                document.getElementById('paymentName').value = currentUser.name || '';
+            }
+            
+            // Scroll vers le formulaire
+            document.getElementById('paymentFormContainer').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelPayment() {
+            document.getElementById('paymentFormContainer').style.display = 'none';
+            selectedPlan = null;
+            selectedPrice = null;
+        }
+
+        // Gérer la soumission du paiement
+        document.getElementById('payment-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            
+            if (!stripe || !cardElement) {
+                console.error('Stripe not initialized');
+                return;
+            }
+            
+            const submitButton = document.getElementById('submit-payment');
+            const buttonText = document.getElementById('button-text');
+            const spinner = document.getElementById('spinner');
+            
+            // Désactiver le bouton
+            submitButton.disabled = true;
+            buttonText.style.display = 'none';
+            spinner.style.display = 'block';
+            
+            try {
+                // Créer le payment intent côté serveur (vous devez implémenter cette API)
+                const response = await fetch('/.netlify/functions/create-payment-intent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        amount: selectedPrice * 100, // Stripe utilise les centimes
+                        plan: selectedPlan,
+                        email: document.getElementById('paymentEmail').value,
+                        name: document.getElementById('paymentName').value
+                    }),
+                });
+                
+                const { clientSecret, error: serverError } = await response.json();
+                
+                if (serverError) {
+                    throw new Error(serverError);
+                }
+                
+                // Confirmer le paiement
+                const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+                    payment_method: {
+                        card: cardElement,
+                        billing_details: {
+                            name: document.getElementById('paymentName').value,
+                            email: document.getElementById('paymentEmail').value
+                        }
+                    }
+                });
+                
+                if (error) {
+                    // Afficher l'erreur
+                    document.getElementById('card-errors').textContent = error.message;
+                } else {
+                    // Paiement réussi
+                    await handlePaymentSuccess(paymentIntent);
+                }
+                
+            } catch (error) {
+                console.error('Payment error:', error);
+                document.getElementById('card-errors').textContent = 'Une erreur est survenue. Veuillez réessayer.';
+            } finally {
+                // Réactiver le bouton
+                submitButton.disabled = false;
+                buttonText.style.display = 'block';
+                spinner.style.display = 'none';
+            }
+        });
+
+        async function handlePaymentSuccess(paymentIntent) {
+            console.log('Payment successful:', paymentIntent);
+            
+            // Mettre à jour la licence de l'utilisateur
+            if (currentUser && licenseService) {
+                const expiresAt = new Date();
+                expiresAt.setMonth(expiresAt.getMonth() + 1); // +1 mois
+                
+                await licenseService.updateUserLicense(
+                    currentUser.id,
+                    'active',
+                    expiresAt
+                );
+            }
+            
+            // Afficher le succès
+            document.getElementById('paymentFormContainer').style.display = 'none';
+            document.getElementById('paymentSuccess').style.display = 'block';
+            
+            // Recharger les données après 3 secondes
+            setTimeout(() => {
+                document.getElementById('paymentSuccess').style.display = 'none';
+                loadUsers();
+                updateSummaryFromRealData();
+            }, 3000);
+        }
+
+        // Users management
         async function loadUsers() {
             try {
                 console.log('[Analytics] Loading users from database...');
                 
-                // Initialiser Supabase si nécessaire
+                // Vérifier que Supabase est initialisé
                 if (!supabaseClient) {
-                    await initializeSupabase();
-                }
-                
-                // Récupérer le current user depuis le service de licence
-                if (!currentUser && window.licenseService) {
-                    currentUser = await window.licenseService.getCurrentUser();
+                    console.log('[Analytics] Waiting for Supabase initialization...');
+                    return;
                 }
                 
                 // Charger les utilisateurs depuis la base de données
@@ -1174,6 +1675,11 @@
 
         // Initialiser Supabase
         async function initializeSupabase() {
+            if (supabaseClient) {
+                console.log('[Analytics] Supabase already initialized');
+                return;
+            }
+
             if (!window.supabaseConfig) {
                 console.error('[Analytics] Supabase config not loaded');
                 return;
@@ -1271,7 +1777,6 @@
 
                 // Déterminer si l'utilisateur est actif
                 const lastLogin = user.last_login_at ? new Date(user.last_login_at) : null;
-                const isActive = lastLogin && (new Date() - lastLogin) < 7 * 24 * 60 * 60 * 1000; // 7 jours
 
                 return `
                     <tr>
@@ -1457,15 +1962,8 @@
                 return;
             }
 
-            // Initialiser le service si nécessaire
-            if (!window.licenseService.initialized) {
-                await window.licenseService.initialize();
-            }
-
-            // Récupérer l'utilisateur actuel
-            const currentUser = await window.licenseService.getCurrentUser();
-            
-            if (!currentUser || !window.licenseService.isAdmin()) {
+            // Vérifier si l'utilisateur actuel est admin
+            if (!currentUser || (currentUser.role !== 'company_admin' && currentUser.role !== 'super_admin')) {
                 container.innerHTML = `
                     <div class="no-permissions">
                         <i class="fas fa-lock"></i>
@@ -1597,11 +2095,7 @@
             if (result.success) {
                 emailInput.value = '';
                 await loadLicenseManagement();
-                if (window.uiManager) {
-                    window.uiManager.showToast('Utilisateur ajouté avec succès', 'success');
-                } else {
-                    alert('Utilisateur ajouté avec succès');
-                }
+                alert('Utilisateur ajouté avec succès');
             } else {
                 alert('Erreur : ' + result.error);
             }
@@ -1613,11 +2107,7 @@
             
             if (result.success) {
                 await loadLicenseManagement();
-                if (window.uiManager) {
-                    window.uiManager.showToast('Statut mis à jour', 'success');
-                } else {
-                    alert('Statut mis à jour avec succès');
-                }
+                alert('Statut mis à jour avec succès');
             } else {
                 alert('Erreur : ' + result.error);
             }
@@ -1632,11 +2122,7 @@
             
             if (result.success) {
                 await loadLicenseManagement();
-                if (window.uiManager) {
-                    window.uiManager.showToast('Licence étendue de 30 jours', 'success');
-                } else {
-                    alert('Licence étendue de 30 jours');
-                }
+                alert('Licence étendue de 30 jours');
             } else {
                 alert('Erreur : ' + result.error);
             }
@@ -1727,23 +2213,10 @@
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('[Analytics Page] DOM loaded, initializing...');
             
-            // Charger le service de licence
-            const licenseScript = document.createElement('script');
-            licenseScript.src = './LicenseService.js'; // Changé de LicenceService.js à LicenseService.js
-            licenseScript.onload = async () => {
-                console.log('[Analytics] LicenseService loaded');
-                licenseService = window.licenseService;
-                
-                // Charger la configuration Supabase
-                const configScript = document.createElement('script');
-                configScript.src = './config-supabase.js';
-                configScript.onload = () => {
-                    console.log('[Analytics] Supabase config loaded');
-                };
-                document.head.appendChild(configScript);
-            };
-            document.head.appendChild(licenseScript);
+            // Initialiser tous les services
+            await initializeServices();
             
+            // Charger les analytics
             loadAnalytics();
             updateLastUpdated();
         });
@@ -1759,6 +2232,7 @@
             console.log('License service:', licenseService);
             console.log('Supabase client:', supabaseClient);
             console.log('Current user:', currentUser);
+            console.log('Stripe initialized:', !!stripe);
             
             return {
                 currentTab,
@@ -1769,11 +2243,12 @@
                 licenseService: !!licenseService,
                 supabaseClient: !!supabaseClient,
                 currentUser: currentUser,
+                stripeReady: !!stripe,
                 realData: currentUsers.length > 0
             };
         };
 
-        console.log('[Analytics Page] ✅ Analytics page initialized - Direct access without authentication');
+        console.log('[Analytics Page] ✅ Analytics page initialized with Stripe payment module');
         console.log('[Analytics Page] Use debugAnalytics() for debug information');
     </script>
 </body>
