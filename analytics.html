@@ -1511,7 +1511,7 @@
             messageDiv.textContent = message;
         }
 
-        // Gestion de l'authentification simplifiée pour admin
+        // Gestion de l'authentification pour la page admin
         async function handleAuthentication(event) {
             event.preventDefault();
             
@@ -1546,21 +1546,33 @@
                     await licenseService.initialize();
                 }
                 
-                // Authentifier directement pour l'accès admin
-                const result = await licenseService.authenticateForAdmin(email);
+                // Utiliser la méthode authenticateWithEmail qui fonctionne
+                const result = await licenseService.authenticateWithEmail(email);
                 
                 if (result.valid) {
-                    authenticatedUser = result.user;
-                    licenseService.currentUser = authenticatedUser;
+                    // Vérifier les permissions d'accès
+                    const hasAccess = checkAdminAccess(result.user);
                     
-                    showAuthMessage('Connexion réussie !', 'success');
-                    
-                    // Attendre un peu avant de basculer
-                    setTimeout(() => {
-                        showAnalytics();
-                    }, 1000);
+                    if (hasAccess) {
+                        authenticatedUser = result.user;
+                        licenseService.currentUser = authenticatedUser;
+                        
+                        showAuthMessage('Connexion réussie !', 'success');
+                        
+                        // Attendre un peu avant de basculer
+                        setTimeout(() => {
+                            showAnalytics();
+                        }, 1000);
+                    } else {
+                        showAuthMessage('Accès réservé aux administrateurs et comptes personnels', 'error');
+                    }
                 } else {
-                    showAuthMessage(result.message || 'Accès non autorisé', 'error');
+                    // Si l'utilisateur n'existe pas et c'est la page admin
+                    if (result.status === 'not_found') {
+                        showAuthMessage('Compte non trouvé. Veuillez créer votre compte sur l\'application principale.', 'error');
+                    } else {
+                        showAuthMessage(result.message || 'Accès non autorisé', 'error');
+                    }
                 }
                 
             } catch (error) {
@@ -1572,6 +1584,23 @@
                 buttonText.style.display = 'block';
                 spinner.style.display = 'none';
             }
+        }
+
+        // Vérifier les permissions d'accès admin
+        function checkAdminAccess(user) {
+            if (!user) return false;
+            
+            // Les admins ont accès
+            if (user.role === 'company_admin' || user.role === 'super_admin') {
+                return true;
+            }
+            
+            // Les comptes personnels ont accès pour gérer leur licence
+            if (user.account_type === 'personal') {
+                return true;
+            }
+            
+            return false;
         }
 
         // Plus besoin de ces fonctions pour la création de compte
@@ -1639,10 +1668,10 @@
                         
                         await initializeSupabase();
                         
-                        // Recharger l'utilisateur avec la méthode admin
-                        const result = await licenseService.authenticateForAdmin(data.email);
+                        // Recharger l'utilisateur avec authenticateWithEmail
+                        const result = await licenseService.authenticateWithEmail(data.email);
                         
-                        if (result.valid) {
+                        if (result.valid && checkAdminAccess(result.user)) {
                             authenticatedUser = result.user;
                             licenseService.currentUser = authenticatedUser;
                             showAnalytics();
