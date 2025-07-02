@@ -139,6 +139,139 @@
             animation: spin 1s linear infinite;
         }
 
+        /* Modal pour le choix du type de compte */
+        .account-type-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .account-type-modal.active {
+            display: flex;
+        }
+
+        .account-type-card {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .account-type-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+
+        .account-type-subtitle {
+            color: #6b7280;
+            margin-bottom: 32px;
+            font-size: 1rem;
+        }
+
+        .account-type-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .account-type-option {
+            border: 2px solid #e2e8f0;
+            padding: 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .account-type-option:hover {
+            border-color: #4F46E5;
+            background: #f8fafc;
+        }
+
+        .account-type-option.selected {
+            border-color: #4F46E5;
+            background: #f3e8ff;
+        }
+
+        .account-type-option i {
+            font-size: 2.5rem;
+            color: #4F46E5;
+            margin-bottom: 12px;
+        }
+
+        .account-type-option h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .account-type-option p {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .company-name-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 24px;
+            display: none;
+        }
+
+        .company-name-input.visible {
+            display: block;
+        }
+
+        .account-type-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .account-type-button {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .account-type-button.primary {
+            background: #4F46E5;
+            color: white;
+        }
+
+        .account-type-button.primary:hover {
+            background: #4338ca;
+        }
+
+        .account-type-button.secondary {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .account-type-button.secondary:hover {
+            background: #e2e8f0;
+        }
+
         /* Styles existants pour la page analytics */
         .analytics-standalone {
             max-width: 1400px;
@@ -705,6 +838,106 @@
             color: #1f2937;
         }
 
+        /* License Edit Modal */
+        .license-edit-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+        }
+
+        .license-edit-modal.active {
+            display: flex;
+        }
+
+        .license-edit-card {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .license-edit-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 24px;
+        }
+
+        .license-edit-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .form-group input[type="date"] {
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .form-group input[type="date"]:focus {
+            outline: none;
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .form-button {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .form-button.primary {
+            background: #4F46E5;
+            color: white;
+        }
+
+        .form-button.primary:hover {
+            background: #4338ca;
+        }
+
+        .form-button.secondary {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .form-button.secondary:hover {
+            background: #e2e8f0;
+        }
+
         /* License Management */
         .license-management {
             padding: 24px;
@@ -881,6 +1114,11 @@
             color: #1d4ed8;
         }
 
+        .license-action-btn.edit-dates {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+
         .license-action-btn:hover {
             transform: translateY(-1px);
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -1025,6 +1263,10 @@
             .detail-grid {
                 grid-template-columns: 1fr;
             }
+
+            .account-type-options {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -1054,6 +1296,43 @@
             </form>
             
             <div id="authMessage"></div>
+        </div>
+    </div>
+
+    <!-- Modal pour le choix du type de compte -->
+    <div class="account-type-modal" id="accountTypeModal">
+        <div class="account-type-card">
+            <h2 class="account-type-title">Bienvenue sur EmailSortPro !</h2>
+            <p class="account-type-subtitle">Comment souhaitez-vous utiliser EmailSortPro ?</p>
+            
+            <div class="account-type-options">
+                <div class="account-type-option" id="personalOption" onclick="selectAccountType('personal')">
+                    <i class="fas fa-user"></i>
+                    <h3>Personnel</h3>
+                    <p>Pour un usage individuel</p>
+                </div>
+                <div class="account-type-option" id="professionalOption" onclick="selectAccountType('professional')">
+                    <i class="fas fa-building"></i>
+                    <h3>Professionnel</h3>
+                    <p>Pour votre entreprise</p>
+                </div>
+            </div>
+            
+            <input 
+                type="text" 
+                class="company-name-input" 
+                id="companyNameInput" 
+                placeholder="Nom de votre entreprise"
+            >
+            
+            <div class="account-type-actions">
+                <button class="account-type-button secondary" onclick="closeAccountTypeModal()">
+                    Annuler
+                </button>
+                <button class="account-type-button primary" id="confirmAccountType" onclick="confirmAccountType()">
+                    Continuer
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1223,6 +1502,35 @@
         </div>
     </div>
 
+    <!-- License Edit Modal -->
+    <div class="license-edit-modal" id="licenseEditModal">
+        <div class="license-edit-card">
+            <h2 class="license-edit-title">Modifier les dates de licence</h2>
+            <form class="license-edit-form" id="licenseEditForm">
+                <input type="hidden" id="editUserId">
+                
+                <div class="form-group">
+                    <label for="editStartDate">Date de début</label>
+                    <input type="date" id="editStartDate" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editEndDate">Date d'expiration</label>
+                    <input type="date" id="editEndDate" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="form-button secondary" onclick="closeLicenseEditModal()">
+                        Annuler
+                    </button>
+                    <button type="submit" class="form-button primary">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Global variables
         let analyticsManager = null;
@@ -1233,6 +1541,77 @@
         let filteredUsers = [];
         let currentTab = 'overview';
         let authenticatedUser = null;
+        let selectedAccountType = null;
+        let pendingAuthEmail = null;
+
+        // Domaines personnels connus
+        const PERSONAL_DOMAINS = [
+            'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com',
+            'aol.com', 'icloud.com', 'protonmail.com', 'mail.com', 'gmx.com',
+            'yandex.com', 'zoho.com', 'fastmail.com', 'tutanota.com', 'hushmail.com',
+            'yahoo.fr', 'orange.fr', 'free.fr', 'sfr.fr', 'laposte.net',
+            'wanadoo.fr', 'bbox.fr', 'hotmail.fr', 'live.fr', 'outlook.fr'
+        ];
+
+        // Vérifier si un domaine est personnel
+        function isPersonalDomain(email) {
+            const domain = email.split('@')[1];
+            return PERSONAL_DOMAINS.includes(domain.toLowerCase());
+        }
+
+        // Gestion du choix de type de compte
+        function selectAccountType(type) {
+            selectedAccountType = type;
+            
+            // Mettre à jour l'UI
+            document.querySelectorAll('.account-type-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            if (type === 'personal') {
+                document.getElementById('personalOption').classList.add('selected');
+                document.getElementById('companyNameInput').classList.remove('visible');
+            } else {
+                document.getElementById('professionalOption').classList.add('selected');
+                document.getElementById('companyNameInput').classList.add('visible');
+            }
+        }
+
+        function showAccountTypeModal(email) {
+            pendingAuthEmail = email;
+            document.getElementById('accountTypeModal').classList.add('active');
+            
+            // Pré-sélectionner personnel par défaut
+            selectAccountType('personal');
+        }
+
+        function closeAccountTypeModal() {
+            document.getElementById('accountTypeModal').classList.remove('active');
+            selectedAccountType = null;
+            pendingAuthEmail = null;
+            document.getElementById('companyNameInput').value = '';
+        }
+
+        async function confirmAccountType() {
+            if (!selectedAccountType || !pendingAuthEmail) {
+                return;
+            }
+            
+            let companyName = null;
+            if (selectedAccountType === 'professional') {
+                companyName = document.getElementById('companyNameInput').value.trim();
+                if (!companyName) {
+                    alert('Veuillez entrer le nom de votre entreprise');
+                    return;
+                }
+            }
+            
+            // Fermer le modal
+            closeAccountTypeModal();
+            
+            // Continuer l'authentification avec les infos
+            await continueAuthentication(pendingAuthEmail, selectedAccountType, companyName);
+        }
 
         // Gestion de l'authentification
         async function handleAuthentication(event) {
@@ -1263,6 +1642,46 @@
                 
                 // Initialiser Supabase AVANT l'authentification
                 await initializeSupabase();
+                
+                // Vérifier si c'est un domaine personnel
+                if (isPersonalDomain(email)) {
+                    // Réactiver le bouton avant d'afficher le modal
+                    button.disabled = false;
+                    buttonText.style.display = 'block';
+                    spinner.style.display = 'none';
+                    
+                    // Afficher le modal de choix
+                    showAccountTypeModal(email);
+                    return;
+                }
+                
+                // Domaine professionnel, continuer directement
+                await continueAuthentication(email, 'professional');
+                
+            } catch (error) {
+                console.error('[Auth] Error:', error);
+                showAuthMessage('Erreur de connexion. Veuillez réessayer.', 'error');
+                
+                // Réactiver le bouton
+                button.disabled = false;
+                buttonText.style.display = 'block';
+                spinner.style.display = 'none';
+            }
+        }
+
+        async function continueAuthentication(email, accountType, companyName = null) {
+            const button = document.getElementById('authButton');
+            const buttonText = document.getElementById('authButtonText');
+            const spinner = document.getElementById('authSpinner');
+            
+            // Afficher le spinner
+            button.disabled = true;
+            buttonText.style.display = 'none';
+            spinner.style.display = 'block';
+            
+            try {
+                // Passer les infos au service de licence
+                licenseService.setAccountType(accountType, companyName);
                 
                 // Authentifier avec l'email
                 const result = await licenseService.authenticateWithEmail(email);
@@ -1444,6 +1863,7 @@
                         role,
                         license_status,
                         license_expires_at,
+                        license_starts_at,
                         company_id,
                         first_login_at,
                         last_login_at,
@@ -1789,6 +2209,10 @@
                             <value>${new Date(user.created_at).toLocaleDateString('fr-FR')}</value>
                         </div>
                         <div class="detail-item">
+                            <label>Date de début</label>
+                            <value>${user.license_starts_at ? new Date(user.license_starts_at).toLocaleDateString('fr-FR') : 'N/A'}</value>
+                        </div>
+                        <div class="detail-item">
                             <label>Date d'expiration</label>
                             <value>${user.license_expires_at ? new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 'N/A'}</value>
                         </div>
@@ -1833,6 +2257,61 @@
             console.log('Refreshing users data...');
             await loadUsers();
             updateLastUpdated();
+        }
+
+        // License Edit Modal Functions
+        function openLicenseEditModal(userId) {
+            const user = currentUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            document.getElementById('editUserId').value = userId;
+            
+            // Pré-remplir les dates actuelles
+            const startDate = user.license_starts_at ? 
+                new Date(user.license_starts_at).toISOString().split('T')[0] : 
+                new Date().toISOString().split('T')[0];
+            
+            const endDate = user.license_expires_at ? 
+                new Date(user.license_expires_at).toISOString().split('T')[0] : 
+                '';
+
+            document.getElementById('editStartDate').value = startDate;
+            document.getElementById('editEndDate').value = endDate;
+            
+            document.getElementById('licenseEditModal').classList.add('active');
+        }
+
+        function closeLicenseEditModal() {
+            document.getElementById('licenseEditModal').classList.remove('active');
+            document.getElementById('licenseEditForm').reset();
+        }
+
+        async function handleLicenseEditSubmit(event) {
+            event.preventDefault();
+            
+            const userId = document.getElementById('editUserId').value;
+            const startDate = document.getElementById('editStartDate').value;
+            const endDate = document.getElementById('editEndDate').value;
+            
+            if (!userId || !startDate || !endDate) {
+                alert('Veuillez remplir tous les champs');
+                return;
+            }
+            
+            try {
+                const result = await licenseService.updateUserLicenseDates(userId, startDate, endDate);
+                
+                if (result.success) {
+                    closeLicenseEditModal();
+                    await loadLicenseManagement();
+                    alert('Dates de licence mises à jour avec succès');
+                } else {
+                    alert('Erreur : ' + result.error);
+                }
+            } catch (error) {
+                console.error('[Analytics] Error updating license dates:', error);
+                alert('Erreur lors de la mise à jour des dates');
+            }
         }
 
         // License Management Functions - avec permissions
@@ -1954,6 +2433,7 @@
                                 <th>Utilisateur</th>
                                 <th>Email</th>
                                 <th>Statut</th>
+                                <th>Début</th>
                                 <th>Expiration</th>
                                 <th>Dernière connexion</th>
                                 <th>Actions</th>
@@ -1969,6 +2449,7 @@
                                             ${user.license_status}
                                         </span>
                                     </td>
+                                    <td>${user.license_starts_at ? new Date(user.license_starts_at).toLocaleDateString('fr-FR') : 'N/A'}</td>
                                     <td>${user.license_expires_at ? new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 'N/A'}</td>
                                     <td>${user.last_login_at ? new Date(user.last_login_at).toLocaleDateString('fr-FR') : 'Jamais'}</td>
                                     <td>
@@ -1988,6 +2469,10 @@
                                             <button class="license-action-btn extend" 
                                                     onclick="extendLicense('${user.id}')">
                                                 +30 jours
+                                            </button>
+                                            <button class="license-action-btn edit-dates" 
+                                                    onclick="openLicenseEditModal('${user.id}')">
+                                                <i class="fas fa-calendar-alt"></i> Dates
                                             </button>
                                         </div>
                                     </td>
@@ -2160,11 +2645,18 @@
         document.getElementById('userSearch').addEventListener('input', filterUsers);
         document.getElementById('statusFilter').addEventListener('change', filterUsers);
         document.getElementById('companyFilter').addEventListener('change', filterUsers);
+        document.getElementById('licenseEditForm').addEventListener('submit', handleLicenseEditSubmit);
 
         // Close modal when clicking outside
         document.getElementById('userModal').addEventListener('click', (e) => {
             if (e.target.id === 'userModal') {
                 closeUserModal();
+            }
+        });
+
+        document.getElementById('licenseEditModal').addEventListener('click', (e) => {
+            if (e.target.id === 'licenseEditModal') {
+                closeLicenseEditModal();
             }
         });
 
