@@ -1,4 +1,4 @@
-// LicenseService.js - Service de gestion des licences EmailSortPro
+// LicenceService.js - Service de gestion des licences EmailSortPro
 // Version 3.0 avec authentification par email et gestion complète des licences
 
 class LicenseService {
@@ -267,7 +267,9 @@ class LicenseService {
                     last_login_at: new Date().toISOString(),
                     login_count: (currentUser?.login_count || 0) + 1
                 })
-                .
+                .eq('email', email)
+                .select()
+                .single();
 
             if (error) throw error;
 
