@@ -406,11 +406,20 @@ class LicenseService {
 
     async updateLastLogin(userId) {
         try {
+            // D'abord récupérer le login_count actuel
+            const { data: currentUser, error: fetchError } = await this.supabase
+                .from('users')
+                .select('login_count')
+                .eq('id', userId)
+                .single();
+            
+            if (fetchError) throw fetchError;
+            
             const { error } = await this.supabase
                 .from('users')
                 .update({
                     last_login_at: new Date().toISOString(),
-                    login_count: this.supabase.sql`login_count + 1`
+                    login_count: (currentUser?.login_count || 0) + 1
                 })
                 .eq('id', userId);
 
