@@ -6,6 +6,7 @@ class AuthService {
         this.msalInstance = null;
         this.account = null;
         this.initialized = false;
+        this.loginInProgress = false; // AJOUT : pour éviter les logins multiples
         this.scopes = {
             login: [
                 'https://graph.microsoft.com/User.Read',
@@ -47,13 +48,17 @@ class AuthService {
             console.log('[AuthService] MSAL initialized successfully');
             
             // Gérer la réponse de redirection si présente
-            const response = await this.msalInstance.handleRedirectPromise();
-            if (response && response.account) {
-                console.log('[AuthService] Redirect response handled');
-                this.account = response.account;
-                
-                // AJOUT : Vérifier la licence après authentification
-                await this.checkUserLicenseAfterAuth();
+            try {
+                const response = await this.msalInstance.handleRedirectPromise();
+                if (response && response.account) {
+                    console.log('[AuthService] Redirect response handled');
+                    this.account = response.account;
+                    
+                    // AJOUT : Vérifier la licence après authentification
+                    await this.checkUserLicenseAfterAuth();
+                }
+            } catch (error) {
+                console.warn('[AuthService] No redirect to handle or error handling redirect:', error);
             }
 
             // Vérifier les comptes en cache
@@ -83,7 +88,14 @@ class AuthService {
     }
 
     async login() {
+        // AJOUT : Vérifier si un login est déjà en cours
+        if (this.loginInProgress) {
+            console.log('[AuthService] Login already in progress, skipping...');
+            return null;
+        }
+
         try {
+            this.loginInProgress = true; // AJOUT : Marquer le login comme en cours
             console.log('[AuthService] Starting login process...');
             
             if (!this.initialized) {
@@ -116,14 +128,26 @@ class AuthService {
                         });
                     }
                     
+                    this.loginInProgress = false; // AJOUT : Réinitialiser le flag
                     return response;
                 }
             } catch (popupError) {
-                console.warn('[AuthService] Popup login failed, trying redirect...', popupError);
+                console.warn('[AuthService] Popup login failed:', popupError);
+                
+                // Vérifier si c'est une erreur d'interaction en cours
+                if (popupError.errorCode === 'interaction_in_progress') {
+                    console.log('[AuthService] Interaction in progress, waiting...');
+                    this.loginInProgress = false;
+                    
+                    // Attendre un peu et retourner null
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    return null;
+                }
                 
                 if (popupError.errorCode === 'popup_window_error' || 
                     popupError.errorCode === 'empty_window_error') {
                     // Fallback vers redirect
+                    console.log('[AuthService] Falling back to redirect login...');
                     await this.msalInstance.loginRedirect(loginRequest);
                     // La page sera rechargée, handleRedirectPromise gérera la suite
                 } else {
@@ -141,10 +165,12 @@ class AuthService {
             
             this.handleAuthError(error);
             throw error;
+        } finally {
+            this.loginInProgress = false; // AJOUT : Toujours réinitialiser le flag
         }
     }
 
-    // NOUVELLE MÉTHODE : Vérification de licence après authentification
+    // AJOUT : Méthode pour vérifier la licence après authentification
     async checkUserLicenseAfterAuth() {
         try {
             if (!window.licenseService || !this.account) {
@@ -341,6 +367,9 @@ class AuthService {
                 case 'popup_window_error':
                     userMessage = 'Popup bloquée - Autoriser les popups pour ce site';
                     break;
+                case 'interaction_in_progress':
+                    userMessage = 'Une connexion est déjà en cours...';
+                    break;
                 default:
                     userMessage = `Erreur: ${error.errorCode}`;
             }
@@ -353,6 +382,7 @@ class AuthService {
 
     clearCache() {
         this.account = null;
+        this.loginInProgress = false; // AJOUT : Réinitialiser le flag
         
         // Nettoyer les clés MSAL du localStorage
         const keysToRemove = [];
@@ -385,6 +415,7 @@ class AuthService {
         this.account = null;
         this.msalInstance = null;
         this.initialized = false;
+        this.loginInProgress = false; // AJOUT : Réinitialiser le flag
     }
 
     // Méthode pour compatibilité
@@ -400,7 +431,8 @@ class AuthService {
             hasAccount: !!this.account,
             accountEmail: this.account?.username || null,
             msalConfigured: !!this.msalInstance,
-            environment: window.AppConfig?.app?.environment || 'unknown'
+            environment: window.AppConfig?.app?.environment || 'unknown',
+            loginInProgress: this.loginInProgress // AJOUT : Pour le debug
         };
     }
 }
