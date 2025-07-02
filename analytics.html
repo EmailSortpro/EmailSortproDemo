@@ -1560,30 +1560,6 @@
             return PERSONAL_DOMAINS.includes(domain.toLowerCase());
         }
 
-        // Récupérer le type de compte stocké
-        function getStoredAccountType(email) {
-            if (!email) return null;
-            const stored = localStorage.getItem(`emailsortpro_account_type_${email}`);
-            if (stored) {
-                try {
-                    return JSON.parse(stored);
-                } catch (e) {
-                    return null;
-                }
-            }
-            return null;
-        }
-
-        // Stocker le type de compte
-        function storeAccountType(email, accountType, companyName) {
-            if (!email) return;
-            localStorage.setItem(`emailsortpro_account_type_${email}`, JSON.stringify({
-                accountType: accountType,
-                companyName: companyName,
-                timestamp: Date.now()
-            }));
-        }
-
         // Gestion du choix de type de compte
         function selectAccountType(type) {
             selectedAccountType = type;
@@ -1641,9 +1617,6 @@
                 }
             }
             
-            // Stocker le choix pour ne pas le redemander
-            storeAccountType(pendingAuthEmail, selectedAccountType, companyName);
-            
             // Fermer le modal
             closeAccountTypeModal();
             
@@ -1678,32 +1651,31 @@
                     await loadLicenseService();
                 }
                 
-                // Initialiser Supabase AVANT l'authentification
+                // Initialiser Supabase
                 await initializeSupabase();
                 
-                // Vérifier si c'est un domaine personnel et si on a déjà stocké le choix
-                if (isPersonalDomain(email)) {
-                    const storedChoice = getStoredAccountType(email);
-                    
-                    if (storedChoice) {
-                        // On a déjà le choix, continuer directement
-                        await continueAuthentication(email, storedChoice.accountType, storedChoice.companyName);
-                        return;
-                    }
-                    
-                    // Sinon, demander le choix
-                    // Réactiver le bouton avant d'afficher le modal
-                    button.disabled = false;
-                    buttonText.style.display = 'block';
-                    spinner.style.display = 'none';
-                    
-                    // Afficher le modal de choix
-                    showAccountTypeModal(email);
-                    return;
-                }
+                // Vérifier d'abord si l'utilisateur existe dans la base
+                const userExists = await licenseService.checkUserExists(email);
                 
-                // Domaine professionnel, continuer directement
-                await continueAuthentication(email, 'professional');
+                if (!userExists) {
+                    // Nouvel utilisateur
+                    if (isPersonalDomain(email)) {
+                        // Réactiver le bouton avant d'afficher le modal
+                        button.disabled = false;
+                        buttonText.style.display = 'block';
+                        spinner.style.display = 'none';
+                        
+                        // Afficher le modal de choix
+                        showAccountTypeModal(email);
+                        return;
+                    } else {
+                        // Domaine professionnel, continuer avec type professionnel
+                        await continueAuthentication(email, 'professional');
+                    }
+                } else {
+                    // Utilisateur existant, pas besoin de demander le type
+                    await continueAuthentication(email, null);
+                }
                 
             } catch (error) {
                 console.error('[Auth] Error:', error);
@@ -1737,15 +1709,19 @@
                     await licenseService.initialize();
                 }
                 
-                // Passer les infos au service de licence
-                licenseService.setAccountType(accountType, companyName);
+                // Passer les infos au service de licence seulement si on a un type
+                if (accountType) {
+                    licenseService.setAccountType(accountType, companyName);
+                }
                 
                 // Authentifier avec l'email
                 const result = await licenseService.authenticateWithEmail(email);
                 
                 if (result.valid) {
-                    // Vérifier si l'utilisateur a des droits d'admin
-                    if (result.user.role === 'company_admin' || result.user.role === 'super_admin') {
+                    // Vérifier les permissions d'accès aux analytics
+                    const hasAccess = checkAnalyticsAccess(result.user);
+                    
+                    if (hasAccess) {
                         authenticatedUser = result.user;
                         
                         // Définir l'utilisateur actuel pour le service
@@ -1758,7 +1734,7 @@
                             showAnalytics();
                         }, 1000);
                     } else {
-                        showAuthMessage('Accès refusé. Seuls les administrateurs peuvent accéder aux analytics.', 'error');
+                        showAuthMessage('Accès refusé. Seuls les administrateurs et les comptes personnels peuvent accéder aux analytics.', 'error');
                     }
                 } else {
                     showAuthMessage(result.message || 'Email non autorisé', 'error');
@@ -1773,6 +1749,24 @@
                 buttonText.style.display = 'block';
                 spinner.style.display = 'none';
             }
+        }
+
+        // Vérifier les permissions d'accès aux analytics
+        function checkAnalyticsAccess(user) {
+            if (!user) return false;
+            
+            // Les admins ont toujours accès
+            if (user.role === 'company_admin' || user.role === 'super_admin') {
+                return true;
+            }
+            
+            // Les comptes personnels ont accès pour gérer leur licence
+            if (user.account_type === 'personal') {
+                return true;
+            }
+            
+            // Les autres n'ont pas accès
+            return false;
         }
 
         function showAuthMessage(message, type) {
@@ -1790,7 +1784,13 @@
             
             // Mettre à jour les infos utilisateur
             document.getElementById('currentUserEmail').textContent = authenticatedUser.email;
-            document.getElementById('currentUserRole').textContent = authenticatedUser.role.replace('_', ' ');
+            
+            // Afficher le rôle approprié
+            let roleDisplay = authenticatedUser.role.replace('_', ' ');
+            if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
+                roleDisplay = 'Personnel';
+            }
+            document.getElementById('currentUserRole').textContent = roleDisplay;
             
             // Charger les données
             loadAnalytics();
@@ -1840,7 +1840,7 @@
                         // Recharger l'utilisateur
                         const result = await licenseService.authenticateWithEmail(data.email);
                         
-                        if (result.valid && (result.user.role === 'company_admin' || result.user.role === 'super_admin')) {
+                        if (result.valid && checkAnalyticsAccess(result.user)) {
                             authenticatedUser = result.user;
                             licenseService.currentUser = authenticatedUser;
                             showAnalytics();
@@ -1927,16 +1927,22 @@
                         login_count,
                         created_at,
                         updated_at,
+                        account_type,
                         company:companies(id, name, domain)
                     `)
                     .order('created_at', { ascending: false });
                 
-                // Si l'utilisateur est un admin de société, filtrer par sa société
-                if (authenticatedUser && authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                    console.log('[Analytics] Filtering by company:', authenticatedUser.company_id);
-                    query = query.eq('company_id', authenticatedUser.company_id);
+                // Filtrage selon les permissions
+                if (authenticatedUser) {
+                    if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
+                        // Les comptes personnels ne voient qu'eux-mêmes
+                        query = query.eq('id', authenticatedUser.id);
+                    } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                        // Admin de société voit sa société
+                        query = query.eq('company_id', authenticatedUser.company_id);
+                    }
+                    // Si super admin, voir tout (pas de filtre supplémentaire)
                 }
-                // Si super admin, pas de filtre
                 
                 const { data: users, error } = await query;
 
@@ -1971,17 +1977,22 @@
                     .from('user_email_stats')
                     .select('*');
                 
-                // Filtrer par domaine si admin de société
-                if (authenticatedUser && authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                    // Récupérer le domaine de la société
-                    const { data: company } = await supabaseClient
-                        .from('companies')
-                        .select('domain')
-                        .eq('id', authenticatedUser.company_id)
-                        .single();
-                    
-                    if (company && company.domain) {
-                        query = query.eq('domain', company.domain);
+                // Filtrer selon les permissions
+                if (authenticatedUser) {
+                    if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
+                        // Compte personnel voit seulement ses stats
+                        query = query.eq('email', authenticatedUser.email);
+                    } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                        // Admin de société voit les stats de son domaine
+                        const { data: company } = await supabaseClient
+                            .from('companies')
+                            .select('domain')
+                            .eq('id', authenticatedUser.company_id)
+                            .single();
+                        
+                        if (company && company.domain) {
+                            query = query.eq('domain', company.domain);
+                        }
                     }
                 }
                 
@@ -2171,14 +2182,34 @@
                                 <button class="action-btn edit" onclick="viewUserDetails('${user.id}')">
                                     <i class="fas fa-eye"></i> Voir
                                 </button>
-                                <button class="action-btn license" onclick="manageLicense('${user.id}')">
-                                    <i class="fas fa-key"></i> Licence
-                                </button>
+                                ${canManageLicense(user) ? `
+                                    <button class="action-btn license" onclick="manageLicense('${user.id}')">
+                                        <i class="fas fa-key"></i> Licence
+                                    </button>
+                                ` : ''}
                             </div>
                         </td>
                     </tr>
                 `;
             }).join('');
+        }
+
+        // Vérifier si l'utilisateur peut gérer les licences
+        function canManageLicense(user) {
+            if (!authenticatedUser) return false;
+            
+            // Super admin peut tout gérer
+            if (authenticatedUser.role === 'super_admin') return true;
+            
+            // Admin de société peut gérer sa société
+            if (authenticatedUser.role === 'company_admin' && 
+                authenticatedUser.company_id === user.company_id) return true;
+            
+            // Compte personnel peut gérer sa propre licence
+            if (authenticatedUser.account_type === 'personal' && 
+                authenticatedUser.id === user.id) return true;
+            
+            return false;
         }
 
         function formatLastLogin(date) {
@@ -2228,6 +2259,10 @@
                         <div class="detail-item">
                             <label>Rôle</label>
                             <value>${user.role || 'user'}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Type de compte</label>
+                            <value>${user.account_type === 'personal' ? 'Personnel' : 'Professionnel'}</value>
                         </div>
                     </div>
                 </div>
@@ -2395,7 +2430,20 @@
             
             try {
                 // Charger les utilisateurs selon les permissions
-                if (authenticatedUser.role === 'super_admin') {
+                if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
+                    // Compte personnel voit seulement lui-même
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .select(`
+                            *,
+                            company:companies(name)
+                        `)
+                        .eq('id', authenticatedUser.id);
+                    
+                    if (!error) {
+                        companyUsers = data || [];
+                    }
+                } else if (authenticatedUser.role === 'super_admin') {
                     // Super admin voit tous les utilisateurs
                     const { data, error } = await supabaseClient
                         .from('users')
@@ -2405,9 +2453,7 @@
                         `)
                         .order('created_at', { ascending: false });
                     
-                    if (error) {
-                        console.error('[Analytics] Error loading all users:', error);
-                    } else {
+                    if (!error) {
                         companyUsers = data || [];
                     }
                 } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
@@ -2421,9 +2467,7 @@
                         .eq('company_id', authenticatedUser.company_id)
                         .order('created_at', { ascending: false });
                     
-                    if (error) {
-                        console.error('[Analytics] Error loading company users:', error);
-                    } else {
+                    if (!error) {
                         companyUsers = data || [];
                     }
                 }
@@ -2439,6 +2483,41 @@
                 expired: companyUsers.filter(u => u.license_status === 'expired').length
             };
 
+            // Affichage différent pour les comptes personnels
+            if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
+                container.innerHTML = `
+                    <div class="license-header">
+                        <h2>
+                            <i class="fas fa-key"></i>
+                            Ma licence
+                        </h2>
+                        <button class="refresh-btn" onclick="loadLicenseManagement()">
+                            <i class="fas fa-sync-alt"></i> Actualiser
+                        </button>
+                    </div>
+
+                    ${companyUsers.length > 0 ? `
+                        <div class="company-info">
+                            <h3>Compte personnel</h3>
+                            <p>Email : ${authenticatedUser.email}</p>
+                        </div>
+
+                        <div class="license-stats">
+                            <div class="license-stat-card">
+                                <div class="license-stat-value">${companyUsers[0].license_status || 'trial'}</div>
+                                <div class="license-stat-label">Statut actuel</div>
+                            </div>
+                            <div class="license-stat-card">
+                                <div class="license-stat-value">${companyUsers[0].license_expires_at ? calculateDaysRemaining(new Date(companyUsers[0].license_expires_at)) : 'Illimitée'}</div>
+                                <div class="license-stat-label">Validité</div>
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+                return;
+            }
+
+            // Interface normale pour les admins
             container.innerHTML = `
                 <div class="license-header">
                     <h2>
@@ -2476,12 +2555,14 @@
                     </div>
                 </div>
 
-                <div class="add-user-form">
-                    <input type="email" id="newUserEmail" placeholder="Email du nouvel utilisateur">
-                    <button onclick="addNewUser()">
-                        <i class="fas fa-user-plus"></i> Ajouter un utilisateur
-                    </button>
-                </div>
+                ${authenticatedUser.role === 'company_admin' || authenticatedUser.role === 'super_admin' ? `
+                    <div class="add-user-form">
+                        <input type="email" id="newUserEmail" placeholder="Email du nouvel utilisateur">
+                        <button onclick="addNewUser()">
+                            <i class="fas fa-user-plus"></i> Ajouter un utilisateur
+                        </button>
+                    </div>
+                ` : ''}
 
                 <div class="license-users-table">
                     <table>
@@ -2740,6 +2821,7 @@
             return {
                 authenticated: !!authenticatedUser,
                 userRole: authenticatedUser?.role,
+                userAccountType: authenticatedUser?.account_type,
                 currentTab,
                 usersCount: currentUsers.length,
                 filteredCount: filteredUsers.length,
@@ -2751,7 +2833,7 @@
             };
         };
 
-        console.log('[Analytics Page] ✅ Analytics page with authentication and permissions initialized');
+        console.log('[Analytics Page] ✅ Analytics page with authentication and permissions initialized v2');
         console.log('[Analytics Page] Use debugAnalytics() for debug information');
     </script>
 </body>
