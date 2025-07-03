@@ -943,16 +943,363 @@
             background: #e2e8f0;
         }
 
-        .no-permissions {
+        .billing-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .billing-header h2 {
+            font-size: 1.5rem;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .billing-summary {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .billing-summary h3 {
+            font-size: 1.25rem;
+            color: #1f2937;
+            margin-bottom: 16px;
+        }
+
+        .billing-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .billing-stat-card {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
             text-align: center;
-            padding: 60px;
+            border-left: 4px solid #4F46E5;
+        }
+
+        .billing-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .billing-stat-label {
+            font-size: 0.875rem;
             color: #64748b;
         }
 
-        .no-permissions i {
-            font-size: 4rem;
-            color: #d1d5db;
+        .pricing-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .pricing-section h3 {
+            font-size: 1.25rem;
+            color: #1f2937;
             margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .pricing-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .pricing-card:hover {
+            border-color: #4F46E5;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+        }
+
+        .pricing-card.popular {
+            border-color: #4F46E5;
+            background: linear-gradient(135deg, #f8fafc 0%, #f3e8ff 100%);
+        }
+
+        .pricing-card.popular::before {
+            content: "Recommandé";
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4F46E5;
+            color: white;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .pricing-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .pricing-price {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4F46E5;
+            margin-bottom: 4px;
+        }
+
+        .pricing-period {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .pricing-price-ttc {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #059669;
+            margin-bottom: 8px;
+        }
+
+        .pricing-savings {
+            background: #dcfce7;
+            color: #16a34a;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+
+        .pricing-features {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 24px;
+        }
+
+        .pricing-features li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            color: #4b5563;
+        }
+
+        .pricing-features li i {
+            color: #10b981;
+            font-size: 0.75rem;
+        }
+
+        .billing-breakdown {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .billing-breakdown h3 {
+            font-size: 1.25rem;
+            color: #1f2937;
+            margin-bottom: 16px;
+        }
+
+        .billing-table {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .billing-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .billing-table th {
+            background: #f8fafc;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.875rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .billing-table td {
+            padding: 16px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .billing-table tr:hover {
+            background: #f8fafc;
+        }
+
+        .billing-cycle {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .billing-cycle.monthly {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .billing-cycle.yearly {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .billing-totals {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .billing-totals h3 {
+            font-size: 1.25rem;
+            color: #1f2937;
+            margin-bottom: 16px;
+        }
+
+        .totals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .total-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .total-card.monthly {
+            border-color: #1d4ed8;
+            background: linear-gradient(135deg, #f8fafc 0%, #dbeafe 100%);
+        }
+
+        .total-card.yearly {
+            border-color: #16a34a;
+            background: linear-gradient(135deg, #f8fafc 0%, #dcfce7 100%);
+        }
+
+        .total-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .total-card.monthly .total-icon {
+            background: #1d4ed8;
+        }
+
+        .total-card.yearly .total-icon {
+            background: #16a34a;
+        }
+
+        .total-details {
+            flex: 1;
+        }
+
+        .total-label {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+
+        .total-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .total-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .total-line.total {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 8px;
+            margin-top: 8px;
+            font-size: 1rem;
+            color: #1f2937;
+        }
+
+        .grand-total {
+            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            color: white;
+        }
+
+        .grand-total-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .grand-total-label {
+            font-size: 1.125rem;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        .grand-total-amount {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 8px 0;
+        }
+
+        .grand-total-subtitle {
+            font-size: 0.875rem;
+            opacity: 0.8;
         }
 
         .loading-container {
@@ -2435,13 +2782,281 @@
         async function loadBilling() {
             const billingContent = document.getElementById('billingContent');
             
-            billingContent.innerHTML = `
-                <div class="no-permissions">
-                    <i class="fas fa-credit-card"></i>
-                    <h3>Module de facturation</h3>
-                    <p>Cette section sera développée avec l'intégration Stripe</p>
-                </div>
-            `;
+            try {
+                // Charger les utilisateurs si pas encore fait
+                if (currentUsers.length === 0) {
+                    await loadUsers();
+                }
+                
+                // Calculer les statistiques de facturation
+                const billingStats = calculateBillingStats();
+                
+                billingContent.innerHTML = `
+                    <div class="billing-header">
+                        <h2>
+                            <i class="fas fa-credit-card"></i>
+                            Facturation
+                        </h2>
+                        <button class="refresh-btn" onclick="refreshBilling()">
+                            <i class="fas fa-sync-alt"></i>
+                            Actualiser
+                        </button>
+                    </div>
+
+                    <div class="billing-summary">
+                        <h3>Résumé de facturation</h3>
+                        <div class="billing-stats">
+                            <div class="billing-stat-card">
+                                <div class="billing-stat-value">${billingStats.totalUsers}</div>
+                                <div class="billing-stat-label">Utilisateurs facturés</div>
+                            </div>
+                            <div class="billing-stat-card">
+                                <div class="billing-stat-value">${formatPrice(billingStats.monthlyTotal)}</div>
+                                <div class="billing-stat-label">Total mensuel HT</div>
+                            </div>
+                            <div class="billing-stat-card">
+                                <div class="billing-stat-value">${formatPrice(billingStats.yearlyTotal)}</div>
+                                <div class="billing-stat-label">Total annuel HT</div>
+                            </div>
+                            <div class="billing-stat-card">
+                                <div class="billing-stat-value">${formatPrice(billingStats.monthlyTotalTTC)}</div>
+                                <div class="billing-stat-label">Total mensuel TTC</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pricing-section">
+                        <h3>
+                            <i class="fas fa-tags"></i>
+                            Tarification
+                        </h3>
+                        <div class="pricing-grid">
+                            <div class="pricing-card">
+                                <div class="pricing-title">Mensuel</div>
+                                <div class="pricing-price">${formatPrice(9.90)}</div>
+                                <div class="pricing-period">par mois et par utilisateur (HT)</div>
+                                <div class="pricing-price-ttc">${formatPrice(9.90 * 1.20)} TTC</div>
+                                <ul class="pricing-features">
+                                    <li><i class="fas fa-check"></i> Facturation mensuelle</li>
+                                    <li><i class="fas fa-check"></i> Résiliation à tout moment</li>
+                                    <li><i class="fas fa-check"></i> Support inclus</li>
+                                    <li><i class="fas fa-check"></i> Mises à jour automatiques</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="pricing-card popular">
+                                <div class="pricing-title">Annuel</div>
+                                <div class="pricing-price">${formatPrice(8.80)}</div>
+                                <div class="pricing-period">par mois et par utilisateur (HT)</div>
+                                <div class="pricing-price-ttc">${formatPrice(8.80 * 1.20)} TTC</div>
+                                <div class="pricing-savings">Économie de ${formatPrice((9.90 - 8.80) * 12)}/an</div>
+                                <ul class="pricing-features">
+                                    <li><i class="fas fa-check"></i> Facturation annuelle</li>
+                                    <li><i class="fas fa-check"></i> Économie de 11% par rapport au mensuel</li>
+                                    <li><i class="fas fa-check"></i> Support prioritaire</li>
+                                    <li><i class="fas fa-check"></i> Mises à jour automatiques</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="billing-breakdown">
+                        <h3>Détail de facturation par utilisateur</h3>
+                        <div class="billing-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Utilisateur</th>
+                                        <th>Email</th>
+                                        <th>Statut</th>
+                                        <th>Cycle</th>
+                                        <th>Prix HT</th>
+                                        <th>Prix TTC</th>
+                                        <th>Prochaine échéance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${generateBillingTableRows(currentUsers)}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="billing-totals">
+                        <h3>Totaux de facturation</h3>
+                        <div class="totals-grid">
+                            <div class="total-card monthly">
+                                <div class="total-icon">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                                <div class="total-details">
+                                    <div class="total-label">Facturation mensuelle</div>
+                                    <div class="total-breakdown">
+                                        <div class="total-line">
+                                            <span>Utilisateurs mensuels (${billingStats.monthlyUsers})</span>
+                                            <span>${formatPrice(billingStats.monthlySubtotal)}</span>
+                                        </div>
+                                        <div class="total-line">
+                                            <span>TVA (20%)</span>
+                                            <span>${formatPrice(billingStats.monthlyTax)}</span>
+                                        </div>
+                                        <div class="total-line total">
+                                            <span><strong>Total TTC</strong></span>
+                                            <span><strong>${formatPrice(billingStats.monthlyTotalTTC)}</strong></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="total-card yearly">
+                                <div class="total-icon">
+                                    <i class="fas fa-calendar"></i>
+                                </div>
+                                <div class="total-details">
+                                    <div class="total-label">Facturation annuelle</div>
+                                    <div class="total-breakdown">
+                                        <div class="total-line">
+                                            <span>Utilisateurs annuels (${billingStats.yearlyUsers})</span>
+                                            <span>${formatPrice(billingStats.yearlySubtotal)}</span>
+                                        </div>
+                                        <div class="total-line">
+                                            <span>TVA (20%)</span>
+                                            <span>${formatPrice(billingStats.yearlyTax)}</span>
+                                        </div>
+                                        <div class="total-line total">
+                                            <span><strong>Total TTC</strong></span>
+                                            <span><strong>${formatPrice(billingStats.yearlyTotalTTC)}</strong></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grand-total">
+                            <div class="grand-total-content">
+                                <div class="grand-total-label">Total général mensuel</div>
+                                <div class="grand-total-amount">${formatPrice(billingStats.grandTotal)}</div>
+                                <div class="grand-total-subtitle">
+                                    Soit ${formatPrice(billingStats.grandTotal * 12)} par an
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('[Billing] Error loading billing:', error);
+                billingContent.innerHTML = `
+                    <div class="no-permissions">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Erreur de chargement</h3>
+                        <p>Impossible de charger les données de facturation</p>
+                    </div>
+                `;
+            }
+        }
+
+        function calculateBillingStats() {
+            const MONTHLY_PRICE = 9.90;
+            const YEARLY_PRICE = 8.80;
+            const TAX_RATE = 0.20;
+            
+            // Filtrer seulement les utilisateurs actifs qui doivent payer
+            const billableUsers = currentUsers.filter(user => 
+                user.license_status === 'active' || user.license_status === 'trial'
+            );
+            
+            let monthlyUsers = 0;
+            let yearlyUsers = 0;
+            let monthlySubtotal = 0;
+            let yearlySubtotal = 0;
+            
+            billableUsers.forEach(user => {
+                if (user.billing_cycle === 'yearly') {
+                    yearlyUsers++;
+                    yearlySubtotal += YEARLY_PRICE;
+                } else {
+                    monthlyUsers++;
+                    monthlySubtotal += MONTHLY_PRICE;
+                }
+            });
+            
+            const monthlyTax = monthlySubtotal * TAX_RATE;
+            const yearlyTax = yearlySubtotal * TAX_RATE;
+            const monthlyTotalTTC = monthlySubtotal + monthlyTax;
+            const yearlyTotalTTC = yearlySubtotal + yearlyTax;
+            
+            return {
+                totalUsers: billableUsers.length,
+                monthlyUsers,
+                yearlyUsers,
+                monthlySubtotal,
+                yearlySubtotal,
+                monthlyTax,
+                yearlyTax,
+                monthlyTotalTTC,
+                yearlyTotalTTC,
+                monthlyTotal: monthlySubtotal,
+                yearlyTotal: yearlySubtotal,
+                grandTotal: monthlyTotalTTC + yearlyTotalTTC
+            };
+        }
+
+        function generateBillingTableRows(users) {
+            const MONTHLY_PRICE = 9.90;
+            const YEARLY_PRICE = 8.80;
+            const TAX_RATE = 0.20;
+            
+            return users
+                .filter(user => user.license_status === 'active' || user.license_status === 'trial')
+                .map(user => {
+                    const isYearly = user.billing_cycle === 'yearly';
+                    const priceHT = isYearly ? YEARLY_PRICE : MONTHLY_PRICE;
+                    const priceTTC = priceHT * (1 + TAX_RATE);
+                    const userName = user.name || user.email.split('@')[0];
+                    
+                    const licenseClass = user.license_status === 'active' ? 'active' : 'trial';
+                    const nextBilling = calculateNextBilling(user);
+                    
+                    return `
+                        <tr>
+                            <td>${userName}</td>
+                            <td>${user.email}</td>
+                            <td><span class="status-badge ${licenseClass}">${user.license_status}</span></td>
+                            <td>
+                                <span class="billing-cycle ${isYearly ? 'yearly' : 'monthly'}">
+                                    ${isYearly ? 'Annuel' : 'Mensuel'}
+                                </span>
+                            </td>
+                            <td>${formatPrice(priceHT)}</td>
+                            <td>${formatPrice(priceTTC)}</td>
+                            <td>${nextBilling}</td>
+                        </tr>
+                    `;
+                }).join('');
+        }
+
+        function calculateNextBilling(user) {
+            if (!user.license_expires_at) return 'N/A';
+            
+            const expiryDate = new Date(user.license_expires_at);
+            const now = new Date();
+            
+            if (expiryDate < now) return 'Expiré';
+            
+            return expiryDate.toLocaleDateString('fr-FR');
+        }
+
+        function formatPrice(price) {
+            return new Intl.NumberFormat('fr-FR', {
+                style: 'currency',
+                currency: 'EUR'
+            }).format(price);
+        }
+
+        async function refreshBilling() {
+            await loadUsers();
+            await loadBilling();
+            updateLastUpdated();
         }
 
         // Analytics loading
