@@ -21,7 +21,7 @@
             line-height: 1.6;
         }
 
-        /* Styles pour la page de connexion */
+        /* === STYLES D'AUTHENTIFICATION === */
         .auth-container {
             min-height: 100vh;
             display: flex;
@@ -139,7 +139,12 @@
             animation: spin 1s linear infinite;
         }
 
-        /* Modal pour le choix du type de compte */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* === MODAL DE CONFIGURATION DE COMPTE === */
         .account-type-modal {
             position: fixed;
             top: 0;
@@ -262,37 +267,26 @@
             background: #4338ca;
         }
 
-        .account-type-button.secondary {
-            background: #f1f5f9;
-            color: #475569;
-            border: 1px solid #e2e8f0;
-        }
-
-        .account-type-button.secondary:hover {
-            background: #e2e8f0;
-        }
-
-        /* Styles pour la page analytics */
-        .analytics-standalone {
+        /* === STYLES PRINCIPAUX === */
+        .analytics-container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 20px;
             display: none;
         }
 
-        .analytics-standalone.authenticated {
+        .analytics-container.authenticated {
             display: block;
         }
 
         .page-header {
-            text-align: center;
-            margin-bottom: 48px;
-            padding: 40px 0;
             background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
             color: white;
+            padding: 40px;
             border-radius: 16px;
-            margin: 0 0 48px 0;
+            margin-bottom: 32px;
             position: relative;
+            text-align: center;
         }
 
         .page-header h1 {
@@ -306,14 +300,12 @@
         }
 
         .page-header p {
-            font-size: 1.25rem;
+            font-size: 1.125rem;
             opacity: 0.9;
-            max-width: 600px;
-            margin: 0 auto;
-            line-height: 1.5;
+            margin-bottom: 16px;
         }
 
-        .user-info-header {
+        .user-info {
             position: absolute;
             top: 20px;
             right: 20px;
@@ -327,12 +319,12 @@
             font-size: 0.875rem;
         }
 
-        .user-info-header .user-email {
+        .user-email {
             font-weight: 600;
             color: #1f2937;
         }
 
-        .user-info-header .user-role {
+        .user-role {
             background: #f3e8ff;
             color: #7c3aed;
             padding: 2px 8px;
@@ -358,7 +350,7 @@
             background: #dc2626;
         }
 
-        .back-to-app {
+        .back-link {
             position: fixed;
             top: 20px;
             left: 20px;
@@ -377,7 +369,7 @@
             z-index: 1000;
         }
 
-        .back-to-app:hover {
+        .back-link:hover {
             background: #f8fafc;
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
@@ -393,7 +385,6 @@
             border-radius: 20px;
             font-size: 0.875rem;
             font-weight: 500;
-            margin-left: 16px;
         }
 
         .real-time-dot {
@@ -409,7 +400,59 @@
             50% { opacity: 0.5; }
         }
 
-        /* Tabs Navigation */
+        /* === RÉSUMÉ STATISTIQUES === */
+        .summary-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .summary-card {
+            text-align: center;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 4px solid #4F46E5;
+        }
+
+        .summary-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 1.25rem;
+        }
+
+        .summary-icon.users { background: #dbeafe; color: #1d4ed8; }
+        .summary-icon.scans { background: #dcfce7; color: #16a34a; }
+        .summary-icon.errors { background: #fef2f2; color: #dc2626; }
+        .summary-icon.licenses { background: #f3e8ff; color: #7c3aed; }
+
+        .summary-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .summary-label {
+            font-size: 0.875rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        /* === ONGLETS === */
         .tabs-container {
             background: white;
             border-radius: 12px;
@@ -458,60 +501,14 @@
             display: block;
         }
 
-        /* Summary Cards */
-        .analytics-summary {
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        /* === TABLEAU UTILISATEURS === */
+        .users-section {
+            background: white;
             border-radius: 12px;
             padding: 24px;
-            margin-bottom: 32px;
-            border: 1px solid #cbd5e1;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-        }
-
-        .summary-item {
-            text-align: center;
-            padding: 16px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-        }
-
-        .summary-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 12px;
-            font-size: 1.25rem;
-        }
-
-        .summary-icon.users { background: #dbeafe; color: #1d4ed8; }
-        .summary-icon.scans { background: #dcfce7; color: #16a34a; }
-        .summary-icon.errors { background: #fef2f2; color: #dc2626; }
-        .summary-icon.activity { background: #fef3c7; color: #d97706; }
-        .summary-icon.licenses { background: #f3e8ff; color: #7c3aed; }
-
-        .summary-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 4px;
-        }
-
-        .summary-label {
-            font-size: 0.875rem;
-            color: #64748b;
-            font-weight: 500;
-        }
-
-        /* Users Management */
         .users-controls {
             display: flex;
             gap: 16px;
@@ -549,22 +546,6 @@
             color: #9ca3af;
         }
 
-        .filter-select {
-            padding: 12px 16px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            background: white;
-            font-size: 0.875rem;
-            cursor: pointer;
-            min-width: 150px;
-        }
-
-        .filter-select:focus {
-            outline: none;
-            border-color: #4F46E5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
-
         .refresh-btn {
             padding: 12px 20px;
             background: #4F46E5;
@@ -584,22 +565,15 @@
             transform: translateY(-1px);
         }
 
-        /* Users Table */
-        .users-table-container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-
         .users-table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 16px;
         }
 
         .users-table th,
         .users-table td {
-            padding: 16px;
+            padding: 12px;
             text-align: left;
             border-bottom: 1px solid #e2e8f0;
         }
@@ -609,42 +583,10 @@
             font-weight: 600;
             color: #374151;
             font-size: 0.875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
         }
 
         .users-table tbody tr:hover {
             background: #f8fafc;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #4F46E5, #6366F1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 0.875rem;
-        }
-
-        .user-details h4 {
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 2px;
-        }
-
-        .user-details p {
-            font-size: 0.875rem;
-            color: #64748b;
         }
 
         .status-badge {
@@ -653,7 +595,6 @@
             font-size: 0.75rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
         }
 
         .status-badge.active {
@@ -676,65 +617,142 @@
             color: #6b7280;
         }
 
-        .license-info {
+        /* === GESTION DES LICENCES === */
+        .license-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .license-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .license-header h2 {
+            font-size: 1.5rem;
+            color: #1f2937;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
         }
 
-        .license-badge {
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 0.75rem;
+        .company-group {
+            margin-bottom: 32px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .company-header {
+            background: #f8fafc;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .company-name {
+            font-size: 1.125rem;
             font-weight: 600;
+            color: #1f2937;
         }
 
-        .license-badge.active {
-            background: #dcfce7;
-            color: #16a34a;
+        .company-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 0.875rem;
+            color: #6b7280;
         }
 
-        .license-badge.expired {
-            background: #fef2f2;
-            color: #dc2626;
+        .company-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
-        .license-badge.trial {
-            background: #fef3c7;
-            color: #d97706;
+        .license-list {
+            padding: 0;
         }
 
-        .actions-cell {
+        .license-item {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .license-item:last-child {
+            border-bottom: none;
+        }
+
+        .license-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .license-email {
+            font-weight: 500;
+            color: #1f2937;
+        }
+
+        .license-details {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .license-actions {
             display: flex;
             gap: 8px;
+            align-items: center;
         }
 
-        .action-btn {
+        .license-btn {
             padding: 6px 12px;
             border: none;
             border-radius: 6px;
-            cursor: pointer;
             font-size: 0.75rem;
             font-weight: 600;
+            cursor: pointer;
             transition: all 0.2s ease;
         }
 
-        .action-btn.edit {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .action-btn.license {
+        .license-btn.edit {
             background: #f3e8ff;
             color: #7c3aed;
         }
 
-        .action-btn.delete {
-            background: #fee2e2;
+        .license-btn.edit:hover {
+            background: #e9d5ff;
+        }
+
+        .license-btn.extend {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .license-btn.extend:hover {
+            background: #bbf7d0;
+        }
+
+        .license-btn.block {
+            background: #fef2f2;
             color: #dc2626;
         }
 
-        /* User Details Modal */
+        .license-btn.block:hover {
+            background: #fee2e2;
+        }
+
+        /* === MODAL D'ÉDITION === */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -757,7 +775,7 @@
             background: white;
             border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-            max-width: 600px;
+            max-width: 500px;
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
@@ -797,107 +815,29 @@
             padding: 24px;
         }
 
-        .detail-group {
-            margin-bottom: 24px;
-        }
-
-        .detail-group h4 {
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .detail-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-        }
-
-        .detail-item {
-            background: #f8fafc;
-            padding: 16px;
-            border-radius: 8px;
-            border-left: 4px solid #4F46E5;
-        }
-
-        .detail-item label {
-            font-size: 0.75rem;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-weight: 600;
-            margin-bottom: 4px;
-            display: block;
-        }
-
-        .detail-item value {
-            font-weight: 600;
-            color: #1f2937;
-        }
-
-        /* License Edit Modal */
-        .license-edit-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 10001;
-        }
-
-        .license-edit-modal.active {
-            display: flex;
-        }
-
-        .license-edit-card {
-            background: white;
-            padding: 32px;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            width: 100%;
-            max-width: 500px;
-        }
-
-        .license-edit-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 24px;
-        }
-
-        .license-edit-form {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
         .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+            margin-bottom: 20px;
         }
 
         .form-group label {
+            display: block;
+            margin-bottom: 8px;
             font-weight: 600;
             color: #374151;
-            font-size: 0.875rem;
         }
 
-        .form-group input[type="date"] {
-            padding: 10px 12px;
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
             border: 1px solid #d1d5db;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 0.875rem;
+            transition: all 0.2s ease;
         }
 
-        .form-group input[type="date"]:focus {
+        .form-group input:focus,
+        .form-group select:focus {
             outline: none;
             border-color: #4F46E5;
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
@@ -910,712 +850,35 @@
             margin-top: 24px;
         }
 
-        .form-button {
-            padding: 10px 20px;
-            border-radius: 6px;
+        .form-btn {
+            padding: 12px 20px;
+            border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
             border: none;
         }
 
-        .form-button.primary {
+        .form-btn.primary {
             background: #4F46E5;
             color: white;
         }
 
-        .form-button.primary:hover {
+        .form-btn.primary:hover {
             background: #4338ca;
         }
 
-        .form-button.secondary {
+        .form-btn.secondary {
             background: #f1f5f9;
             color: #475569;
             border: 1px solid #e2e8f0;
         }
 
-        .form-button.secondary:hover {
+        .form-btn.secondary:hover {
             background: #e2e8f0;
         }
 
-        /* License Management */
-        .license-management {
-            padding: 24px;
-        }
-
-        .license-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 32px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .license-header h2 {
-            font-size: 1.5rem;
-            color: #1f2937;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .add-user-form {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-            padding: 20px;
-            background: #f8fafc;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .add-user-form input {
-            flex: 1;
-            padding: 10px 16px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 0.875rem;
-        }
-
-        .add-user-form button {
-            padding: 10px 20px;
-            background: #10b981;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .add-user-form button:hover {
-            background: #059669;
-        }
-
-        .license-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 32px;
-        }
-
-        .license-stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
-        .license-stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #4F46E5;
-            margin-bottom: 4px;
-        }
-
-        .license-stat-label {
-            font-size: 0.875rem;
-            color: #64748b;
-        }
-
-        .license-users-table {
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .license-users-table table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .license-users-table th {
-            background: #f8fafc;
-            padding: 12px 16px;
-            text-align: left;
-            font-weight: 600;
-            color: #475569;
-            font-size: 0.875rem;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .license-users-table td {
-            padding: 16px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .license-users-table tr:hover {
-            background: #f8fafc;
-        }
-
-        .user-email {
-            font-weight: 500;
-            color: #1f2937;
-        }
-
-        .license-status {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .license-status.active {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-
-        .license-status.trial {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
-        .license-status.expired {
-            background: #fef2f2;
-            color: #dc2626;
-        }
-
-        .license-status.blocked {
-            background: #f3f4f6;
-            color: #6b7280;
-        }
-
-        .license-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .license-action-btn {
-            padding: 6px 12px;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .license-action-btn.activate {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-
-        .license-action-btn.block {
-            background: #fef2f2;
-            color: #dc2626;
-        }
-
-        .license-action-btn.extend {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .license-action-btn.edit-dates {
-            background: #f3e8ff;
-            color: #7c3aed;
-        }
-
-        .license-action-btn.delete {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-
-        /* License Extension Dropdown */
-        .license-extend-dropdown {
-            position: fixed;
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            display: none;
-            min-width: 200px;
-        }
-
-        .license-extend-dropdown.active {
-            display: block;
-        }
-
-        .license-extend-dropdown .license-extend-options {
-            padding: 8px;
-        }
-
-        .license-extend-dropdown .license-extend-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px;
-            border: none;
-            background: none;
-            width: 100%;
-            text-align: left;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 0.875rem;
-        }
-
-        .license-extend-dropdown .license-extend-option:hover {
-            background: #f8fafc;
-        }
-
-        .license-extend-dropdown .license-extend-option i {
-            color: #4F46E5;
-            width: 16px;
-        }
-
-        .company-info {
-            padding: 20px;
-            background: #f8fafc;
-            border-radius: 8px;
-            margin-bottom: 24px;
-            border-left: 4px solid #4F46E5;
-        }
-
-        .company-info h3 {
-            font-size: 1.125rem;
-            color: #1f2937;
-            margin-bottom: 8px;
-        }
-
-        .company-info p {
-            color: #64748b;
-            font-size: 0.875rem;
-        }
-
-        /* Billing Management */
-        .billing-management {
-            padding: 24px;
-        }
-
-        .billing-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 32px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .billing-header h2 {
-            font-size: 1.5rem;
-            color: #1f2937;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .pricing-section {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 32px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .pricing-section h3 {
-            font-size: 1.25rem;
-            color: #1f2937;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-
-        .pricing-card {
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 24px;
-            text-align: center;
-            position: relative;
-            transition: all 0.3s ease;
-        }
-
-        .pricing-card:hover {
-            border-color: #4F46E5;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
-        }
-
-        .pricing-card.popular {
-            border-color: #4F46E5;
-            background: linear-gradient(135deg, #f8fafc 0%, #f3e8ff 100%);
-        }
-
-        .pricing-card.popular::before {
-            content: "Populaire";
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #4F46E5;
-            color: white;
-            padding: 4px 16px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .pricing-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 8px;
-        }
-
-        .pricing-price {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #4F46E5;
-            margin-bottom: 4px;
-        }
-
-        .pricing-period {
-            font-size: 0.875rem;
-            color: #6b7280;
-            margin-bottom: 16px;
-        }
-
-        .pricing-features {
-            list-style: none;
-            padding: 0;
-            margin-bottom: 24px;
-        }
-
-        .pricing-features li {
-            padding: 8px 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.875rem;
-            color: #4b5563;
-        }
-
-        .pricing-features li i {
-            color: #10b981;
-            font-size: 0.75rem;
-        }
-
-        .pricing-button {
-            width: 100%;
-            padding: 12px 24px;
-            background: #4F46E5;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .pricing-button:hover {
-            background: #4338ca;
-            transform: translateY(-1px);
-        }
-
-        .pricing-button.secondary {
-            background: #f1f5f9;
-            color: #475569;
-            border: 1px solid #e2e8f0;
-        }
-
-        .pricing-button.secondary:hover {
-            background: #e2e8f0;
-        }
-
-        .billing-summary {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 32px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .billing-summary h3 {
-            font-size: 1.25rem;
-            color: #1f2937;
-            margin-bottom: 16px;
-        }
-
-        .billing-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .billing-stat-card {
-            background: #f8fafc;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            border-left: 4px solid #4F46E5;
-        }
-
-        .billing-stat-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 4px;
-        }
-
-        .billing-stat-label {
-            font-size: 0.875rem;
-            color: #64748b;
-        }
-
-        .billing-table {
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .billing-table table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .billing-table th {
-            background: #f8fafc;
-            padding: 12px 16px;
-            text-align: left;
-            font-weight: 600;
-            color: #475569;
-            font-size: 0.875rem;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .billing-table td {
-            padding: 16px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .billing-table tr:hover {
-            background: #f8fafc;
-        }
-
-        .license-type-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .license-type-badge.monthly {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .license-type-badge.yearly {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-
-        .license-type-badge.trial {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
-        .license-pricing-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .license-pricing-btn {
-            padding: 6px 12px;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .license-pricing-btn.edit {
-            background: #f3e8ff;
-            color: #7c3aed;
-        }
-
-        .license-pricing-btn.monthly {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .license-pricing-btn.yearly {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-
-        .license-pricing-btn.trial {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
-        .pricing-config {
-            background: #f8fafc;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 24px;
-            border-left: 4px solid #4F46E5;
-        }
-
-        .pricing-config h4 {
-            font-size: 1rem;
-            color: #1f2937;
-            margin-bottom: 12px;
-        }
-
-        .pricing-config-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-        }
-
-        .pricing-config-item {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .pricing-config-item label {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: #374151;
-        }
-
-        .pricing-config-item input {
-            padding: 8px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 0.875rem;
-        }
-
-        .pricing-config-item input:focus {
-            outline: none;
-            border-color: #4F46E5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
-
-        .save-pricing-btn {
-            padding: 10px 20px;
-            background: #10b981;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .save-pricing-btn:hover {
-            background: #059669;
-        }
-
-        .stripe-section {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 32px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            border: 2px solid #e2e8f0;
-        }
-
-        .stripe-section.ready {
-            border-color: #10b981;
-            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-        }
-
-        .stripe-section h3 {
-            font-size: 1.25rem;
-            color: #1f2937;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .stripe-status {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .stripe-status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #6b7280;
-        }
-
-        .stripe-status-dot.ready {
-            background: #10b981;
-        }
-
-        .stripe-status-text {
-            font-size: 0.875rem;
-            color: #6b7280;
-        }
-
-        .stripe-status-text.ready {
-            color: #10b981;
-        }
-
-        .no-permissions {
-            text-align: center;
-            padding: 60px;
-            color: #64748b;
-        }
-
-        .no-permissions i {
-            font-size: 4rem;
-            color: #d1d5db;
-            margin-bottom: 16px;
-        }
-
-        .loading-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 400px;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #f3f4f6;
-            border-top: 4px solid #4F46E5;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            color: #64748b;
-            font-size: 1.125rem;
-            font-weight: 500;
-        }
-
+        /* === ÉTATS VIDES === */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -1634,20 +897,43 @@
             margin-bottom: 8px;
         }
 
+        .loading-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #4F46E5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            color: #64748b;
+            font-size: 1rem;
+        }
+
         .last-updated {
             text-align: center;
-            margin-top: 32px;
-            padding: 16px;
+            margin-top: 24px;
+            padding: 12px;
             background: #f8fafc;
             border-radius: 8px;
             color: #64748b;
             font-size: 0.875rem;
         }
 
-        /* Responsive */
+        /* === RESPONSIVE === */
         @media (max-width: 768px) {
-            .analytics-standalone {
-                padding: 20px 16px;
+            .analytics-container {
+                padding: 16px;
             }
 
             .page-header {
@@ -1660,7 +946,7 @@
                 gap: 12px;
             }
 
-            .user-info-header {
+            .user-info {
                 position: relative;
                 top: auto;
                 right: auto;
@@ -1686,21 +972,9 @@
                 min-width: auto;
             }
 
-            .users-table-container {
-                overflow-x: auto;
-            }
-
-            .users-table {
-                min-width: 700px;
-            }
-
             .modal {
                 width: 95%;
                 margin: 20px;
-            }
-
-            .detail-grid {
-                grid-template-columns: 1fr;
             }
 
             .account-type-options {
@@ -1712,7 +986,7 @@
                 gap: 4px;
             }
 
-            .license-action-btn {
+            .license-btn {
                 width: 100%;
                 text-align: center;
             }
@@ -1748,11 +1022,11 @@
         </div>
     </div>
 
-    <!-- Modal pour le choix du type de compte -->
+    <!-- Modal de configuration du type de compte -->
     <div class="account-type-modal" id="accountTypeModal">
         <div class="account-type-card">
-            <h2 class="account-type-title">Configuration de votre accès Analytics</h2>
-            <p class="account-type-subtitle">Pour accéder aux analytics, vous devez configurer votre type d'accès</p>
+            <h2 class="account-type-title">Configuration de votre accès</h2>
+            <p class="account-type-subtitle">Choisissez le type d'accès pour les analytics</p>
             
             <div class="account-type-options">
                 <div class="account-type-option" id="personalOption" onclick="selectAccountType('personal')">
@@ -1775,7 +1049,7 @@
             >
             
             <div class="account-type-actions">
-                <button class="account-type-button primary" id="confirmAccountType" onclick="confirmAccountType()">
+                <button class="account-type-button primary" onclick="confirmAccountType()">
                     Configurer l'accès
                 </button>
             </div>
@@ -1783,18 +1057,18 @@
     </div>
 
     <!-- Page Analytics -->
-    <div class="analytics-standalone" id="analyticsContainer">
-        <a href="./index.html" class="back-to-app">
+    <div class="analytics-container" id="analyticsContainer">
+        <a href="./index.html" class="back-link">
             <i class="fas fa-arrow-left"></i>
             Retour à l'application
         </a>
 
         <div class="page-header">
-            <div class="user-info-header">
+            <div class="user-info">
                 <span class="user-email" id="currentUserEmail">-</span>
                 <span class="user-role" id="currentUserRole">-</span>
                 <button class="logout-btn" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                    <i class="fas fa-sign-out-alt"></i>
                 </button>
             </div>
             
@@ -1802,48 +1076,48 @@
                 <i class="fas fa-chart-line"></i>
                 Analytics EmailSortPro
             </h1>
-            <p>
-                Tableau de bord complet pour analyser l'utilisation et gérer les utilisateurs
-            </p>
+            <p>Tableau de bord complet pour analyser l'utilisation et gérer les licences</p>
             <div class="real-time-indicator">
                 <div class="real-time-dot"></div>
                 Données en temps réel
             </div>
         </div>
 
-        <div class="analytics-summary">
+        <!-- Résumé des statistiques -->
+        <div class="summary-section">
             <div class="summary-grid">
-                <div class="summary-item">
+                <div class="summary-card">
                     <div class="summary-icon users">
                         <i class="fas fa-users"></i>
                     </div>
-                    <div class="summary-number" id="summaryUsers">-</div>
+                    <div class="summary-number" id="summaryUsers">0</div>
                     <div class="summary-label">Utilisateurs actifs</div>
                 </div>
-                <div class="summary-item">
+                <div class="summary-card">
                     <div class="summary-icon scans">
                         <i class="fas fa-search"></i>
                     </div>
-                    <div class="summary-number" id="summaryScans">-</div>
+                    <div class="summary-number" id="summaryScans">0</div>
                     <div class="summary-label">Scans effectués</div>
                 </div>
-                <div class="summary-item">
+                <div class="summary-card">
                     <div class="summary-icon errors">
                         <i class="fas fa-exclamation-triangle"></i>
                     </div>
-                    <div class="summary-number" id="summaryErrors">-</div>
+                    <div class="summary-number" id="summaryErrors">0</div>
                     <div class="summary-label">Erreurs détectées</div>
                 </div>
-                <div class="summary-item">
+                <div class="summary-card">
                     <div class="summary-icon licenses">
                         <i class="fas fa-key"></i>
                     </div>
-                    <div class="summary-number" id="summaryLicenses">-</div>
+                    <div class="summary-number" id="summaryLicenses">0</div>
                     <div class="summary-label">Licences actives</div>
                 </div>
             </div>
         </div>
 
+        <!-- Onglets principaux -->
         <div class="tabs-container">
             <div class="tabs-nav">
                 <button class="tab-button active" onclick="switchTab('overview')">
@@ -1852,88 +1126,63 @@
                 </button>
                 <button class="tab-button" onclick="switchTab('users')">
                     <i class="fas fa-users"></i>
-                    Gestion utilisateurs
+                    Utilisateurs
                 </button>
                 <button class="tab-button" onclick="switchTab('licenses')">
                     <i class="fas fa-key"></i>
-                    Gestion licences
-                </button>
-                <button class="tab-button" onclick="switchTab('billing')">
-                    <i class="fas fa-credit-card"></i>
-                    Facturation
+                    Licences
                 </button>
             </div>
 
-            <!-- Overview Tab -->
+            <!-- Onglet Vue d'ensemble -->
             <div class="tab-content active" id="overviewTab">
-                <div id="loadingContainer" class="loading-container">
+                <div class="loading-container">
                     <div class="spinner"></div>
-                    <div class="loading-text">Chargement des analytics...</div>
+                    <div class="loading-text">Chargement des données...</div>
                 </div>
-                <div id="analyticsContent"></div>
             </div>
 
-            <!-- Users Tab -->
+            <!-- Onglet Utilisateurs -->
             <div class="tab-content" id="usersTab">
-                <div class="users-controls">
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Rechercher un utilisateur..." id="userSearch">
+                <div class="users-section">
+                    <div class="users-controls">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" placeholder="Rechercher un utilisateur..." id="userSearch">
+                        </div>
+                        <button class="refresh-btn" onclick="loadUsers()">
+                            <i class="fas fa-sync-alt"></i>
+                            Actualiser
+                        </button>
                     </div>
-                    <select class="filter-select" id="statusFilter">
-                        <option value="">Tous les statuts</option>
-                        <option value="active">Actifs</option>
-                        <option value="trial">En essai</option>
-                        <option value="expired">Expirés</option>
-                        <option value="blocked">Bloqués</option>
-                    </select>
-                    <select class="filter-select" id="companyFilter">
-                        <option value="">Toutes les sociétés</option>
-                    </select>
-                    <button class="refresh-btn" onclick="refreshUsers()">
-                        <i class="fas fa-sync-alt"></i>
-                        Actualiser
-                    </button>
-                </div>
-
-                <div class="users-table-container">
-                    <table class="users-table">
-                        <thead>
-                            <tr>
-                                <th>Utilisateur</th>
-                                <th>Société</th>
-                                <th>Statut</th>
-                                <th>Dernière connexion</th>
-                                <th>Connexions</th>
-                                <th>Rôle</th>
-                                <th>Licence</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="usersTableBody">
-                            <!-- Users will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <div id="usersEmptyState" class="empty-state" style="display: none;">
-                    <i class="fas fa-users"></i>
-                    <h3>Aucun utilisateur trouvé</h3>
-                    <p>Essayez de modifier vos filtres de recherche</p>
+                    <div id="usersContent">
+                        <div class="loading-container">
+                            <div class="spinner"></div>
+                            <div class="loading-text">Chargement des utilisateurs...</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Licenses Tab -->
+            <!-- Onglet Licences -->
             <div class="tab-content" id="licensesTab">
-                <div id="licenseManagement" class="license-management">
-                    <!-- Le contenu sera généré dynamiquement -->
-                </div>
-            </div>
-
-            <!-- Billing Tab -->
-            <div class="tab-content" id="billingTab">
-                <div id="billingManagement" class="billing-management">
-                    <!-- Le contenu sera généré dynamiquement -->
+                <div class="license-section">
+                    <div class="license-header">
+                        <h2>
+                            <i class="fas fa-key"></i>
+                            Gestion des licences
+                        </h2>
+                        <button class="refresh-btn" onclick="loadLicenses()">
+                            <i class="fas fa-sync-alt"></i>
+                            Actualiser
+                        </button>
+                    </div>
+                    <div id="licensesContent">
+                        <div class="loading-container">
+                            <div class="spinner"></div>
+                            <div class="loading-text">Chargement des licences...</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1944,705 +1193,156 @@
         </div>
     </div>
 
-    <!-- User Details Modal -->
-    <div class="modal-overlay" id="userModal">
+    <!-- Modal d'édition de licence -->
+    <div class="modal-overlay" id="licenseEditModal">
         <div class="modal">
             <div class="modal-header">
-                <h3 id="modalTitle">Détails utilisateur</h3>
-                <button class="modal-close" onclick="closeUserModal()">
+                <h3>Modifier la licence</h3>
+                <button class="modal-close" onclick="closeLicenseEditModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="modal-body" id="modalBody">
-                <!-- User details will be loaded here -->
+            <div class="modal-body">
+                <form id="licenseEditForm">
+                    <input type="hidden" id="editUserId">
+                    
+                    <div class="form-group">
+                        <label>Utilisateur</label>
+                        <input type="text" id="editUserEmail" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Statut de la licence</label>
+                        <select id="editLicenseStatus">
+                            <option value="active">Actif</option>
+                            <option value="trial">Essai</option>
+                            <option value="expired">Expiré</option>
+                            <option value="blocked">Bloqué</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Date de début</label>
+                        <input type="date" id="editStartDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Date d'expiration</label>
+                        <input type="date" id="editEndDate" required>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="form-btn secondary" onclick="closeLicenseEditModal()">
+                            Annuler
+                        </button>
+                        <button type="submit" class="form-btn primary">
+                            <i class="fas fa-save"></i>
+                            Enregistrer
+                        </button>
+                    </div>
+                </form>
             </div>
-        </div>
-    </div>
-
-    <!-- License Edit Modal -->
-    <div class="license-edit-modal" id="licenseEditModal">
-        <div class="license-edit-card">
-            <h2 class="license-edit-title">Modifier les dates de licence</h2>
-            <form class="license-edit-form" id="licenseEditForm">
-                <input type="hidden" id="editUserId">
-                
-                <div class="form-group">
-                    <label for="editStartDate">Date de début</label>
-                    <input type="date" id="editStartDate" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="editEndDate">Date d'expiration</label>
-                    <input type="date" id="editEndDate" required>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="form-button secondary" onclick="closeLicenseEditModal()">
-                        Annuler
-                    </button>
-                    <button type="submit" class="form-button primary">
-                        <i class="fas fa-save"></i> Enregistrer
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- License Extension Dropdown -->
-    <div class="license-extend-dropdown" id="licenseExtendDropdown">
-        <div class="license-extend-options">
-            <button class="license-extend-option" onclick="extendLicenseBy(1)">
-                <i class="fas fa-calendar-day"></i> +1 mois (9,90€)
-            </button>
-            <button class="license-extend-option" onclick="extendLicenseBy(3)">
-                <i class="fas fa-calendar-week"></i> +3 mois (29,70€)
-            </button>
-            <button class="license-extend-option" onclick="extendLicenseBy(6)">
-                <i class="fas fa-calendar-alt"></i> +6 mois (59,40€)
-            </button>
-            <button class="license-extend-option" onclick="extendLicenseBy(12)">
-                <i class="fas fa-calendar"></i> +1 an (105,60€)
-            </button>
         </div>
     </div>
 
     <script>
-        // Global variables
-        let analyticsManager = null;
-        let analyticsModule = null;
+        // === VARIABLES GLOBALES ===
         let licenseService = null;
         let supabaseClient = null;
-        let currentUsers = [];
-        let filteredUsers = [];
-        let currentTab = 'overview';
         let authenticatedUser = null;
         let selectedAccountType = null;
         let pendingUser = null;
-        let currentExtensionUserId = null;
-        let pricingConfig = {
-            monthly: 9.90,
-            yearly: 8.80,
-            currency: 'EUR',
-            taxRate: 0.20 // 20% TVA
-        };
+        let currentTab = 'overview';
+        let allUsers = [];
+        let allStats = [];
 
-        // Fonctions utilitaires
-        function formatPrice(price) {
-            return new Intl.NumberFormat('fr-FR', {
-                style: 'currency',
-                currency: pricingConfig.currency
-            }).format(price);
-        }
-
-        function showAuthMessage(message, type) {
+        // === FONCTIONS UTILITAIRES ===
+        function showMessage(message, type = 'error') {
             const messageDiv = document.getElementById('authMessage');
             messageDiv.className = type === 'error' ? 'auth-error' : 'auth-success';
             messageDiv.textContent = message;
         }
 
-        // Sélection du type de compte
-        function selectAccountType(type) {
-            selectedAccountType = type;
+        function updateLastUpdated() {
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = now.toLocaleString('fr-FR');
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            return new Date(dateString).toLocaleDateString('fr-FR');
+        }
+
+        function formatLastLogin(dateString) {
+            if (!dateString) return 'Jamais';
             
-            // Mettre à jour l'UI
-            document.getElementById('personalOption').classList.toggle('selected', type === 'personal');
-            document.getElementById('professionalOption').classList.toggle('selected', type === 'professional');
-            
-            // Afficher le champ société pour les comptes professionnels
-            const companyInput = document.getElementById('companyNameInput');
-            if (type === 'professional') {
-                companyInput.classList.add('visible');
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+
+            if (minutes < 60) {
+                return `Il y a ${minutes} min`;
+            } else if (hours < 24) {
+                return `Il y a ${hours}h`;
+            } else if (days < 7) {
+                return `Il y a ${days} jour${days > 1 ? 's' : ''}`;
             } else {
-                companyInput.classList.remove('visible');
+                return date.toLocaleDateString('fr-FR');
             }
         }
 
-        // Vérifier si l'utilisateur a déjà fait le choix du type de compte
-        function hasAccountTypeBeenSet(user) {
-            // Si l'utilisateur est un super admin, il n'a pas besoin de définir le type
-            if (user.role === 'super_admin') {
-                console.log('[Analytics] Super admin detected, no account type needed');
-                return true;
+        function calculateDaysRemaining(expirationDate) {
+            const now = new Date();
+            const diff = new Date(expirationDate) - now;
+            const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+            
+            if (days < 0) {
+                return `Expiré depuis ${Math.abs(days)} jour${Math.abs(days) > 1 ? 's' : ''}`;
+            } else if (days === 0) {
+                return 'Expire aujourd\'hui';
+            } else {
+                return `${days} jour${days > 1 ? 's' : ''}`;
             }
-            
-            // IMPORTANT: Pour les analytics, on doit TOUJOURS permettre de reconfigurer le type
-            // car les comptes existants peuvent avoir été créés sans choix explicite
-            // On va vérifier si l'utilisateur a accès, sinon on lui propose de reconfigurer
-            
-            // Si l'utilisateur a déjà un rôle admin, pas besoin de reconfigurer
-            if (user.role === 'company_admin') {
-                console.log('[Analytics] Company admin detected, no reconfiguration needed');
-                return true;
-            }
-            
-            // Si c'est un utilisateur professionnel normal, on lui propose de reconfigurer
-            // même s'il a déjà un account_type, car il pourrait vouloir passer en personnel
-            if (user.account_type === 'professional' && user.role === 'user') {
-                console.log('[Analytics] Professional user detected, allowing reconfiguration');
-                return false; // Forcer la reconfiguration
-            }
-            
-            // Si account_type est défini et non null, alors c'est fait
-            const hasType = user.account_type && user.account_type !== null;
-            console.log('[Analytics] Account type check:', {
-                account_type: user.account_type,
-                hasType: hasType
-            });
-            
-            return hasType;
         }
 
-        // Confirmer le type de compte
-        async function confirmAccountType() {
-            if (!selectedAccountType) {
-                alert('Veuillez sélectionner un type de compte');
-                return;
-            }
-            
-            const companyName = document.getElementById('companyNameInput').value.trim();
-            
-            if (selectedAccountType === 'professional' && !companyName) {
-                alert('Veuillez entrer le nom de votre entreprise');
-                return;
-            }
-            
+        // === CHARGEMENT DES SERVICES ===
+        async function loadLicenseService() {
             try {
-                // Utiliser les valeurs autorisées par la contrainte de base de données
-                const validAccountType = selectedAccountType === 'personal' ? 'personal' : 'professional';
-                
-                console.log('[Analytics] Setting account type:', {
-                    userId: pendingUser.id,
-                    accountType: validAccountType,
-                    companyName: companyName,
-                    currentRole: pendingUser.role
+                // Charger la configuration Supabase
+                const configScript = document.createElement('script');
+                configScript.src = './config-supabase.js';
+                await new Promise((resolve, reject) => {
+                    configScript.onload = resolve;
+                    configScript.onerror = reject;
+                    document.head.appendChild(configScript);
                 });
                 
-                // Mettre à jour le type de compte de l'utilisateur
-                const result = await licenseService.setUserAccountType(
-                    pendingUser.id,
-                    validAccountType,
-                    companyName || null
-                );
+                // Charger le service de licence
+                const licenseScript = document.createElement('script');
+                licenseScript.src = './LicenceService.js';
+                await new Promise((resolve, reject) => {
+                    licenseScript.onload = resolve;
+                    licenseScript.onerror = reject;
+                    document.head.appendChild(licenseScript);
+                });
                 
-                if (result.success) {
-                    // Fermer le modal
-                    document.getElementById('accountTypeModal').classList.remove('active');
-                    
-                    // Recharger les informations utilisateur
-                    const refreshResult = await licenseService.authenticateWithEmail(pendingUser.email);
-                    
-                    if (refreshResult.valid) {
-                        // Vérifier si l'utilisateur a maintenant accès
-                        const hasAccess = checkAdminAccess(refreshResult.user);
-                        
-                        if (hasAccess) {
-                            authenticatedUser = refreshResult.user;
-                            licenseService.currentUser = authenticatedUser;
-                            
-                            // Si c'est un compte personnel, s'assurer qu'il n'a pas de company_id
-                            if (authenticatedUser.account_type === 'personal' && authenticatedUser.company_id) {
-                                console.log('[Analytics] Cleaning up personal account company association...');
-                                await cleanupPersonalAccount(authenticatedUser.id);
-                            }
-                            
-                            // Afficher analytics
-                            showAnalytics();
-                        } else {
-                            // Si toujours pas d'accès après reconfiguration
-                            if (validAccountType === 'professional') {
-                                showAuthMessage('Compte professionnel configuré. Contactez votre administrateur pour obtenir les droits d\'accès aux analytics.', 'error');
-                            } else {
-                                showAuthMessage('Erreur lors de la configuration du compte', 'error');
-                            }
-                        }
-                    } else {
-                        showAuthMessage('Erreur lors de la mise à jour du compte', 'error');
-                    }
-                } else {
-                    console.error('[Analytics] Error setting account type:', result.error);
-                    showAuthMessage('Erreur lors de la configuration : ' + result.error, 'error');
-                }
-            } catch (error) {
-                console.error('[Auth] Error setting account type:', error);
-                showAuthMessage('Erreur lors de la configuration du compte', 'error');
-            }
-        }
-
-        // Gestion de l'authentification pour la page admin
-        async function handleAuthentication(event) {
-            event.preventDefault();
-            
-            const email = document.getElementById('authEmail').value.trim();
-            const button = document.getElementById('authButton');
-            const buttonText = document.getElementById('authButtonText');
-            const spinner = document.getElementById('authSpinner');
-            const messageDiv = document.getElementById('authMessage');
-            
-            if (!email || !email.includes('@')) {
-                showAuthMessage('Veuillez entrer une adresse email valide', 'error');
-                return;
-            }
-            
-            // Afficher le spinner
-            button.disabled = true;
-            buttonText.style.display = 'none';
-            spinner.style.display = 'block';
-            messageDiv.innerHTML = '';
-            
-            try {
-                // Initialiser le service de licence
-                if (!licenseService) {
-                    await loadLicenseService();
-                }
+                licenseService = window.licenseService;
                 
                 // Initialiser Supabase
                 await initializeSupabase();
                 
-                // S'assurer que le service est initialisé
-                if (!licenseService.initialized) {
-                    await licenseService.initialize();
-                }
-                
-                // Utiliser la méthode authenticateWithEmail qui fonctionne
-                const result = await licenseService.authenticateWithEmail(email);
-                
-                console.log('[Analytics] Authentication result:', {
-                    valid: result.valid,
-                    status: result.status,
-                    user: result.user ? {
-                        email: result.user.email,
-                        role: result.user.role,
-                        account_type: result.user.account_type
-                    } : null
-                });
-                
-                if (result.valid) {
-                    // Vérifier si l'utilisateur a besoin de configurer son type de compte
-                    const needsAccountTypeSetup = !hasAccountTypeBeenSet(result.user);
-                    
-                    console.log('[Analytics] Needs account type setup:', needsAccountTypeSetup);
-                    
-                    if (needsAccountTypeSetup) {
-                        console.log('[Analytics] User needs account type setup');
-                        
-                        // Stocker l'utilisateur temporairement
-                        pendingUser = result.user;
-                        
-                        // Cacher le spinner
-                        button.disabled = false;
-                        buttonText.style.display = 'block';
-                        spinner.style.display = 'none';
-                        
-                        // Afficher le modal de choix du type de compte
-                        document.getElementById('accountTypeModal').classList.add('active');
-                        
-                        // Mettre à jour le message du modal selon la situation
-                        const modalTitle = document.querySelector('.account-type-title');
-                        const modalSubtitle = document.querySelector('.account-type-subtitle');
-                        
-                        if (result.user.account_type === 'professional' && result.user.role === 'user') {
-                            modalTitle.textContent = 'Reconfiguration de votre accès Analytics';
-                            modalSubtitle.textContent = 'Votre compte professionnel actuel n\'a pas accès aux analytics. Choisissez votre type d\'accès :';
-                        } else {
-                            modalTitle.textContent = 'Configuration de votre accès Analytics';
-                            modalSubtitle.textContent = 'Pour accéder aux analytics, vous devez configurer votre type d\'accès';
-                        }
-                        
-                        // Pré-sélectionner si déjà un type
-                        if (result.user.account_type) {
-                            selectAccountType(result.user.account_type);
-                        } else {
-                            // Réinitialiser le formulaire
-                            selectedAccountType = null;
-                            document.getElementById('personalOption').classList.remove('selected');
-                            document.getElementById('professionalOption').classList.remove('selected');
-                            document.getElementById('companyNameInput').value = '';
-                            document.getElementById('companyNameInput').classList.remove('visible');
-                        }
-                        
-                        return;
-                    }
-                    
-                    // Vérifier les permissions d'accès
-                    const hasAccess = checkAdminAccess(result.user);
-                    
-                    console.log('[Analytics] Has admin access:', hasAccess);
-                    
-                    if (hasAccess) {
-                        authenticatedUser = result.user;
-                        licenseService.currentUser = authenticatedUser;
-                        
-                        showAuthMessage('Connexion réussie !', 'success');
-                        
-                        // Attendre un peu avant de basculer
-                        setTimeout(() => {
-                            showAnalytics();
-                        }, 1000);
-                    } else {
-                        // Message d'erreur spécifique selon le type d'utilisateur
-                        if (result.user.account_type === 'professional' && result.user.role === 'user') {
-                            showAuthMessage('Accès restreint. Contactez votre administrateur pour obtenir les droits d\'accès aux analytics.', 'error');
-                        } else {
-                            showAuthMessage('Accès réservé aux administrateurs', 'error');
-                        }
-                    }
-                } else {
-                    // Si l'utilisateur n'existe pas et c'est la page admin
-                    if (result.status === 'not_found') {
-                        showAuthMessage('Compte non trouvé. Veuillez créer votre compte sur l\'application principale.', 'error');
-                    } else {
-                        showAuthMessage(result.message || 'Accès non autorisé', 'error');
-                    }
-                }
-                
+                console.log('[Analytics] Services loaded successfully');
             } catch (error) {
-                console.error('[Auth] Error:', error);
-                showAuthMessage('Erreur de connexion. Veuillez réessayer.', 'error');
-            } finally {
-                // Réactiver le bouton
-                button.disabled = false;
-                buttonText.style.display = 'block';
-                spinner.style.display = 'none';
+                console.error('[Analytics] Error loading services:', error);
+                throw error;
             }
         }
 
-        // Vérifier les permissions d'accès admin
-        function checkAdminAccess(user) {
-            if (!user) return false;
-            
-            console.log('[Analytics] Checking admin access for user:', {
-                email: user.email,
-                role: user.role,
-                account_type: user.account_type,
-                license_status: user.license_status
-            });
-            
-            // Les super admins ont toujours accès
-            if (user.role === 'super_admin') {
-                console.log('[Analytics] Super admin access granted');
-                return true;
-            }
-            
-            // Les admins de société ont accès
-            if (user.role === 'company_admin') {
-                console.log('[Analytics] Company admin access granted');
-                return true;
-            }
-            
-            // Les comptes personnels ont accès pour gérer leur propre licence
-            if (user.account_type === 'personal') {
-                console.log('[Analytics] Personal account access granted');
-                return true;
-            }
-            
-            // Les utilisateurs professionnels normaux n'ont PAS accès aux analytics
-            // Ils doivent être promus "company_admin" par un super admin
-            console.log('[Analytics] Access denied - Professional users need company_admin role for analytics access');
-            return false;
-        }
-
-        function showAnalytics() {
-            // Cacher la page de connexion
-            document.getElementById('authContainer').style.display = 'none';
-            
-            // Afficher la page analytics
-            document.getElementById('analyticsContainer').classList.add('authenticated');
-            
-            // Mettre à jour les infos utilisateur
-            document.getElementById('currentUserEmail').textContent = authenticatedUser.email;
-            
-            // Afficher le rôle approprié
-            let roleDisplay = authenticatedUser.role.replace('_', ' ');
-            if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
-                roleDisplay = 'Personnel';
-            }
-            document.getElementById('currentUserRole').textContent = roleDisplay;
-            
-            // Charger les données
-            loadAnalytics();
-            updateLastUpdated();
-            
-            // Sauvegarder la session
-            sessionStorage.setItem('analyticsAuth', JSON.stringify({
-                email: authenticatedUser.email,
-                role: authenticatedUser.role,
-                timestamp: Date.now()
-            }));
-        }
-
-        function logout() {
-            // Effacer la session
-            sessionStorage.removeItem('analyticsAuth');
-            
-            // Réinitialiser
-            authenticatedUser = null;
-            currentUsers = [];
-            filteredUsers = [];
-            
-            // Retourner à la page de connexion
-            document.getElementById('analyticsContainer').classList.remove('authenticated');
-            document.getElementById('authContainer').style.display = 'flex';
-            document.getElementById('authEmail').value = '';
-            document.getElementById('authMessage').innerHTML = '';
-        }
-
-        // Vérifier la session au chargement
-        async function checkSession() {
-            const session = sessionStorage.getItem('analyticsAuth');
-            
-            if (session) {
-                try {
-                    const data = JSON.parse(session);
-                    
-                    // Vérifier que la session n'est pas trop vieille (24h)
-                    if (Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
-                        // Initialiser d'abord
-                        if (!licenseService) {
-                            await loadLicenseService();
-                        }
-                        
-                        await initializeSupabase();
-                        
-                        // Recharger l'utilisateur avec authenticateWithEmail
-                        const result = await licenseService.authenticateWithEmail(data.email);
-                        
-                        if (result.valid) {
-                            // Vérifier si le type de compte est défini
-                            if (!hasAccountTypeBeenSet(result.user)) {
-                                // Forcer la reconnexion pour définir le type de compte
-                                sessionStorage.removeItem('analyticsAuth');
-                                return;
-                            }
-                            
-                            if (checkAdminAccess(result.user)) {
-                                authenticatedUser = result.user;
-                                licenseService.currentUser = authenticatedUser;
-                                showAnalytics();
-                                return;
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error('[Session] Error:', error);
-                }
-                
-                // Session invalide
-                sessionStorage.removeItem('analyticsAuth');
-            }
-        }
-
-        // Nettoyer un compte personnel mal configuré
-        async function cleanupPersonalAccount(userId) {
-            try {
-                await supabaseClient
-                    .from('users')
-                    .update({
-                        company_id: null,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', userId);
-                    
-                console.log('[Analytics] Personal account cleaned up');
-            } catch (error) {
-                console.error('[Analytics] Error cleaning personal account:', error);
-            }
-        }
-
-        // Charger le service de licence
-        async function loadLicenseService() {
-            // Charger la configuration Supabase d'abord
-            const configScript = document.createElement('script');
-            configScript.src = './config-supabase.js';
-            await new Promise((resolve, reject) => {
-                configScript.onload = resolve;
-                configScript.onerror = reject;
-                document.head.appendChild(configScript);
-            });
-            
-            // Charger le service de licence
-            const licenseScript = document.createElement('script');
-            licenseScript.src = './LicenceService.js';
-            await new Promise((resolve, reject) => {
-                licenseScript.onload = resolve;
-                licenseScript.onerror = reject;
-                document.head.appendChild(licenseScript);
-            });
-            
-            licenseService = window.licenseService;
-        }
-
-        // Tab management
-        function switchTab(tabName) {
-            // Update tab buttons
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
-
-            // Update tab content
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            document.getElementById(`${tabName}Tab`).classList.add('active');
-
-            currentTab = tabName;
-
-            // Load content based on tab
-            if (tabName === 'users') {
-                loadUsers();
-            } else if (tabName === 'licenses') {
-                loadLicenseManagement();
-            } else if (tabName === 'billing') {
-                loadBillingManagement();
-            }
-        }
-
-        // Users management - avec filtrage selon les permissions
-        async function loadUsers() {
-            try {
-                console.log('[Analytics] Loading users with permissions check...');
-                
-                // Vérifier que Supabase est initialisé
-                if (!supabaseClient) {
-                    console.log('[Analytics] Supabase not ready, initializing...');
-                    await initializeSupabase();
-                }
-                
-                // Construire la requête avec les bonnes colonnes
-                let query = supabaseClient
-                    .from('users')
-                    .select(`
-                        id,
-                        email,
-                        name,
-                        role,
-                        license_status,
-                        license_expires_at,
-                        license_starts_at,
-                        company_id,
-                        first_login_at,
-                        last_login_at,
-                        login_count,
-                        created_at,
-                        updated_at,
-                        account_type,
-                        company:companies(id, name, domain)
-                    `)
-                    .order('created_at', { ascending: false });
-                
-                // Filtrage selon les permissions
-                if (authenticatedUser) {
-                    if (authenticatedUser.account_type === 'personal') {
-                        // Les comptes personnels ne voient QUE eux-mêmes
-                        // Même s'ils ont un company_id par erreur, on force le filtrage par ID
-                        query = query.eq('id', authenticatedUser.id);
-                    } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                        // Admin de société voit sa société
-                        query = query.eq('company_id', authenticatedUser.company_id);
-                    }
-                    // Si super admin, voir tout (pas de filtre supplémentaire)
-                }
-                
-                const { data: users, error } = await query;
-
-                if (error) {
-                    console.error('[Analytics] Error loading users:', error);
-                    currentUsers = [];
-                } else {
-                    console.log('[Analytics] Loaded users:', users?.length || 0);
-                    currentUsers = users || [];
-                }
-                
-                // Charger aussi les stats analytics si disponibles
-                await loadUserStats();
-                
-                populateCompanyFilter();
-                filterUsers();
-                updateSummaryFromRealData();
-                
-            } catch (error) {
-                console.error('[Analytics] Failed to load users:', error);
-                currentUsers = [];
-                filterUsers();
-            }
-        }
-
-        // Charger les statistiques des utilisateurs
-        async function loadUserStats() {
-            if (!supabaseClient) return;
-            
-            try {
-                let query = supabaseClient
-                    .from('user_email_stats')
-                    .select('*');
-                
-                // Filtrer selon les permissions
-                if (authenticatedUser) {
-                    if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
-                        // Compte personnel voit seulement ses stats
-                        query = query.eq('email', authenticatedUser.email);
-                    } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                        // Admin de société voit les stats de son domaine
-                        const { data: company } = await supabaseClient
-                            .from('companies')
-                            .select('domain')
-                            .eq('id', authenticatedUser.company_id)
-                            .single();
-                        
-                        if (company && company.domain) {
-                            query = query.eq('domain', company.domain);
-                        }
-                    }
-                }
-                
-                const { data: stats, error } = await query;
-
-                if (!error && stats) {
-                    // Fusionner les stats avec les utilisateurs
-                    currentUsers = currentUsers.map(user => {
-                        const userStats = stats.find(s => s.email === user.email);
-                        return {
-                            ...user,
-                            total_scans: userStats?.total_emails_scanned || 0,
-                            total_sessions: userStats?.total_sessions || 0,
-                            total_errors: userStats?.total_errors || 0
-                        };
-                    });
-                }
-            } catch (error) {
-                console.error('[Analytics] Error loading user stats:', error);
-            }
-        }
-
-        // Mettre à jour le résumé avec les vraies données
-        function updateSummaryFromRealData() {
-            // Utilisateurs actifs
-            const activeUsers = currentUsers.filter(u => 
-                u.license_status === 'active' || u.license_status === 'trial'
-            ).length;
-            document.getElementById('summaryUsers').textContent = activeUsers;
-            
-            // Total des scans
-            const totalScans = currentUsers.reduce((sum, user) => 
-                sum + (user.total_scans || 0), 0
-            );
-            document.getElementById('summaryScans').textContent = totalScans.toLocaleString();
-
-            // Total des erreurs
-            const totalErrors = currentUsers.reduce((sum, user) => 
-                sum + (user.total_errors || 0), 0
-            );
-            document.getElementById('summaryErrors').textContent = totalErrors;
-
-            // Licences actives
-            const activeLicenses = currentUsers.filter(u => 
-                u.license_status === 'active'
-            ).length;
-            document.getElementById('summaryLicenses').textContent = activeLicenses;
-        }
-
-        // Initialiser Supabase
         async function initializeSupabase() {
-            if (supabaseClient) {
-                console.log('[Analytics] Supabase already initialized');
-                return;
-            }
+            if (supabaseClient) return;
 
             if (!window.supabaseConfig) {
                 console.error('[Analytics] Supabase config not loaded');
@@ -2650,7 +1350,6 @@
             }
 
             if (!window.supabase) {
-                // Charger la librairie Supabase
                 await loadSupabaseLibrary();
             }
 
@@ -2669,10 +1368,9 @@
                 }
             );
             
-            console.log('[Analytics] Supabase client initialized');
+            console.log('[Analytics] Supabase initialized');
         }
 
-        // Charger la librairie Supabase
         function loadSupabaseLibrary() {
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
@@ -2683,303 +1381,567 @@
             });
         }
 
-        function populateCompanyFilter() {
-            const companies = [...new Set(currentUsers.map(user => 
-                user.company?.name || user.domain || 'Sans société'
-            ))];
-            const filter = document.getElementById('companyFilter');
+        // === GESTION DE L'AUTHENTIFICATION ===
+        async function handleAuthentication(event) {
+            event.preventDefault();
             
-            // Clear existing options except first one
-            filter.innerHTML = '<option value="">Toutes les sociétés</option>';
+            const email = document.getElementById('authEmail').value.trim();
+            const button = document.getElementById('authButton');
+            const buttonText = document.getElementById('authButtonText');
+            const spinner = document.getElementById('authSpinner');
             
-            companies.forEach(company => {
-                const option = document.createElement('option');
-                option.value = company;
-                option.textContent = company;
-                filter.appendChild(option);
-            });
+            if (!email || !email.includes('@')) {
+                showMessage('Veuillez entrer une adresse email valide');
+                return;
+            }
+            
+            // Afficher le spinner
+            button.disabled = true;
+            buttonText.style.display = 'none';
+            spinner.style.display = 'block';
+            document.getElementById('authMessage').innerHTML = '';
+            
+            try {
+                // Charger les services si nécessaire
+                if (!licenseService) {
+                    await loadLicenseService();
+                }
+                
+                // Initialiser le service
+                if (!licenseService.initialized) {
+                    await licenseService.initialize();
+                }
+                
+                // Authentifier l'utilisateur
+                const result = await licenseService.authenticateWithEmail(email);
+                
+                console.log('[Analytics] Authentication result:', result);
+                
+                if (result.valid) {
+                    // Vérifier si l'utilisateur a besoin de configurer son type de compte
+                    if (!hasAccountTypeSet(result.user)) {
+                        pendingUser = result.user;
+                        showAccountTypeModal();
+                        return;
+                    }
+                    
+                    // Vérifier les permissions d'accès
+                    if (hasAdminAccess(result.user)) {
+                        authenticatedUser = result.user;
+                        licenseService.currentUser = authenticatedUser;
+                        
+                        showMessage('Connexion réussie !', 'success');
+                        
+                        setTimeout(() => {
+                            showAnalytics();
+                        }, 1000);
+                    } else {
+                        showMessage('Accès réservé aux administrateurs');
+                    }
+                } else {
+                    showMessage(result.message || 'Accès non autorisé');
+                }
+                
+            } catch (error) {
+                console.error('[Analytics] Authentication error:', error);
+                showMessage('Erreur de connexion. Veuillez réessayer.');
+            } finally {
+                button.disabled = false;
+                buttonText.style.display = 'block';
+                spinner.style.display = 'none';
+            }
         }
 
-        function filterUsers() {
-            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
-            const statusFilter = document.getElementById('statusFilter').value;
-            const companyFilter = document.getElementById('companyFilter').value;
+        function hasAccountTypeSet(user) {
+            if (user.role === 'super_admin') return true;
+            return user.account_type && user.account_type !== null;
+        }
 
-            filteredUsers = currentUsers.filter(user => {
-                const userName = user.name || user.email.split('@')[0];
-                const companyName = user.company?.name || user.domain || 'Sans société';
+        function hasAdminAccess(user) {
+            if (!user) return false;
+            
+            // Super admin a toujours accès
+            if (user.role === 'super_admin') return true;
+            
+            // Admin de société a accès
+            if (user.role === 'company_admin') return true;
+            
+            // Compte personnel a accès pour gérer sa propre licence
+            if (user.account_type === 'personal') return true;
+            
+            return false;
+        }
+
+        // === GESTION DU TYPE DE COMPTE ===
+        function showAccountTypeModal() {
+            document.getElementById('accountTypeModal').classList.add('active');
+        }
+
+        function selectAccountType(type) {
+            selectedAccountType = type;
+            
+            document.getElementById('personalOption').classList.toggle('selected', type === 'personal');
+            document.getElementById('professionalOption').classList.toggle('selected', type === 'professional');
+            
+            const companyInput = document.getElementById('companyNameInput');
+            if (type === 'professional') {
+                companyInput.classList.add('visible');
+            } else {
+                companyInput.classList.remove('visible');
+            }
+        }
+
+        async function confirmAccountType() {
+            if (!selectedAccountType) {
+                alert('Veuillez sélectionner un type de compte');
+                return;
+            }
+            
+            const companyName = document.getElementById('companyNameInput').value.trim();
+            
+            if (selectedAccountType === 'professional' && !companyName) {
+                alert('Veuillez entrer le nom de votre entreprise');
+                return;
+            }
+            
+            try {
+                const result = await licenseService.setUserAccountType(
+                    pendingUser.id,
+                    selectedAccountType,
+                    companyName || null
+                );
                 
-                const matchesSearch = userName.toLowerCase().includes(searchTerm) || 
-                                    user.email.toLowerCase().includes(searchTerm) ||
-                                    companyName.toLowerCase().includes(searchTerm);
+                if (result.success) {
+                    document.getElementById('accountTypeModal').classList.remove('active');
+                    
+                    // Recharger les informations utilisateur
+                    const refreshResult = await licenseService.authenticateWithEmail(pendingUser.email);
+                    
+                    if (refreshResult.valid && hasAdminAccess(refreshResult.user)) {
+                        authenticatedUser = refreshResult.user;
+                        licenseService.currentUser = authenticatedUser;
+                        showAnalytics();
+                    } else {
+                        showMessage('Configuration terminée. Contactez votre administrateur pour l\'accès aux analytics.');
+                    }
+                } else {
+                    showMessage('Erreur lors de la configuration : ' + result.error);
+                }
+            } catch (error) {
+                console.error('[Analytics] Error setting account type:', error);
+                showMessage('Erreur lors de la configuration du compte');
+            }
+        }
+
+        // === AFFICHAGE PRINCIPAL ===
+        function showAnalytics() {
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('analyticsContainer').classList.add('authenticated');
+            
+            // Mettre à jour les infos utilisateur
+            document.getElementById('currentUserEmail').textContent = authenticatedUser.email;
+            
+            let roleDisplay = authenticatedUser.role.replace('_', ' ');
+            if (authenticatedUser.account_type === 'personal') {
+                roleDisplay = 'Personnel';
+            }
+            document.getElementById('currentUserRole').textContent = roleDisplay;
+            
+            // Charger les données
+            loadOverview();
+            updateLastUpdated();
+            
+            // Sauvegarder la session
+            sessionStorage.setItem('analyticsAuth', JSON.stringify({
+                email: authenticatedUser.email,
+                role: authenticatedUser.role,
+                timestamp: Date.now()
+            }));
+        }
+
+        function logout() {
+            sessionStorage.removeItem('analyticsAuth');
+            
+            authenticatedUser = null;
+            allUsers = [];
+            allStats = [];
+            
+            document.getElementById('analyticsContainer').classList.remove('authenticated');
+            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('authEmail').value = '';
+            document.getElementById('authMessage').innerHTML = '';
+        }
+
+        // === GESTION DES ONGLETS ===
+        function switchTab(tabName) {
+            // Mettre à jour les boutons d'onglets
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+
+            // Mettre à jour le contenu des onglets
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+
+            currentTab = tabName;
+
+            // Charger le contenu selon l'onglet
+            if (tabName === 'overview') {
+                loadOverview();
+            } else if (tabName === 'users') {
+                loadUsers();
+            } else if (tabName === 'licenses') {
+                loadLicenses();
+            }
+        }
+
+        // === CHARGEMENT DES DONNÉES ===
+        async function loadOverview() {
+            try {
+                console.log('[Analytics] Loading overview...');
                 
-                const matchesStatus = !statusFilter || user.license_status === statusFilter;
-                const matchesCompany = !companyFilter || companyName === companyFilter;
+                // Charger les données de base
+                await loadAllData();
+                
+                // Mettre à jour les statistiques de résumé
+                updateSummaryStats();
+                
+                // Masquer le spinner
+                const loadingContainer = document.querySelector('#overviewTab .loading-container');
+                if (loadingContainer) {
+                    loadingContainer.style.display = 'none';
+                }
+                
+                console.log('[Analytics] Overview loaded successfully');
+                
+            } catch (error) {
+                console.error('[Analytics] Error loading overview:', error);
+                
+                const loadingContainer = document.querySelector('#overviewTab .loading-container');
+                if (loadingContainer) {
+                    loadingContainer.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h3>Erreur de chargement</h3>
+                            <p>Impossible de charger les données</p>
+                        </div>
+                    `;
+                }
+            }
+        }
 
-                return matchesSearch && matchesStatus && matchesCompany;
-            });
+        async function loadAllData() {
+            try {
+                if (!supabaseClient) {
+                    await initializeSupabase();
+                }
+                
+                // Construire la requête selon les permissions
+                let query = supabaseClient
+                    .from('users')
+                    .select(`
+                        *,
+                        company:companies(id, name, domain)
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                // Filtrer selon les permissions
+                if (authenticatedUser.account_type === 'personal') {
+                    query = query.eq('id', authenticatedUser.id);
+                } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                    query = query.eq('company_id', authenticatedUser.company_id);
+                }
+                // Si super admin, voir tout (pas de filtre)
+                
+                const { data: users, error } = await query;
+                
+                if (error) {
+                    console.error('[Analytics] Error loading users:', error);
+                    allUsers = [];
+                } else {
+                    allUsers = users || [];
+                }
+                
+                // Charger les statistiques
+                await loadUserStats();
+                
+                console.log('[Analytics] Loaded', allUsers.length, 'users');
+                
+            } catch (error) {
+                console.error('[Analytics] Error loading data:', error);
+                allUsers = [];
+            }
+        }
 
-            renderUsersTable();
+        async function loadUserStats() {
+            if (!supabaseClient) return;
+            
+            try {
+                let query = supabaseClient
+                    .from('user_email_stats')
+                    .select('*');
+                
+                // Filtrer selon les permissions
+                if (authenticatedUser.account_type === 'personal') {
+                    query = query.eq('email', authenticatedUser.email);
+                } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                    // Obtenir le domaine de la société
+                    const { data: company } = await supabaseClient
+                        .from('companies')
+                        .select('domain')
+                        .eq('id', authenticatedUser.company_id)
+                        .single();
+                    
+                    if (company && company.domain) {
+                        query = query.eq('domain', company.domain);
+                    }
+                }
+                
+                const { data: stats, error } = await query;
+                
+                if (!error && stats) {
+                    allStats = stats;
+                    
+                    // Fusionner les stats avec les utilisateurs
+                    allUsers = allUsers.map(user => {
+                        const userStats = stats.find(s => s.email === user.email);
+                        return {
+                            ...user,
+                            total_scans: userStats?.total_emails_scanned || 0,
+                            total_sessions: userStats?.total_sessions || 0,
+                            total_errors: userStats?.total_errors || 0
+                        };
+                    });
+                }
+            } catch (error) {
+                console.error('[Analytics] Error loading stats:', error);
+            }
+        }
+
+        function updateSummaryStats() {
+            // Utilisateurs actifs
+            const activeUsers = allUsers.filter(u => 
+                u.license_status === 'active' || u.license_status === 'trial'
+            ).length;
+            document.getElementById('summaryUsers').textContent = activeUsers;
+            
+            // Total des scans
+            const totalScans = allUsers.reduce((sum, user) => 
+                sum + (user.total_scans || 0), 0
+            );
+            document.getElementById('summaryScans').textContent = totalScans.toLocaleString();
+
+            // Total des erreurs
+            const totalErrors = allUsers.reduce((sum, user) => 
+                sum + (user.total_errors || 0), 0
+            );
+            document.getElementById('summaryErrors').textContent = totalErrors;
+
+            // Licences actives
+            const activeLicenses = allUsers.filter(u => 
+                u.license_status === 'active'
+            ).length;
+            document.getElementById('summaryLicenses').textContent = activeLicenses;
+        }
+
+        async function loadUsers() {
+            try {
+                console.log('[Analytics] Loading users...');
+                
+                // Charger les données si pas déjà fait
+                if (allUsers.length === 0) {
+                    await loadAllData();
+                }
+                
+                renderUsersTable();
+                
+            } catch (error) {
+                console.error('[Analytics] Error loading users:', error);
+                
+                const content = document.getElementById('usersContent');
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Erreur de chargement</h3>
+                        <p>Impossible de charger les utilisateurs</p>
+                    </div>
+                `;
+            }
         }
 
         function renderUsersTable() {
-            const tbody = document.getElementById('usersTableBody');
-            const emptyState = document.getElementById('usersEmptyState');
-
-            if (filteredUsers.length === 0) {
-                tbody.innerHTML = '';
-                emptyState.style.display = 'block';
+            const content = document.getElementById('usersContent');
+            
+            if (allUsers.length === 0) {
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-users"></i>
+                        <h3>Aucun utilisateur</h3>
+                        <p>Aucun utilisateur trouvé</p>
+                    </div>
+                `;
                 return;
             }
+            
+            content.innerHTML = `
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Nom</th>
+                            <th>Société</th>
+                            <th>Statut</th>
+                            <th>Dernière connexion</th>
+                            <th>Scans</th>
+                            <th>Rôle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${allUsers.map(user => `
+                            <tr>
+                                <td>${user.email}</td>
+                                <td>${user.name || 'Non défini'}</td>
+                                <td>${user.company?.name || 'Aucune'}</td>
+                                <td>
+                                    <span class="status-badge ${user.license_status}">
+                                        ${user.license_status || 'trial'}
+                                    </span>
+                                </td>
+                                <td>${formatLastLogin(user.last_login_at)}</td>
+                                <td>${user.total_scans || 0}</td>
+                                <td>${user.role || 'user'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
 
-            emptyState.style.display = 'none';
-
-            tbody.innerHTML = filteredUsers.map(user => {
-                const userName = user.name || user.email.split('@')[0];
-                const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-                const companyName = user.company?.name || user.domain || 'Sans société';
+        async function loadLicenses() {
+            try {
+                console.log('[Analytics] Loading licenses...');
                 
-                // Déterminer le statut de licence
-                const licenseClass = user.license_status === 'active' ? 'active' : 
-                                   user.license_status === 'expired' ? 'expired' : 
-                                   user.license_status === 'blocked' ? 'blocked' :
-                                   'trial';
+                // Charger les données si pas déjà fait
+                if (allUsers.length === 0) {
+                    await loadAllData();
+                }
+                
+                renderLicensesView();
+                
+            } catch (error) {
+                console.error('[Analytics] Error loading licenses:', error);
+                
+                const content = document.getElementById('licensesContent');
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Erreur de chargement</h3>
+                        <p>Impossible de charger les licences</p>
+                    </div>
+                `;
+            }
+        }
 
-                return `
-                    <tr>
-                        <td>
-                            <div class="user-info">
-                                <div class="user-avatar">${initials}</div>
-                                <div class="user-details">
-                                    <h4>${userName}</h4>
-                                    <p>${user.email}</p>
+        function renderLicensesView() {
+            const content = document.getElementById('licensesContent');
+            
+            if (allUsers.length === 0) {
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-key"></i>
+                        <h3>Aucune licence</h3>
+                        <p>Aucune licence trouvée</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Grouper les utilisateurs par société
+            const usersByCompany = {};
+            
+            allUsers.forEach(user => {
+                const companyName = user.company?.name || 'Sans société';
+                if (!usersByCompany[companyName]) {
+                    usersByCompany[companyName] = [];
+                }
+                usersByCompany[companyName].push(user);
+            });
+            
+            // Générer l'affichage
+            let html = '';
+            
+            Object.keys(usersByCompany).forEach(companyName => {
+                const users = usersByCompany[companyName];
+                const activeCount = users.filter(u => u.license_status === 'active').length;
+                const totalCount = users.length;
+                
+                html += `
+                    <div class="company-group">
+                        <div class="company-header">
+                            <div class="company-name">${companyName}</div>
+                            <div class="company-stats">
+                                <div class="company-stat">
+                                    <i class="fas fa-users"></i>
+                                    ${totalCount} utilisateur${totalCount > 1 ? 's' : ''}
+                                </div>
+                                <div class="company-stat">
+                                    <i class="fas fa-check-circle"></i>
+                                    ${activeCount} actif${activeCount > 1 ? 's' : ''}
                                 </div>
                             </div>
-                        </td>
-                        <td>${companyName}</td>
-                        <td><span class="status-badge ${licenseClass}">${user.license_status || 'trial'}</span></td>
-                        <td>${formatLastLogin(user.last_login_at ? new Date(user.last_login_at) : null)}</td>
-                        <td>${user.login_count || 0}</td>
-                        <td>${user.role || 'user'}</td>
-                        <td>
-                            <div class="license-info">
-                                <span class="license-badge ${licenseClass}">
-                                    ${user.license_expires_at ? calculateDaysRemaining(new Date(user.license_expires_at)) : 'Illimitée'}
-                                </span>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="actions-cell">
-                                <button class="action-btn edit" onclick="viewUserDetails('${user.id}')">
-                                    <i class="fas fa-eye"></i> Voir
-                                </button>
-                                ${canManageLicense(user) ? `
-                                    <button class="action-btn license" onclick="manageLicense('${user.id}')">
-                                        <i class="fas fa-key"></i> Licence
-                                    </button>
-                                ` : ''}
-                                ${canDeleteUser(user) ? `
-                                    <button class="action-btn delete" onclick="deleteUser('${user.id}')">
-                                        <i class="fas fa-trash"></i> Supprimer
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </td>
-                    </tr>
+                        </div>
+                        <div class="license-list">
+                            ${users.map(user => `
+                                <div class="license-item">
+                                    <div class="license-info">
+                                        <div class="license-email">${user.email}</div>
+                                        <div class="license-details">
+                                            <span class="status-badge ${user.license_status}">
+                                                ${user.license_status || 'trial'}
+                                            </span>
+                                            ${user.license_expires_at ? 
+                                                `• Expire le ${formatDate(user.license_expires_at)}` : 
+                                                '• Pas de limite'
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="license-actions">
+                                        <button class="license-btn edit" onclick="editLicense('${user.id}')">
+                                            <i class="fas fa-edit"></i>
+                                            Modifier
+                                        </button>
+                                        ${user.license_status !== 'active' ? `
+                                            <button class="license-btn extend" onclick="extendLicense('${user.id}')">
+                                                <i class="fas fa-plus"></i>
+                                                Activer
+                                            </button>
+                                        ` : ''}
+                                        ${user.license_status === 'active' ? `
+                                            <button class="license-btn block" onclick="blockLicense('${user.id}')">
+                                                <i class="fas fa-ban"></i>
+                                                Bloquer
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
                 `;
-            }).join('');
+            });
+            
+            content.innerHTML = html;
         }
 
-        // Vérifier si l'utilisateur peut gérer les licences
-        function canManageLicense(user) {
-            if (!authenticatedUser) return false;
-            
-            // Super admin peut tout gérer
-            if (authenticatedUser.role === 'super_admin') return true;
-            
-            // Admin de société peut gérer sa société
-            if (authenticatedUser.role === 'company_admin' && 
-                authenticatedUser.company_id === user.company_id) return true;
-            
-            // Compte personnel peut gérer sa propre licence
-            if (authenticatedUser.account_type === 'personal' && 
-                authenticatedUser.id === user.id) return true;
-            
-            return false;
-        }
-
-        // Vérifier si l'utilisateur peut supprimer un autre utilisateur
-        function canDeleteUser(user) {
-            if (!authenticatedUser) return false;
-            
-            // On ne peut pas se supprimer soi-même
-            if (authenticatedUser.id === user.id) return false;
-            
-            // Super admin peut supprimer tout le monde sauf lui-même
-            if (authenticatedUser.role === 'super_admin') return true;
-            
-            // Admin de société peut supprimer les utilisateurs de sa société (sauf les super admins)
-            if (authenticatedUser.role === 'company_admin' && 
-                authenticatedUser.company_id === user.company_id &&
-                user.role !== 'super_admin') return true;
-            
-            return false;
-        }
-
-        function formatLastLogin(date) {
-            if (!date) return 'Jamais';
-            
-            const now = new Date();
-            const diff = now - date;
-            const minutes = Math.floor(diff / 60000);
-            const hours = Math.floor(diff / 3600000);
-            const days = Math.floor(diff / 86400000);
-
-            if (minutes < 60) {
-                return `Il y a ${minutes} min`;
-            } else if (hours < 24) {
-                return `Il y a ${hours}h`;
-            } else if (days < 7) {
-                return `Il y a ${days} jour${days > 1 ? 's' : ''}`;
-            } else {
-                return date.toLocaleDateString('fr-FR');
-            }
-        }
-
-        function viewUserDetails(userId) {
-            const user = currentUsers.find(u => u.id === userId);
+        // === GESTION DES LICENCES ===
+        function editLicense(userId) {
+            const user = allUsers.find(u => u.id === userId);
             if (!user) return;
-
-            const userName = user.name || user.email.split('@')[0];
-            document.getElementById('modalTitle').textContent = `Détails - ${userName}`;
             
-            const modalBody = document.getElementById('modalBody');
-            modalBody.innerHTML = `
-                <div class="detail-group">
-                    <h4><i class="fas fa-user"></i> Informations générales</h4>
-                    <div class="detail-grid">
-                        <div class="detail-item">
-                            <label>Nom complet</label>
-                            <value>${userName}</value>
-                        </div>
-                        <div class="detail-item">
-                            <label>Email</label>
-                            <value>${user.email}</value>
-                        </div>
-                        <div class="detail-item">
-                            <label>Société</label>
-                            <value>${user.company?.name || user.domain || 'Non définie'}</value>
-                        </div>
-                        <div class="detail-item">
-                            <label>Rôle</label>
-                            <value>${user.role || 'user'}</value>
-                        </div>
-                        <div class="detail-item">
-                            <label>Type de compte</label>
-                            <value>${user.account_type === 'personal' ? 'Personnel' : 'Professionnel'}</value>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="detail-group">
-                    <h4><i class="fas fa-chart-line"></i> Statistiques d'utilisation</h4>
-                    <div class="detail-grid">
-                        <div class="detail-item">
-                            <label>Première connexion</label>
-                            <value>${user.first_login_at ? new Date(user.first_login_at).toLocaleString('fr-FR') : 'N/A'}</value>
-                        </div>
-                        <div class="detail-item">
-                            <label>Dernière connexion</label>
-                            <value>${user.last_login_at ? new Date(user.last_login_at).toLocaleString('fr-FR') : 'Jamais'}</value>
-                        </div>
-                        <div class="detail-item">
-                            <label>Nombre de connexions</label>
-                            <value>${user.login_count || 0}</value>
-                        </div>
-                        <div class="detail-item">
-                            <label>Scans effectués</label>
-                            <value>${user.total_scans || 0}</value>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="detail-group">
-                    <h4><i class="fas fa-key"></i> Informations licence</h4>
-                    <div class="detail-grid">
-                        <div class="detail-item">
-                            <label>Statut de licence</label>
-                            <value><span class="license-badge ${user.license_status}">${user.license_status || 'trial'}</span></value>
-                        </div>
-                        <div class="detail-item">
-                            <label>Date de création</label>
-                            <value>${new Date(user.created_at).toLocaleDateString('fr-FR')}</value>
-                        </div>
-                        <div class="detail-item">
-                            <label>Date de début</label>
-                            <value>${user.license_starts_at ? new Date(user.license_starts_at).toLocaleDateString('fr-FR') : 'N/A'}</value>
-                        </div>
-                        <div class="detail-item">
-                            <label>Date d'expiration</label>
-                            <value>${user.license_expires_at ? new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 'N/A'}</value>
-                        </div>
-                        <div class="detail-item">
-                            <label>Statut</label>
-                            <value>${user.license_expires_at ? calculateDaysRemaining(new Date(user.license_expires_at)) : 'Illimitée'}</value>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('userModal').classList.add('active');
-        }
-
-        function calculateDaysRemaining(expirationDate) {
-            const now = new Date();
-            const diff = expirationDate - now;
-            const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
-            
-            if (days < 0) {
-                return `Expirée depuis ${Math.abs(days)} jour${Math.abs(days) > 1 ? 's' : ''}`;
-            } else if (days === 0) {
-                return 'Expire aujourd\'hui';
-            } else {
-                return `${days} jour${days > 1 ? 's' : ''}`;
-            }
-        }
-
-        function closeUserModal() {
-            document.getElementById('userModal').classList.remove('active');
-        }
-
-        function manageLicense(userId) {
-            const user = currentUsers.find(u => u.id === userId);
-            if (!user) return;
-
-            // Basculer vers l'onglet licences
-            switchTab('licenses');
-        }
-
-        async function refreshUsers() {
-            console.log('Refreshing users data...');
-            await loadUsers();
-            updateLastUpdated();
-            
-            // Si on est sur l'onglet licences, le recharger aussi
-            if (currentTab === 'licenses') {
-                await loadLicenseManagement();
-            } else if (currentTab === 'billing') {
-                await loadBillingManagement();
-            }
-        }
-
-        // License Edit Modal Functions
-        function openLicenseEditModal(userId) {
-            const user = currentUsers.find(u => u.id === userId);
-            if (!user) return;
-
             document.getElementById('editUserId').value = userId;
+            document.getElementById('editUserEmail').value = user.email;
+            document.getElementById('editLicenseStatus').value = user.license_status || 'trial';
             
-            // Pré-remplir les dates actuelles
+            // Pré-remplir les dates
             const startDate = user.license_starts_at ? 
                 new Date(user.license_starts_at).toISOString().split('T')[0] : 
                 new Date().toISOString().split('T')[0];
@@ -2987,7 +1949,7 @@
             const endDate = user.license_expires_at ? 
                 new Date(user.license_expires_at).toISOString().split('T')[0] : 
                 '';
-
+            
             document.getElementById('editStartDate').value = startDate;
             document.getElementById('editEndDate').value = endDate;
             
@@ -2996,1091 +1958,250 @@
 
         function closeLicenseEditModal() {
             document.getElementById('licenseEditModal').classList.remove('active');
-            document.getElementById('licenseEditForm').reset();
         }
 
-        async function handleLicenseEditSubmit(event) {
+        async function handleLicenseEdit(event) {
             event.preventDefault();
             
             const userId = document.getElementById('editUserId').value;
+            const status = document.getElementById('editLicenseStatus').value;
             const startDate = document.getElementById('editStartDate').value;
             const endDate = document.getElementById('editEndDate').value;
             
-            if (!userId || !startDate || !endDate) {
+            if (!userId || !status || !startDate || !endDate) {
                 alert('Veuillez remplir tous les champs');
                 return;
             }
             
             try {
-                const result = await licenseService.updateUserLicenseDates(userId, startDate, endDate);
+                // Mettre à jour via le service de licence
+                const updateData = {
+                    license_status: status,
+                    license_starts_at: new Date(startDate).toISOString(),
+                    license_expires_at: new Date(endDate).toISOString(),
+                    updated_at: new Date().toISOString()
+                };
                 
-                if (result.success) {
-                    closeLicenseEditModal();
-                    await loadLicenseManagement();
-                    alert('Dates de licence mises à jour avec succès');
-                } else {
-                    alert('Erreur : ' + result.error);
-                }
-            } catch (error) {
-                console.error('[Analytics] Error updating license dates:', error);
-                alert('Erreur lors de la mise à jour des dates');
-            }
-        }
-
-        // License Management Functions - avec permissions
-        async function loadLicenseManagement() {
-            const container = document.getElementById('licenseManagement');
-            
-            if (!window.licenseService || !authenticatedUser) {
-                container.innerHTML = `
-                    <div class="no-permissions">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h3>Service non disponible</h3>
-                        <p>Veuillez vous reconnecter</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // Vérifier que Supabase est initialisé
-            if (!supabaseClient) {
-                await initializeSupabase();
-            }
-
-            let companyUsers = [];
-            
-            try {
-                // Charger les utilisateurs selon les permissions
-                if (authenticatedUser.account_type === 'personal') {
-                    // Compte personnel voit seulement lui-même
-                    // Même s'il a un company_id par erreur, on force le filtrage par ID
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .select(`
-                            *,
-                            company:companies(name)
-                        `)
-                        .eq('id', authenticatedUser.id);
-                    
-                    if (!error) {
-                        companyUsers = data || [];
-                    }
-                } else if (authenticatedUser.role === 'super_admin') {
-                    // Super admin voit tous les utilisateurs
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .select(`
-                            *,
-                            company:companies(name)
-                        `)
-                        .order('created_at', { ascending: false });
-                    
-                    if (!error) {
-                        companyUsers = data || [];
-                    }
-                } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                    // Admin de société voit seulement ses utilisateurs
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .select(`
-                            *,
-                            company:companies(name)
-                        `)
-                        .eq('company_id', authenticatedUser.company_id)
-                        .order('created_at', { ascending: false });
-                    
-                    if (!error) {
-                        companyUsers = data || [];
-                    }
-                }
-            } catch (error) {
-                console.error('[Analytics] Failed to load users for license management:', error);
-            }
-
-            // Calculer les statistiques
-            const stats = {
-                total: companyUsers.length,
-                active: companyUsers.filter(u => u.license_status === 'active').length,
-                trial: companyUsers.filter(u => u.license_status === 'trial').length,
-                expired: companyUsers.filter(u => u.license_status === 'expired').length
-            };
-
-            // Affichage différent pour les comptes personnels
-            if (authenticatedUser.account_type === 'personal') {
-                container.innerHTML = `
-                    <div class="license-header">
-                        <h2>
-                            <i class="fas fa-key"></i>
-                            Ma licence personnelle
-                        </h2>
-                        <button class="refresh-btn" onclick="loadLicenseManagement()">
-                            <i class="fas fa-sync-alt"></i> Actualiser
-                        </button>
-                    </div>
-
-                    ${companyUsers.length > 0 ? `
-                        <div class="company-info">
-                            <h3>Compte personnel</h3>
-                            <p>Email : ${authenticatedUser.email}</p>
-                            <p>Gestion individuelle de votre licence</p>
-                        </div>
-
-                        <div class="license-stats">
-                            <div class="license-stat-card">
-                                <div class="license-stat-value">${companyUsers[0].license_status || 'trial'}</div>
-                                <div class="license-stat-label">Statut actuel</div>
-                            </div>
-                            <div class="license-stat-card">
-                                <div class="license-stat-value">${companyUsers[0].license_expires_at ? calculateDaysRemaining(new Date(companyUsers[0].license_expires_at)) : 'Illimitée'}</div>
-                                <div class="license-stat-label">Validité</div>
-                            </div>
-                            <div class="license-stat-card">
-                                <div class="license-stat-value">${companyUsers[0].login_count || 0}</div>
-                                <div class="license-stat-label">Connexions</div>
-                            </div>
-                            <div class="license-stat-card">
-                                <div class="license-stat-value">${companyUsers[0].total_scans || 0}</div>
-                                <div class="license-stat-label">Scans effectués</div>
-                            </div>
-                        </div>
-
-                        <div style="margin-top: 24px;">
-                            <h4 style="margin-bottom: 16px; color: #1f2937;">Gérer ma licence</h4>
-                            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                                <button class="license-action-btn extend" onclick="extendLicenseOptions('${companyUsers[0].id}')">
-                                    <i class="fas fa-plus"></i> Étendre ma licence
-                                </button>
-                                <button class="license-action-btn edit-dates" onclick="openLicenseEditModal('${companyUsers[0].id}')">
-                                    <i class="fas fa-calendar-alt"></i> Modifier les dates
-                                </button>
-                            </div>
-                        </div>
-                    ` : ''}
-                `;
-                return;
-            }
-
-            // Interface normale pour les admins
-            container.innerHTML = `
-                <div class="license-header">
-                    <h2>
-                        <i class="fas fa-key"></i>
-                        Gestion des licences
-                    </h2>
-                    <button class="refresh-btn" onclick="loadLicenseManagement()">
-                        <i class="fas fa-sync-alt"></i> Actualiser
-                    </button>
-                </div>
-
-                ${authenticatedUser.company_id && companyUsers.length > 0 && companyUsers[0].company ? `
-                    <div class="company-info">
-                        <h3>${companyUsers[0].company.name}</h3>
-                        <p>Administrateur : ${authenticatedUser.name || authenticatedUser.email}</p>
-                    </div>
-                ` : ''}
-
-                <div class="license-stats">
-                    <div class="license-stat-card">
-                        <div class="license-stat-value">${stats.total}</div>
-                        <div class="license-stat-label">Utilisateurs total</div>
-                    </div>
-                    <div class="license-stat-card">
-                        <div class="license-stat-value">${stats.active}</div>
-                        <div class="license-stat-label">Licences actives</div>
-                    </div>
-                    <div class="license-stat-card">
-                        <div class="license-stat-value">${stats.trial}</div>
-                        <div class="license-stat-label">Essais gratuits</div>
-                    </div>
-                    <div class="license-stat-card">
-                        <div class="license-stat-value">${stats.expired}</div>
-                        <div class="license-stat-label">Licences expirées</div>
-                    </div>
-                </div>
-
-                ${authenticatedUser.role === 'company_admin' || authenticatedUser.role === 'super_admin' ? `
-                    <div class="add-user-form">
-                        <input type="email" id="newUserEmail" placeholder="Email du nouvel utilisateur">
-                        <button onclick="addNewUser()">
-                            <i class="fas fa-user-plus"></i> Ajouter un utilisateur
-                        </button>
-                    </div>
-                ` : ''}
-
-                <div class="license-users-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Utilisateur</th>
-                                <th>Email</th>
-                                <th>Statut</th>
-                                <th>Début</th>
-                                <th>Expiration</th>
-                                <th>Dernière connexion</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${companyUsers.map(user => `
-                                <tr>
-                                    <td>${user.name || 'Non défini'}</td>
-                                    <td class="user-email">${user.email}</td>
-                                    <td>
-                                        <span class="license-status ${user.license_status}">
-                                            ${user.license_status}
-                                        </span>
-                                    </td>
-                                    <td>${user.license_starts_at ? new Date(user.license_starts_at).toLocaleDateString('fr-FR') : 'N/A'}</td>
-                                    <td>${user.license_expires_at ? new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 'N/A'}</td>
-                                    <td>${user.last_login_at ? new Date(user.last_login_at).toLocaleDateString('fr-FR') : 'Jamais'}</td>
-                                    <td>
-                                        <div class="license-actions">
-                                            ${user.license_status !== 'active' ? `
-                                                <button class="license-action-btn activate" 
-                                                        onclick="updateUserStatus('${user.id}', 'active')">
-                                                    Activer
-                                                </button>
-                                            ` : ''}
-                                            ${user.license_status === 'active' ? `
-                                                <button class="license-action-btn block" 
-                                                        onclick="updateUserStatus('${user.id}', 'blocked')">
-                                                    Bloquer
-                                                </button>
-                                            ` : ''}
-                                            <button class="license-action-btn extend" 
-                                                    onclick="extendLicenseOptions('${user.id}')">
-                                                <i class="fas fa-plus"></i> Étendre
-                                            </button>
-                                            <button class="license-action-btn edit-dates" 
-                                                    onclick="openLicenseEditModal('${user.id}')">
-                                                <i class="fas fa-calendar-alt"></i> Dates
-                                            </button>
-                                            ${canDeleteUser(user) ? `
-                                                <button class="license-action-btn delete" 
-                                                        onclick="deleteUser('${user.id}')">
-                                                    <i class="fas fa-trash"></i> Supprimer
-                                                </button>
-                                            ` : ''}
-                                        </div>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }
-
-        // License Extension Functions - Version simplifiée
-        function extendLicenseOptions(userId) {
-            const user = currentUsers.find(u => u.id === userId);
-            if (!user) return;
-
-            currentExtensionUserId = userId;
-            
-            // Positionner le dropdown près du bouton cliqué
-            const dropdown = document.getElementById('licenseExtendDropdown');
-            const button = event.target.closest('.license-action-btn');
-            
-            if (button) {
-                const rect = button.getBoundingClientRect();
-                dropdown.style.left = rect.left + 'px';
-                dropdown.style.top = (rect.bottom + 5) + 'px';
-            }
-            
-            // Mettre à jour les prix dans le dropdown
-            updateDropdownPrices();
-            
-            // Afficher le dropdown
-            dropdown.classList.add('active');
-            
-            // Ajouter un écouteur pour fermer le dropdown en cliquant ailleurs
-            setTimeout(() => {
-                document.addEventListener('click', closeDropdownOnClickOutside);
-            }, 100);
-        }
-
-        function updateDropdownPrices() {
-            const options = document.querySelectorAll('.license-extend-dropdown .license-extend-option');
-            options.forEach(option => {
-                const text = option.textContent;
-                if (text.includes('+1 mois')) {
-                    option.innerHTML = `<i class="fas fa-calendar-day"></i> +1 mois (${formatPrice(pricingConfig.monthly)})`;
-                } else if (text.includes('+3 mois')) {
-                    option.innerHTML = `<i class="fas fa-calendar-week"></i> +3 mois (${formatPrice(pricingConfig.monthly * 3)})`;
-                } else if (text.includes('+6 mois')) {
-                    option.innerHTML = `<i class="fas fa-calendar-alt"></i> +6 mois (${formatPrice(pricingConfig.monthly * 6)})`;
-                } else if (text.includes('+1 an')) {
-                    option.innerHTML = `<i class="fas fa-calendar"></i> +1 an (${formatPrice(pricingConfig.yearly * 12)})`;
-                }
-            });
-        }
-
-        function closeDropdownOnClickOutside(event) {
-            const dropdown = document.getElementById('licenseExtendDropdown');
-            if (!dropdown.contains(event.target) && !event.target.closest('.license-action-btn.extend')) {
-                dropdown.classList.remove('active');
-                document.removeEventListener('click', closeDropdownOnClickOutside);
-            }
-        }
-
-        async function extendLicenseBy(months) {
-            if (!currentExtensionUserId) return;
-
-            try {
-                const user = currentUsers.find(u => u.id === currentExtensionUserId);
-                if (!user) throw new Error('Utilisateur non trouvé');
-
-                // Calculer la nouvelle date d'expiration
-                const currentExpiry = user.license_expires_at ? new Date(user.license_expires_at) : new Date();
-                const newExpiry = new Date(currentExpiry);
-                newExpiry.setMonth(newExpiry.getMonth() + months);
-
-                // Initialiser le service de licence
-                if (!window.licenseService.initialized) {
-                    await window.licenseService.initialize();
-                }
-
-                window.licenseService.currentUser = authenticatedUser;
-
-                // Mettre à jour la licence
-                const result = await window.licenseService.updateUserLicense(
-                    currentExtensionUserId, 
-                    'active', 
-                    newExpiry
-                );
-
-                if (result.success) {
-                    // Mettre à jour le cycle de facturation
-                    const billingCycle = months >= 12 ? 'yearly' : 'monthly';
-                    await updateUserBillingCycle(currentExtensionUserId, billingCycle);
-                    
-                    // Fermer le dropdown
-                    document.getElementById('licenseExtendDropdown').classList.remove('active');
-                    
-                    // Recharger les données
-                    await loadLicenseManagement();
-                    
-                    const durationText = months === 1 ? '1 mois' : 
-                                       months === 3 ? '3 mois' : 
-                                       months === 6 ? '6 mois' : 
-                                       months === 12 ? '1 an' : `${months} mois`;
-                    
-                    alert(`Licence étendue de ${durationText} avec succès ! Nouvelle expiration : ${newExpiry.toLocaleDateString('fr-FR')}`);
-                } else {
-                    alert('Erreur : ' + result.error);
-                }
-            } catch (error) {
-                console.error('[Analytics] Error extending license:', error);
-                alert('Erreur lors de l\'extension de la licence');
-            } finally {
-                currentExtensionUserId = null;
-                document.removeEventListener('click', closeDropdownOnClickOutside);
-            }
-        }
-
-        async function updateUserBillingCycle(userId, billingCycle) {
-            try {
                 const { error } = await supabaseClient
                     .from('users')
-                    .update({ 
-                        billing_cycle: billingCycle,
-                        updated_at: new Date().toISOString()
-                    })
+                    .update(updateData)
                     .eq('id', userId);
-
+                
                 if (error) throw error;
-            } catch (error) {
-                console.error('[Analytics] Error updating billing cycle:', error);
-            }
-        }
-
-        // Fonction pour étendre la licence (ancienne version - gardée pour compatibilité)
-        async function extendLicense(userId) {
-            // Rediriger vers le nouveau système
-            extendLicenseOptions(userId);
-        }
-
-        // Fonction pour ajouter un utilisateur
-        async function addNewUser() {
-            const emailInput = document.getElementById('newUserEmail');
-            const email = emailInput.value.trim();
-
-            if (!email || !email.includes('@')) {
-                alert('Veuillez entrer une adresse email valide');
-                return;
-            }
-
-            try {
-                // Initialiser le service de licence s'il n'est pas déjà prêt
-                if (!window.licenseService.initialized) {
-                    await window.licenseService.initialize();
-                }
-
-                // Définir l'utilisateur actuel pour le service
-                window.licenseService.currentUser = authenticatedUser;
-
-                const result = await window.licenseService.addUserToCompany(email);
                 
-                if (result.success) {
-                    emailInput.value = '';
-                    await loadLicenseManagement();
-                    alert('Utilisateur ajouté avec succès');
-                } else {
-                    alert('Erreur : ' + result.error);
-                }
-            } catch (error) {
-                console.error('[Analytics] Error adding user:', error);
-                alert('Erreur lors de l\'ajout de l\'utilisateur');
-            }
-        }
-
-        // Fonction pour mettre à jour le statut
-        async function updateUserStatus(userId, newStatus) {
-            try {
-                // Initialiser le service de licence s'il n'est pas déjà prêt
-                if (!window.licenseService.initialized) {
-                    await window.licenseService.initialize();
-                }
-
-                // Définir l'utilisateur actuel pour le service
-                window.licenseService.currentUser = authenticatedUser;
-
-                const result = await window.licenseService.updateUserLicense(userId, newStatus);
+                closeLicenseEditModal();
                 
-                if (result.success) {
-                    await loadLicenseManagement();
-                    alert('Statut mis à jour avec succès');
-                } else {
-                    alert('Erreur : ' + result.error);
+                // Recharger les données
+                await loadAllData();
+                
+                // Mettre à jour la vue actuelle
+                if (currentTab === 'licenses') {
+                    renderLicensesView();
+                } else if (currentTab === 'users') {
+                    renderUsersTable();
                 }
+                
+                updateSummaryStats();
+                updateLastUpdated();
+                
+                alert('Licence mise à jour avec succès');
+                
             } catch (error) {
-                console.error('[Analytics] Error updating status:', error);
-                alert('Erreur lors de la mise à jour du statut');
+                console.error('[Analytics] Error updating license:', error);
+                alert('Erreur lors de la mise à jour de la licence');
             }
         }
 
-        // Fonction pour étendre la licence
         async function extendLicense(userId) {
             try {
+                const user = allUsers.find(u => u.id === userId);
+                if (!user) return;
+                
+                // Étendre de 30 jours
                 const newExpiry = new Date();
                 newExpiry.setDate(newExpiry.getDate() + 30);
                 
-                // Initialiser le service de licence s'il n'est pas déjà prêt
-                if (!window.licenseService.initialized) {
-                    await window.licenseService.initialize();
-                }
-
-                // Définir l'utilisateur actuel pour le service
-                window.licenseService.currentUser = authenticatedUser;
-
-                const result = await window.licenseService.updateUserLicense(userId, 'active', newExpiry);
+                const updateData = {
+                    license_status: 'active',
+                    license_expires_at: newExpiry.toISOString(),
+                    updated_at: new Date().toISOString()
+                };
                 
-                if (result.success) {
-                    await loadLicenseManagement();
-                    alert('Licence étendue de 30 jours');
-                } else {
-                    alert('Erreur : ' + result.error);
+                // Si pas de date de début, l'ajouter
+                if (!user.license_starts_at) {
+                    updateData.license_starts_at = new Date().toISOString();
                 }
+                
+                const { error } = await supabaseClient
+                    .from('users')
+                    .update(updateData)
+                    .eq('id', userId);
+                
+                if (error) throw error;
+                
+                // Recharger les données
+                await loadAllData();
+                
+                // Mettre à jour la vue actuelle
+                if (currentTab === 'licenses') {
+                    renderLicensesView();
+                } else if (currentTab === 'users') {
+                    renderUsersTable();
+                }
+                
+                updateSummaryStats();
+                updateLastUpdated();
+                
+                alert(`Licence étendue de 30 jours pour ${user.email}`);
+                
             } catch (error) {
                 console.error('[Analytics] Error extending license:', error);
                 alert('Erreur lors de l\'extension de la licence');
             }
         }
 
-        // Fonction pour supprimer un utilisateur
-        async function deleteUser(userId) {
-            const user = currentUsers.find(u => u.id === userId);
-            if (!user) return;
-            
-            const confirmMessage = `Êtes-vous sûr de vouloir supprimer l'utilisateur ${user.email} ?\n\nCette action est irréversible.`;
-            
-            if (!confirm(confirmMessage)) {
-                return;
-            }
-            
+        async function blockLicense(userId) {
             try {
-                // Initialiser le service si nécessaire
-                if (!window.licenseService.initialized) {
-                    await window.licenseService.initialize();
+                const user = allUsers.find(u => u.id === userId);
+                if (!user) return;
+                
+                if (!confirm(`Êtes-vous sûr de vouloir bloquer la licence de ${user.email} ?`)) {
+                    return;
                 }
                 
-                window.licenseService.currentUser = authenticatedUser;
-                
-                const result = await window.licenseService.deleteUser(userId);
-                
-                if (result.success) {
-                    alert('Utilisateur supprimé avec succès');
-                    // Recharger la liste
-                    await refreshUsers();
-                } else {
-                    alert('Erreur : ' + result.error);
-                }
-            } catch (error) {
-                console.error('[Analytics] Error deleting user:', error);
-                alert('Erreur lors de la suppression de l\'utilisateur');
-            }
-        }
-
-        // Billing Management Functions
-        async function loadBillingManagement() {
-            const container = document.getElementById('billingManagement');
-            
-            if (!window.licenseService || !authenticatedUser) {
-                container.innerHTML = `
-                    <div class="no-permissions">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h3>Service non disponible</h3>
-                        <p>Veuillez vous reconnecter</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // Vérifier que Supabase est initialisé
-            if (!supabaseClient) {
-                await initializeSupabase();
-            }
-
-            let billingUsers = [];
-            let isPersonalAccount = authenticatedUser.account_type === 'personal';
-            
-            try {
-                // Charger les utilisateurs selon les permissions (même logique que loadLicenseManagement)
-                if (isPersonalAccount) {
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .select('*, company:companies(name)')
-                        .eq('id', authenticatedUser.id);
-                    
-                    if (!error) {
-                        billingUsers = data || [];
-                    }
-                } else if (authenticatedUser.role === 'super_admin') {
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .select('*, company:companies(name)')
-                        .order('created_at', { ascending: false });
-                    
-                    if (!error) {
-                        billingUsers = data || [];
-                    }
-                } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .select('*, company:companies(name)')
-                        .eq('company_id', authenticatedUser.company_id)
-                        .order('created_at', { ascending: false });
-                    
-                    if (!error) {
-                        billingUsers = data || [];
-                    }
-                }
-            } catch (error) {
-                console.error('[Analytics] Failed to load users for billing:', error);
-            }
-
-            // Calculer les statistiques de facturation
-            const billingStats = calculateBillingStats(billingUsers);
-            
-            // Affichage pour compte personnel
-            if (isPersonalAccount) {
-                container.innerHTML = generatePersonalBillingInterface(billingUsers, billingStats);
-            } else {
-                container.innerHTML = generateCompanyBillingInterface(billingUsers, billingStats);
-            }
-        }
-
-        function calculateBillingStats(users) {
-            const stats = {
-                totalUsers: users.length,
-                activeUsers: users.filter(u => u.license_status === 'active').length,
-                trialUsers: users.filter(u => u.license_status === 'trial').length,
-                monthlyUsers: users.filter(u => u.billing_cycle === 'monthly').length,
-                yearlyUsers: users.filter(u => u.billing_cycle === 'yearly').length,
-                monthlyRevenue: 0,
-                yearlyRevenue: 0,
-                totalRevenue: 0
-            };
-
-            // Calculer les revenus
-            users.forEach(user => {
-                if (user.license_status === 'active') {
-                    if (user.billing_cycle === 'yearly') {
-                        stats.yearlyRevenue += pricingConfig.yearly * 12;
-                    } else {
-                        stats.monthlyRevenue += pricingConfig.monthly;
-                    }
-                }
-            });
-
-            stats.totalRevenue = stats.monthlyRevenue + stats.yearlyRevenue;
-
-            return stats;
-        }
-
-        function generatePersonalBillingInterface(users, stats) {
-            const user = users[0];
-            if (!user) return '<div class="no-permissions"><h3>Aucune donnée disponible</h3></div>';
-
-            const currentPlan = user.billing_cycle || 'monthly';
-            const currentPrice = currentPlan === 'yearly' ? pricingConfig.yearly : pricingConfig.monthly;
-            const currentTotal = currentPlan === 'yearly' ? (currentPrice * 12) : currentPrice;
-
-            return `
-                <div class="billing-header">
-                    <h2>
-                        <i class="fas fa-credit-card"></i>
-                        Ma facturation
-                    </h2>
-                    <button class="refresh-btn" onclick="loadBillingManagement()">
-                        <i class="fas fa-sync-alt"></i> Actualiser
-                    </button>
-                </div>
-
-                <div class="billing-summary">
-                    <h3>Mon abonnement actuel</h3>
-                    <div class="billing-stats">
-                        <div class="billing-stat-card">
-                            <div class="billing-stat-value">${formatPrice(currentPrice)}</div>
-                            <div class="billing-stat-label">Prix ${currentPlan === 'yearly' ? 'mensuel' : 'actuel'}</div>
-                        </div>
-                        <div class="billing-stat-card">
-                            <div class="billing-stat-value">${formatPrice(currentTotal)}</div>
-                            <div class="billing-stat-label">${currentPlan === 'yearly' ? 'Total annuel' : 'Prix mensuel'}</div>
-                        </div>
-                        <div class="billing-stat-card">
-                            <div class="billing-stat-value">${user.license_status || 'trial'}</div>
-                            <div class="billing-stat-label">Statut</div>
-                        </div>
-                        <div class="billing-stat-card">
-                            <div class="billing-stat-value">${user.license_expires_at ? calculateDaysRemaining(new Date(user.license_expires_at)) : 'Illimitée'}</div>
-                            <div class="billing-stat-label">Validité</div>
-                        </div>
-                    </div>
-                </div>
-
-                ${generatePricingSection(true)}
-                ${generateStripeSection()}
-            `;
-        }
-
-        function generateCompanyBillingInterface(users, stats) {
-            return `
-                <div class="billing-header">
-                    <h2>
-                        <i class="fas fa-credit-card"></i>
-                        Facturation et tarifs
-                    </h2>
-                    <button class="refresh-btn" onclick="loadBillingManagement()">
-                        <i class="fas fa-sync-alt"></i> Actualiser
-                    </button>
-                </div>
-
-                <div class="billing-summary">
-                    <h3>Résumé financier</h3>
-                    <div class="billing-stats">
-                        <div class="billing-stat-card">
-                            <div class="billing-stat-value">${stats.totalUsers}</div>
-                            <div class="billing-stat-label">Utilisateurs total</div>
-                        </div>
-                        <div class="billing-stat-card">
-                            <div class="billing-stat-value">${stats.activeUsers}</div>
-                            <div class="billing-stat-label">Licences actives</div>
-                        </div>
-                        <div class="billing-stat-card">
-                            <div class="billing-stat-value">${formatPrice(stats.monthlyRevenue)}</div>
-                            <div class="billing-stat-label">Revenus mensuels</div>
-                        </div>
-                        <div class="billing-stat-card">
-                            <div class="billing-stat-value">${formatPrice(stats.yearlyRevenue)}</div>
-                            <div class="billing-stat-label">Revenus annuels</div>
-                        </div>
-                    </div>
-                </div>
-
-                ${generatePricingSection(false)}
-                ${generateUserBillingTable(users)}
-                ${generateStripeSection()}
-            `;
-        }
-
-        function generatePricingSection(isPersonal) {
-            const monthlyPrice = pricingConfig.monthly;
-            const yearlyPrice = pricingConfig.yearly;
-            const yearlyTotal = yearlyPrice * 12;
-            const monthlyTotal = monthlyPrice * 12;
-            const savings = monthlyTotal - yearlyTotal;
-            const savingsPercent = Math.round((savings / monthlyTotal) * 100);
-
-            return `
-                <div class="pricing-section">
-                    <h3>
-                        <i class="fas fa-tags"></i>
-                        Tarification ${isPersonal ? 'personnelle' : 'et configuration'}
-                    </h3>
-                    
-                    ${!isPersonal ? `
-                        <div class="pricing-config">
-                            <h4>Configuration des tarifs</h4>
-                            <div class="pricing-config-grid">
-                                <div class="pricing-config-item">
-                                    <label>Prix mensuel (€ HT)</label>
-                                    <input type="number" id="monthlyPrice" value="${monthlyPrice}" step="0.01">
-                                </div>
-                                <div class="pricing-config-item">
-                                    <label>Prix annuel (€ HT/mois)</label>
-                                    <input type="number" id="yearlyPrice" value="${yearlyPrice}" step="0.01">
-                                </div>
-                                <div class="pricing-config-item">
-                                    <label>Taux TVA (%)</label>
-                                    <input type="number" id="taxRate" value="${pricingConfig.taxRate * 100}" step="0.1">
-                                </div>
-                            </div>
-                            <button class="save-pricing-btn" onclick="savePricingConfig()">
-                                <i class="fas fa-save"></i> Sauvegarder la configuration
-                            </button>
-                        </div>
-                    ` : ''}
-
-                    <div class="pricing-grid">
-                        <div class="pricing-card">
-                            <div class="pricing-title">Mensuel</div>
-                            <div class="pricing-price">${formatPrice(monthlyPrice)}</div>
-                            <div class="pricing-period">par mois et par utilisateur</div>
-                            <ul class="pricing-features">
-                                <li><i class="fas fa-check"></i> Facturation mensuelle</li>
-                                <li><i class="fas fa-check"></i> Résiliation à tout moment</li>
-                                <li><i class="fas fa-check"></i> Support inclus</li>
-                                <li><i class="fas fa-check"></i> Mises à jour automatiques</li>
-                            </ul>
-                            <button class="pricing-button secondary" onclick="changeBillingCycle('monthly')">
-                                Basculer vers mensuel
-                            </button>
-                        </div>
-                        
-                        <div class="pricing-card popular">
-                            <div class="pricing-title">Annuel</div>
-                            <div class="pricing-price">${formatPrice(yearlyPrice)}</div>
-                            <div class="pricing-period">par mois et par utilisateur</div>
-                            <ul class="pricing-features">
-                                <li><i class="fas fa-check"></i> Facturation annuelle</li>
-                                <li><i class="fas fa-check"></i> Économie de ${savingsPercent}% (${formatPrice(savings)})</li>
-                                <li><i class="fas fa-check"></i> Support prioritaire</li>
-                                <li><i class="fas fa-check"></i> Mises à jour automatiques</li>
-                            </ul>
-                            <button class="pricing-button" onclick="changeBillingCycle('yearly')">
-                                Basculer vers annuel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function generateUserBillingTable(users) {
-            return `
-                <div class="billing-section">
-                    <h3>Détail des licences</h3>
-                    <div class="billing-table">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Utilisateur</th>
-                                    <th>Email</th>
-                                    <th>Statut</th>
-                                    <th>Cycle</th>
-                                    <th>Prix</th>
-                                    <th>Prochaine facture</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${users.map(user => {
-                                    const cycle = user.billing_cycle || 'monthly';
-                                    const price = cycle === 'yearly' ? pricingConfig.yearly : pricingConfig.monthly;
-                                    const nextBilling = calculateNextBilling(user);
-                                    
-                                    return `
-                                        <tr>
-                                            <td>${user.name || 'Non défini'}</td>
-                                            <td>${user.email}</td>
-                                            <td>
-                                                <span class="license-status ${user.license_status}">
-                                                    ${user.license_status || 'trial'}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span class="license-type-badge ${cycle}">
-                                                    ${cycle === 'yearly' ? 'Annuel' : 'Mensuel'}
-                                                </span>
-                                            </td>
-                                            <td>${formatPrice(price)}</td>
-                                            <td>${nextBilling}</td>
-                                            <td>
-                                                <div class="license-pricing-actions">
-                                                    <button class="license-pricing-btn edit" onclick="editUserPricing('${user.id}')">
-                                                        <i class="fas fa-edit"></i> Modifier
-                                                    </button>
-                                                    <button class="license-pricing-btn ${cycle === 'monthly' ? 'yearly' : 'monthly'}" 
-                                                            onclick="toggleUserBilling('${user.id}', '${cycle === 'monthly' ? 'yearly' : 'monthly'}')">
-                                                        ${cycle === 'monthly' ? 'Annuel' : 'Mensuel'}
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    `;
-                                }).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        function generateStripeSection() {
-            return `
-                <div class="stripe-section">
-                    <h3>
-                        <i class="fab fa-stripe"></i>
-                        Intégration Stripe
-                    </h3>
-                    <div class="stripe-status">
-                        <div class="stripe-status-dot"></div>
-                        <span class="stripe-status-text">Prêt pour l'intégration Stripe</span>
-                    </div>
-                    <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 16px;">
-                        Cette section est prête pour l'intégration du module Stripe. 
-                        Toutes les fonctionnalités de facturation et de paiement seront ajoutées ici.
-                    </p>
-                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #4F46E5;">
-                        <h4 style="color: #1f2937; margin-bottom: 8px;">Fonctionnalités Stripe à venir :</h4>
-                        <ul style="color: #6b7280; font-size: 0.875rem;">
-                            <li>• Paiements sécurisés par carte</li>
-                            <li>• Abonnements automatiques</li>
-                            <li>• Gestion des factures</li>
-                            <li>• Webhooks pour les notifications</li>
-                            <li>• Tableau de bord des paiements</li>
-                        </ul>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Fonctions utilitaires pour la facturation
-        function formatPrice(price) {
-            return new Intl.NumberFormat('fr-FR', {
-                style: 'currency',
-                currency: pricingConfig.currency
-            }).format(price);
-        }
-
-        function calculateNextBilling(user) {
-            if (!user.license_expires_at) return 'N/A';
-            
-            const expiryDate = new Date(user.license_expires_at);
-            const now = new Date();
-            
-            if (expiryDate < now) return 'Expiré';
-            
-            return expiryDate.toLocaleDateString('fr-FR');
-        }
-
-        function savePricingConfig() {
-            const monthlyPrice = parseFloat(document.getElementById('monthlyPrice').value);
-            const yearlyPrice = parseFloat(document.getElementById('yearlyPrice').value);
-            const taxRate = parseFloat(document.getElementById('taxRate').value) / 100;
-
-            if (monthlyPrice > 0 && yearlyPrice > 0 && taxRate >= 0) {
-                pricingConfig.monthly = monthlyPrice;
-                pricingConfig.yearly = yearlyPrice;
-                pricingConfig.taxRate = taxRate;
-                
-                // Sauvegarder dans localStorage pour persistence
-                localStorage.setItem('emailsortpro_pricing', JSON.stringify(pricingConfig));
-                
-                // Recharger l'interface
-                loadBillingManagement();
-                
-                alert('Configuration des tarifs sauvegardée avec succès !');
-            } else {
-                alert('Veuillez entrer des valeurs valides pour tous les champs.');
-            }
-        }
-
-        function loadPricingConfig() {
-            const saved = localStorage.getItem('emailsortpro_pricing');
-            if (saved) {
-                try {
-                    pricingConfig = { ...pricingConfig, ...JSON.parse(saved) };
-                } catch (error) {
-                    console.error('Error loading pricing config:', error);
-                }
-            }
-        }
-
-        async function changeBillingCycle(newCycle) {
-            if (!authenticatedUser) return;
-            
-            try {
                 const { error } = await supabaseClient
                     .from('users')
-                    .update({ 
-                        billing_cycle: newCycle,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', authenticatedUser.id);
-
-                if (error) throw error;
-
-                alert(`Cycle de facturation changé vers ${newCycle === 'yearly' ? 'annuel' : 'mensuel'} avec succès !`);
-                loadBillingManagement();
-            } catch (error) {
-                console.error('Error changing billing cycle:', error);
-                alert('Erreur lors du changement de cycle de facturation.');
-            }
-        }
-
-        async function toggleUserBilling(userId, newCycle) {
-            try {
-                const { error } = await supabaseClient
-                    .from('users')
-                    .update({ 
-                        billing_cycle: newCycle,
+                    .update({
+                        license_status: 'blocked',
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', userId);
-
+                
                 if (error) throw error;
-
-                alert(`Cycle de facturation modifié avec succès !`);
-                loadBillingManagement();
+                
+                // Recharger les données
+                await loadAllData();
+                
+                // Mettre à jour la vue actuelle
+                if (currentTab === 'licenses') {
+                    renderLicensesView();
+                } else if (currentTab === 'users') {
+                    renderUsersTable();
+                }
+                
+                updateSummaryStats();
+                updateLastUpdated();
+                
+                alert(`Licence bloquée pour ${user.email}`);
+                
             } catch (error) {
-                console.error('Error toggling user billing:', error);
-                alert('Erreur lors de la modification du cycle de facturation.');
+                console.error('[Analytics] Error blocking license:', error);
+                alert('Erreur lors du blocage de la licence');
             }
         }
 
-        function editUserPricing(userId) {
-            // Cette fonction sera étendue pour permettre l'édition des tarifs personnalisés
-            alert('Fonctionnalité d\'édition des tarifs personnalisés à venir avec l\'intégration Stripe.');
-        }
-
-        // Analytics loading
-        async function loadAnalyticsScript() {
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = './analytics.js';
-                script.onload = () => {
-                    console.log('[Analytics Page] Analytics script loaded successfully');
-                    resolve();
-                };
-                script.onerror = () => {
-                    console.error('[Analytics Page] Failed to load analytics script');
-                    reject(new Error('Failed to load analytics.js'));
-                };
-                document.head.appendChild(script);
+        // === RECHERCHE ET FILTRAGE ===
+        function setupSearch() {
+            const searchInput = document.getElementById('userSearch');
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                filterUsers(searchTerm);
             });
         }
 
-        async function loadAnalytics() {
-            try {
-                console.log('[Analytics Page] Starting analytics load...');
-                
-                if (!window.analyticsManager || !window.analyticsModule) {
-                    console.log('[Analytics Page] Loading analytics script...');
-                    await loadAnalyticsScript();
-                    
-                    let attempts = 0;
-                    while ((!window.analyticsManager || !window.analyticsModule) && attempts < 10) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        attempts++;
-                    }
-                }
-
-                analyticsManager = window.analyticsManager;
-                analyticsModule = window.analyticsModule;
-
-                const data = analyticsManager ? analyticsManager.getAnalyticsData() : {};
-
-                const analyticsContent = document.getElementById('analyticsContent');
-                const pageContent = document.createElement('div');
-                pageContent.id = 'pageContent';
-                analyticsContent.innerHTML = '';
-                analyticsContent.appendChild(pageContent);
-
-                if (analyticsModule) {
-                    analyticsModule.render();
-                }
-
-                document.getElementById('loadingContainer').style.display = 'none';
-                updateLastUpdated();
-
-                console.log('[Analytics Page] ✅ Analytics loaded successfully');
-
-            } catch (error) {
-                console.error('[Analytics Page] ❌ Error loading analytics:', error);
-                document.getElementById('loadingContainer').innerHTML = `
-                    <div style="text-align: center; color: #dc2626;">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 16px;"></i>
-                        <h3>Erreur de chargement</h3>
-                        <p>Impossible de charger les données analytics</p>
-                    </div>
-                `;
-            }
-        }
-
-        function updateLastUpdated() {
-            const now = new Date();
-            document.getElementById('lastUpdated').textContent = now.toLocaleString('fr-FR');
-        }
-
-        // Event listeners
-        document.getElementById('authForm').addEventListener('submit', handleAuthentication);
-        document.getElementById('userSearch').addEventListener('input', filterUsers);
-        document.getElementById('statusFilter').addEventListener('change', filterUsers);
-        document.getElementById('companyFilter').addEventListener('change', filterUsers);
-        document.getElementById('licenseEditForm').addEventListener('submit', handleLicenseEditSubmit);
-
-        // Close modal when clicking outside
-        document.getElementById('userModal').addEventListener('click', (e) => {
-            if (e.target.id === 'userModal') {
-                closeUserModal();
-            }
-        });
-
-        document.getElementById('licenseEditModal').addEventListener('click', (e) => {
-            if (e.target.id === 'licenseEditModal') {
-                closeLicenseEditModal();
-            }
-        });
-
-        document.getElementById('accountTypeModal').addEventListener('click', (e) => {
-            if (e.target.id === 'accountTypeModal') {
-                // Ne pas fermer le modal automatiquement pour forcer le choix
-            }
-        });
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('[Analytics Page] DOM loaded, initializing with authentication...');
+        function filterUsers(searchTerm) {
+            const rows = document.querySelectorAll('.users-table tbody tr');
             
-            // Charger la configuration de prix
-            loadPricingConfig();
+            rows.forEach(row => {
+                const email = row.cells[0].textContent.toLowerCase();
+                const name = row.cells[1].textContent.toLowerCase();
+                const company = row.cells[2].textContent.toLowerCase();
+                
+                const matches = email.includes(searchTerm) || 
+                               name.includes(searchTerm) || 
+                               company.includes(searchTerm);
+                
+                row.style.display = matches ? '' : 'none';
+            });
+        }
+
+        // === VÉRIFICATION DE SESSION ===
+        async function checkSession() {
+            const session = sessionStorage.getItem('analyticsAuth');
+            
+            if (session) {
+                try {
+                    const data = JSON.parse(session);
+                    
+                    // Vérifier que la session n'est pas trop ancienne (24h)
+                    if (Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
+                        // Charger les services
+                        if (!licenseService) {
+                            await loadLicenseService();
+                        }
+                        
+                        // Réauthentifier
+                        const result = await licenseService.authenticateWithEmail(data.email);
+                        
+                        if (result.valid && hasAdminAccess(result.user)) {
+                            // Vérifier si le type de compte est défini
+                            if (!hasAccountTypeSet(result.user)) {
+                                sessionStorage.removeItem('analyticsAuth');
+                                return;
+                            }
+                            
+                            authenticatedUser = result.user;
+                            licenseService.currentUser = authenticatedUser;
+                            showAnalytics();
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.error('[Analytics] Session error:', error);
+                }
+                
+                // Session invalide
+                sessionStorage.removeItem('analyticsAuth');
+            }
+        }
+
+        // === ÉVÉNEMENTS ===
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('[Analytics] DOM loaded, initializing...');
+            
+            // Configurer les événements
+            document.getElementById('authForm').addEventListener('submit', handleAuthentication);
+            document.getElementById('licenseEditForm').addEventListener('submit', handleLicenseEdit);
+            
+            // Configurer la recherche
+            setupSearch();
+            
+            // Fermer les modals en cliquant à l'extérieur
+            document.getElementById('licenseEditModal').addEventListener('click', (e) => {
+                if (e.target.id === 'licenseEditModal') {
+                    closeLicenseEditModal();
+                }
+            });
+            
+            document.getElementById('accountTypeModal').addEventListener('click', (e) => {
+                if (e.target.id === 'accountTypeModal') {
+                    // Ne pas fermer automatiquement pour forcer le choix
+                }
+            });
             
             // Vérifier la session existante
             await checkSession();
+            
+            console.log('[Analytics] ✅ Analytics page initialized completely v6');
         });
 
-        // Debug function
+        // === FONCTION DE DEBUG ===
         window.debugAnalytics = function() {
-            console.log('=== ANALYTICS PAGE DEBUG ===');
+            console.log('=== ANALYTICS DEBUG ===');
             console.log('Authenticated user:', authenticatedUser);
             console.log('Current tab:', currentTab);
-            console.log('Current users:', currentUsers);
-            console.log('Filtered users:', filteredUsers);
-            console.log('Analytics manager:', analyticsManager);
-            console.log('Analytics module:', analyticsModule);
+            console.log('All users:', allUsers);
+            console.log('All stats:', allStats);
             console.log('License service:', licenseService);
             console.log('Supabase client:', supabaseClient);
             
@@ -4089,18 +2210,12 @@
                 userRole: authenticatedUser?.role,
                 userAccountType: authenticatedUser?.account_type,
                 currentTab,
-                usersCount: currentUsers.length,
-                filteredCount: filteredUsers.length,
-                analyticsManager: !!analyticsManager,
-                analyticsModule: !!analyticsModule,
+                usersCount: allUsers.length,
+                statsCount: allStats.length,
                 licenseService: !!licenseService,
-                supabaseClient: !!supabaseClient,
-                realData: currentUsers.length > 0
+                supabaseClient: !!supabaseClient
             };
         };
-
-        console.log('[Analytics Page] ✅ Analytics page with complete authentication and management features initialized v5');
-        console.log('[Analytics Page] Use debugAnalytics() for debug information');
     </script>
 </body>
 </html>
