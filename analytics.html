@@ -139,6 +139,194 @@
             animation: spin 1s linear infinite;
         }
 
+        /* Styles pour l'onboarding */
+        .onboarding-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+            display: none;
+        }
+
+        .onboarding-card {
+            background: white;
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .onboarding-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .onboarding-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+
+        .onboarding-subtitle {
+            color: #6b7280;
+            font-size: 1.125rem;
+        }
+
+        .account-type-selection {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .account-type-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .account-type-card:hover {
+            border-color: #4F46E5;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+        }
+
+        .account-type-card.selected {
+            border-color: #4F46E5;
+            background: #f0f9ff;
+        }
+
+        .account-type-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 2rem;
+        }
+
+        .account-type-icon.pro {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .account-type-icon.individual {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .account-type-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .account-type-description {
+            font-size: 0.875rem;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+        .company-form {
+            display: none;
+            margin-bottom: 24px;
+        }
+
+        .company-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 0.875rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .form-help {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .onboarding-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .btn-secondary {
+            padding: 12px 24px;
+            background: #e5e7eb;
+            color: #374151;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .btn-primary {
+            padding: 12px 24px;
+            background: #4F46E5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         /* Styles existants pour la page analytics */
         .analytics-standalone {
             max-width: 1400px;
@@ -1067,6 +1255,10 @@
             .detail-grid {
                 grid-template-columns: 1fr;
             }
+
+            .account-type-selection {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -1096,6 +1288,62 @@
             </form>
             
             <div id="authMessage"></div>
+        </div>
+    </div>
+
+    <!-- Page d'onboarding -->
+    <div class="onboarding-container" id="onboardingContainer">
+        <div class="onboarding-card">
+            <div class="onboarding-header">
+                <h2 class="onboarding-title">Bienvenue sur EmailSortPro</h2>
+                <p class="onboarding-subtitle">Commençons par configurer votre compte</p>
+            </div>
+
+            <div class="account-type-selection">
+                <div class="account-type-card" id="individualCard" onclick="selectAccountType('individual')">
+                    <div class="account-type-icon individual">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="account-type-name">Particulier</div>
+                    <div class="account-type-description">
+                        Compte personnel pour une utilisation individuelle
+                    </div>
+                </div>
+
+                <div class="account-type-card" id="professionalCard" onclick="selectAccountType('professional')">
+                    <div class="account-type-icon pro">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <div class="account-type-name">Professionnel</div>
+                    <div class="account-type-description">
+                        Compte entreprise avec gestion multi-utilisateurs
+                    </div>
+                </div>
+            </div>
+
+            <div class="company-form" id="companyForm">
+                <div class="form-group">
+                    <label class="form-label" for="companyName">Nom de l'entreprise</label>
+                    <input 
+                        type="text" 
+                        class="form-input" 
+                        id="companyName" 
+                        placeholder="Ex: Acme Corporation"
+                    >
+                    <p class="form-help">Ce nom sera visible par tous les utilisateurs de votre entreprise</p>
+                </div>
+            </div>
+
+            <div class="onboarding-actions">
+                <button class="btn-secondary" onclick="goBackToAuth()">
+                    <i class="fas fa-arrow-left"></i>
+                    Retour
+                </button>
+                <button class="btn-primary" id="onboardingSubmit" onclick="submitOnboarding()" disabled>
+                    <span id="onboardingSubmitText">Continuer</span>
+                    <div class="loading-spinner" id="onboardingSpinner" style="display: none;"></div>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1288,8 +1536,173 @@
         let filteredUsers = [];
         let currentTab = 'overview';
         let authenticatedUser = null;
+        let selectedAccountType = null;
+        let pendingEmail = null;
 
-        // Gestion de l'authentification
+        // Gestion de l'onboarding
+        function selectAccountType(type) {
+            selectedAccountType = type;
+            
+            // Mettre à jour l'UI
+            document.getElementById('individualCard').classList.remove('selected');
+            document.getElementById('professionalCard').classList.remove('selected');
+            document.getElementById(`${type === 'individual' ? 'individual' : 'professional'}Card`).classList.add('selected');
+            
+            // Afficher/cacher le formulaire entreprise
+            const companyForm = document.getElementById('companyForm');
+            if (type === 'professional') {
+                companyForm.classList.add('active');
+                document.getElementById('companyName').focus();
+            } else {
+                companyForm.classList.remove('active');
+                document.getElementById('companyName').value = '';
+            }
+            
+            // Activer le bouton de soumission
+            document.getElementById('onboardingSubmit').disabled = false;
+        }
+
+        async function submitOnboarding() {
+            const button = document.getElementById('onboardingSubmit');
+            const buttonText = document.getElementById('onboardingSubmitText');
+            const spinner = document.getElementById('onboardingSpinner');
+            
+            if (!selectedAccountType || !pendingEmail) {
+                alert('Veuillez sélectionner un type de compte');
+                return;
+            }
+            
+            let companyName = null;
+            if (selectedAccountType === 'professional') {
+                companyName = document.getElementById('companyName').value.trim();
+                if (!companyName) {
+                    alert('Veuillez entrer le nom de votre entreprise');
+                    document.getElementById('companyName').focus();
+                    return;
+                }
+            }
+            
+            // Désactiver le bouton et afficher le spinner
+            button.disabled = true;
+            buttonText.style.display = 'none';
+            spinner.style.display = 'block';
+            
+            try {
+                // Créer le compte avec les informations d'onboarding
+                const result = await createAccountWithType(pendingEmail, selectedAccountType, companyName);
+                
+                if (result.valid) {
+                    authenticatedUser = result.user;
+                    licenseService.currentUser = authenticatedUser;
+                    
+                    // Passer à la page analytics
+                    document.getElementById('onboardingContainer').style.display = 'none';
+                    showAnalytics();
+                } else {
+                    alert(result.message || 'Erreur lors de la création du compte');
+                    goBackToAuth();
+                }
+                
+            } catch (error) {
+                console.error('[Onboarding] Error:', error);
+                alert('Erreur lors de la configuration du compte');
+                goBackToAuth();
+            } finally {
+                button.disabled = false;
+                buttonText.style.display = 'block';
+                spinner.style.display = 'none';
+            }
+        }
+
+        async function createAccountWithType(email, accountType, companyName) {
+            try {
+                if (!licenseService) {
+                    await loadLicenseService();
+                }
+                
+                await initializeSupabase();
+                
+                const name = email.split('@')[0];
+                const domain = email.split('@')[1];
+                
+                let company = null;
+                let role = 'individual';
+                let trialDays = 15;
+                
+                if (accountType === 'professional') {
+                    // Créer la société avec le nom fourni
+                    const { data: newCompany, error: companyError } = await supabaseClient
+                        .from('companies')
+                        .insert({
+                            name: companyName,
+                            domain: domain,
+                            type: 'professional'
+                        })
+                        .select()
+                        .single();
+                    
+                    if (!companyError) {
+                        company = newCompany;
+                        role = 'company_admin'; // Premier utilisateur est admin
+                        trialDays = 30; // 30 jours pour les pros
+                    }
+                } else {
+                    // Compte particulier
+                    role = 'individual';
+                    trialDays = 15; // 15 jours pour les particuliers
+                }
+                
+                // Créer l'utilisateur
+                const createResult = await licenseService.createUserWithTrial({
+                    email: email,
+                    name: name,
+                    trialDays: trialDays,
+                    role: role,
+                    companyId: company ? company.id : null,
+                    accountType: accountType
+                });
+                
+                if (!createResult.success) {
+                    return {
+                        valid: false,
+                        status: 'error',
+                        message: 'Impossible de créer votre compte',
+                        error: createResult.error
+                    };
+                }
+                
+                // Si c'est un admin d'entreprise, mettre à jour domain_usage
+                if (role === 'company_admin' && company) {
+                    await licenseService.updateDomainUsage(domain, company.id, email);
+                }
+                
+                // Retourner le statut de licence
+                return await licenseService.checkLicenseStatus(email);
+                
+            } catch (error) {
+                console.error('[CreateAccount] Error:', error);
+                return {
+                    valid: false,
+                    status: 'error',
+                    message: 'Erreur lors de la création du compte',
+                    error: error.message
+                };
+            }
+        }
+
+        function goBackToAuth() {
+            document.getElementById('onboardingContainer').style.display = 'none';
+            document.getElementById('authContainer').style.display = 'flex';
+            selectedAccountType = null;
+            pendingEmail = null;
+            document.getElementById('companyName').value = '';
+            document.getElementById('individualCard').classList.remove('selected');
+            document.getElementById('professionalCard').classList.remove('selected');
+            document.getElementById('companyForm').classList.remove('active');
+            document.getElementById('onboardingSubmit').disabled = true;
+        }
+
+        // Gestion de l'authentification modifiée
         async function handleAuthentication(event) {
             event.preventDefault();
             
@@ -1319,7 +1732,21 @@
                 // Initialiser Supabase AVANT l'authentification
                 await initializeSupabase();
                 
-                // Authentifier avec l'email
+                // Vérifier si l'utilisateur existe
+                const userExists = await licenseService.checkUserExists(email);
+                
+                if (!userExists) {
+                    // Nouveau utilisateur - afficher l'onboarding
+                    pendingEmail = email;
+                    document.getElementById('authContainer').style.display = 'none';
+                    document.getElementById('onboardingContainer').style.display = 'flex';
+                    button.disabled = false;
+                    buttonText.style.display = 'block';
+                    spinner.style.display = 'none';
+                    return;
+                }
+                
+                // Utilisateur existant - continuer avec l'authentification normale
                 const result = await licenseService.authenticateWithEmail(email);
                 
                 if (result.valid) {
@@ -1375,8 +1802,9 @@
         }
 
         function showAnalytics() {
-            // Cacher la page de connexion
+            // Cacher la page de connexion et l'onboarding
             document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('onboardingContainer').style.display = 'none';
             
             // Afficher la page analytics
             document.getElementById('analyticsContainer').classList.add('authenticated');
@@ -1408,9 +1836,12 @@
             authenticatedUser = null;
             currentUsers = [];
             filteredUsers = [];
+            selectedAccountType = null;
+            pendingEmail = null;
             
             // Retourner à la page de connexion
             document.getElementById('analyticsContainer').classList.remove('authenticated');
+            document.getElementById('onboardingContainer').style.display = 'none';
             document.getElementById('authContainer').style.display = 'flex';
             document.getElementById('authEmail').value = '';
             document.getElementById('authMessage').innerHTML = '';
@@ -1993,13 +2424,13 @@
                 container.innerHTML = `
                     <div class="individual-notice">
                         <i class="fas fa-info-circle"></i>
-                        <p>En tant que particulier, vous ne pouvez gérer que votre propre licence. 
-                        Pour gérer plusieurs utilisateurs, vous devez avoir un compte professionnel.</p>
+                        <p>En tant que particulier, vous gérez uniquement votre propre licence. 
+                        Votre compte est indépendant et n'est rattaché à aucune entreprise.</p>
                     </div>
                     <div class="license-header">
                         <h2>
                             <i class="fas fa-key"></i>
-                            Ma licence
+                            Ma licence personnelle
                         </h2>
                     </div>
                     ${renderIndividualLicense()}
@@ -2173,6 +2604,7 @@
                         <thead>
                             <tr>
                                 <th>Email</th>
+                                <th>Type</th>
                                 <th>Statut</th>
                                 <th>Expiration</th>
                                 <th>Jours restants</th>
@@ -2181,6 +2613,11 @@
                         <tbody>
                             <tr>
                                 <td class="user-email">${user.email}</td>
+                                <td>
+                                    <span class="account-type-badge individual">
+                                        <i class="fas fa-user"></i> Particulier
+                                    </span>
+                                </td>
                                 <td>
                                     <span class="license-status ${user.license_status}">
                                         ${user.license_status}
@@ -2400,7 +2837,7 @@
             };
         };
 
-        console.log('[Analytics Page] ✅ Analytics page v2.0 with Pro/Particulier support initialized');
+        console.log('[Analytics Page] ✅ Analytics page v3.0 with onboarding initialized');
         console.log('[Analytics Page] Use debugAnalytics() for debug information');
     </script>
 </body>
