@@ -225,7 +225,7 @@ class LicenseService {
 
             console.log('[LicenseService] Checking license status for:', email);
             
-            // Récupérer l'utilisateur avec les infos de société
+            // Récupérer l'utilisateur SANS la jointure company pour éviter la récursion
             const { data: user, error } = await this.supabase
                 .from('users')
                 .select(`
@@ -242,8 +242,7 @@ class LicenseService {
                     login_count,
                     created_at,
                     updated_at,
-                    account_type,
-                    company:companies(*)
+                    account_type
                 `)
                 .eq('email', email)
                 .single();
@@ -258,6 +257,21 @@ class LicenseService {
                     };
                 }
                 throw error;
+            }
+
+            // Récupérer la société séparément si nécessaire
+            let company = null;
+            if (user.company_id) {
+                const { data: companyData, error: companyError } = await this.supabase
+                    .from('companies')
+                    .select('*')
+                    .eq('id', user.company_id)
+                    .single();
+                
+                if (!companyError && companyData) {
+                    company = companyData;
+                    user.company = company;
+                }
             }
 
             // Si l'utilisateur n'a pas de type de compte défini
@@ -283,7 +297,7 @@ class LicenseService {
                 is_expired: expiresAt ? expiresAt < now : false,
                 role: user.role,
                 account_type: user.account_type,
-                company: user.company?.name
+                company: company?.name
             });
 
             // Obtenir les infos de contact admin si nécessaire
@@ -367,7 +381,7 @@ class LicenseService {
                 message: message,
                 accountType: user.account_type,
                 isPersonalAccount: user.account_type === 'personal',
-                companyName: user.company?.name
+                companyName: company?.name
             };
 
         } catch (error) {
@@ -807,15 +821,29 @@ class LicenseService {
                 return null;
             }
 
+            // Récupérer l'utilisateur sans jointure
             const { data, error } = await this.supabase
                 .from('users')
-                .select('*, company:companies(*)')
+                .select('*')
                 .eq('email', user.email)
                 .single();
 
             if (error) {
                 console.error('[LicenseService] Error fetching user:', error);
                 return null;
+            }
+
+            // Récupérer la société séparément si nécessaire
+            if (data.company_id) {
+                const { data: companyData, error: companyError } = await this.supabase
+                    .from('companies')
+                    .select('*')
+                    .eq('id', data.company_id)
+                    .single();
+                
+                if (!companyError && companyData) {
+                    data.company = companyData;
+                }
             }
 
             this.currentUser = data;
