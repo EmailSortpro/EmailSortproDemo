@@ -1,5 +1,5 @@
 // LicenceService.js - Service de gestion des licences EmailSortPro
-// Version 5.1 - Avec la méthode deleteUser ajoutée
+// Version 5.2 - Avec validation correcte des types de compte
 
 class LicenseService {
     constructor() {
@@ -19,7 +19,10 @@ class LicenseService {
             'wanadoo.fr', 'bbox.fr', 'hotmail.fr', 'live.fr', 'outlook.fr'
         ];
         
-        console.log('[LicenseService] Service created v5.1');
+        // Types de compte valides (selon la contrainte de la base de données)
+        this.validAccountTypes = ['personal', 'professional'];
+        
+        console.log('[LicenseService] Service created v5.2');
     }
 
     async initialize() {
@@ -92,7 +95,12 @@ class LicenseService {
         return this.personalDomains.includes(domain.toLowerCase());
     }
 
-    // MÉTHODE PRINCIPALE D'AUTHENTIFICATION (celle qui fonctionnait)
+    // Valider le type de compte
+    validateAccountType(accountType) {
+        return this.validAccountTypes.includes(accountType);
+    }
+
+    // MÉTHODE PRINCIPALE D'AUTHENTIFICATION
     async authenticateWithEmail(email) {
         try {
             if (!this.initialized) {
@@ -236,8 +244,20 @@ class LicenseService {
 
     // Méthode séparée pour traiter la licence d'un utilisateur
     processUserLicense(user) {
+        // Vérifier si l'utilisateur est un super admin (pas besoin de type de compte)
+        if (user.role === 'super_admin') {
+            console.log('[LicenseService] Super admin user, no account type needed');
+            return {
+                valid: true,
+                status: user.license_status || 'active',
+                user: user,
+                message: 'Accès super administrateur'
+            };
+        }
+
         // Si l'utilisateur n'a pas de type de compte défini, le signaler
         if (!user.account_type) {
+            console.log('[LicenseService] User needs account type setup');
             return {
                 valid: true,
                 status: 'needs_account_type',
@@ -315,6 +335,11 @@ class LicenseService {
         try {
             console.log('[LicenseService] Setting account type:', { userId, accountType, companyName });
             
+            // Valider le type de compte
+            if (!this.validateAccountType(accountType)) {
+                throw new Error(`Type de compte invalide: ${accountType}. Types valides: ${this.validAccountTypes.join(', ')}`);
+            }
+
             const updateData = {
                 account_type: accountType,
                 updated_at: new Date().toISOString()
@@ -331,7 +356,7 @@ class LicenseService {
                         updateData.company_id = company.id;
                     }
                 }
-            } else {
+            } else if (accountType === 'professional') {
                 // Pour professionnel, déterminer la société basée sur le domaine
                 const { data: userData } = await this.supabase
                     .from('users')
@@ -363,7 +388,10 @@ class LicenseService {
                 .select()
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                console.error('[LicenseService] Database error:', error);
+                throw error;
+            }
 
             console.log('[LicenseService] ✅ Account type set successfully');
             
@@ -387,6 +415,11 @@ class LicenseService {
 
             console.log('[LicenseService] Creating user:', { email, accountType, companyName });
             
+            // Valider le type de compte
+            if (!this.validateAccountType(accountType)) {
+                throw new Error(`Type de compte invalide: ${accountType}`);
+            }
+
             const domain = email.split('@')[1];
             const name = email.split('@')[0];
             
@@ -430,7 +463,7 @@ class LicenseService {
                 role,
                 companyId,
                 trialDays,
-                accountType: accountType || 'professional'
+                accountType: accountType
             });
             
         } catch (error) {
@@ -543,6 +576,11 @@ class LicenseService {
         try {
             console.log('[LicenseService] Creating user with trial:', { email, name, role, companyId, trialDays, accountType });
             
+            // Valider le type de compte
+            if (!this.validateAccountType(accountType)) {
+                throw new Error(`Type de compte invalide: ${accountType}`);
+            }
+
             const startsAt = new Date();
             const expiresAt = new Date();
             expiresAt.setDate(expiresAt.getDate() + trialDays);
@@ -906,7 +944,7 @@ class LicenseService {
         }
     }
 
-    // MÉTHODE DELETEUSER AJOUTÉE
+    // MÉTHODE DELETEUSER
     async deleteUser(userId) {
         try {
             if (!this.initialized) {
@@ -977,6 +1015,7 @@ class LicenseService {
         return {
             initialized: this.initialized,
             hasSupabase: !!this.supabase,
+            validAccountTypes: this.validAccountTypes,
             currentUser: this.currentUser ? {
                 email: this.currentUser.email,
                 status: this.currentUser.license_status,
@@ -993,4 +1032,4 @@ class LicenseService {
 // Créer l'instance globale
 window.licenseService = new LicenseService();
 
-console.log('[LicenseService] ✅ Service loaded v5.1 - With deleteUser method added');
+console.log('[LicenseService] ✅ Service loaded v5.2 - With fixed account type validation');
