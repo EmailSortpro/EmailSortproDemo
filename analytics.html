@@ -1586,11 +1586,18 @@
         function hasAccountTypeBeenSet(user) {
             // Si l'utilisateur est un super admin, il n'a pas besoin de définir le type
             if (user.role === 'super_admin') {
+                console.log('[Analytics] Super admin detected, no account type needed');
                 return true;
             }
             
             // Si account_type est défini et non null, alors c'est fait
-            return user.account_type && user.account_type !== null;
+            const hasType = user.account_type && user.account_type !== null;
+            console.log('[Analytics] Account type check:', {
+                account_type: user.account_type,
+                hasType: hasType
+            });
+            
+            return hasType;
         }
 
         // Confirmer le type de compte
@@ -1688,15 +1695,32 @@
                 // Utiliser la méthode authenticateWithEmail qui fonctionne
                 const result = await licenseService.authenticateWithEmail(email);
                 
+                console.log('[Analytics] Authentication result:', {
+                    valid: result.valid,
+                    status: result.status,
+                    user: result.user ? {
+                        email: result.user.email,
+                        role: result.user.role,
+                        account_type: result.user.account_type
+                    } : null
+                });
+                
                 if (result.valid) {
                     // Vérifier si l'utilisateur a besoin de configurer son type de compte
                     const needsAccountTypeSetup = !hasAccountTypeBeenSet(result.user);
+                    
+                    console.log('[Analytics] Needs account type setup:', needsAccountTypeSetup);
                     
                     if (needsAccountTypeSetup) {
                         console.log('[Analytics] User needs account type setup');
                         
                         // Stocker l'utilisateur temporairement
                         pendingUser = result.user;
+                        
+                        // Cacher le spinner
+                        button.disabled = false;
+                        buttonText.style.display = 'block';
+                        spinner.style.display = 'none';
                         
                         // Afficher le modal de choix du type de compte
                         document.getElementById('accountTypeModal').classList.add('active');
@@ -1718,6 +1742,8 @@
                     
                     // Vérifier les permissions d'accès
                     const hasAccess = checkAdminAccess(result.user);
+                    
+                    console.log('[Analytics] Has admin access:', hasAccess);
                     
                     if (hasAccess) {
                         authenticatedUser = result.user;
@@ -1756,21 +1782,31 @@
         function checkAdminAccess(user) {
             if (!user) return false;
             
+            console.log('[Analytics] Checking admin access for user:', {
+                email: user.email,
+                role: user.role,
+                account_type: user.account_type
+            });
+            
             // Les super admins ont toujours accès
             if (user.role === 'super_admin') {
+                console.log('[Analytics] Super admin access granted');
                 return true;
             }
             
             // Les admins de société ont accès
             if (user.role === 'company_admin') {
+                console.log('[Analytics] Company admin access granted');
                 return true;
             }
             
             // Les comptes personnels ont accès pour gérer leur licence
             if (user.account_type === 'personal') {
+                console.log('[Analytics] Personal account access granted');
                 return true;
             }
             
+            console.log('[Analytics] Access denied');
             return false;
         }
 
