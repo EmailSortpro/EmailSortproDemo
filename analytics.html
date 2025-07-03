@@ -139,192 +139,137 @@
             animation: spin 1s linear infinite;
         }
 
-        /* Styles pour l'onboarding */
-        .onboarding-container {
-            min-height: 100vh;
-            display: flex;
+        /* Modal pour le choix du type de compte */
+        .account-type-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-            display: none;
+            z-index: 10000;
         }
 
-        .onboarding-card {
+        .account-type-modal.active {
+            display: flex;
+        }
+
+        .account-type-card {
             background: white;
-            padding: 48px;
+            padding: 32px;
             border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
             width: 100%;
-            max-width: 600px;
-        }
-
-        .onboarding-header {
+            max-width: 500px;
             text-align: center;
-            margin-bottom: 40px;
         }
 
-        .onboarding-title {
-            font-size: 2rem;
+        .account-type-title {
+            font-size: 1.5rem;
             font-weight: 700;
             color: #1f2937;
             margin-bottom: 12px;
         }
 
-        .onboarding-subtitle {
+        .account-type-subtitle {
             color: #6b7280;
-            font-size: 1.125rem;
+            margin-bottom: 32px;
+            font-size: 1rem;
         }
 
-        .account-type-selection {
+        .account-type-options {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 32px;
+            gap: 16px;
+            margin-bottom: 24px;
         }
 
-        .account-type-card {
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
+        .account-type-option {
+            border: 2px solid #e2e8f0;
             padding: 24px;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s ease;
-            text-align: center;
         }
 
-        .account-type-card:hover {
+        .account-type-option:hover {
             border-color: #4F46E5;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+            background: #f8fafc;
         }
 
-        .account-type-card.selected {
+        .account-type-option.selected {
             border-color: #4F46E5;
-            background: #f0f9ff;
+            background: #f3e8ff;
         }
 
-        .account-type-icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            font-size: 2rem;
+        .account-type-option i {
+            font-size: 2.5rem;
+            color: #4F46E5;
+            margin-bottom: 12px;
         }
 
-        .account-type-icon.pro {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .account-type-icon.individual {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
-        .account-type-name {
-            font-size: 1.25rem;
+        .account-type-option h3 {
+            font-size: 1.125rem;
             font-weight: 600;
             color: #1f2937;
             margin-bottom: 8px;
         }
 
-        .account-type-description {
+        .account-type-option p {
             font-size: 0.875rem;
             color: #6b7280;
-            line-height: 1.5;
         }
 
-        .company-form {
-            display: none;
-            margin-bottom: 24px;
-        }
-
-        .company-form.active {
-            display: block;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 8px;
-            font-size: 0.875rem;
-        }
-
-        .form-input {
+        .company-name-input {
             width: 100%;
             padding: 12px 16px;
             border: 1px solid #d1d5db;
             border-radius: 8px;
             font-size: 1rem;
-            transition: all 0.2s ease;
+            margin-bottom: 24px;
+            display: none;
         }
 
-        .form-input:focus {
-            outline: none;
-            border-color: #4F46E5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        .company-name-input.visible {
+            display: block;
         }
 
-        .form-help {
-            font-size: 0.75rem;
-            color: #6b7280;
-            margin-top: 4px;
-        }
-
-        .onboarding-actions {
+        .account-type-actions {
             display: flex;
             gap: 12px;
-            justify-content: flex-end;
+            justify-content: center;
         }
 
-        .btn-secondary {
+        .account-type-button {
             padding: 12px 24px;
-            background: #e5e7eb;
-            color: #374151;
-            border: none;
             border-radius: 8px;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
+            border: none;
         }
 
-        .btn-secondary:hover {
-            background: #d1d5db;
-        }
-
-        .btn-primary {
-            padding: 12px 24px;
+        .account-type-button.primary {
             background: #4F46E5;
             color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
         }
 
-        .btn-primary:hover {
+        .account-type-button.primary:hover {
             background: #4338ca;
-            transform: translateY(-1px);
         }
 
-        .btn-primary:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-            transform: none;
+        .account-type-button.secondary {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .account-type-button.secondary:hover {
+            background: #e2e8f0;
         }
 
         /* Styles existants pour la page analytics */
@@ -552,8 +497,6 @@
         .summary-icon.errors { background: #fef2f2; color: #dc2626; }
         .summary-icon.activity { background: #fef3c7; color: #d97706; }
         .summary-icon.licenses { background: #f3e8ff; color: #7c3aed; }
-        .summary-icon.pro { background: #dbeafe; color: #1d4ed8; }
-        .summary-icon.individual { background: #fef3c7; color: #d97706; }
 
         .summary-number {
             font-size: 2rem;
@@ -639,29 +582,6 @@
         .refresh-btn:hover {
             background: #4338ca;
             transform: translateY(-1px);
-        }
-
-        /* Account Type Badge */
-        .account-type-badge {
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .account-type-badge.professional {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .account-type-badge.individual {
-            background: #fef3c7;
-            color: #d97706;
         }
 
         /* Users Table */
@@ -809,9 +729,9 @@
             color: #7c3aed;
         }
 
-        .action-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        .action-btn.delete {
+            background: #fee2e2;
+            color: #dc2626;
         }
 
         /* User Details Modal */
@@ -916,6 +836,106 @@
         .detail-item value {
             font-weight: 600;
             color: #1f2937;
+        }
+
+        /* License Edit Modal */
+        .license-edit-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+        }
+
+        .license-edit-modal.active {
+            display: flex;
+        }
+
+        .license-edit-card {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .license-edit-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 24px;
+        }
+
+        .license-edit-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .form-group input[type="date"] {
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .form-group input[type="date"]:focus {
+            outline: none;
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .form-button {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .form-button.primary {
+            background: #4F46E5;
+            color: white;
+        }
+
+        .form-button.primary:hover {
+            background: #4338ca;
+        }
+
+        .form-button.secondary {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .form-button.secondary:hover {
+            background: #e2e8f0;
         }
 
         /* License Management */
@@ -1094,9 +1114,14 @@
             color: #1d4ed8;
         }
 
-        .license-action-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        .license-action-btn.edit-dates {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+
+        .license-action-btn.delete {
+            background: #fee2e2;
+            color: #dc2626;
         }
 
         .company-info {
@@ -1130,24 +1155,124 @@
             margin-bottom: 16px;
         }
 
-        /* Notice pour les particuliers */
-        .individual-notice {
-            background: #fef3c7;
-            color: #92400e;
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 24px;
-            display: flex;
+        /* Modal pour le choix du type de compte */
+        .account-type-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
             align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .account-type-modal.active {
+            display: flex;
+        }
+
+        .account-type-card {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .account-type-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+
+        .account-type-subtitle {
+            color: #6b7280;
+            margin-bottom: 32px;
+            font-size: 1rem;
+        }
+
+        .account-type-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .account-type-option {
+            border: 2px solid #e2e8f0;
+            padding: 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .account-type-option:hover {
+            border-color: #4F46E5;
+            background: #f8fafc;
+        }
+
+        .account-type-option.selected {
+            border-color: #4F46E5;
+            background: #f3e8ff;
+        }
+
+        .account-type-option i {
+            font-size: 2.5rem;
+            color: #4F46E5;
+            margin-bottom: 12px;
+        }
+
+        .account-type-option h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .account-type-option p {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .company-name-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 24px;
+            display: none;
+        }
+
+        .account-type-actions {
+            display: flex;
             gap: 12px;
+            justify-content: center;
         }
 
-        .individual-notice i {
-            font-size: 1.25rem;
-            color: #d97706;
+        .account-type-button {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
         }
 
-        /* Loading & Error States */
+        .account-type-button.primary {
+            background: #4F46E5;
+            color: white;
+        }
+
+        .account-type-button.primary:hover {
+            background: #4338ca;
+        }
         .loading-container {
             display: flex;
             align-items: center;
@@ -1256,7 +1381,7 @@
                 grid-template-columns: 1fr;
             }
 
-            .account-type-selection {
+            .account-type-options {
                 grid-template-columns: 1fr;
             }
         }
@@ -1270,7 +1395,7 @@
                 <i class="fas fa-chart-line"></i>
             </div>
             <h1 class="auth-title">Analytics EmailSortPro</h1>
-            <p class="auth-subtitle">Connectez-vous pour accéder aux analytics</p>
+            <p class="auth-subtitle">Accès réservé aux administrateurs</p>
             
             <form class="auth-form" id="authForm">
                 <input 
@@ -1291,57 +1416,35 @@
         </div>
     </div>
 
-    <!-- Page d'onboarding -->
-    <div class="onboarding-container" id="onboardingContainer">
-        <div class="onboarding-card">
-            <div class="onboarding-header">
-                <h2 class="onboarding-title">Bienvenue sur EmailSortPro</h2>
-                <p class="onboarding-subtitle">Commençons par configurer votre compte</p>
-            </div>
-
-            <div class="account-type-selection">
-                <div class="account-type-card" id="individualCard" onclick="selectAccountType('individual')">
-                    <div class="account-type-icon individual">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="account-type-name">Particulier</div>
-                    <div class="account-type-description">
-                        Compte personnel pour une utilisation individuelle
-                    </div>
+    <!-- Modal pour le choix du type de compte -->
+    <div class="account-type-modal" id="accountTypeModal">
+        <div class="account-type-card">
+            <h2 class="account-type-title">Configuration de votre compte</h2>
+            <p class="account-type-subtitle">Comment souhaitez-vous utiliser EmailSortPro ?</p>
+            
+            <div class="account-type-options">
+                <div class="account-type-option" id="personalOption" onclick="selectAccountType('personal')">
+                    <i class="fas fa-user"></i>
+                    <h3>Personnel</h3>
+                    <p>Pour un usage individuel</p>
                 </div>
-
-                <div class="account-type-card" id="professionalCard" onclick="selectAccountType('professional')">
-                    <div class="account-type-icon pro">
-                        <i class="fas fa-building"></i>
-                    </div>
-                    <div class="account-type-name">Professionnel</div>
-                    <div class="account-type-description">
-                        Compte entreprise avec gestion multi-utilisateurs
-                    </div>
+                <div class="account-type-option" id="professionalOption" onclick="selectAccountType('professional')">
+                    <i class="fas fa-building"></i>
+                    <h3>Professionnel</h3>
+                    <p>Pour votre entreprise</p>
                 </div>
             </div>
-
-            <div class="company-form" id="companyForm">
-                <div class="form-group">
-                    <label class="form-label" for="companyName">Nom de l'entreprise</label>
-                    <input 
-                        type="text" 
-                        class="form-input" 
-                        id="companyName" 
-                        placeholder="Ex: Acme Corporation"
-                    >
-                    <p class="form-help">Ce nom sera visible par tous les utilisateurs de votre entreprise</p>
-                </div>
-            </div>
-
-            <div class="onboarding-actions">
-                <button class="btn-secondary" onclick="goBackToAuth()">
-                    <i class="fas fa-arrow-left"></i>
-                    Retour
-                </button>
-                <button class="btn-primary" id="onboardingSubmit" onclick="submitOnboarding()" disabled>
-                    <span id="onboardingSubmitText">Continuer</span>
-                    <div class="loading-spinner" id="onboardingSpinner" style="display: none;"></div>
+            
+            <input 
+                type="text" 
+                class="company-name-input" 
+                id="companyNameInput" 
+                placeholder="Nom de votre entreprise (optionnel)"
+            >
+            
+            <div class="account-type-actions">
+                <button class="account-type-button primary" id="confirmAccountType" onclick="confirmAccountType()">
+                    Continuer
                 </button>
             </div>
         </div>
@@ -1386,25 +1489,18 @@
                     <div class="summary-label">Utilisateurs actifs</div>
                 </div>
                 <div class="summary-item">
-                    <div class="summary-icon pro">
-                        <i class="fas fa-building"></i>
-                    </div>
-                    <div class="summary-number" id="summaryPro">-</div>
-                    <div class="summary-label">Comptes Pro</div>
-                </div>
-                <div class="summary-item">
-                    <div class="summary-icon individual">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="summary-number" id="summaryIndividual">-</div>
-                    <div class="summary-label">Comptes Particuliers</div>
-                </div>
-                <div class="summary-item">
                     <div class="summary-icon scans">
                         <i class="fas fa-search"></i>
                     </div>
                     <div class="summary-number" id="summaryScans">-</div>
                     <div class="summary-label">Scans effectués</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-icon errors">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="summary-number" id="summaryErrors">-</div>
+                    <div class="summary-label">Erreurs détectées</div>
                 </div>
                 <div class="summary-item">
                     <div class="summary-icon licenses">
@@ -1455,11 +1551,6 @@
                         <option value="expired">Expirés</option>
                         <option value="blocked">Bloqués</option>
                     </select>
-                    <select class="filter-select" id="typeFilter">
-                        <option value="">Tous les types</option>
-                        <option value="professional">Pro (Entreprise)</option>
-                        <option value="individual">Particulier</option>
-                    </select>
                     <select class="filter-select" id="companyFilter">
                         <option value="">Toutes les sociétés</option>
                     </select>
@@ -1474,7 +1565,6 @@
                         <thead>
                             <tr>
                                 <th>Utilisateur</th>
-                                <th>Type</th>
                                 <th>Société</th>
                                 <th>Statut</th>
                                 <th>Dernière connexion</th>
@@ -1526,6 +1616,35 @@
         </div>
     </div>
 
+    <!-- License Edit Modal -->
+    <div class="license-edit-modal" id="licenseEditModal">
+        <div class="license-edit-card">
+            <h2 class="license-edit-title">Modifier les dates de licence</h2>
+            <form class="license-edit-form" id="licenseEditForm">
+                <input type="hidden" id="editUserId">
+                
+                <div class="form-group">
+                    <label for="editStartDate">Date de début</label>
+                    <input type="date" id="editStartDate" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editEndDate">Date d'expiration</label>
+                    <input type="date" id="editEndDate" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="form-button secondary" onclick="closeLicenseEditModal()">
+                        Annuler
+                    </button>
+                    <button type="submit" class="form-button primary">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Global variables
         let analyticsManager = null;
@@ -1536,173 +1655,14 @@
         let filteredUsers = [];
         let currentTab = 'overview';
         let authenticatedUser = null;
-        let selectedAccountType = null;
-        let pendingEmail = null;
 
-        // Gestion de l'onboarding
-        function selectAccountType(type) {
-            selectedAccountType = type;
-            
-            // Mettre à jour l'UI
-            document.getElementById('individualCard').classList.remove('selected');
-            document.getElementById('professionalCard').classList.remove('selected');
-            document.getElementById(`${type === 'individual' ? 'individual' : 'professional'}Card`).classList.add('selected');
-            
-            // Afficher/cacher le formulaire entreprise
-            const companyForm = document.getElementById('companyForm');
-            if (type === 'professional') {
-                companyForm.classList.add('active');
-                document.getElementById('companyName').focus();
-            } else {
-                companyForm.classList.remove('active');
-                document.getElementById('companyName').value = '';
-            }
-            
-            // Activer le bouton de soumission
-            document.getElementById('onboardingSubmit').disabled = false;
+        function showAuthMessage(message, type) {
+            const messageDiv = document.getElementById('authMessage');
+            messageDiv.className = type === 'error' ? 'auth-error' : 'auth-success';
+            messageDiv.textContent = message;
         }
 
-        async function submitOnboarding() {
-            const button = document.getElementById('onboardingSubmit');
-            const buttonText = document.getElementById('onboardingSubmitText');
-            const spinner = document.getElementById('onboardingSpinner');
-            
-            if (!selectedAccountType || !pendingEmail) {
-                alert('Veuillez sélectionner un type de compte');
-                return;
-            }
-            
-            let companyName = null;
-            if (selectedAccountType === 'professional') {
-                companyName = document.getElementById('companyName').value.trim();
-                if (!companyName) {
-                    alert('Veuillez entrer le nom de votre entreprise');
-                    document.getElementById('companyName').focus();
-                    return;
-                }
-            }
-            
-            // Désactiver le bouton et afficher le spinner
-            button.disabled = true;
-            buttonText.style.display = 'none';
-            spinner.style.display = 'block';
-            
-            try {
-                // Créer le compte avec les informations d'onboarding
-                const result = await createAccountWithType(pendingEmail, selectedAccountType, companyName);
-                
-                if (result.valid) {
-                    authenticatedUser = result.user;
-                    licenseService.currentUser = authenticatedUser;
-                    
-                    // Passer à la page analytics
-                    document.getElementById('onboardingContainer').style.display = 'none';
-                    showAnalytics();
-                } else {
-                    alert(result.message || 'Erreur lors de la création du compte');
-                    goBackToAuth();
-                }
-                
-            } catch (error) {
-                console.error('[Onboarding] Error:', error);
-                alert('Erreur lors de la configuration du compte');
-                goBackToAuth();
-            } finally {
-                button.disabled = false;
-                buttonText.style.display = 'block';
-                spinner.style.display = 'none';
-            }
-        }
-
-        async function createAccountWithType(email, accountType, companyName) {
-            try {
-                if (!licenseService) {
-                    await loadLicenseService();
-                }
-                
-                await initializeSupabase();
-                
-                const name = email.split('@')[0];
-                const domain = email.split('@')[1];
-                
-                let company = null;
-                let role = 'individual';
-                let trialDays = 15;
-                
-                if (accountType === 'professional') {
-                    // Créer la société avec le nom fourni
-                    const { data: newCompany, error: companyError } = await supabaseClient
-                        .from('companies')
-                        .insert({
-                            name: companyName,
-                            domain: domain,
-                            type: 'professional'
-                        })
-                        .select()
-                        .single();
-                    
-                    if (!companyError) {
-                        company = newCompany;
-                        role = 'company_admin'; // Premier utilisateur est admin
-                        trialDays = 30; // 30 jours pour les pros
-                    }
-                } else {
-                    // Compte particulier
-                    role = 'individual';
-                    trialDays = 15; // 15 jours pour les particuliers
-                }
-                
-                // Créer l'utilisateur
-                const createResult = await licenseService.createUserWithTrial({
-                    email: email,
-                    name: name,
-                    trialDays: trialDays,
-                    role: role,
-                    companyId: company ? company.id : null,
-                    accountType: accountType
-                });
-                
-                if (!createResult.success) {
-                    return {
-                        valid: false,
-                        status: 'error',
-                        message: 'Impossible de créer votre compte',
-                        error: createResult.error
-                    };
-                }
-                
-                // Si c'est un admin d'entreprise, mettre à jour domain_usage
-                if (role === 'company_admin' && company) {
-                    await licenseService.updateDomainUsage(domain, company.id, email);
-                }
-                
-                // Retourner le statut de licence
-                return await licenseService.checkLicenseStatus(email);
-                
-            } catch (error) {
-                console.error('[CreateAccount] Error:', error);
-                return {
-                    valid: false,
-                    status: 'error',
-                    message: 'Erreur lors de la création du compte',
-                    error: error.message
-                };
-            }
-        }
-
-        function goBackToAuth() {
-            document.getElementById('onboardingContainer').style.display = 'none';
-            document.getElementById('authContainer').style.display = 'flex';
-            selectedAccountType = null;
-            pendingEmail = null;
-            document.getElementById('companyName').value = '';
-            document.getElementById('individualCard').classList.remove('selected');
-            document.getElementById('professionalCard').classList.remove('selected');
-            document.getElementById('companyForm').classList.remove('active');
-            document.getElementById('onboardingSubmit').disabled = true;
-        }
-
-        // Gestion de l'authentification modifiée
+        // Gestion de l'authentification pour la page admin
         async function handleAuthentication(event) {
             event.preventDefault();
             
@@ -1729,46 +1689,23 @@
                     await loadLicenseService();
                 }
                 
-                // Initialiser Supabase AVANT l'authentification
+                // Initialiser Supabase
                 await initializeSupabase();
                 
-                // Vérifier si l'utilisateur existe
-                const userExists = await licenseService.checkUserExists(email);
-                
-                if (!userExists) {
-                    // Nouveau utilisateur - afficher l'onboarding
-                    pendingEmail = email;
-                    document.getElementById('authContainer').style.display = 'none';
-                    document.getElementById('onboardingContainer').style.display = 'flex';
-                    button.disabled = false;
-                    buttonText.style.display = 'block';
-                    spinner.style.display = 'none';
-                    return;
+                // S'assurer que le service est initialisé
+                if (!licenseService.initialized) {
+                    await licenseService.initialize();
                 }
                 
-                // Utilisateur existant - continuer avec l'authentification normale
+                // Utiliser la méthode authenticateWithEmail qui fonctionne
                 const result = await licenseService.authenticateWithEmail(email);
                 
                 if (result.valid) {
-                    // Vérifier les permissions selon le type de compte et le rôle
-                    const user = result.user;
-                    let hasAccess = false;
-                    
-                    if (user.role === 'super_admin') {
-                        // Super admin a toujours accès
-                        hasAccess = true;
-                    } else if (user.role === 'company_admin') {
-                        // Admin d'entreprise a accès
-                        hasAccess = true;
-                    } else if (user.account_type === 'individual' && user.role === 'individual') {
-                        // Particulier a accès limité (seulement son propre compte)
-                        hasAccess = true;
-                    }
+                    // Vérifier les permissions d'accès
+                    const hasAccess = checkAdminAccess(result.user);
                     
                     if (hasAccess) {
-                        authenticatedUser = user;
-                        
-                        // Définir l'utilisateur actuel pour le service
+                        authenticatedUser = result.user;
                         licenseService.currentUser = authenticatedUser;
                         
                         showAuthMessage('Connexion réussie !', 'success');
@@ -1778,10 +1715,15 @@
                             showAnalytics();
                         }, 1000);
                     } else {
-                        showAuthMessage('Accès refusé. Vous n\'avez pas les permissions nécessaires.', 'error');
+                        showAuthMessage('Accès réservé aux administrateurs et comptes personnels', 'error');
                     }
                 } else {
-                    showAuthMessage(result.message || 'Email non autorisé', 'error');
+                    // Si l'utilisateur n'existe pas et c'est la page admin
+                    if (result.status === 'not_found') {
+                        showAuthMessage('Compte non trouvé. Veuillez créer votre compte sur l\'application principale.', 'error');
+                    } else {
+                        showAuthMessage(result.message || 'Accès non autorisé', 'error');
+                    }
                 }
                 
             } catch (error) {
@@ -1795,24 +1737,41 @@
             }
         }
 
-        function showAuthMessage(message, type) {
-            const messageDiv = document.getElementById('authMessage');
-            messageDiv.className = type === 'error' ? 'auth-error' : 'auth-success';
-            messageDiv.textContent = message;
+        // Vérifier les permissions d'accès admin
+        function checkAdminAccess(user) {
+            if (!user) return false;
+            
+            // Les admins ont accès
+            if (user.role === 'company_admin' || user.role === 'super_admin') {
+                return true;
+            }
+            
+            // Les comptes personnels ont accès pour gérer leur licence
+            if (user.account_type === 'personal') {
+                return true;
+            }
+            
+            return false;
         }
 
+        // Plus besoin de ces fonctions pour la création de compte
+        // On garde seulement pour le cas où on voudrait les réutiliser ailleurs
+        
         function showAnalytics() {
-            // Cacher la page de connexion et l'onboarding
+            // Cacher la page de connexion
             document.getElementById('authContainer').style.display = 'none';
-            document.getElementById('onboardingContainer').style.display = 'none';
             
             // Afficher la page analytics
             document.getElementById('analyticsContainer').classList.add('authenticated');
             
             // Mettre à jour les infos utilisateur
             document.getElementById('currentUserEmail').textContent = authenticatedUser.email;
-            const roleDisplay = authenticatedUser.role === 'individual' ? 'Particulier' : 
-                               authenticatedUser.role.replace('_', ' ');
+            
+            // Afficher le rôle approprié
+            let roleDisplay = authenticatedUser.role.replace('_', ' ');
+            if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
+                roleDisplay = 'Personnel';
+            }
             document.getElementById('currentUserRole').textContent = roleDisplay;
             
             // Charger les données
@@ -1823,7 +1782,6 @@
             sessionStorage.setItem('analyticsAuth', JSON.stringify({
                 email: authenticatedUser.email,
                 role: authenticatedUser.role,
-                accountType: authenticatedUser.account_type,
                 timestamp: Date.now()
             }));
         }
@@ -1836,12 +1794,9 @@
             authenticatedUser = null;
             currentUsers = [];
             filteredUsers = [];
-            selectedAccountType = null;
-            pendingEmail = null;
             
             // Retourner à la page de connexion
             document.getElementById('analyticsContainer').classList.remove('authenticated');
-            document.getElementById('onboardingContainer').style.display = 'none';
             document.getElementById('authContainer').style.display = 'flex';
             document.getElementById('authEmail').value = '';
             document.getElementById('authMessage').innerHTML = '';
@@ -1864,10 +1819,10 @@
                         
                         await initializeSupabase();
                         
-                        // Recharger l'utilisateur
+                        // Recharger l'utilisateur avec authenticateWithEmail
                         const result = await licenseService.authenticateWithEmail(data.email);
                         
-                        if (result.valid) {
+                        if (result.valid && checkAdminAccess(result.user)) {
                             authenticatedUser = result.user;
                             licenseService.currentUser = authenticatedUser;
                             showAnalytics();
@@ -1945,37 +1900,30 @@
                         email,
                         name,
                         role,
-                        account_type,
                         license_status,
                         license_expires_at,
+                        license_starts_at,
                         company_id,
                         first_login_at,
                         last_login_at,
                         login_count,
                         created_at,
                         updated_at,
+                        account_type,
                         company:companies(id, name, domain)
                     `)
                     .order('created_at', { ascending: false });
                 
-                // Appliquer les filtres selon les permissions
+                // Filtrage selon les permissions
                 if (authenticatedUser) {
-                    if (authenticatedUser.role === 'super_admin') {
-                        // Super admin voit tout, pas de filtre
-                        console.log('[Analytics] Super admin access - showing all users');
+                    if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
+                        // Les comptes personnels ne voient qu'eux-mêmes
+                        query = query.eq('id', authenticatedUser.id);
                     } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                        // Admin d'entreprise voit seulement sa société
-                        console.log('[Analytics] Company admin access - filtering by company:', authenticatedUser.company_id);
+                        // Admin de société voit sa société
                         query = query.eq('company_id', authenticatedUser.company_id);
-                    } else if (authenticatedUser.account_type === 'individual') {
-                        // Particulier voit seulement son compte
-                        console.log('[Analytics] Individual access - showing only own account');
-                        query = query.eq('id', authenticatedUser.id);
-                    } else {
-                        // Utilisateur normal d'entreprise voit seulement son compte
-                        console.log('[Analytics] Regular user access - showing only own account');
-                        query = query.eq('id', authenticatedUser.id);
                     }
+                    // Si super admin, voir tout (pas de filtre supplémentaire)
                 }
                 
                 const { data: users, error } = await query;
@@ -2013,10 +1961,11 @@
                 
                 // Filtrer selon les permissions
                 if (authenticatedUser) {
-                    if (authenticatedUser.role === 'super_admin') {
-                        // Pas de filtre
+                    if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
+                        // Compte personnel voit seulement ses stats
+                        query = query.eq('email', authenticatedUser.email);
                     } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                        // Récupérer le domaine de la société
+                        // Admin de société voit les stats de son domaine
                         const { data: company } = await supabaseClient
                             .from('companies')
                             .select('domain')
@@ -2026,9 +1975,6 @@
                         if (company && company.domain) {
                             query = query.eq('domain', company.domain);
                         }
-                    } else {
-                        // Particulier ou utilisateur normal - seulement ses propres stats
-                        query = query.eq('email', authenticatedUser.email);
                     }
                 }
                 
@@ -2059,19 +2005,17 @@
             ).length;
             document.getElementById('summaryUsers').textContent = activeUsers;
             
-            // Comptes Pro
-            const proUsers = currentUsers.filter(u => u.account_type === 'professional').length;
-            document.getElementById('summaryPro').textContent = proUsers;
-            
-            // Comptes Particuliers
-            const individualUsers = currentUsers.filter(u => u.account_type === 'individual' || !u.account_type).length;
-            document.getElementById('summaryIndividual').textContent = individualUsers;
-            
             // Total des scans
             const totalScans = currentUsers.reduce((sum, user) => 
                 sum + (user.total_scans || 0), 0
             );
             document.getElementById('summaryScans').textContent = totalScans.toLocaleString();
+
+            // Total des erreurs
+            const totalErrors = currentUsers.reduce((sum, user) => 
+                sum + (user.total_errors || 0), 0
+            );
+            document.getElementById('summaryErrors').textContent = totalErrors;
 
             // Licences actives
             const activeLicenses = currentUsers.filter(u => 
@@ -2127,10 +2071,9 @@
         }
 
         function populateCompanyFilter() {
-            const companies = [...new Set(currentUsers
-                .filter(user => user.company && user.account_type === 'professional')
-                .map(user => user.company.name)
-            )];
+            const companies = [...new Set(currentUsers.map(user => 
+                user.company?.name || user.domain || 'Sans société'
+            ))];
             const filter = document.getElementById('companyFilter');
             
             // Clear existing options except first one
@@ -2147,24 +2090,20 @@
         function filterUsers() {
             const searchTerm = document.getElementById('userSearch').value.toLowerCase();
             const statusFilter = document.getElementById('statusFilter').value;
-            const typeFilter = document.getElementById('typeFilter').value;
             const companyFilter = document.getElementById('companyFilter').value;
 
             filteredUsers = currentUsers.filter(user => {
                 const userName = user.name || user.email.split('@')[0];
-                const companyName = user.company?.name || 'Particulier';
-                const accountType = user.account_type || 'individual';
+                const companyName = user.company?.name || user.domain || 'Sans société';
                 
                 const matchesSearch = userName.toLowerCase().includes(searchTerm) || 
                                     user.email.toLowerCase().includes(searchTerm) ||
                                     companyName.toLowerCase().includes(searchTerm);
                 
                 const matchesStatus = !statusFilter || user.license_status === statusFilter;
-                const matchesType = !typeFilter || accountType === typeFilter;
-                const matchesCompany = !companyFilter || 
-                                     (user.company && user.company.name === companyFilter);
+                const matchesCompany = !companyFilter || companyName === companyFilter;
 
-                return matchesSearch && matchesStatus && matchesType && matchesCompany;
+                return matchesSearch && matchesStatus && matchesCompany;
             });
 
             renderUsersTable();
@@ -2185,8 +2124,7 @@
             tbody.innerHTML = filteredUsers.map(user => {
                 const userName = user.name || user.email.split('@')[0];
                 const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-                const companyName = user.company?.name || '-';
-                const accountType = user.account_type || 'individual';
+                const companyName = user.company?.name || user.domain || 'Sans société';
                 
                 // Déterminer le statut de licence
                 const licenseClass = user.license_status === 'active' ? 'active' : 
@@ -2196,6 +2134,7 @@
 
                 // Déterminer si l'utilisateur est actif
                 const lastLogin = user.last_login_at ? new Date(user.last_login_at) : null;
+                const isActive = lastLogin && (new Date() - lastLogin) < 7 * 24 * 60 * 60 * 1000; // 7 jours
 
                 return `
                     <tr>
@@ -2207,12 +2146,6 @@
                                     <p>${user.email}</p>
                                 </div>
                             </div>
-                        </td>
-                        <td>
-                            <span class="account-type-badge ${accountType}">
-                                <i class="fas fa-${accountType === 'professional' ? 'building' : 'user'}"></i>
-                                ${accountType === 'professional' ? 'Pro' : 'Particulier'}
-                            </span>
                         </td>
                         <td>${companyName}</td>
                         <td><span class="status-badge ${licenseClass}">${user.license_status || 'trial'}</span></td>
@@ -2231,9 +2164,14 @@
                                 <button class="action-btn edit" onclick="viewUserDetails('${user.id}')">
                                     <i class="fas fa-eye"></i> Voir
                                 </button>
-                                ${canManageUser(user) ? `
+                                ${canManageLicense(user) ? `
                                     <button class="action-btn license" onclick="manageLicense('${user.id}')">
                                         <i class="fas fa-key"></i> Licence
+                                    </button>
+                                ` : ''}
+                                ${canDeleteUser(user) ? `
+                                    <button class="action-btn delete" onclick="deleteUser('${user.id}')">
+                                        <i class="fas fa-trash"></i> Supprimer
                                     </button>
                                 ` : ''}
                             </div>
@@ -2243,20 +2181,39 @@
             }).join('');
         }
 
-        function canManageUser(targetUser) {
+        // Vérifier si l'utilisateur peut gérer les licences
+        function canManageLicense(user) {
             if (!authenticatedUser) return false;
             
             // Super admin peut tout gérer
             if (authenticatedUser.role === 'super_admin') return true;
             
-            // Admin d'entreprise peut gérer les utilisateurs de sa société
+            // Admin de société peut gérer sa société
             if (authenticatedUser.role === 'company_admin' && 
-                authenticatedUser.company_id && 
-                targetUser.company_id === authenticatedUser.company_id) {
-                return true;
-            }
+                authenticatedUser.company_id === user.company_id) return true;
             
-            // Les particuliers et utilisateurs normaux ne peuvent rien gérer
+            // Compte personnel peut gérer sa propre licence
+            if (authenticatedUser.account_type === 'personal' && 
+                authenticatedUser.id === user.id) return true;
+            
+            return false;
+        }
+
+        // Vérifier si l'utilisateur peut supprimer un autre utilisateur
+        function canDeleteUser(user) {
+            if (!authenticatedUser) return false;
+            
+            // On ne peut pas se supprimer soi-même
+            if (authenticatedUser.id === user.id) return false;
+            
+            // Super admin peut supprimer tout le monde sauf lui-même
+            if (authenticatedUser.role === 'super_admin') return true;
+            
+            // Admin de société peut supprimer les utilisateurs de sa société (sauf les super admins)
+            if (authenticatedUser.role === 'company_admin' && 
+                authenticatedUser.company_id === user.company_id &&
+                user.role !== 'super_admin') return true;
+            
             return false;
         }
 
@@ -2301,20 +2258,16 @@
                             <value>${user.email}</value>
                         </div>
                         <div class="detail-item">
-                            <label>Type de compte</label>
-                            <value>
-                                <span class="account-type-badge ${user.account_type || 'individual'}">
-                                    ${user.account_type === 'professional' ? 'Pro' : 'Particulier'}
-                                </span>
-                            </value>
-                        </div>
-                        <div class="detail-item">
                             <label>Société</label>
-                            <value>${user.company?.name || 'Aucune (Particulier)'}</value>
+                            <value>${user.company?.name || user.domain || 'Non définie'}</value>
                         </div>
                         <div class="detail-item">
                             <label>Rôle</label>
                             <value>${user.role || 'user'}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Type de compte</label>
+                            <value>${user.account_type === 'personal' ? 'Personnel' : 'Professionnel'}</value>
                         </div>
                     </div>
                 </div>
@@ -2351,6 +2304,10 @@
                         <div class="detail-item">
                             <label>Date de création</label>
                             <value>${new Date(user.created_at).toLocaleDateString('fr-FR')}</value>
+                        </div>
+                        <div class="detail-item">
+                            <label>Date de début</label>
+                            <value>${user.license_starts_at ? new Date(user.license_starts_at).toLocaleDateString('fr-FR') : 'N/A'}</value>
                         </div>
                         <div class="detail-item">
                             <label>Date d'expiration</label>
@@ -2397,6 +2354,66 @@
             console.log('Refreshing users data...');
             await loadUsers();
             updateLastUpdated();
+            
+            // Si on est sur l'onglet licences, le recharger aussi
+            if (currentTab === 'licenses') {
+                await loadLicenseManagement();
+            }
+        }
+
+        // License Edit Modal Functions
+        function openLicenseEditModal(userId) {
+            const user = currentUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            document.getElementById('editUserId').value = userId;
+            
+            // Pré-remplir les dates actuelles
+            const startDate = user.license_starts_at ? 
+                new Date(user.license_starts_at).toISOString().split('T')[0] : 
+                new Date().toISOString().split('T')[0];
+            
+            const endDate = user.license_expires_at ? 
+                new Date(user.license_expires_at).toISOString().split('T')[0] : 
+                '';
+
+            document.getElementById('editStartDate').value = startDate;
+            document.getElementById('editEndDate').value = endDate;
+            
+            document.getElementById('licenseEditModal').classList.add('active');
+        }
+
+        function closeLicenseEditModal() {
+            document.getElementById('licenseEditModal').classList.remove('active');
+            document.getElementById('licenseEditForm').reset();
+        }
+
+        async function handleLicenseEditSubmit(event) {
+            event.preventDefault();
+            
+            const userId = document.getElementById('editUserId').value;
+            const startDate = document.getElementById('editStartDate').value;
+            const endDate = document.getElementById('editEndDate').value;
+            
+            if (!userId || !startDate || !endDate) {
+                alert('Veuillez remplir tous les champs');
+                return;
+            }
+            
+            try {
+                const result = await licenseService.updateUserLicenseDates(userId, startDate, endDate);
+                
+                if (result.success) {
+                    closeLicenseEditModal();
+                    await loadLicenseManagement();
+                    alert('Dates de licence mises à jour avec succès');
+                } else {
+                    alert('Erreur : ' + result.error);
+                }
+            } catch (error) {
+                console.error('[Analytics] Error updating license dates:', error);
+                alert('Erreur lors de la mise à jour des dates');
+            }
         }
 
         // License Management Functions - avec permissions
@@ -2419,30 +2436,24 @@
                 await initializeSupabase();
             }
 
-            // Notice pour les particuliers
-            if (authenticatedUser.account_type === 'individual') {
-                container.innerHTML = `
-                    <div class="individual-notice">
-                        <i class="fas fa-info-circle"></i>
-                        <p>En tant que particulier, vous gérez uniquement votre propre licence. 
-                        Votre compte est indépendant et n'est rattaché à aucune entreprise.</p>
-                    </div>
-                    <div class="license-header">
-                        <h2>
-                            <i class="fas fa-key"></i>
-                            Ma licence personnelle
-                        </h2>
-                    </div>
-                    ${renderIndividualLicense()}
-                `;
-                return;
-            }
-
             let companyUsers = [];
             
             try {
                 // Charger les utilisateurs selon les permissions
-                if (authenticatedUser.role === 'super_admin') {
+                if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
+                    // Compte personnel voit seulement lui-même
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .select(`
+                            *,
+                            company:companies(name)
+                        `)
+                        .eq('id', authenticatedUser.id);
+                    
+                    if (!error) {
+                        companyUsers = data || [];
+                    }
+                } else if (authenticatedUser.role === 'super_admin') {
                     // Super admin voit tous les utilisateurs
                     const { data, error } = await supabaseClient
                         .from('users')
@@ -2452,9 +2463,7 @@
                         `)
                         .order('created_at', { ascending: false });
                     
-                    if (error) {
-                        console.error('[Analytics] Error loading all users:', error);
-                    } else {
+                    if (!error) {
                         companyUsers = data || [];
                     }
                 } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
@@ -2468,9 +2477,7 @@
                         .eq('company_id', authenticatedUser.company_id)
                         .order('created_at', { ascending: false });
                     
-                    if (error) {
-                        console.error('[Analytics] Error loading company users:', error);
-                    } else {
+                    if (!error) {
                         companyUsers = data || [];
                     }
                 }
@@ -2483,11 +2490,44 @@
                 total: companyUsers.length,
                 active: companyUsers.filter(u => u.license_status === 'active').length,
                 trial: companyUsers.filter(u => u.license_status === 'trial').length,
-                expired: companyUsers.filter(u => u.license_status === 'expired').length,
-                pro: companyUsers.filter(u => u.account_type === 'professional').length,
-                individual: companyUsers.filter(u => u.account_type === 'individual' || !u.account_type).length
+                expired: companyUsers.filter(u => u.license_status === 'expired').length
             };
 
+            // Affichage différent pour les comptes personnels
+            if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
+                container.innerHTML = `
+                    <div class="license-header">
+                        <h2>
+                            <i class="fas fa-key"></i>
+                            Ma licence
+                        </h2>
+                        <button class="refresh-btn" onclick="loadLicenseManagement()">
+                            <i class="fas fa-sync-alt"></i> Actualiser
+                        </button>
+                    </div>
+
+                    ${companyUsers.length > 0 ? `
+                        <div class="company-info">
+                            <h3>Compte personnel</h3>
+                            <p>Email : ${authenticatedUser.email}</p>
+                        </div>
+
+                        <div class="license-stats">
+                            <div class="license-stat-card">
+                                <div class="license-stat-value">${companyUsers[0].license_status || 'trial'}</div>
+                                <div class="license-stat-label">Statut actuel</div>
+                            </div>
+                            <div class="license-stat-card">
+                                <div class="license-stat-value">${companyUsers[0].license_expires_at ? calculateDaysRemaining(new Date(companyUsers[0].license_expires_at)) : 'Illimitée'}</div>
+                                <div class="license-stat-label">Validité</div>
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+                return;
+            }
+
+            // Interface normale pour les admins
             container.innerHTML = `
                 <div class="license-header">
                     <h2>
@@ -2520,18 +2560,14 @@
                         <div class="license-stat-label">Essais gratuits</div>
                     </div>
                     <div class="license-stat-card">
-                        <div class="license-stat-value">${stats.pro}</div>
-                        <div class="license-stat-label">Comptes Pro</div>
-                    </div>
-                    <div class="license-stat-card">
-                        <div class="license-stat-value">${stats.individual}</div>
-                        <div class="license-stat-label">Particuliers</div>
+                        <div class="license-stat-value">${stats.expired}</div>
+                        <div class="license-stat-label">Licences expirées</div>
                     </div>
                 </div>
 
-                ${authenticatedUser.role === 'company_admin' ? `
+                ${authenticatedUser.role === 'company_admin' || authenticatedUser.role === 'super_admin' ? `
                     <div class="add-user-form">
-                        <input type="email" id="newUserEmail" placeholder="Email du nouvel utilisateur (même domaine)">
+                        <input type="email" id="newUserEmail" placeholder="Email du nouvel utilisateur">
                         <button onclick="addNewUser()">
                             <i class="fas fa-user-plus"></i> Ajouter un utilisateur
                         </button>
@@ -2544,8 +2580,8 @@
                             <tr>
                                 <th>Utilisateur</th>
                                 <th>Email</th>
-                                <th>Type</th>
                                 <th>Statut</th>
+                                <th>Début</th>
                                 <th>Expiration</th>
                                 <th>Dernière connexion</th>
                                 <th>Actions</th>
@@ -2557,15 +2593,11 @@
                                     <td>${user.name || 'Non défini'}</td>
                                     <td class="user-email">${user.email}</td>
                                     <td>
-                                        <span class="account-type-badge ${user.account_type || 'individual'}">
-                                            ${user.account_type === 'professional' ? 'Pro' : 'Particulier'}
-                                        </span>
-                                    </td>
-                                    <td>
                                         <span class="license-status ${user.license_status}">
                                             ${user.license_status}
                                         </span>
                                     </td>
+                                    <td>${user.license_starts_at ? new Date(user.license_starts_at).toLocaleDateString('fr-FR') : 'N/A'}</td>
                                     <td>${user.license_expires_at ? new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 'N/A'}</td>
                                     <td>${user.last_login_at ? new Date(user.last_login_at).toLocaleDateString('fr-FR') : 'Jamais'}</td>
                                     <td>
@@ -2586,46 +2618,20 @@
                                                     onclick="extendLicense('${user.id}')">
                                                 +30 jours
                                             </button>
+                                            <button class="license-action-btn edit-dates" 
+                                                    onclick="openLicenseEditModal('${user.id}')">
+                                                <i class="fas fa-calendar-alt"></i> Dates
+                                            </button>
+                                            ${canDeleteUser(user) ? `
+                                                <button class="license-action-btn delete" 
+                                                        onclick="deleteUser('${user.id}')">
+                                                    <i class="fas fa-trash"></i> Supprimer
+                                                </button>
+                                            ` : ''}
                                         </div>
                                     </td>
                                 </tr>
                             `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }
-
-        function renderIndividualLicense() {
-            const user = authenticatedUser;
-            return `
-                <div class="license-users-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Email</th>
-                                <th>Type</th>
-                                <th>Statut</th>
-                                <th>Expiration</th>
-                                <th>Jours restants</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="user-email">${user.email}</td>
-                                <td>
-                                    <span class="account-type-badge individual">
-                                        <i class="fas fa-user"></i> Particulier
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="license-status ${user.license_status}">
-                                        ${user.license_status}
-                                    </span>
-                                </td>
-                                <td>${user.license_expires_at ? new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 'N/A'}</td>
-                                <td>${user.license_expires_at ? calculateDaysRemaining(new Date(user.license_expires_at)) : 'Illimitée'}</td>
-                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -2719,6 +2725,40 @@
             }
         }
 
+        // Fonction pour supprimer un utilisateur
+        async function deleteUser(userId) {
+            const user = currentUsers.find(u => u.id === userId);
+            if (!user) return;
+            
+            const confirmMessage = `Êtes-vous sûr de vouloir supprimer l'utilisateur ${user.email} ?\n\nCette action est irréversible.`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            try {
+                // Initialiser le service si nécessaire
+                if (!window.licenseService.initialized) {
+                    await window.licenseService.initialize();
+                }
+                
+                window.licenseService.currentUser = authenticatedUser;
+                
+                const result = await window.licenseService.deleteUser(userId);
+                
+                if (result.success) {
+                    alert('Utilisateur supprimé avec succès');
+                    // Recharger la liste
+                    await refreshUsers();
+                } else {
+                    alert('Erreur : ' + result.error);
+                }
+            } catch (error) {
+                console.error('[Analytics] Error deleting user:', error);
+                alert('Erreur lors de la suppression de l\'utilisateur');
+            }
+        }
+
         // Analytics loading (existing functionality)
         async function loadAnalyticsScript() {
             return new Promise((resolve, reject) => {
@@ -2792,13 +2832,19 @@
         document.getElementById('authForm').addEventListener('submit', handleAuthentication);
         document.getElementById('userSearch').addEventListener('input', filterUsers);
         document.getElementById('statusFilter').addEventListener('change', filterUsers);
-        document.getElementById('typeFilter').addEventListener('change', filterUsers);
         document.getElementById('companyFilter').addEventListener('change', filterUsers);
+        document.getElementById('licenseEditForm').addEventListener('submit', handleLicenseEditSubmit);
 
         // Close modal when clicking outside
         document.getElementById('userModal').addEventListener('click', (e) => {
             if (e.target.id === 'userModal') {
                 closeUserModal();
+            }
+        });
+
+        document.getElementById('licenseEditModal').addEventListener('click', (e) => {
+            if (e.target.id === 'licenseEditModal') {
+                closeLicenseEditModal();
             }
         });
 
@@ -2825,7 +2871,7 @@
             return {
                 authenticated: !!authenticatedUser,
                 userRole: authenticatedUser?.role,
-                userType: authenticatedUser?.account_type,
+                userAccountType: authenticatedUser?.account_type,
                 currentTab,
                 usersCount: currentUsers.length,
                 filteredCount: filteredUsers.length,
@@ -2837,7 +2883,7 @@
             };
         };
 
-        console.log('[Analytics Page] ✅ Analytics page v3.0 with onboarding initialized');
+        console.log('[Analytics Page] ✅ Analytics page with authentication and permissions initialized v2');
         console.log('[Analytics Page] Use debugAnalytics() for debug information');
     </script>
 </body>
