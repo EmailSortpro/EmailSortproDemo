@@ -1,5 +1,5 @@
 // LicenceService.js - Service de gestion des licences EmailSortPro
-// Version 5.0 - Basé sur la version fonctionnelle avec support personnel/professionnel
+// Version 5.1 - Avec la méthode deleteUser ajoutée
 
 class LicenseService {
     constructor() {
@@ -19,7 +19,7 @@ class LicenseService {
             'wanadoo.fr', 'bbox.fr', 'hotmail.fr', 'live.fr', 'outlook.fr'
         ];
         
-        console.log('[LicenseService] Service created v5.0');
+        console.log('[LicenseService] Service created v5.1');
     }
 
     async initialize() {
@@ -378,6 +378,7 @@ class LicenseService {
             return { success: false, error: error.message };
         }
     }
+
     async createUserWithAccountType(email, accountType, companyName = null) {
         try {
             if (!this.initialized) {
@@ -905,10 +906,15 @@ class LicenseService {
         }
     }
 
+    // MÉTHODE DELETEUSER AJOUTÉE
     async deleteUser(userId) {
         try {
-            const currentUser = await this.getCurrentUser();
-            if (!this.isAdmin()) {
+            if (!this.initialized) {
+                await this.initialize();
+            }
+
+            const currentUser = this.currentUser || await this.getCurrentUser();
+            if (!currentUser || !this.isAdmin()) {
                 return { success: false, error: 'Droits insuffisants' };
             }
 
@@ -950,6 +956,7 @@ class LicenseService {
             return { success: false, error: error.message };
         }
     }
+
     clearCache() {
         this.cachedLicenseStatus = null;
         this.cacheExpiry = null;
@@ -986,4 +993,4 @@ class LicenseService {
 // Créer l'instance globale
 window.licenseService = new LicenseService();
 
-console.log('[LicenseService] ✅ Service loaded v5.0 - Based on working version with personal/professional support');
+console.log('[LicenseService] ✅ Service loaded v5.1 - With deleteUser method added');
