@@ -469,6 +469,12 @@ class LicenseService {
             this.cachedLicenseStatus = null;
             this.cacheExpiry = null;
             
+            // Si c'est un compte personnel, nettoyer les associations de société incorrectes
+            if (accountType === 'personal' && data.company_id) {
+                console.log('[LicenseService] Cleaning up personal account company association...');
+                await this.cleanupPersonalAccount(userId);
+            }
+            
             return { success: true, user: data };
 
         } catch (error) {
@@ -1062,6 +1068,30 @@ class LicenseService {
         } catch (error) {
             console.error('[LicenseService] Error deleting user:', error);
             return { success: false, error: error.message };
+        }
+    }
+
+    // Nettoyer un compte personnel mal configuré
+    async cleanupPersonalAccount(userId) {
+        try {
+            console.log('[LicenseService] Cleaning up personal account...');
+            
+            // Supprimer l'association avec la société
+            const { error } = await this.supabase
+                .from('users')
+                .update({
+                    company_id: null,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', userId);
+
+            if (error) {
+                console.error('[LicenseService] Error cleaning personal account:', error);
+            } else {
+                console.log('[LicenseService] ✅ Personal account cleaned up');
+            }
+        } catch (error) {
+            console.error('[LicenseService] Error in cleanupPersonalAccount:', error);
         }
     }
 
