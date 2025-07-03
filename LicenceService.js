@@ -189,7 +189,7 @@ class LicenseService {
 
             console.log('[LicenseService] Checking license status for:', email);
             
-            // Option 1: Essayer d'abord avec RPC si disponible
+            // Option 1: Essayer d'abord avec RPC si disponible (mais gérer l'erreur 404)
             try {
                 const { data: rpcData, error: rpcError } = await this.supabase
                     .rpc('check_user_by_email', { user_email: email });
@@ -199,8 +199,14 @@ class LicenseService {
                     const user = rpcData[0];
                     return this.processUserLicense(user);
                 }
+                
+                // Si RPC retourne une erreur mais pas 404, la propager
+                if (rpcError && !rpcError.message.includes('404') && !rpcError.code === 'PGRST202') {
+                    console.warn('[LicenseService] RPC error (non-404):', rpcError);
+                }
             } catch (rpcErr) {
-                console.log('[LicenseService] RPC not available, trying direct query');
+                // RPC non disponible ou erreur réseau - continuer avec requête directe
+                console.log('[LicenseService] RPC not available, using direct query');
             }
             
             // Option 2: Requête directe simplifiée
@@ -360,7 +366,7 @@ class LicenseService {
                 // Pour professionnel, déterminer la société basée sur le domaine
                 const { data: userData } = await this.supabase
                     .from('users')
-                    .select('email')
+                    .select('email, role')
                     .eq('id', userId)
                     .single();
                 
@@ -371,11 +377,12 @@ class LicenseService {
                     if (company) {
                         updateData.company_id = company.id;
                         
-                        // Vérifier si c'est le premier utilisateur
+                        // Vérifier si c'est le premier utilisateur OU s'il était déjà admin
                         const isFirst = await this.isFirstUserOfCompany(company.id);
-                        if (isFirst) {
+                        if (isFirst || userData.role === 'company_admin') {
                             updateData.role = 'company_admin';
                         }
+                        // Sinon, garder le rôle actuel (user)
                     }
                 }
             }
