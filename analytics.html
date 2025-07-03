@@ -1664,6 +1664,12 @@
                             authenticatedUser = refreshResult.user;
                             licenseService.currentUser = authenticatedUser;
                             
+                            // Si c'est un compte personnel, s'assurer qu'il n'a pas de company_id
+                            if (authenticatedUser.account_type === 'personal' && authenticatedUser.company_id) {
+                                console.log('[Analytics] Cleaning up personal account company association...');
+                                await cleanupPersonalAccount(authenticatedUser.id);
+                            }
+                            
                             // Afficher analytics
                             showAnalytics();
                         } else {
@@ -1950,6 +1956,23 @@
             }
         }
 
+        // Nettoyer un compte personnel mal configuré
+        async function cleanupPersonalAccount(userId) {
+            try {
+                await supabaseClient
+                    .from('users')
+                    .update({
+                        company_id: null,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId);
+                    
+                console.log('[Analytics] Personal account cleaned up');
+            } catch (error) {
+                console.error('[Analytics] Error cleaning personal account:', error);
+            }
+        }
+
         // Charger le service de licence
         async function loadLicenseService() {
             // Charger la configuration Supabase d'abord
@@ -2028,8 +2051,9 @@
                 
                 // Filtrage selon les permissions
                 if (authenticatedUser) {
-                    if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
-                        // Les comptes personnels ne voient qu'eux-mêmes
+                    if (authenticatedUser.account_type === 'personal') {
+                        // Les comptes personnels ne voient QUE eux-mêmes
+                        // Même s'ils ont un company_id par erreur, on force le filtrage par ID
                         query = query.eq('id', authenticatedUser.id);
                     } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
                         // Admin de société voit sa société
@@ -2548,8 +2572,9 @@
             
             try {
                 // Charger les utilisateurs selon les permissions
-                if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
+                if (authenticatedUser.account_type === 'personal') {
                     // Compte personnel voit seulement lui-même
+                    // Même s'il a un company_id par erreur, on force le filtrage par ID
                     const { data, error } = await supabaseClient
                         .from('users')
                         .select(`
@@ -2602,12 +2627,12 @@
             };
 
             // Affichage différent pour les comptes personnels
-            if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
+            if (authenticatedUser.account_type === 'personal') {
                 container.innerHTML = `
                     <div class="license-header">
                         <h2>
                             <i class="fas fa-key"></i>
-                            Ma licence
+                            Ma licence personnelle
                         </h2>
                         <button class="refresh-btn" onclick="loadLicenseManagement()">
                             <i class="fas fa-sync-alt"></i> Actualiser
@@ -2618,6 +2643,7 @@
                         <div class="company-info">
                             <h3>Compte personnel</h3>
                             <p>Email : ${authenticatedUser.email}</p>
+                            <p>Gestion individuelle de votre licence</p>
                         </div>
 
                         <div class="license-stats">
@@ -2628,6 +2654,14 @@
                             <div class="license-stat-card">
                                 <div class="license-stat-value">${companyUsers[0].license_expires_at ? calculateDaysRemaining(new Date(companyUsers[0].license_expires_at)) : 'Illimitée'}</div>
                                 <div class="license-stat-label">Validité</div>
+                            </div>
+                            <div class="license-stat-card">
+                                <div class="license-stat-value">${companyUsers[0].login_count || 0}</div>
+                                <div class="license-stat-label">Connexions</div>
+                            </div>
+                            <div class="license-stat-card">
+                                <div class="license-stat-value">${companyUsers[0].total_scans || 0}</div>
+                                <div class="license-stat-label">Scans effectués</div>
                             </div>
                         </div>
                     ` : ''}
