@@ -1301,19 +1301,19 @@
     <!-- Modal pour le choix du type de compte -->
     <div class="account-type-modal" id="accountTypeModal">
         <div class="account-type-card">
-            <h2 class="account-type-title">Configuration de votre compte</h2>
-            <p class="account-type-subtitle">Comment souhaitez-vous utiliser EmailSortPro ?</p>
+            <h2 class="account-type-title">Configuration de votre accès Analytics</h2>
+            <p class="account-type-subtitle">Pour accéder aux analytics, vous devez configurer votre type d'accès</p>
             
             <div class="account-type-options">
                 <div class="account-type-option" id="personalOption" onclick="selectAccountType('personal')">
                     <i class="fas fa-user"></i>
                     <h3>Personnel</h3>
-                    <p>Pour un usage individuel</p>
+                    <p>Gérer votre licence personnelle</p>
                 </div>
                 <div class="account-type-option" id="professionalOption" onclick="selectAccountType('professional')">
                     <i class="fas fa-building"></i>
                     <h3>Professionnel</h3>
-                    <p>Pour votre entreprise</p>
+                    <p>Gérer les licences de votre entreprise</p>
                 </div>
             </div>
             
@@ -1321,12 +1321,12 @@
                 type="text" 
                 class="company-name-input" 
                 id="companyNameInput" 
-                placeholder="Nom de votre entreprise (optionnel)"
+                placeholder="Nom de votre entreprise"
             >
             
             <div class="account-type-actions">
                 <button class="account-type-button primary" id="confirmAccountType" onclick="confirmAccountType()">
-                    Continuer
+                    Configurer l'accès
                 </button>
             </div>
         </div>
@@ -1647,20 +1647,28 @@
                 const result = await licenseService.authenticateWithEmail(email);
                 
                 if (result.valid) {
-                    // Vérifier si le type de compte est défini
-                    if (result.status === 'needs_account_type' || !result.user.account_type) {
+                    // Pour Analytics, vérifier si l'utilisateur a besoin de configurer son accès admin
+                    const needsAdminSetup = (result.status === 'needs_account_type' || !result.user.account_type) ||
+                                          (result.user.role === 'user' && !checkAdminAccess(result.user));
+                    
+                    if (needsAdminSetup) {
                         // Stocker l'utilisateur temporairement
                         pendingUser = result.user;
                         
                         // Afficher le modal de choix du type de compte
                         document.getElementById('accountTypeModal').classList.add('active');
                         
-                        // Réinitialiser le formulaire
-                        selectedAccountType = null;
-                        document.getElementById('personalOption').classList.remove('selected');
-                        document.getElementById('professionalOption').classList.remove('selected');
-                        document.getElementById('companyNameInput').value = '';
-                        document.getElementById('companyNameInput').classList.remove('visible');
+                        // Pré-sélectionner si déjà un type
+                        if (result.user.account_type) {
+                            selectAccountType(result.user.account_type);
+                        } else {
+                            // Réinitialiser le formulaire
+                            selectedAccountType = null;
+                            document.getElementById('personalOption').classList.remove('selected');
+                            document.getElementById('professionalOption').classList.remove('selected');
+                            document.getElementById('companyNameInput').value = '';
+                            document.getElementById('companyNameInput').classList.remove('visible');
+                        }
                         
                         return;
                     }
@@ -1679,7 +1687,7 @@
                             showAnalytics();
                         }, 1000);
                     } else {
-                        showAuthMessage('Accès réservé aux administrateurs et comptes personnels', 'error');
+                        showAuthMessage('Accès réservé aux administrateurs', 'error');
                     }
                 } else {
                     // Si l'utilisateur n'existe pas et c'est la page admin
@@ -2857,4 +2865,4 @@
         console.log('[Analytics Page] Use debugAnalytics() for debug information');
     </script>
 </body>
-</html>
+</html>v
