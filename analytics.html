@@ -1806,7 +1806,13 @@
                 return true;
             }
             
-            console.log('[Analytics] Access denied');
+            // Les utilisateurs professionnels actifs ont accès aux analytics de base
+            if (user.account_type === 'professional' && user.license_status === 'active') {
+                console.log('[Analytics] Professional user access granted');
+                return true;
+            }
+            
+            console.log('[Analytics] Access denied - User needs to be: super_admin, company_admin, personal account, or active professional');
             return false;
         }
 
