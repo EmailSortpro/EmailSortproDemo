@@ -127,11 +127,66 @@ class LicenseService {
                 }
             }
 
-            // Vérifier si l'utilisateur existe
-            const userExists = await this.checkUserExists(email);
+            // Essayer d'abord la méthode RPC si disponible
+            let userInfo = await this.checkUserByEmail(email);
             
-            if (!userExists) {
-                // L'utilisateur n'existe pas, retourner un statut approprié
+            // Si RPC n'est pas disponible, essayer directement checkLicenseStatus
+            if (!userInfo) {
+                console.log('[LicenseService] RPC not available, trying direct check');
+                const licenseStatus = await this.checkLicenseStatus(email);
+                
+                // Si l'utilisateur n'existe pas
+                if (licenseStatus.status === 'not_found') {
+                    const accountType = this.determineAccountType(email);
+                    
+                    return {
+                        valid: false,
+                        status: 'not_found',
+                        message: 'Compte utilisateur non trouvé',
+                        needsRegistration: true,
+                        suggestedAccountType: accountType,
+                        isPersonalEmail: accountType === 'personal'
+                    };
+                }
+                
+                // Si erreur RLS
+                if (licenseStatus.status === 'error' && licenseStatus.error === 'RLS recursion error') {
+                    console.log('[LicenseService] RLS error detected, suggesting registration');
+                    const accountType = this.determineAccountType(email);
+                    
+                    return {
+                        valid: false,
+                        status: 'rls_error',
+                        message: 'Impossible de vérifier votre compte. Veuillez créer un nouveau compte ou contacter l\'administrateur.',
+                        needsRegistration: true,
+                        suggestedAccountType: accountType,
+                        isPersonalEmail: accountType === 'personal'
+                    };
+                }
+                
+                return licenseStatus;
+            }
+            
+            // Si l'utilisateur existe via RPC
+            if (userInfo.exists) {
+                const user = userInfo.user;
+                
+                // Construire le statut de licence à partir des données RPC
+                const licenseStatus = await this.buildLicenseStatusFromUser(user);
+                
+                // Mettre en cache si valide
+                if (licenseStatus.valid) {
+                    this.cachedLicenseStatus = licenseStatus;
+                    this.cacheExpiry = new Date(Date.now() + 60 * 60 * 1000);
+                    this.currentUser = licenseStatus.user;
+                    
+                    // Mettre à jour la dernière connexion
+                    await this.updateLastLogin(user.id);
+                }
+                
+                return licenseStatus;
+            } else {
+                // L'utilisateur n'existe pas
                 const accountType = this.determineAccountType(email);
                 
                 return {
@@ -143,33 +198,6 @@ class LicenseService {
                     isPersonalEmail: accountType === 'personal'
                 };
             }
-
-            // Vérifier le statut de la licence
-            const licenseStatus = await this.checkLicenseStatus(email);
-            
-            // Si l'utilisateur existe mais n'a pas de type de compte défini
-            if (licenseStatus.status === 'needs_account_type') {
-                const accountType = this.determineAccountType(email);
-                return {
-                    ...licenseStatus,
-                    suggestedAccountType: accountType,
-                    isPersonalEmail: accountType === 'personal'
-                };
-            }
-            
-            // Mettre en cache le résultat si valide
-            if (licenseStatus.valid) {
-                this.cachedLicenseStatus = licenseStatus;
-                this.cacheExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 heure
-                this.currentUser = licenseStatus.user;
-            }
-            
-            // Mettre à jour la dernière connexion
-            if (licenseStatus.valid && licenseStatus.user) {
-                await this.updateLastLogin(licenseStatus.user.id);
-            }
-            
-            return licenseStatus;
 
         } catch (error) {
             console.error('[LicenseService] Authentication error:', error);
@@ -189,31 +217,115 @@ class LicenseService {
         }
     }
 
-    async checkUserExists(email) {
+    // Construire le statut de licence à partir des données utilisateur
+    async buildLicenseStatusFromUser(user) {
+        const now = new Date();
+        const startsAt = user.license_starts_at ? new Date(user.license_starts_at) : null;
+        const expiresAt = user.license_expires_at ? new Date(user.license_expires_at) : null;
+        
+        // Si pas de type de compte
+        if (!user.account_type) {
+            return {
+                valid: false,
+                status: 'needs_account_type',
+                user: user,
+                message: 'Type de compte à définir'
+            };
+        }
+        
+        // Vérifier le statut
+        if (user.license_status === 'blocked') {
+            return {
+                valid: false,
+                status: 'blocked',
+                message: 'Votre compte a été bloqué. Contactez votre administrateur.'
+            };
+        }
+        
+        // Vérifier les dates
+        if (startsAt && startsAt > now) {
+            return {
+                valid: false,
+                status: 'not_started',
+                message: `Votre licence commencera le ${startsAt.toLocaleDateString('fr-FR')}`,
+                startsAt: startsAt
+            };
+        }
+        
+        if (expiresAt && expiresAt < now) {
+            return {
+                valid: false,
+                status: 'expired',
+                message: user.account_type === 'personal' 
+                    ? 'Votre licence personnelle a expiré' 
+                    : 'Votre période d\'essai a expiré',
+                expiredAt: expiresAt
+            };
+        }
+        
+        // Calculer les jours restants
+        let daysRemaining = null;
+        if (expiresAt) {
+            daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
+        }
+        
+        return {
+            valid: true,
+            status: user.license_status || 'active',
+            user: user,
+            startsAt: startsAt,
+            expiresAt: expiresAt,
+            daysRemaining: daysRemaining,
+            accountType: user.account_type,
+            isPersonalAccount: user.account_type === 'personal',
+            message: user.account_type === 'personal' 
+                ? `Compte personnel${daysRemaining ? ' - ' + daysRemaining + ' jours restants' : ''}`
+                : `Licence ${user.license_status}${daysRemaining ? ' - ' + daysRemaining + ' jours restants' : ''}`
+        };
+    }
+
+    // Nouvelle méthode pour contourner les problèmes RLS en utilisant une fonction RPC
+    async checkUserByEmail(email) {
         try {
-            if (!this.initialized) {
-                await this.initialize();
-            }
-
-            console.log('[LicenseService] Checking if user exists:', email);
+            console.log('[LicenseService] Checking user via RPC:', email);
             
+            // Utiliser une fonction RPC côté serveur si disponible
             const { data, error } = await this.supabase
-                .from('users')
-                .select('id')
-                .eq('email', email)
-                .maybeSingle();
-
+                .rpc('check_user_exists', { user_email: email });
+            
             if (error) {
-                console.error('[LicenseService] Error checking user:', error);
-                return false;
+                console.error('[LicenseService] RPC error:', error);
+                return null;
             }
-
-            console.log('[LicenseService] User exists:', !!data);
-            return !!data;
-
+            
+            return data;
         } catch (error) {
-            console.error('[LicenseService] Error checking user:', error);
-            return false;
+            console.error('[LicenseService] RPC check failed:', error);
+            return null;
+        }
+    }
+
+    // Méthode alternative pour créer un utilisateur sans passer par les checks
+    async forceCreateUser(email, accountType, companyName = null) {
+        try {
+            console.log('[LicenseService] Force creating user:', { email, accountType });
+            
+            // Créer directement l'utilisateur sans vérifier s'il existe
+            return await this.createUserWithAccountType(email, accountType, companyName);
+            
+        } catch (error) {
+            console.error('[LicenseService] Force create failed:', error);
+            
+            // Si l'utilisateur existe déjà, essayer de le récupérer
+            if (error.message && error.message.includes('duplicate')) {
+                return {
+                    success: false,
+                    error: 'Un compte existe déjà avec cette adresse email',
+                    userExists: true
+                };
+            }
+            
+            return { success: false, error: error.message };
         }
     }
 
@@ -225,27 +337,25 @@ class LicenseService {
 
             console.log('[LicenseService] Checking license status for:', email);
             
-            // Récupérer l'utilisateur SANS la jointure company pour éviter la récursion
-            const { data: user, error } = await this.supabase
-                .from('users')
-                .select(`
-                    id,
-                    email,
-                    name,
-                    role,
-                    license_status,
-                    license_starts_at,
-                    license_expires_at,
-                    company_id,
-                    first_login_at,
-                    last_login_at,
-                    login_count,
-                    created_at,
-                    updated_at,
-                    account_type
-                `)
-                .eq('email', email)
-                .single();
+            // Utiliser une approche différente pour éviter la récursion RLS
+            // D'abord essayer de récupérer juste les colonnes essentielles
+            let user = null;
+            let error = null;
+            
+            try {
+                // Essayer avec une requête minimale
+                const result = await this.supabase
+                    .from('users')
+                    .select('id, email, name, role, license_status, license_starts_at, license_expires_at, company_id, account_type, created_at, updated_at, last_login_at, login_count')
+                    .eq('email', email)
+                    .single();
+                
+                user = result.data;
+                error = result.error;
+            } catch (queryError) {
+                console.error('[LicenseService] Query error:', queryError);
+                error = queryError;
+            }
 
             if (error) {
                 if (error.code === 'PGRST116') {
@@ -256,21 +366,46 @@ class LicenseService {
                         message: 'Compte utilisateur non trouvé'
                     };
                 }
+                
+                // Si c'est une erreur de récursion RLS, essayer une approche alternative
+                if (error.code === '42P17') {
+                    console.error('[LicenseService] RLS recursion detected, cannot proceed');
+                    return {
+                        valid: false,
+                        status: 'error',
+                        message: 'Erreur de configuration de la base de données. Contactez l\'administrateur.',
+                        error: 'RLS recursion error'
+                    };
+                }
+                
                 throw error;
             }
 
-            // Récupérer la société séparément si nécessaire
+            // Si l'utilisateur existe, continuer avec les vérifications
+            if (!user) {
+                return { 
+                    valid: false, 
+                    status: 'not_found',
+                    message: 'Compte utilisateur non trouvé'
+                };
+            }
+
+            // Récupérer la société séparément si nécessaire (pour éviter la récursion)
             let company = null;
             if (user.company_id) {
-                const { data: companyData, error: companyError } = await this.supabase
-                    .from('companies')
-                    .select('*')
-                    .eq('id', user.company_id)
-                    .single();
-                
-                if (!companyError && companyData) {
-                    company = companyData;
-                    user.company = company;
+                try {
+                    const { data: companyData } = await this.supabase
+                        .from('companies')
+                        .select('id, name, domain, is_virtual')
+                        .eq('id', user.company_id)
+                        .single();
+                    
+                    if (companyData) {
+                        company = companyData;
+                        user.company = company;
+                    }
+                } catch (companyError) {
+                    console.warn('[LicenseService] Could not fetch company data:', companyError);
                 }
             }
 
