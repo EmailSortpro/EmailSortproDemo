@@ -181,7 +181,7 @@ class LicenseService {
 
             console.log('[LicenseService] Checking license status for:', email);
             
-            // Récupérer l'utilisateur avec les bonnes colonnes
+            // Récupérer l'utilisateur SANS la jointure company pour éviter la récursion
             const { data: user, error } = await this.supabase
                 .from('users')
                 .select(`
@@ -198,8 +198,7 @@ class LicenseService {
                     login_count,
                     created_at,
                     updated_at,
-                    account_type,
-                    company:companies(*)
+                    account_type
                 `)
                 .eq('email', email)
                 .single();
@@ -215,6 +214,33 @@ class LicenseService {
                     };
                 }
                 throw error;
+            }
+
+            // Si l'utilisateur n'a pas de type de compte défini, le signaler
+            if (!user.account_type) {
+                return {
+                    valid: true,
+                    status: 'needs_account_type',
+                    user: user,
+                    message: 'Type de compte à définir'
+                };
+            }
+
+            // Récupérer la société séparément si nécessaire
+            let company = null;
+            if (user.company_id) {
+                const { data: companyData } = await this.supabase
+                    .from('companies')
+                    .select('*')
+                    .eq('id', user.company_id)
+                    .single();
+                
+                company = companyData;
+            }
+
+            // Ajouter la company aux données user
+            if (company) {
+                user.company = company;
             }
 
             // Vérifier le statut de licence
@@ -234,7 +260,7 @@ class LicenseService {
 
             // Obtenir les infos de contact admin si disponibles
             let adminContact = null;
-            if (user.company_id && user.company) {
+            if (user.company_id) {
                 const { data: adminData } = await this.supabase
                     .from('users')
                     .select('email, name')
@@ -311,7 +337,74 @@ class LicenseService {
         }
     }
 
-    // Nouvelle méthode pour créer un utilisateur avec le bon type de compte
+    // Méthode pour définir le type de compte d'un utilisateur existant
+    async setUserAccountType(userId, accountType, companyName = null) {
+        try {
+            console.log('[LicenseService] Setting account type:', { userId, accountType, companyName });
+            
+            const updateData = {
+                account_type: accountType,
+                updated_at: new Date().toISOString()
+            };
+
+            // Si compte personnel
+            if (accountType === 'personal') {
+                updateData.role = 'company_admin'; // Admin de son propre compte
+                
+                // Si nom de société fourni, créer une société virtuelle
+                if (companyName) {
+                    const company = await this.getOrCreateVirtualCompany(companyName);
+                    if (company) {
+                        updateData.company_id = company.id;
+                    }
+                }
+            } else {
+                // Pour professionnel, déterminer la société basée sur le domaine
+                const { data: userData } = await this.supabase
+                    .from('users')
+                    .select('email')
+                    .eq('id', userId)
+                    .single();
+                
+                if (userData) {
+                    const domain = userData.email.split('@')[1];
+                    const company = await this.getOrCreateCompany(domain, companyName);
+                    
+                    if (company) {
+                        updateData.company_id = company.id;
+                        
+                        // Vérifier si c'est le premier utilisateur
+                        const isFirst = await this.isFirstUserOfCompany(company.id);
+                        if (isFirst) {
+                            updateData.role = 'company_admin';
+                        }
+                    }
+                }
+            }
+
+            // Mettre à jour l'utilisateur
+            const { data, error } = await this.supabase
+                .from('users')
+                .update(updateData)
+                .eq('id', userId)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            console.log('[LicenseService] ✅ Account type set successfully');
+            
+            // Invalider le cache
+            this.cachedLicenseStatus = null;
+            this.cacheExpiry = null;
+            
+            return { success: true, user: data };
+
+        } catch (error) {
+            console.error('[LicenseService] Error setting account type:', error);
+            return { success: false, error: error.message };
+        }
+    }
     async createUserWithAccountType(email, accountType, companyName = null) {
         try {
             if (!this.initialized) {
