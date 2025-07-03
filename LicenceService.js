@@ -674,7 +674,8 @@ class LicenseService {
                     first_login_at: new Date().toISOString(),
                     last_login_at: new Date().toISOString(),
                     login_count: 1,
-                    account_type: accountType
+                    account_type: accountType,
+                    billing_cycle: 'monthly' // Valeur par défaut
                 })
                 .select()
                 .single();
