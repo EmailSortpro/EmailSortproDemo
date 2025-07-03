@@ -1756,7 +1756,12 @@
                             showAnalytics();
                         }, 1000);
                     } else {
-                        showAuthMessage('Accès réservé aux administrateurs', 'error');
+                        // Message d'erreur spécifique selon le type d'utilisateur
+                        if (result.user.account_type === 'professional' && result.user.role === 'user') {
+                            showAuthMessage('Accès restreint. Contactez votre administrateur pour obtenir les droits d\'accès aux analytics.', 'error');
+                        } else {
+                            showAuthMessage('Accès réservé aux administrateurs', 'error');
+                        }
                     }
                 } else {
                     // Si l'utilisateur n'existe pas et c'est la page admin
@@ -1785,7 +1790,8 @@
             console.log('[Analytics] Checking admin access for user:', {
                 email: user.email,
                 role: user.role,
-                account_type: user.account_type
+                account_type: user.account_type,
+                license_status: user.license_status
             });
             
             // Les super admins ont toujours accès
@@ -1800,19 +1806,15 @@
                 return true;
             }
             
-            // Les comptes personnels ont accès pour gérer leur licence
+            // Les comptes personnels ont accès pour gérer leur propre licence
             if (user.account_type === 'personal') {
                 console.log('[Analytics] Personal account access granted');
                 return true;
             }
             
-            // Les utilisateurs professionnels actifs ont accès aux analytics de base
-            if (user.account_type === 'professional' && user.license_status === 'active') {
-                console.log('[Analytics] Professional user access granted');
-                return true;
-            }
-            
-            console.log('[Analytics] Access denied - User needs to be: super_admin, company_admin, personal account, or active professional');
+            // Les utilisateurs professionnels normaux n'ont PAS accès aux analytics
+            // Ils doivent être promus "company_admin" par un super admin
+            console.log('[Analytics] Access denied - Professional users need company_admin role for analytics access');
             return false;
         }
 
