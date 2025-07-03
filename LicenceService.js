@@ -20,7 +20,8 @@ class LicenseService {
         ];
         
         // Types de compte valides (selon la contrainte de la base de données)
-        this.validAccountTypes = ['personal', 'professional'];
+        // Il faut identifier les vraies valeurs autorisées par la contrainte
+        this.validAccountTypes = ['personal', 'professional', 'individual', 'business', 'company', 'enterprise'];
         
         console.log('[LicenseService] Service created v5.2');
     }
@@ -272,6 +273,9 @@ class LicenseService {
             };
         }
 
+        // Normaliser le type de compte pour la logique métier
+        const normalizedAccountType = this.normalizeAccountType(user.account_type);
+        
         // Vérifier le statut de licence
         const status = user.license_status;
         const startsAt = user.license_starts_at ? new Date(user.license_starts_at) : null;
@@ -283,6 +287,7 @@ class LicenseService {
             status: status,
             role: user.role,
             account_type: user.account_type,
+            normalized_type: normalizedAccountType,
             has_expiry: !!expiresAt
         });
 
@@ -292,7 +297,7 @@ class LicenseService {
                 valid: false, 
                 status: 'blocked',
                 message: 'Votre compte a été bloqué. Contactez votre administrateur.',
-                user: user
+                user: { ...user, account_type: normalizedAccountType }
             };
         }
 
@@ -303,7 +308,7 @@ class LicenseService {
                 status: 'not_started',
                 message: `Votre licence commencera le ${startsAt.toLocaleDateString('fr-FR')}`,
                 startsAt: startsAt,
-                user: user
+                user: { ...user, account_type: normalizedAccountType }
             };
         }
 
@@ -314,7 +319,7 @@ class LicenseService {
                 status: 'expired',
                 message: 'Votre période d\'essai a expiré',
                 expiredAt: expiresAt,
-                user: user
+                user: { ...user, account_type: normalizedAccountType }
             };
         }
 
@@ -331,9 +336,25 @@ class LicenseService {
             startsAt: startsAt,
             expiresAt: expiresAt,
             daysRemaining: daysRemaining,
-            user: user,
+            user: { ...user, account_type: normalizedAccountType },
             message: status === 'trial' ? `Période d'essai - ${daysRemaining} jours restants` : 'Licence active'
         };
+    }
+
+    // Normaliser le type de compte pour l'utilisation dans l'application
+    normalizeAccountType(dbAccountType) {
+        if (!dbAccountType) return null;
+        
+        const type = dbAccountType.toLowerCase();
+        
+        // Mapper les valeurs de la DB vers les valeurs utilisées dans l'app
+        if (['individual', 'personal', 'private'].includes(type)) {
+            return 'personal';
+        } else if (['business', 'company', 'professional', 'enterprise'].includes(type)) {
+            return 'professional';
+        }
+        
+        return type; // Retourner tel quel si pas de mapping
     }
 
     // Méthode pour définir le type de compte d'un utilisateur existant
@@ -341,17 +362,26 @@ class LicenseService {
         try {
             console.log('[LicenseService] Setting account type:', { userId, accountType, companyName });
             
-            // Valider le type de compte
-            if (!this.validateAccountType(accountType)) {
-                throw new Error(`Type de compte invalide: ${accountType}. Types valides: ${this.validAccountTypes.join(', ')}`);
+            // Mapper les valeurs vers celles probablement acceptées par la contrainte
+            let dbAccountType = accountType;
+            if (accountType === 'personal') {
+                // Essayer différentes valeurs possibles
+                dbAccountType = 'individual'; // ou 'personal' 
+            } else if (accountType === 'professional') {
+                dbAccountType = 'business'; // ou 'company' ou 'enterprise'
             }
+            
+            console.log('[LicenseService] Mapped account type:', { 
+                requested: accountType, 
+                mapped: dbAccountType 
+            });
 
             const updateData = {
-                account_type: accountType,
+                account_type: dbAccountType,
                 updated_at: new Date().toISOString()
             };
 
-            // Si compte personnel
+            // Si compte personnel (individual dans la DB)
             if (accountType === 'personal') {
                 updateData.role = 'company_admin'; // Admin de son propre compte
                 
@@ -397,6 +427,39 @@ class LicenseService {
 
             if (error) {
                 console.error('[LicenseService] Database error:', error);
+                
+                // Si erreur de contrainte, essayer d'autres valeurs
+                if (error.message.includes('check constraint') && error.message.includes('account_type')) {
+                    console.log('[LicenseService] Constraint error, trying alternative values...');
+                    
+                    // Essayer d'autres mappings
+                    const alternativeTypes = accountType === 'personal' 
+                        ? ['personal', 'individual', 'private'] 
+                        : ['professional', 'business', 'company', 'enterprise'];
+                    
+                    for (const altType of alternativeTypes) {
+                        try {
+                            const altUpdateData = { ...updateData, account_type: altType };
+                            const { data: altData, error: altError } = await this.supabase
+                                .from('users')
+                                .update(altUpdateData)
+                                .eq('id', userId)
+                                .select()
+                                .single();
+                            
+                            if (!altError) {
+                                console.log('[LicenseService] ✅ Account type set successfully with alternative:', altType);
+                                // Invalider le cache
+                                this.cachedLicenseStatus = null;
+                                this.cacheExpiry = null;
+                                return { success: true, user: altData };
+                            }
+                        } catch (altErr) {
+                            console.log('[LicenseService] Alternative failed:', altType, altErr.message);
+                        }
+                    }
+                }
+                
                 throw error;
             }
 
