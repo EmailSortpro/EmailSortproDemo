@@ -1700,10 +1700,6 @@
                 });
                 
                 licenseService = window.licenseService;
-                
-                // Initialiser Supabase
-                await initializeSupabase();
-                
                 console.log('[Analytics] Services loaded successfully');
             } catch (error) {
                 console.error('[Analytics] Error loading services:', error);
@@ -1712,7 +1708,10 @@
         }
 
         async function initializeSupabase() {
-            if (supabaseClient) return;
+            if (supabaseClient) {
+                console.log('[Analytics] Supabase already initialized');
+                return;
+            }
 
             if (!window.supabaseConfig) {
                 console.error('[Analytics] Supabase config not loaded');
@@ -1738,7 +1737,7 @@
                 }
             );
             
-            console.log('[Analytics] Supabase initialized');
+            console.log('[Analytics] Supabase client initialized');
         }
 
         function loadSupabaseLibrary() {
@@ -1759,6 +1758,7 @@
             const button = document.getElementById('authButton');
             const buttonText = document.getElementById('authButtonText');
             const spinner = document.getElementById('authSpinner');
+            const messageDiv = document.getElementById('authMessage');
             
             if (!email || !email.includes('@')) {
                 showMessage('Veuillez entrer une adresse email valide');
@@ -1769,7 +1769,7 @@
             button.disabled = true;
             buttonText.style.display = 'none';
             spinner.style.display = 'block';
-            document.getElementById('authMessage').innerHTML = '';
+            messageDiv.innerHTML = '';
             
             try {
                 // Charger les services si nécessaire
@@ -1777,7 +1777,10 @@
                     await loadLicenseService();
                 }
                 
-                // Initialiser le service
+                // Initialiser Supabase
+                await initializeSupabase();
+                
+                // S'assurer que le service est initialisé
                 if (!licenseService.initialized) {
                     await licenseService.initialize();
                 }
@@ -1785,37 +1788,100 @@
                 // Authentifier l'utilisateur
                 const result = await licenseService.authenticateWithEmail(email);
                 
-                console.log('[Analytics] Authentication result:', result);
+                console.log('[Analytics] Authentication result:', {
+                    valid: result.valid,
+                    status: result.status,
+                    user: result.user ? {
+                        email: result.user.email,
+                        role: result.user.role,
+                        account_type: result.user.account_type
+                    } : null
+                });
                 
                 if (result.valid) {
                     // Vérifier si l'utilisateur a besoin de configurer son type de compte
-                    if (!hasAccountTypeSet(result.user)) {
+                    const needsAccountTypeSetup = !hasAccountTypeSet(result.user);
+                    
+                    console.log('[Analytics] Needs account type setup:', needsAccountTypeSetup);
+                    
+                    if (needsAccountTypeSetup) {
+                        console.log('[Analytics] User needs account type setup');
+                        
+                        // Stocker l'utilisateur temporairement
                         pendingUser = result.user;
-                        showAccountTypeModal();
+                        
+                        // Cacher le spinner
+                        button.disabled = false;
+                        buttonText.style.display = 'block';
+                        spinner.style.display = 'none';
+                        
+                        // Afficher le modal de choix du type de compte
+                        document.getElementById('accountTypeModal').classList.add('active');
+                        
+                        // Mettre à jour le message du modal selon la situation
+                        const modalTitle = document.querySelector('.account-type-title');
+                        const modalSubtitle = document.querySelector('.account-type-subtitle');
+                        
+                        if (result.user.account_type === 'professional' && result.user.role === 'user') {
+                            modalTitle.textContent = 'Reconfiguration de votre accès Analytics';
+                            modalSubtitle.textContent = 'Votre compte professionnel actuel n\'a pas accès aux analytics. Choisissez votre type d\'accès :';
+                        } else {
+                            modalTitle.textContent = 'Configuration de votre accès Analytics';
+                            modalSubtitle.textContent = 'Pour accéder aux analytics, vous devez configurer votre type d\'accès';
+                        }
+                        
+                        // Pré-sélectionner si déjà un type
+                        if (result.user.account_type) {
+                            selectAccountType(result.user.account_type);
+                        } else {
+                            // Réinitialiser le formulaire
+                            selectedAccountType = null;
+                            document.getElementById('personalOption').classList.remove('selected');
+                            document.getElementById('professionalOption').classList.remove('selected');
+                            document.getElementById('companyNameInput').value = '';
+                            document.getElementById('companyNameInput').classList.remove('visible');
+                        }
+                        
                         return;
                     }
                     
                     // Vérifier les permissions d'accès
-                    if (hasAdminAccess(result.user)) {
+                    const hasAccess = hasAdminAccess(result.user);
+                    
+                    console.log('[Analytics] Has admin access:', hasAccess);
+                    
+                    if (hasAccess) {
                         authenticatedUser = result.user;
                         licenseService.currentUser = authenticatedUser;
                         
                         showMessage('Connexion réussie !', 'success');
                         
+                        // Attendre un peu avant de basculer
                         setTimeout(() => {
                             showAnalytics();
                         }, 1000);
                     } else {
-                        showMessage('Accès réservé aux administrateurs');
+                        // Message d'erreur spécifique selon le type d'utilisateur
+                        if (result.user.account_type === 'professional' && result.user.role === 'user') {
+                            showMessage('Accès restreint. Contactez votre administrateur pour obtenir les droits d\'accès aux analytics.');
+                        } else {
+                            showMessage('Accès réservé aux administrateurs');
+                        }
                     }
                 } else {
-                    showMessage(result.message || 'Accès non autorisé');
+                    // Si l'utilisateur n'existe pas et c'est la page admin
+                    if (result.status === 'not_found') {
+                        showMessage('Compte non trouvé. Veuillez créer votre compte sur l\'application principale.');
+                    } else {
+                        showMessage(result.message || 'Accès non autorisé');
+                    }
                 }
                 
             } catch (error) {
                 console.error('[Analytics] Authentication error:', error);
                 showMessage('Erreur de connexion. Veuillez réessayer.');
             } finally {
+                // Réactiver le bouton
                 button.disabled = false;
                 buttonText.style.display = 'block';
                 spinner.style.display = 'none';
@@ -1875,6 +1941,14 @@
             }
             
             try {
+                console.log('[Analytics] Setting account type:', {
+                    userId: pendingUser.id,
+                    accountType: selectedAccountType,
+                    companyName: companyName,
+                    currentRole: pendingUser.role
+                });
+                
+                // Mettre à jour le type de compte de l'utilisateur
                 const result = await licenseService.setUserAccountType(
                     pendingUser.id,
                     selectedAccountType,
@@ -1882,19 +1956,35 @@
                 );
                 
                 if (result.success) {
+                    // Fermer le modal
                     document.getElementById('accountTypeModal').classList.remove('active');
                     
                     // Recharger les informations utilisateur
                     const refreshResult = await licenseService.authenticateWithEmail(pendingUser.email);
                     
-                    if (refreshResult.valid && hasAdminAccess(refreshResult.user)) {
-                        authenticatedUser = refreshResult.user;
-                        licenseService.currentUser = authenticatedUser;
-                        showAnalytics();
+                    if (refreshResult.valid) {
+                        // Vérifier si l'utilisateur a maintenant accès
+                        const hasAccess = hasAdminAccess(refreshResult.user);
+                        
+                        if (hasAccess) {
+                            authenticatedUser = refreshResult.user;
+                            licenseService.currentUser = authenticatedUser;
+                            
+                            // Afficher analytics
+                            showAnalytics();
+                        } else {
+                            // Si toujours pas d'accès après reconfiguration
+                            if (selectedAccountType === 'professional') {
+                                showMessage('Compte professionnel configuré. Contactez votre administrateur pour obtenir les droits d\'accès aux analytics.');
+                            } else {
+                                showMessage('Erreur lors de la configuration du compte');
+                            }
+                        }
                     } else {
-                        showMessage('Configuration terminée. Contactez votre administrateur pour l\'accès aux analytics.');
+                        showMessage('Erreur lors de la mise à jour du compte');
                     }
                 } else {
+                    console.error('[Analytics] Error setting account type:', result.error);
                     showMessage('Erreur lors de la configuration : ' + result.error);
                 }
             } catch (error) {
@@ -2015,12 +2105,16 @@
                     .order('created_at', { ascending: false });
                 
                 // Filtrer selon les permissions
-                if (authenticatedUser.account_type === 'personal') {
-                    query = query.eq('id', authenticatedUser.id);
-                } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                    query = query.eq('company_id', authenticatedUser.company_id);
+                if (authenticatedUser) {
+                    if (authenticatedUser.account_type === 'personal') {
+                        // Les comptes personnels ne voient QUE eux-mêmes
+                        query = query.eq('id', authenticatedUser.id);
+                    } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                        // Admin de société voit sa société
+                        query = query.eq('company_id', authenticatedUser.company_id);
+                    }
+                    // Si super admin, voir tout (pas de filtre supplémentaire)
                 }
-                // Si super admin, voir tout (pas de filtre)
                 
                 const { data: users, error } = await query;
                 
@@ -2028,10 +2122,11 @@
                     console.error('[Analytics] Error loading users:', error);
                     allUsers = [];
                 } else {
+                    console.log('[Analytics] Loaded users:', users?.length || 0);
                     allUsers = users || [];
                 }
                 
-                // Charger les statistiques
+                // Charger aussi les stats analytics si disponibles
                 await loadUserStats();
                 
                 console.log('[Analytics] Loaded', allUsers.length, 'users');
@@ -2051,23 +2146,26 @@
                     .select('*');
                 
                 // Filtrer selon les permissions
-                if (authenticatedUser.account_type === 'personal') {
-                    query = query.eq('email', authenticatedUser.email);
-                } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                    // Obtenir le domaine de la société
-                    const { data: company } = await supabaseClient
-                        .from('companies')
-                        .select('domain')
-                        .eq('id', authenticatedUser.company_id)
-                        .single();
-                    
-                    if (company && company.domain) {
-                        query = query.eq('domain', company.domain);
+                if (authenticatedUser) {
+                    if (authenticatedUser.account_type === 'personal') {
+                        // Compte personnel voit seulement ses stats
+                        query = query.eq('email', authenticatedUser.email);
+                    } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                        // Admin de société voit les stats de son domaine
+                        const { data: company } = await supabaseClient
+                            .from('companies')
+                            .select('domain')
+                            .eq('id', authenticatedUser.company_id)
+                            .single();
+                        
+                        if (company && company.domain) {
+                            query = query.eq('domain', company.domain);
+                        }
                     }
                 }
                 
                 const { data: stats, error } = await query;
-                
+
                 if (!error && stats) {
                     allStats = stats;
                     
@@ -2870,25 +2968,30 @@
                     
                     // Vérifier que la session n'est pas trop ancienne (24h)
                     if (Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
-                        // Charger les services
+                        // Initialiser d'abord
                         if (!licenseService) {
                             await loadLicenseService();
                         }
                         
-                        // Réauthentifier
+                        await initializeSupabase();
+                        
+                        // Recharger l'utilisateur avec authenticateWithEmail
                         const result = await licenseService.authenticateWithEmail(data.email);
                         
-                        if (result.valid && hasAdminAccess(result.user)) {
+                        if (result.valid) {
                             // Vérifier si le type de compte est défini
                             if (!hasAccountTypeSet(result.user)) {
+                                // Forcer la reconnexion pour définir le type de compte
                                 sessionStorage.removeItem('analyticsAuth');
                                 return;
                             }
                             
-                            authenticatedUser = result.user;
-                            licenseService.currentUser = authenticatedUser;
-                            showAnalytics();
-                            return;
+                            if (hasAdminAccess(result.user)) {
+                                authenticatedUser = result.user;
+                                licenseService.currentUser = authenticatedUser;
+                                showAnalytics();
+                                return;
+                            }
                         }
                     }
                 } catch (error) {
