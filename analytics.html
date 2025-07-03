@@ -1125,6 +1125,137 @@
             color: #dc2626;
         }
 
+        /* License Extension Menu */
+        .license-extend-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+        }
+
+        .license-extend-menu.active {
+            display: flex;
+        }
+
+        .license-extend-card {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .license-extend-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .license-extend-subtitle {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-bottom: 24px;
+        }
+
+        .license-extend-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .license-extend-option {
+            border: 2px solid #e2e8f0;
+            padding: 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .license-extend-option:hover {
+            border-color: #4F46E5;
+            background: #f8fafc;
+        }
+
+        .license-extend-option.selected {
+            border-color: #4F46E5;
+            background: #f3e8ff;
+        }
+
+        .license-extend-option i {
+            font-size: 1.5rem;
+            color: #4F46E5;
+            margin-bottom: 8px;
+        }
+
+        .license-extend-option h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .license-extend-option p {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .license-extend-option .price {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #4F46E5;
+        }
+
+        .license-extend-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .license-extend-button {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .license-extend-button.primary {
+            background: #4F46E5;
+            color: white;
+        }
+
+        .license-extend-button.primary:hover {
+            background: #4338ca;
+        }
+
+        .license-extend-button.secondary {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .license-extend-button.secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .license-extend-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .company-info {
             padding: 20px;
             background: #f8fafc;
@@ -1944,6 +2075,53 @@
         </div>
     </div>
 
+    <!-- License Extension Menu -->
+    <div class="license-extend-menu" id="licenseExtendMenu">
+        <div class="license-extend-card">
+            <h2 class="license-extend-title">Étendre la licence</h2>
+            <p class="license-extend-subtitle">Choisissez la durée d'extension pour cet utilisateur</p>
+            
+            <div class="license-extend-options">
+                <div class="license-extend-option" data-duration="1" onclick="selectExtensionDuration(1)">
+                    <i class="fas fa-calendar-day"></i>
+                    <h4>1 Mois</h4>
+                    <p>Extension mensuelle</p>
+                    <div class="price">9,90 €</div>
+                </div>
+                
+                <div class="license-extend-option" data-duration="3" onclick="selectExtensionDuration(3)">
+                    <i class="fas fa-calendar-week"></i>
+                    <h4>3 Mois</h4>
+                    <p>Extension trimestrielle</p>
+                    <div class="price">29,70 €</div>
+                </div>
+                
+                <div class="license-extend-option" data-duration="6" onclick="selectExtensionDuration(6)">
+                    <i class="fas fa-calendar-alt"></i>
+                    <h4>6 Mois</h4>
+                    <p>Extension semestrielle</p>
+                    <div class="price">59,40 €</div>
+                </div>
+                
+                <div class="license-extend-option" data-duration="12" onclick="selectExtensionDuration(12)">
+                    <i class="fas fa-calendar"></i>
+                    <h4>1 An</h4>
+                    <p>Extension annuelle</p>
+                    <div class="price">105,60 €</div>
+                </div>
+            </div>
+            
+            <div class="license-extend-actions">
+                <button class="license-extend-button secondary" onclick="closeLicenseExtendMenu()">
+                    Annuler
+                </button>
+                <button class="license-extend-button primary" id="confirmExtension" onclick="confirmLicenseExtension()" disabled>
+                    <i class="fas fa-check"></i> Confirmer l'extension
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Global variables
         let analyticsManager = null;
@@ -1956,12 +2134,22 @@
         let authenticatedUser = null;
         let selectedAccountType = null;
         let pendingUser = null;
+        let selectedExtensionDuration = null;
+        let currentExtensionUserId = null;
         let pricingConfig = {
             monthly: 9.90,
             yearly: 8.80,
             currency: 'EUR',
             taxRate: 0.20 // 20% TVA
         };
+
+        // Fonctions utilitaires
+        function formatPrice(price) {
+            return new Intl.NumberFormat('fr-FR', {
+                style: 'currency',
+                currency: pricingConfig.currency
+            }).format(price);
+        }
 
         function showAuthMessage(message, type) {
             const messageDiv = document.getElementById('authMessage');
@@ -3072,6 +3260,18 @@
                                 <div class="license-stat-label">Scans effectués</div>
                             </div>
                         </div>
+
+                        <div class="license-extend-section" style="margin-top: 24px;">
+                            <h4 style="margin-bottom: 16px; color: #1f2937;">Gérer ma licence</h4>
+                            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                <button class="license-action-btn extend" onclick="extendLicenseMenu('${companyUsers[0].id}')">
+                                    <i class="fas fa-plus"></i> Étendre ma licence
+                                </button>
+                                <button class="license-action-btn edit-dates" onclick="openLicenseEditModal('${companyUsers[0].id}')">
+                                    <i class="fas fa-calendar-alt"></i> Modifier les dates
+                                </button>
+                            </div>
+                        </div>
                     ` : ''}
                 `;
                 return;
@@ -3165,8 +3365,8 @@
                                                 </button>
                                             ` : ''}
                                             <button class="license-action-btn extend" 
-                                                    onclick="extendLicense('${user.id}')">
-                                                +30 jours
+                                                    onclick="extendLicenseMenu('${user.id}')">
+                                                <i class="fas fa-plus"></i> Étendre
                                             </button>
                                             <button class="license-action-btn edit-dates" 
                                                     onclick="openLicenseEditModal('${user.id}')">
@@ -3186,6 +3386,159 @@
                     </table>
                 </div>
             `;
+        }
+
+        // License Extension Functions
+        function extendLicenseMenu(userId) {
+            const user = currentUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            currentExtensionUserId = userId;
+            selectedExtensionDuration = null;
+            
+            // Mettre à jour les prix dans le modal
+            updateExtensionPrices();
+            
+            // Mettre à jour le titre avec le nom de l'utilisateur
+            const userName = user.name || user.email.split('@')[0];
+            document.querySelector('.license-extend-title').textContent = `Étendre la licence de ${userName}`;
+            
+            // Réinitialiser la sélection
+            document.querySelectorAll('.license-extend-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Désactiver le bouton de confirmation
+            document.getElementById('confirmExtension').disabled = true;
+            
+            // Afficher le modal
+            document.getElementById('licenseExtendMenu').classList.add('active');
+        }
+
+        function updateExtensionPrices() {
+            const options = document.querySelectorAll('.license-extend-option');
+            options.forEach(option => {
+                const duration = parseInt(option.dataset.duration);
+                const priceElement = option.querySelector('.price');
+                
+                if (duration === 12) {
+                    // Prix annuel
+                    priceElement.textContent = formatPrice(pricingConfig.yearly * 12);
+                } else {
+                    // Prix mensuel multiplié par la durée
+                    priceElement.textContent = formatPrice(pricingConfig.monthly * duration);
+                }
+            });
+        }
+
+        function selectExtensionDuration(duration) {
+            selectedExtensionDuration = duration;
+            
+            // Mettre à jour l'UI
+            document.querySelectorAll('.license-extend-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            document.querySelector(`[data-duration="${duration}"]`).classList.add('selected');
+            
+            // Activer le bouton de confirmation
+            document.getElementById('confirmExtension').disabled = false;
+            
+            // Mettre à jour le texte du bouton
+            const confirmButton = document.getElementById('confirmExtension');
+            const durationText = duration === 1 ? '1 mois' : 
+                               duration === 3 ? '3 mois' : 
+                               duration === 6 ? '6 mois' : 
+                               duration === 12 ? '1 an' : `${duration} mois`;
+            confirmButton.innerHTML = `<i class="fas fa-check"></i> Confirmer l'extension (${durationText})`;
+        }
+
+        async function confirmLicenseExtension() {
+            if (!currentExtensionUserId || !selectedExtensionDuration) return;
+
+            try {
+                const user = currentUsers.find(u => u.id === currentExtensionUserId);
+                if (!user) throw new Error('Utilisateur non trouvé');
+
+                // Calculer la nouvelle date d'expiration
+                const currentExpiry = user.license_expires_at ? new Date(user.license_expires_at) : new Date();
+                const newExpiry = new Date(currentExpiry);
+                newExpiry.setMonth(newExpiry.getMonth() + selectedExtensionDuration);
+
+                // Mettre à jour le cycle de facturation selon la durée
+                let billingCycle = 'monthly';
+                if (selectedExtensionDuration === 12) {
+                    billingCycle = 'yearly';
+                } else if (selectedExtensionDuration >= 6) {
+                    billingCycle = 'quarterly';
+                }
+
+                // Initialiser le service de licence s'il n'est pas déjà prêt
+                if (!window.licenseService.initialized) {
+                    await window.licenseService.initialize();
+                }
+
+                // Définir l'utilisateur actuel pour le service
+                window.licenseService.currentUser = authenticatedUser;
+
+                // Mettre à jour la licence
+                const result = await window.licenseService.updateUserLicense(
+                    currentExtensionUserId, 
+                    'active', 
+                    newExpiry
+                );
+
+                if (result.success) {
+                    // Mettre à jour également le cycle de facturation
+                    await updateUserBillingCycle(currentExtensionUserId, billingCycle);
+                    
+                    // Fermer le modal
+                    closeLicenseExtendMenu();
+                    
+                    // Recharger les données
+                    await loadLicenseManagement();
+                    
+                    const durationText = selectedExtensionDuration === 1 ? '1 mois' : 
+                                       selectedExtensionDuration === 3 ? '3 mois' : 
+                                       selectedExtensionDuration === 6 ? '6 mois' : 
+                                       selectedExtensionDuration === 12 ? '1 an' : `${selectedExtensionDuration} mois`;
+                    
+                    alert(`Licence étendue de ${durationText} avec succès ! Nouvelle expiration : ${newExpiry.toLocaleDateString('fr-FR')}`);
+                } else {
+                    alert('Erreur : ' + result.error);
+                }
+            } catch (error) {
+                console.error('[Analytics] Error extending license:', error);
+                alert('Erreur lors de l\'extension de la licence');
+            }
+        }
+
+        async function updateUserBillingCycle(userId, billingCycle) {
+            try {
+                const { error } = await supabaseClient
+                    .from('users')
+                    .update({ 
+                        billing_cycle: billingCycle,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId);
+
+                if (error) throw error;
+            } catch (error) {
+                console.error('[Analytics] Error updating billing cycle:', error);
+            }
+        }
+
+        function closeLicenseExtendMenu() {
+            document.getElementById('licenseExtendMenu').classList.remove('active');
+            currentExtensionUserId = null;
+            selectedExtensionDuration = null;
+        }
+
+        // Fonction pour étendre la licence (ancienne version - gardée pour compatibilité)
+        async function extendLicense(userId) {
+            // Rediriger vers le nouveau menu
+            extendLicenseMenu(userId);
         }
 
         // Fonction pour ajouter un utilisateur
@@ -3839,6 +4192,12 @@
         document.getElementById('licenseEditModal').addEventListener('click', (e) => {
             if (e.target.id === 'licenseEditModal') {
                 closeLicenseEditModal();
+            }
+        });
+
+        document.getElementById('licenseExtendMenu').addEventListener('click', (e) => {
+            if (e.target.id === 'licenseExtendMenu') {
+                closeLicenseExtendMenu();
             }
         });
 
