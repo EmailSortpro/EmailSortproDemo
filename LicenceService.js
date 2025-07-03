@@ -1,5 +1,5 @@
-// LicenseService.js - Service de gestion des licences EmailSortPro
-// Version 6.0 - Version améliorée avec gestion complète des types de compte
+// LicenceService.js - Service de gestion des licences EmailSortPro
+// Version 4.0 avec distinction Pro/Particulier et gestion des permissions
 
 class LicenseService {
     constructor() {
@@ -10,27 +10,7 @@ class LicenseService {
         this.cachedLicenseStatus = null;
         this.cacheExpiry = null;
         
-        // Domaines personnels connus (liste étendue)
-        this.personalDomains = [
-            // International
-            'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com',
-            'aol.com', 'icloud.com', 'protonmail.com', 'mail.com', 'gmx.com',
-            'yandex.com', 'zoho.com', 'fastmail.com', 'tutanota.com', 'hushmail.com',
-            'me.com', 'mac.com', 'msn.com', 'rocketmail.com', 'ymail.com',
-            // France
-            'yahoo.fr', 'orange.fr', 'free.fr', 'sfr.fr', 'laposte.net',
-            'wanadoo.fr', 'bbox.fr', 'hotmail.fr', 'live.fr', 'outlook.fr',
-            'gmx.fr', 'voila.fr', 'caramail.com', 'numericable.fr', 'neuf.fr',
-            // Autres pays
-            'gmx.de', 'web.de', 't-online.de', // Allemagne
-            'libero.it', 'virgilio.it', 'tin.it', // Italie
-            'terra.es', 'telefonica.net', // Espagne
-            'mail.ru', 'bk.ru', 'list.ru', // Russie
-            'qq.com', '163.com', '126.com', // Chine
-            'naver.com', 'daum.net' // Corée
-        ];
-        
-        console.log('[LicenseService] Service created v6.0 - Enhanced account type management');
+        console.log('[LicenseService] Service created v4.0 - Pro/Particulier support');
     }
 
     async initialize() {
@@ -97,19 +77,99 @@ class LicenseService {
         });
     }
 
-    // Vérifier si un domaine est personnel
-    isPersonalDomain(email) {
-        if (!email || !email.includes('@')) return false;
+    // MÉTHODE POUR DÉTERMINER SI UN EMAIL EST PROFESSIONNEL
+    isPersonalEmail(email) {
+        const personalDomains = [
+            'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 
+            'live.com', 'msn.com', 'aol.com', 'mail.com', 'ymail.com',
+            'protonmail.com', 'icloud.com', 'me.com', 'mac.com',
+            'orange.fr', 'wanadoo.fr', 'free.fr', 'sfr.fr', 'laposte.net',
+            'yahoo.fr', 'hotmail.fr', 'outlook.fr', 'gmail.fr'
+        ];
+        
         const domain = email.split('@')[1].toLowerCase();
-        return this.personalDomains.includes(domain);
+        return personalDomains.includes(domain);
     }
 
-    // Déterminer automatiquement le type de compte basé sur l'email
-    determineAccountType(email) {
-        return this.isPersonalDomain(email) ? 'personal' : 'professional';
+    // MÉTHODE POUR CRÉER OU RÉCUPÉRER UNE SOCIÉTÉ
+    async getOrCreateCompany(domain) {
+        try {
+            // Si c'est un email personnel, pas de société
+            if (this.isPersonalEmail(`user@${domain}`)) {
+                console.log('[LicenseService] Personal email domain, no company needed');
+                return null;
+            }
+
+            console.log('[LicenseService] Checking company for domain:', domain);
+            
+            // Vérifier si la société existe déjà
+            const { data: existingCompany, error: searchError } = await this.supabase
+                .from('companies')
+                .select('*')
+                .eq('domain', domain)
+                .single();
+
+            if (existingCompany && !searchError) {
+                console.log('[LicenseService] Company already exists:', existingCompany.name);
+                return existingCompany;
+            }
+
+            // Si pas de société, la créer
+            console.log('[LicenseService] Creating new company for domain:', domain);
+            const companyName = domain.charAt(0).toUpperCase() + domain.slice(1).replace(/\.[^.]+$/, '');
+            
+            const { data: newCompany, error: createError } = await this.supabase
+                .from('companies')
+                .insert({
+                    name: companyName,
+                    domain: domain,
+                    type: 'professional' // Nouveau champ pour indiquer le type
+                })
+                .select()
+                .single();
+
+            if (createError) {
+                console.error('[LicenseService] Error creating company:', createError);
+                return null;
+            }
+
+            console.log('[LicenseService] ✅ Company created:', newCompany.name);
+            return newCompany;
+
+        } catch (error) {
+            console.error('[LicenseService] Error in getOrCreateCompany:', error);
+            return null;
+        }
     }
 
-    // MÉTHODE PRINCIPALE D'AUTHENTIFICATION AMÉLIORÉE
+    // MÉTHODE POUR VÉRIFIER SI C'EST LE PREMIER UTILISATEUR D'UN DOMAINE
+    async isFirstUserOfDomain(domain) {
+        try {
+            // Si c'est un domaine personnel, toujours retourner false
+            if (this.isPersonalEmail(`user@${domain}`)) {
+                return false;
+            }
+
+            const { count, error } = await this.supabase
+                .from('users')
+                .select('*', { count: 'exact', head: true })
+                .eq('email', 'ilike.%@' + domain)
+                .not('company_id', 'is', null); // Ne compter que les utilisateurs avec une société
+
+            if (error) {
+                console.error('[LicenseService] Error checking first user:', error);
+                return false;
+            }
+
+            return count === 0;
+
+        } catch (error) {
+            console.error('[LicenseService] Error in isFirstUserOfDomain:', error);
+            return false;
+        }
+    }
+
+    // MÉTHODE PRINCIPALE POUR L'AUTHENTIFICATION PAR EMAIL (MODIFIÉE)
     async authenticateWithEmail(email) {
         try {
             if (!this.initialized) {
@@ -127,77 +187,75 @@ class LicenseService {
                 }
             }
 
-            // Essayer d'abord la méthode RPC si disponible
-            let userInfo = await this.checkUserByEmail(email);
+            // Extraire le domaine de l'email
+            const domain = email.split('@')[1];
+            const isPersonal = this.isPersonalEmail(email);
+
+            // Vérifier si l'utilisateur existe
+            const userExists = await this.checkUserExists(email);
             
-            // Si RPC n'est pas disponible, essayer directement checkLicenseStatus
-            if (!userInfo) {
-                console.log('[LicenseService] RPC not available, trying direct check');
-                const licenseStatus = await this.checkLicenseStatus(email);
+            if (!userExists) {
+                console.log('[LicenseService] New user detected, creating account');
                 
-                // Si l'utilisateur n'existe pas
-                if (licenseStatus.status === 'not_found') {
-                    const accountType = this.determineAccountType(email);
+                let company = null;
+                let role = 'individual'; // Par défaut, utilisateur particulier
+                let trialDays = 15; // 15 jours pour les particuliers
+                
+                if (!isPersonal) {
+                    // Email professionnel
+                    const isFirstUser = await this.isFirstUserOfDomain(domain);
+                    company = await this.getOrCreateCompany(domain);
                     
+                    if (isFirstUser && company) {
+                        role = 'company_admin';
+                        trialDays = 30; // 30 jours pour le premier utilisateur d'une entreprise
+                    } else {
+                        role = 'user';
+                        trialDays = 15; // 15 jours pour les autres utilisateurs de l'entreprise
+                    }
+                }
+                
+                // Créer l'utilisateur
+                const createResult = await this.createUserWithTrial({
+                    email: email,
+                    name: email.split('@')[0],
+                    trialDays: trialDays,
+                    role: role,
+                    companyId: company ? company.id : null,
+                    accountType: isPersonal ? 'individual' : 'professional'
+                });
+                
+                if (!createResult.success) {
                     return {
                         valid: false,
-                        status: 'not_found',
-                        message: 'Compte utilisateur non trouvé',
-                        needsRegistration: true,
-                        suggestedAccountType: accountType,
-                        isPersonalEmail: accountType === 'personal'
+                        status: 'error',
+                        message: 'Impossible de créer votre compte',
+                        error: createResult.error
                     };
                 }
                 
-                // Si erreur RLS
-                if (licenseStatus.status === 'error' && licenseStatus.error === 'RLS recursion error') {
-                    console.log('[LicenseService] RLS error detected, suggesting registration');
-                    const accountType = this.determineAccountType(email);
-                    
-                    return {
-                        valid: false,
-                        status: 'rls_error',
-                        message: 'Impossible de vérifier votre compte. Veuillez créer un nouveau compte ou contacter l\'administrateur.',
-                        needsRegistration: true,
-                        suggestedAccountType: accountType,
-                        isPersonalEmail: accountType === 'personal'
-                    };
+                // Si c'est le premier utilisateur d'une entreprise, mettre à jour domain_usage
+                if (role === 'company_admin' && company) {
+                    await this.updateDomainUsage(domain, company.id, email);
                 }
-                
-                return licenseStatus;
+            }
+
+            // Vérifier le statut de la licence
+            const licenseStatus = await this.checkLicenseStatus(email);
+            
+            // Mettre en cache le résultat (1 heure)
+            if (licenseStatus.valid) {
+                this.cachedLicenseStatus = licenseStatus;
+                this.cacheExpiry = new Date(Date.now() + 60 * 60 * 1000);
+                this.currentUser = licenseStatus.user;
             }
             
-            // Si l'utilisateur existe via RPC
-            if (userInfo.exists) {
-                const user = userInfo.user;
-                
-                // Construire le statut de licence à partir des données RPC
-                const licenseStatus = await this.buildLicenseStatusFromUser(user);
-                
-                // Mettre en cache si valide
-                if (licenseStatus.valid) {
-                    this.cachedLicenseStatus = licenseStatus;
-                    this.cacheExpiry = new Date(Date.now() + 60 * 60 * 1000);
-                    this.currentUser = licenseStatus.user;
-                    
-                    // Mettre à jour la dernière connexion
-                    await this.updateLastLogin(user.id);
-                }
-                
-                return licenseStatus;
-            } else {
-                // L'utilisateur n'existe pas
-                const accountType = this.determineAccountType(email);
-                
-                return {
-                    valid: false,
-                    status: 'not_found',
-                    message: 'Compte utilisateur non trouvé',
-                    needsRegistration: true,
-                    suggestedAccountType: accountType,
-                    isPersonalEmail: accountType === 'personal'
-                };
+            // Mettre à jour la dernière connexion
+            if (licenseStatus.valid && licenseStatus.user) {
+                await this.updateLastLogin(licenseStatus.user.id);
             }
+            
+            return licenseStatus;
 
         } catch (error) {
             console.error('[LicenseService] Authentication error:', error);
@@ -217,114 +275,164 @@ class LicenseService {
         }
     }
 
-    // Construire le statut de licence à partir des données utilisateur
-    async buildLicenseStatusFromUser(user) {
-        const now = new Date();
-        const startsAt = user.license_starts_at ? new Date(user.license_starts_at) : null;
-        const expiresAt = user.license_expires_at ? new Date(user.license_expires_at) : null;
-        
-        // Si pas de type de compte
-        if (!user.account_type) {
-            return {
-                valid: false,
-                status: 'needs_account_type',
-                user: user,
-                message: 'Type de compte à définir'
-            };
-        }
-        
-        // Vérifier le statut
-        if (user.license_status === 'blocked') {
-            return {
-                valid: false,
-                status: 'blocked',
-                message: 'Votre compte a été bloqué. Contactez votre administrateur.'
-            };
-        }
-        
-        // Vérifier les dates
-        if (startsAt && startsAt > now) {
-            return {
-                valid: false,
-                status: 'not_started',
-                message: `Votre licence commencera le ${startsAt.toLocaleDateString('fr-FR')}`,
-                startsAt: startsAt
-            };
-        }
-        
-        if (expiresAt && expiresAt < now) {
-            return {
-                valid: false,
-                status: 'expired',
-                message: user.account_type === 'personal' 
-                    ? 'Votre licence personnelle a expiré' 
-                    : 'Votre période d\'essai a expiré',
-                expiredAt: expiresAt
-            };
-        }
-        
-        // Calculer les jours restants
-        let daysRemaining = null;
-        if (expiresAt) {
-            daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
-        }
-        
-        return {
-            valid: true,
-            status: user.license_status || 'active',
-            user: user,
-            startsAt: startsAt,
-            expiresAt: expiresAt,
-            daysRemaining: daysRemaining,
-            accountType: user.account_type,
-            isPersonalAccount: user.account_type === 'personal',
-            message: user.account_type === 'personal' 
-                ? `Compte personnel${daysRemaining ? ' - ' + daysRemaining + ' jours restants' : ''}`
-                : `Licence ${user.license_status}${daysRemaining ? ' - ' + daysRemaining + ' jours restants' : ''}`
-        };
-    }
-
-    // Nouvelle méthode pour contourner les problèmes RLS en utilisant une fonction RPC
-    async checkUserByEmail(email) {
+    async checkUserExists(email) {
         try {
-            console.log('[LicenseService] Checking user via RPC:', email);
+            if (!this.initialized) {
+                await this.initialize();
+            }
+
+            console.log('[LicenseService] Checking if user exists:', email);
             
-            // Utiliser une fonction RPC côté serveur si disponible
             const { data, error } = await this.supabase
-                .rpc('check_user_exists', { user_email: email });
-            
-            if (error) {
-                console.error('[LicenseService] RPC error:', error);
-                return null;
+                .from('users')
+                .select('id, email')
+                .eq('email', email)
+                .single();
+
+            if (error && error.code === 'PGRST116') {
+                // Pas de résultat trouvé
+                console.log('[LicenseService] User not found');
+                return false;
             }
-            
-            return data;
+
+            if (error) {
+                throw error;
+            }
+
+            console.log('[LicenseService] User exists:', !!data);
+            return !!data;
+
         } catch (error) {
-            console.error('[LicenseService] RPC check failed:', error);
-            return null;
+            console.error('[LicenseService] Error checking user:', error);
+            return false;
         }
     }
 
-    // Méthode alternative pour créer un utilisateur sans passer par les checks
-    async forceCreateUser(email, accountType, companyName = null) {
+    async createUserWithTrial({ email, name, trialDays = 15, role = 'individual', companyId = null, accountType = 'individual' }) {
         try {
-            console.log('[LicenseService] Force creating user:', { email, accountType });
-            
-            // Créer directement l'utilisateur sans vérifier s'il existe
-            return await this.createUserWithAccountType(email, accountType, companyName);
-            
-        } catch (error) {
-            console.error('[LicenseService] Force create failed:', error);
-            
-            // Si l'utilisateur existe déjà, essayer de le récupérer
-            if (error.message && error.message.includes('duplicate')) {
-                return {
-                    success: false,
-                    error: 'Un compte existe déjà avec cette adresse email',
-                    userExists: true
-                };
+            if (!this.initialized) {
+                await this.initialize();
             }
+
+            console.log('[LicenseService] Creating user with trial:', { 
+                email, name, trialDays, role, companyId, accountType 
+            });
             
+            // Calculer la date d'expiration
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + trialDays);
+
+            // Extraire le domaine de l'email
+            const domain = email.split('@')[1];
+
+            // Créer l'utilisateur
+            const { data: userData, error: userError } = await this.supabase
+                .from('users')
+                .insert({
+                    email: email,
+                    name: name || email.split('@')[0],
+                    role: role,
+                    company_id: companyId,
+                    account_type: accountType, // Nouveau champ
+                    license_status: 'trial',
+                    license_expires_at: expiresAt.toISOString(),
+                    first_login_at: new Date().toISOString(),
+                    last_login_at: new Date().toISOString(),
+                    login_count: 1
+                })
+                .select()
+                .single();
+
+            if (userError) {
+                console.error('[LicenseService] Error creating user:', userError);
+                
+                // Si l'utilisateur existe déjà, mettre à jour
+                if (userError.code === '23505') {
+                    return await this.updateExistingUserTrial(email, expiresAt);
+                }
+                
+                throw userError;
+            }
+
+            console.log('[LicenseService] ✅ User created with trial, role:', role, 'type:', accountType);
+
+            // Créer ou mettre à jour les stats utilisateur
+            await this.updateUserStats(email, name, domain);
+
+            // Enregistrer l'événement analytics
+            await this.recordAnalyticsEvent(userData.id, 'trial_started', {
+                trial_days: trialDays,
+                expires_at: expiresAt.toISOString(),
+                role: role,
+                account_type: accountType,
+                is_first_user: role === 'company_admin'
+            });
+
+            return { success: true, user: userData };
+
+        } catch (error) {
+            console.error('[LicenseService] Error creating user with trial:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async updateDomainUsage(domain, companyId, adminEmail) {
+        try {
+            const { error } = await this.supabase
+                .from('domain_usage')
+                .upsert({
+                    domain: domain,
+                    company_id: companyId,
+                    admin_email: adminEmail,
+                    total_users: 1,
+                    active_users: 1,
+                    last_activity: new Date().toISOString()
+                }, {
+                    onConflict: 'domain'
+                });
+
+            if (error) {
+                console.error('[LicenseService] Error updating domain usage:', error);
+            } else {
+                console.log('[LicenseService] ✅ Domain usage updated for:', domain);
+            }
+
+        } catch (error) {
+            console.error('[LicenseService] Error in updateDomainUsage:', error);
+        }
+    }
+
+    async updateExistingUserTrial(email, expiresAt) {
+        try {
+            console.log('[LicenseService] Updating existing user trial');
+            
+            // D'abord récupérer l'utilisateur pour avoir son login_count actuel
+            const { data: currentUser, error: fetchError } = await this.supabase
+                .from('users')
+                .select('login_count')
+                .eq('email', email)
+                .single();
+            
+            if (fetchError) throw fetchError;
+            
+            const { data, error } = await this.supabase
+                .from('users')
+                .update({
+                    license_status: 'trial',
+                    license_expires_at: expiresAt.toISOString(),
+                    last_login_at: new Date().toISOString(),
+                    login_count: (currentUser?.login_count || 0) + 1
+                })
+                .eq('email', email)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            return { success: true, user: data };
+
+        } catch (error) {
+            console.error('[LicenseService] Error updating user trial:', error);
             return { success: false, error: error.message };
         }
     }
@@ -337,28 +445,31 @@ class LicenseService {
 
             console.log('[LicenseService] Checking license status for:', email);
             
-            // Utiliser une approche différente pour éviter la récursion RLS
-            // D'abord essayer de récupérer juste les colonnes essentielles
-            let user = null;
-            let error = null;
-            
-            try {
-                // Essayer avec une requête minimale
-                const result = await this.supabase
-                    .from('users')
-                    .select('id, email, name, role, license_status, license_starts_at, license_expires_at, company_id, account_type, created_at, updated_at, last_login_at, login_count')
-                    .eq('email', email)
-                    .single();
-                
-                user = result.data;
-                error = result.error;
-            } catch (queryError) {
-                console.error('[LicenseService] Query error:', queryError);
-                error = queryError;
-            }
+            // Récupérer l'utilisateur avec les bonnes colonnes
+            const { data: user, error } = await this.supabase
+                .from('users')
+                .select(`
+                    id,
+                    email,
+                    name,
+                    role,
+                    account_type,
+                    license_status,
+                    license_expires_at,
+                    company_id,
+                    first_login_at,
+                    last_login_at,
+                    login_count,
+                    created_at,
+                    updated_at,
+                    company:companies(*)
+                `)
+                .eq('email', email)
+                .single();
 
             if (error) {
                 if (error.code === 'PGRST116') {
+                    // Utilisateur non trouvé
                     console.log('[LicenseService] User not found');
                     return { 
                         valid: false, 
@@ -366,78 +477,25 @@ class LicenseService {
                         message: 'Compte utilisateur non trouvé'
                     };
                 }
-                
-                // Si c'est une erreur de récursion RLS, essayer une approche alternative
-                if (error.code === '42P17') {
-                    console.error('[LicenseService] RLS recursion detected, cannot proceed');
-                    return {
-                        valid: false,
-                        status: 'error',
-                        message: 'Erreur de configuration de la base de données. Contactez l\'administrateur.',
-                        error: 'RLS recursion error'
-                    };
-                }
-                
                 throw error;
-            }
-
-            // Si l'utilisateur existe, continuer avec les vérifications
-            if (!user) {
-                return { 
-                    valid: false, 
-                    status: 'not_found',
-                    message: 'Compte utilisateur non trouvé'
-                };
-            }
-
-            // Récupérer la société séparément si nécessaire (pour éviter la récursion)
-            let company = null;
-            if (user.company_id) {
-                try {
-                    const { data: companyData } = await this.supabase
-                        .from('companies')
-                        .select('id, name, domain, is_virtual')
-                        .eq('id', user.company_id)
-                        .single();
-                    
-                    if (companyData) {
-                        company = companyData;
-                        user.company = company;
-                    }
-                } catch (companyError) {
-                    console.warn('[LicenseService] Could not fetch company data:', companyError);
-                }
-            }
-
-            // Si l'utilisateur n'a pas de type de compte défini
-            if (!user.account_type) {
-                return {
-                    valid: false,
-                    status: 'needs_account_type',
-                    user: user,
-                    message: 'Type de compte à définir'
-                };
             }
 
             // Vérifier le statut de licence
             const status = user.license_status;
-            const startsAt = user.license_starts_at ? new Date(user.license_starts_at) : null;
             const expiresAt = user.license_expires_at ? new Date(user.license_expires_at) : null;
             const now = new Date();
 
             console.log('[LicenseService] User license info:', {
                 status: status,
-                starts_at: startsAt,
                 expires_at: expiresAt,
                 is_expired: expiresAt ? expiresAt < now : false,
                 role: user.role,
-                account_type: user.account_type,
-                company: company?.name
+                account_type: user.account_type
             });
 
-            // Obtenir les infos de contact admin si nécessaire
+            // Obtenir les infos de contact admin si disponibles (seulement pour les pros)
             let adminContact = null;
-            if (user.company_id && user.role !== 'company_admin') {
+            if (user.company_id && user.company && user.account_type === 'professional') {
                 const { data: adminData } = await this.supabase
                     .from('users')
                     .select('email, name')
@@ -455,18 +513,9 @@ class LicenseService {
                 return { 
                     valid: false, 
                     status: 'blocked',
-                    message: 'Votre compte a été bloqué. Contactez votre administrateur.',
-                    adminContact: adminContact
-                };
-            }
-
-            // Vérifier si la licence n'a pas encore commencé
-            if (startsAt && startsAt > now) {
-                return { 
-                    valid: false, 
-                    status: 'not_started',
-                    message: `Votre licence commencera le ${startsAt.toLocaleDateString('fr-FR')}`,
-                    startsAt: startsAt,
+                    message: user.account_type === 'professional' 
+                        ? 'Votre compte a été bloqué. Contactez votre administrateur.'
+                        : 'Votre compte a été bloqué. Contactez le support.',
                     adminContact: adminContact
                 };
             }
@@ -476,14 +525,10 @@ class LicenseService {
                 // Mettre à jour le statut en base
                 await this.updateUserLicenseStatus(user.id, 'expired');
                 
-                const message = user.account_type === 'personal' 
-                    ? 'Votre licence personnelle a expiré' 
-                    : 'Votre période d\'essai a expiré. Contactez votre administrateur.';
-                
                 return { 
                     valid: false, 
                     status: 'expired',
-                    message: message,
+                    message: 'Votre période d\'essai a expiré',
                     expiredAt: expiresAt,
                     adminContact: adminContact
                 };
@@ -495,358 +540,25 @@ class LicenseService {
                 daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
             }
 
-            // Message personnalisé selon le type de compte
-            let message = 'Licence active';
-            if (status === 'trial') {
-                if (user.account_type === 'personal') {
-                    message = `Compte personnel - ${daysRemaining ? daysRemaining + ' jours restants' : 'Actif'}`;
-                } else {
-                    message = `Période d'essai - ${daysRemaining} jours restants`;
-                }
-            }
-
             // La licence est valide
             return {
                 valid: true,
                 status: status,
-                startsAt: startsAt,
                 expiresAt: expiresAt,
                 daysRemaining: daysRemaining,
                 user: user,
-                message: message,
-                accountType: user.account_type,
-                isPersonalAccount: user.account_type === 'personal',
-                companyName: company?.name
+                message: status === 'trial' ? `Période d'essai - ${daysRemaining} jours restants` : 'Licence active'
             };
 
         } catch (error) {
             console.error('[LicenseService] Error checking license:', error);
+            // En cas d'erreur, permettre l'accès pour ne pas bloquer
             return { 
-                valid: false, 
+                valid: true, 
                 status: 'error',
                 error: error.message,
                 message: 'Vérification temporairement indisponible'
             };
-        }
-    }
-
-    // Créer un nouvel utilisateur avec détection automatique du type
-    async createUser(email, companyName = null) {
-        try {
-            if (!this.initialized) {
-                await this.initialize();
-            }
-
-            // Déterminer le type de compte
-            const accountType = this.determineAccountType(email);
-            
-            console.log('[LicenseService] Creating user:', { 
-                email, 
-                accountType, 
-                isPersonal: accountType === 'personal',
-                companyName 
-            });
-
-            return await this.createUserWithAccountType(email, accountType, companyName);
-
-        } catch (error) {
-            console.error('[LicenseService] Error creating user:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    // Méthode pour définir le type de compte d'un utilisateur existant
-    async setUserAccountType(userId, accountType, companyName = null) {
-        try {
-            console.log('[LicenseService] Setting account type:', { userId, accountType, companyName });
-            
-            const updateData = {
-                account_type: accountType,
-                updated_at: new Date().toISOString()
-            };
-
-            // Si compte personnel
-            if (accountType === 'personal') {
-                updateData.role = 'company_admin'; // Admin de son propre compte
-                
-                // Si nom de société fourni pour un compte personnel
-                if (companyName) {
-                    const company = await this.getOrCreateVirtualCompany(companyName);
-                    if (company) {
-                        updateData.company_id = company.id;
-                    }
-                }
-            } else {
-                // Pour professionnel, déterminer la société basée sur le domaine
-                const { data: userData } = await this.supabase
-                    .from('users')
-                    .select('email')
-                    .eq('id', userId)
-                    .single();
-                
-                if (userData) {
-                    const domain = userData.email.split('@')[1];
-                    const company = await this.getOrCreateCompany(domain, companyName);
-                    
-                    if (company) {
-                        updateData.company_id = company.id;
-                        
-                        // Vérifier si c'est le premier utilisateur de la société
-                        const isFirst = await this.isFirstUserOfCompany(company.id);
-                        if (isFirst) {
-                            updateData.role = 'company_admin';
-                        } else {
-                            updateData.role = 'user';
-                        }
-                    }
-                }
-            }
-
-            // Mettre à jour l'utilisateur
-            const { data, error } = await this.supabase
-                .from('users')
-                .update(updateData)
-                .eq('id', userId)
-                .select()
-                .single();
-
-            if (error) throw error;
-
-            console.log('[LicenseService] ✅ Account type set successfully');
-            
-            // Invalider le cache
-            this.cachedLicenseStatus = null;
-            this.cacheExpiry = null;
-            
-            return { success: true, user: data };
-
-        } catch (error) {
-            console.error('[LicenseService] Error setting account type:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    async createUserWithAccountType(email, accountType, companyName = null) {
-        try {
-            if (!this.initialized) {
-                await this.initialize();
-            }
-
-            console.log('[LicenseService] Creating user with account type:', { email, accountType, companyName });
-            
-            const domain = email.split('@')[1];
-            const name = email.split('@')[0];
-            
-            // Déterminer les paramètres selon le type de compte
-            let companyId = null;
-            let role = 'user';
-            let trialDays = 30; // 30 jours pour tous par défaut
-            
-            if (accountType === 'professional') {
-                // Pour les comptes professionnels, créer ou récupérer la société
-                const company = await this.getOrCreateCompany(domain, companyName);
-                if (company) {
-                    companyId = company.id;
-                    
-                    // Vérifier si c'est le premier utilisateur de la société
-                    const isFirst = await this.isFirstUserOfCompany(company.id);
-                    if (isFirst) {
-                        role = 'company_admin';
-                        console.log('[LicenseService] First user of company, setting as admin');
-                    } else {
-                        role = 'user';
-                        console.log('[LicenseService] Additional user, setting as regular user');
-                    }
-                }
-            } else if (accountType === 'personal') {
-                // Pour les comptes personnels
-                role = 'company_admin'; // Toujours admin de leur propre compte
-                
-                if (companyName) {
-                    // Créer une société virtuelle si un nom est fourni
-                    const company = await this.getOrCreateVirtualCompany(companyName);
-                    if (company) {
-                        companyId = company.id;
-                    }
-                }
-            }
-            
-            // Créer l'utilisateur
-            return await this.createUserWithTrial({
-                email,
-                name,
-                role,
-                companyId,
-                trialDays,
-                accountType
-            });
-            
-        } catch (error) {
-            console.error('[LicenseService] Error creating user:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    async getOrCreateCompany(domain, companyName = null) {
-        try {
-            console.log('[LicenseService] Getting or creating company for domain:', domain);
-            
-            // Vérifier si la société existe déjà
-            const { data: existing, error: searchError } = await this.supabase
-                .from('companies')
-                .select('*')
-                .eq('domain', domain)
-                .maybeSingle();
-
-            if (existing) {
-                console.log('[LicenseService] Company already exists:', existing.name);
-                return existing;
-            }
-
-            // Créer la société
-            const name = companyName || this.generateCompanyName(domain);
-            
-            const { data: newCompany, error: createError } = await this.supabase
-                .from('companies')
-                .insert({
-                    name: name,
-                    domain: domain,
-                    is_virtual: false
-                })
-                .select()
-                .single();
-
-            if (createError) {
-                console.error('[LicenseService] Error creating company:', createError);
-                return null;
-            }
-
-            console.log('[LicenseService] ✅ Company created:', newCompany.name);
-            return newCompany;
-
-        } catch (error) {
-            console.error('[LicenseService] Error in getOrCreateCompany:', error);
-            return null;
-        }
-    }
-
-    async getOrCreateVirtualCompany(companyName) {
-        try {
-            const sanitizedName = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
-            const virtualDomain = `${sanitizedName}.virtual`;
-            
-            const { data: existing, error: searchError } = await this.supabase
-                .from('companies')
-                .select('*')
-                .eq('domain', virtualDomain)
-                .maybeSingle();
-
-            if (existing) {
-                return existing;
-            }
-
-            const { data: newCompany, error: createError } = await this.supabase
-                .from('companies')
-                .insert({
-                    name: companyName,
-                    domain: virtualDomain,
-                    is_virtual: true
-                })
-                .select()
-                .single();
-
-            if (createError) {
-                console.error('[LicenseService] Error creating virtual company:', createError);
-                return null;
-            }
-
-            console.log('[LicenseService] ✅ Virtual company created:', newCompany.name);
-            return newCompany;
-
-        } catch (error) {
-            console.error('[LicenseService] Error in getOrCreateVirtualCompany:', error);
-            return null;
-        }
-    }
-
-    // Générer un nom de société à partir du domaine
-    generateCompanyName(domain) {
-        // Enlever l'extension et capitaliser
-        const baseName = domain.split('.')[0];
-        return baseName.charAt(0).toUpperCase() + baseName.slice(1);
-    }
-
-    async isFirstUserOfCompany(companyId) {
-        try {
-            const { count, error } = await this.supabase
-                .from('users')
-                .select('*', { count: 'exact', head: true })
-                .eq('company_id', companyId);
-
-            if (error) {
-                console.error('[LicenseService] Error checking first user:', error);
-                return true; // En cas d'erreur, considérer comme premier utilisateur
-            }
-
-            return count === 0;
-
-        } catch (error) {
-            console.error('[LicenseService] Error in isFirstUserOfCompany:', error);
-            return true;
-        }
-    }
-
-    async createUserWithTrial({ email, name, role = 'user', companyId = null, trialDays = 30, accountType = 'professional' }) {
-        try {
-            console.log('[LicenseService] Creating user with trial:', { email, name, role, companyId, trialDays, accountType });
-            
-            const startsAt = new Date();
-            const expiresAt = new Date();
-            expiresAt.setDate(expiresAt.getDate() + trialDays);
-
-            const { data: userData, error: userError } = await this.supabase
-                .from('users')
-                .insert({
-                    email: email,
-                    name: name || email.split('@')[0],
-                    role: role,
-                    company_id: companyId,
-                    license_status: 'trial',
-                    license_starts_at: startsAt.toISOString(),
-                    license_expires_at: expiresAt.toISOString(),
-                    first_login_at: new Date().toISOString(),
-                    last_login_at: new Date().toISOString(),
-                    login_count: 1,
-                    account_type: accountType
-                })
-                .select()
-                .single();
-
-            if (userError) {
-                console.error('[LicenseService] Error creating user:', userError);
-                
-                // Si l'utilisateur existe déjà
-                if (userError.code === '23505') {
-                    return { 
-                        success: false, 
-                        error: 'Un compte existe déjà avec cette adresse email',
-                        userExists: true 
-                    };
-                }
-                
-                throw userError;
-            }
-
-            console.log('[LicenseService] ✅ User created with trial');
-
-            // Mettre à jour les stats
-            await this.updateUserStats(email, name, email.split('@')[1]);
-
-            return { success: true, user: userData };
-
-        } catch (error) {
-            console.error('[LicenseService] Error creating user with trial:', error);
-            return { success: false, error: error.message };
         }
     }
 
@@ -871,6 +583,7 @@ class LicenseService {
 
     async updateLastLogin(userId) {
         try {
+            // D'abord récupérer le login_count actuel
             const { data: currentUser, error: fetchError } = await this.supabase
                 .from('users')
                 .select('login_count')
@@ -919,31 +632,26 @@ class LicenseService {
         }
     }
 
-    // Méthode pour récupérer les informations d'un administrateur
-    async getCompanyAdmin(companyId) {
+    async recordAnalyticsEvent(userId, eventType, eventData) {
         try {
-            const { data, error } = await this.supabase
-                .from('users')
-                .select('id, email, name')
-                .eq('company_id', companyId)
-                .eq('role', 'company_admin')
-                .limit(1)
-                .single();
+            const { error } = await this.supabase
+                .from('analytics_events')
+                .insert({
+                    user_id: userId,
+                    event_type: eventType,
+                    event_data: eventData
+                });
 
             if (error) {
-                console.error('[LicenseService] Error fetching admin:', error);
-                return null;
+                console.error('[LicenseService] Error recording analytics:', error);
             }
 
-            return data;
-
         } catch (error) {
-            console.error('[LicenseService] Error in getCompanyAdmin:', error);
-            return null;
+            console.error('[LicenseService] Error in recordAnalyticsEvent:', error);
         }
     }
 
-    // MÉTHODES EXISTANTES (conservées pour compatibilité)
+    // MÉTHODES EXISTANTES AVEC MODIFICATIONS POUR PERMISSIONS
 
     async getCurrentUser() {
         if (this.currentUser) {
@@ -956,29 +664,15 @@ class LicenseService {
                 return null;
             }
 
-            // Récupérer l'utilisateur sans jointure
             const { data, error } = await this.supabase
                 .from('users')
-                .select('*')
+                .select('*, company:companies(*)')
                 .eq('email', user.email)
                 .single();
 
             if (error) {
                 console.error('[LicenseService] Error fetching user:', error);
                 return null;
-            }
-
-            // Récupérer la société séparément si nécessaire
-            if (data.company_id) {
-                const { data: companyData, error: companyError } = await this.supabase
-                    .from('companies')
-                    .select('*')
-                    .eq('id', data.company_id)
-                    .single();
-                
-                if (!companyError && companyData) {
-                    data.company = companyData;
-                }
             }
 
             this.currentUser = data;
@@ -1021,6 +715,72 @@ class LicenseService {
                this.currentUser.role === 'super_admin';
     }
 
+    canViewUser(targetUserId) {
+        if (!this.currentUser) {
+            return false;
+        }
+
+        // Super admin voit tout
+        if (this.currentUser.role === 'super_admin') {
+            return true;
+        }
+
+        // Les particuliers ne voient que leur propre compte
+        if (this.currentUser.account_type === 'individual') {
+            return this.currentUser.id === targetUserId;
+        }
+
+        // Les admins d'entreprise voient tous les utilisateurs de leur société
+        if (this.currentUser.role === 'company_admin' && this.currentUser.company_id) {
+            // Vérifier si l'utilisateur cible est dans la même société
+            return true; // La vérification sera faite côté requête
+        }
+
+        // Les utilisateurs normaux d'entreprise ne voient que leur propre compte
+        return this.currentUser.id === targetUserId;
+    }
+
+    async getVisibleUsers() {
+        try {
+            const currentUser = await this.getCurrentUser();
+            if (!currentUser) {
+                return [];
+            }
+
+            let query = this.supabase
+                .from('users')
+                .select(`
+                    *,
+                    company:companies(*)
+                `)
+                .order('created_at', { ascending: false });
+
+            // Appliquer les filtres selon les permissions
+            if (currentUser.role === 'super_admin') {
+                // Pas de filtre, voit tout
+            } else if (currentUser.role === 'company_admin' && currentUser.company_id) {
+                // Voit tous les utilisateurs de sa société
+                query = query.eq('company_id', currentUser.company_id);
+            } else if (currentUser.account_type === 'individual') {
+                // Voit seulement son propre compte
+                query = query.eq('id', currentUser.id);
+            } else {
+                // Utilisateur normal d'entreprise, voit seulement son compte
+                query = query.eq('id', currentUser.id);
+            }
+
+            const { data, error } = await query;
+
+            if (error) throw error;
+
+            return data || [];
+
+        } catch (error) {
+            console.error('[LicenseService] Error fetching visible users:', error);
+            return [];
+        }
+    }
+
     async getCompanyUsers() {
         try {
             const currentUser = await this.getCurrentUser();
@@ -1051,16 +811,25 @@ class LicenseService {
                 return { success: false, error: 'Droits insuffisants' };
             }
 
-            // Déterminer le type de compte
-            const accountType = this.determineAccountType(email);
+            // Vérifier que c'est un email professionnel du même domaine
+            const currentDomain = currentUser.email.split('@')[1];
+            const newUserDomain = email.split('@')[1];
+            
+            if (currentDomain !== newUserDomain) {
+                return { 
+                    success: false, 
+                    error: 'L\'utilisateur doit avoir une adresse email du même domaine' 
+                };
+            }
 
+            // Créer l'utilisateur avec licence trial
             const result = await this.createUserWithTrial({
                 email: email,
                 name: email.split('@')[0],
-                trialDays: 30,
+                trialDays: 30, // 30 jours pour les utilisateurs ajoutés par admin
                 role: 'user',
                 companyId: currentUser.company_id,
-                accountType: accountType
+                accountType: 'professional'
             });
 
             return result;
@@ -1078,6 +847,11 @@ class LicenseService {
                 return { success: false, error: 'Droits insuffisants' };
             }
 
+            // Vérifier que l'utilisateur cible est accessible
+            if (!await this.canManageUser(userId)) {
+                return { success: false, error: 'Vous ne pouvez pas gérer cet utilisateur' };
+            }
+
             const updateData = {
                 license_status: status,
                 updated_at: new Date().toISOString()
@@ -1087,18 +861,6 @@ class LicenseService {
                 updateData.license_expires_at = expiresAt.toISOString();
             }
 
-            if (status === 'active') {
-                const { data: targetUser } = await this.supabase
-                    .from('users')
-                    .select('license_starts_at')
-                    .eq('id', userId)
-                    .single();
-                
-                if (!targetUser?.license_starts_at) {
-                    updateData.license_starts_at = new Date().toISOString();
-                }
-            }
-
             const { error } = await this.supabase
                 .from('users')
                 .update(updateData)
@@ -1106,6 +868,14 @@ class LicenseService {
 
             if (error) throw error;
 
+            // Enregistrer l'action admin
+            await this.recordAdminAction('update_license', {
+                target_user_id: userId,
+                new_status: status,
+                new_expires_at: expiresAt
+            });
+
+            // Invalider le cache si c'est l'utilisateur actuel
             if (this.currentUser && this.currentUser.id === userId) {
                 this.cachedLicenseStatus = null;
                 this.cacheExpiry = null;
@@ -1119,58 +889,75 @@ class LicenseService {
         }
     }
 
-    async updateUserLicenseDates(userId, startDate, endDate) {
+    async canManageUser(targetUserId) {
+        const currentUser = await this.getCurrentUser();
+        if (!currentUser) return false;
+
+        // Super admin peut tout gérer
+        if (currentUser.role === 'super_admin') return true;
+
+        // Admin d'entreprise peut gérer les utilisateurs de sa société
+        if (currentUser.role === 'company_admin' && currentUser.company_id) {
+            const { data: targetUser } = await this.supabase
+                .from('users')
+                .select('company_id')
+                .eq('id', targetUserId)
+                .single();
+            
+            return targetUser && targetUser.company_id === currentUser.company_id;
+        }
+
+        return false;
+    }
+
+    async recordAdminAction(action, details) {
         try {
             const currentUser = await this.getCurrentUser();
-            if (!this.isAdmin()) {
-                return { success: false, error: 'Droits insuffisants' };
-            }
+            if (!currentUser) return;
 
-            const startsAt = new Date(startDate);
-            const expiresAt = new Date(endDate);
-
-            if (startsAt >= expiresAt) {
-                return { success: false, error: 'La date de fin doit être après la date de début' };
-            }
-
-            const updateData = {
-                license_starts_at: startsAt.toISOString(),
-                license_expires_at: expiresAt.toISOString(),
-                updated_at: new Date().toISOString()
-            };
-
-            const now = new Date();
-            if (startsAt > now) {
-                updateData.license_status = 'pending';
-            } else if (expiresAt > now) {
-                updateData.license_status = 'active';
-            } else {
-                updateData.license_status = 'expired';
-            }
-
-            const { error } = await this.supabase
-                .from('users')
-                .update(updateData)
-                .eq('id', userId);
-
-            if (error) throw error;
-
-            // Invalider le cache si c'est l'utilisateur actuel
-            if (this.currentUser && this.currentUser.id === userId) {
-                this.cachedLicenseStatus = null;
-                this.cacheExpiry = null;
-            }
-
-            console.log('[LicenseService] ✅ License dates updated successfully');
-            return { success: true };
+            await this.supabase
+                .from('admin_actions')
+                .insert({
+                    admin_user_id: currentUser.id,
+                    admin_email: currentUser.email,
+                    action: action,
+                    details: details,
+                    ip_address: await this.getIPAddress()
+                });
 
         } catch (error) {
-            console.error('[LicenseService] Error updating license dates:', error);
-            return { success: false, error: error.message };
+            console.error('[LicenseService] Error recording admin action:', error);
+        }
+    }
+
+    async getIPAddress() {
+        try {
+            const response = await fetch('https://api.ipify.org?format=json');
+            const data = await response.json();
+            return data.ip;
+        } catch {
+            return null;
         }
     }
 
     // Méthodes de debug
+    async testConnection() {
+        try {
+            const { data, error } = await this.supabase
+                .from('users')
+                .select('count', { count: 'exact', head: true });
+
+            if (error) throw error;
+
+            console.log('[LicenseService] Connection test successful');
+            return { success: true };
+
+        } catch (error) {
+            console.error('[LicenseService] Connection test failed:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
     clearCache() {
         this.cachedLicenseStatus = null;
         this.cacheExpiry = null;
@@ -1187,6 +974,7 @@ class LicenseService {
         console.log('[LicenseService] Service reset');
     }
 
+    // Nouvelle méthode de debug
     async debug() {
         return {
             initialized: this.initialized,
@@ -1195,12 +983,12 @@ class LicenseService {
                 email: this.currentUser.email,
                 status: this.currentUser.license_status,
                 role: this.currentUser.role,
-                company: this.currentUser.company,
-                accountType: this.currentUser.account_type
+                account_type: this.currentUser.account_type,
+                company: this.currentUser.company
             } : null,
             hasCachedStatus: !!this.cachedLicenseStatus,
             cacheExpiry: this.cacheExpiry,
-            personalDomains: this.personalDomains.length
+            connectionTest: await this.testConnection()
         };
     }
 }
@@ -1208,4 +996,4 @@ class LicenseService {
 // Créer l'instance globale
 window.licenseService = new LicenseService();
 
-console.log('[LicenseService] ✅ Service loaded v6.0 - Enhanced account type management');
+console.log('[LicenseService] ✅ Service loaded v4.0 - Pro/Particulier with permissions management');
