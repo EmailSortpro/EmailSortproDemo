@@ -272,7 +272,7 @@
             background: #e2e8f0;
         }
 
-        /* Styles existants pour la page analytics */
+        /* Styles pour la page analytics */
         .analytics-standalone {
             max-width: 1400px;
             margin: 0 auto;
@@ -1087,6 +1087,7 @@
         .license-actions {
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
         }
 
         .license-action-btn {
@@ -1228,6 +1229,14 @@
                 gap: 12px;
             }
 
+            .user-info-header {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin-bottom: 16px;
+                justify-content: center;
+            }
+
             .tabs-nav {
                 flex-direction: column;
             }
@@ -1265,6 +1274,16 @@
 
             .account-type-options {
                 grid-template-columns: 1fr;
+            }
+
+            .license-actions {
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .license-action-btn {
+                width: 100%;
+                text-align: center;
             }
         }
     </style>
@@ -1332,7 +1351,7 @@
         </div>
     </div>
 
-    <!-- Page Analytics (cachée par défaut) -->
+    <!-- Page Analytics -->
     <div class="analytics-standalone" id="analyticsContainer">
         <a href="./index.html" class="back-to-app">
             <i class="fas fa-arrow-left"></i>
@@ -1563,6 +1582,17 @@
             }
         }
 
+        // Vérifier si l'utilisateur a déjà fait le choix du type de compte
+        function hasAccountTypeBeenSet(user) {
+            // Si l'utilisateur est un super admin, il n'a pas besoin de définir le type
+            if (user.role === 'super_admin') {
+                return true;
+            }
+            
+            // Si account_type est défini et non null, alors c'est fait
+            return user.account_type && user.account_type !== null;
+        }
+
         // Confirmer le type de compte
         async function confirmAccountType() {
             if (!selectedAccountType) {
@@ -1578,10 +1608,19 @@
             }
             
             try {
+                // Utiliser les valeurs autorisées par la contrainte de base de données
+                const validAccountType = selectedAccountType === 'personal' ? 'personal' : 'professional';
+                
+                console.log('[Analytics] Setting account type:', {
+                    userId: pendingUser.id,
+                    accountType: validAccountType,
+                    companyName: companyName
+                });
+                
                 // Mettre à jour le type de compte de l'utilisateur
                 const result = await licenseService.setUserAccountType(
                     pendingUser.id,
-                    selectedAccountType,
+                    validAccountType,
                     companyName || null
                 );
                 
@@ -1598,13 +1637,16 @@
                         
                         // Afficher analytics
                         showAnalytics();
+                    } else {
+                        showAuthMessage('Erreur lors de la mise à jour du compte', 'error');
                     }
                 } else {
-                    alert('Erreur lors de la configuration : ' + result.error);
+                    console.error('[Analytics] Error setting account type:', result.error);
+                    showAuthMessage('Erreur lors de la configuration : ' + result.error, 'error');
                 }
             } catch (error) {
                 console.error('[Auth] Error setting account type:', error);
-                alert('Erreur lors de la configuration du compte');
+                showAuthMessage('Erreur lors de la configuration du compte', 'error');
             }
         }
 
@@ -1647,11 +1689,12 @@
                 const result = await licenseService.authenticateWithEmail(email);
                 
                 if (result.valid) {
-                    // Pour Analytics, vérifier si l'utilisateur a besoin de configurer son accès admin
-                    const needsAdminSetup = (result.status === 'needs_account_type' || !result.user.account_type) ||
-                                          (result.user.role === 'user' && !checkAdminAccess(result.user));
+                    // Vérifier si l'utilisateur a besoin de configurer son type de compte
+                    const needsAccountTypeSetup = !hasAccountTypeBeenSet(result.user);
                     
-                    if (needsAdminSetup) {
+                    if (needsAccountTypeSetup) {
+                        console.log('[Analytics] User needs account type setup');
+                        
                         // Stocker l'utilisateur temporairement
                         pendingUser = result.user;
                         
@@ -1713,8 +1756,13 @@
         function checkAdminAccess(user) {
             if (!user) return false;
             
-            // Les admins ont accès
-            if (user.role === 'company_admin' || user.role === 'super_admin') {
+            // Les super admins ont toujours accès
+            if (user.role === 'super_admin') {
+                return true;
+            }
+            
+            // Les admins de société ont accès
+            if (user.role === 'company_admin') {
                 return true;
             }
             
@@ -1793,7 +1841,7 @@
                         
                         if (result.valid) {
                             // Vérifier si le type de compte est défini
-                            if (result.status === 'needs_account_type' || !result.user.account_type) {
+                            if (!hasAccountTypeBeenSet(result.user)) {
                                 // Forcer la reconnexion pour définir le type de compte
                                 sessionStorage.removeItem('analyticsAuth');
                                 return;
@@ -2110,10 +2158,6 @@
                                    user.license_status === 'blocked' ? 'blocked' :
                                    'trial';
 
-                // Déterminer si l'utilisateur est actif
-                const lastLogin = user.last_login_at ? new Date(user.last_login_at) : null;
-                const isActive = lastLogin && (new Date() - lastLogin) < 7 * 24 * 60 * 60 * 1000; // 7 jours
-
                 return `
                     <tr>
                         <td>
@@ -2127,7 +2171,7 @@
                         </td>
                         <td>${companyName}</td>
                         <td><span class="status-badge ${licenseClass}">${user.license_status || 'trial'}</span></td>
-                        <td>${formatLastLogin(lastLogin)}</td>
+                        <td>${formatLastLogin(user.last_login_at ? new Date(user.last_login_at) : null)}</td>
                         <td>${user.login_count || 0}</td>
                         <td>${user.role || 'user'}</td>
                         <td>
@@ -2324,7 +2368,7 @@
             const user = currentUsers.find(u => u.id === userId);
             if (!user) return;
 
-            // Pour l'instant, basculer vers l'onglet licences
+            // Basculer vers l'onglet licences
             switchTab('licenses');
         }
 
@@ -2737,7 +2781,7 @@
             }
         }
 
-        // Analytics loading (existing functionality)
+        // Analytics loading
         async function loadAnalyticsScript() {
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
@@ -2826,6 +2870,12 @@
             }
         });
 
+        document.getElementById('accountTypeModal').addEventListener('click', (e) => {
+            if (e.target.id === 'accountTypeModal') {
+                // Ne pas fermer le modal automatiquement pour forcer le choix
+            }
+        });
+
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('[Analytics Page] DOM loaded, initializing with authentication...');
@@ -2861,8 +2911,8 @@
             };
         };
 
-        console.log('[Analytics Page] ✅ Analytics page with authentication and account type setup initialized v3');
+        console.log('[Analytics Page] ✅ Analytics page with complete authentication and management features initialized v5');
         console.log('[Analytics Page] Use debugAnalytics() for debug information');
     </script>
 </body>
-</html>v
+</html>
