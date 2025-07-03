@@ -1155,124 +1155,6 @@
             margin-bottom: 16px;
         }
 
-        /* Modal pour le choix du type de compte */
-        .account-type-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-        }
-
-        .account-type-modal.active {
-            display: flex;
-        }
-
-        .account-type-card {
-            background: white;
-            padding: 32px;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            width: 100%;
-            max-width: 500px;
-            text-align: center;
-        }
-
-        .account-type-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 12px;
-        }
-
-        .account-type-subtitle {
-            color: #6b7280;
-            margin-bottom: 32px;
-            font-size: 1rem;
-        }
-
-        .account-type-options {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .account-type-option {
-            border: 2px solid #e2e8f0;
-            padding: 24px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .account-type-option:hover {
-            border-color: #4F46E5;
-            background: #f8fafc;
-        }
-
-        .account-type-option.selected {
-            border-color: #4F46E5;
-            background: #f3e8ff;
-        }
-
-        .account-type-option i {
-            font-size: 2.5rem;
-            color: #4F46E5;
-            margin-bottom: 12px;
-        }
-
-        .account-type-option h3 {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 8px;
-        }
-
-        .account-type-option p {
-            font-size: 0.875rem;
-            color: #6b7280;
-        }
-
-        .company-name-input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 1rem;
-            margin-bottom: 24px;
-            display: none;
-        }
-
-        .account-type-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-        }
-
-        .account-type-button {
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: none;
-        }
-
-        .account-type-button.primary {
-            background: #4F46E5;
-            color: white;
-        }
-
-        .account-type-button.primary:hover {
-            background: #4338ca;
-        }
         .loading-container {
             display: flex;
             align-items: center;
@@ -1655,11 +1537,75 @@
         let filteredUsers = [];
         let currentTab = 'overview';
         let authenticatedUser = null;
+        let selectedAccountType = null;
+        let pendingUser = null;
 
         function showAuthMessage(message, type) {
             const messageDiv = document.getElementById('authMessage');
             messageDiv.className = type === 'error' ? 'auth-error' : 'auth-success';
             messageDiv.textContent = message;
+        }
+
+        // Sélection du type de compte
+        function selectAccountType(type) {
+            selectedAccountType = type;
+            
+            // Mettre à jour l'UI
+            document.getElementById('personalOption').classList.toggle('selected', type === 'personal');
+            document.getElementById('professionalOption').classList.toggle('selected', type === 'professional');
+            
+            // Afficher le champ société pour les comptes professionnels
+            const companyInput = document.getElementById('companyNameInput');
+            if (type === 'professional') {
+                companyInput.classList.add('visible');
+            } else {
+                companyInput.classList.remove('visible');
+            }
+        }
+
+        // Confirmer le type de compte
+        async function confirmAccountType() {
+            if (!selectedAccountType) {
+                alert('Veuillez sélectionner un type de compte');
+                return;
+            }
+            
+            const companyName = document.getElementById('companyNameInput').value.trim();
+            
+            if (selectedAccountType === 'professional' && !companyName) {
+                alert('Veuillez entrer le nom de votre entreprise');
+                return;
+            }
+            
+            try {
+                // Mettre à jour le type de compte de l'utilisateur
+                const result = await licenseService.setUserAccountType(
+                    pendingUser.id,
+                    selectedAccountType,
+                    companyName || null
+                );
+                
+                if (result.success) {
+                    // Fermer le modal
+                    document.getElementById('accountTypeModal').classList.remove('active');
+                    
+                    // Recharger les informations utilisateur
+                    const refreshResult = await licenseService.authenticateWithEmail(pendingUser.email);
+                    
+                    if (refreshResult.valid) {
+                        authenticatedUser = refreshResult.user;
+                        licenseService.currentUser = authenticatedUser;
+                        
+                        // Afficher analytics
+                        showAnalytics();
+                    }
+                } else {
+                    alert('Erreur lors de la configuration : ' + result.error);
+                }
+            } catch (error) {
+                console.error('[Auth] Error setting account type:', error);
+                alert('Erreur lors de la configuration du compte');
+            }
         }
 
         // Gestion de l'authentification pour la page admin
@@ -1701,6 +1647,24 @@
                 const result = await licenseService.authenticateWithEmail(email);
                 
                 if (result.valid) {
+                    // Vérifier si le type de compte est défini
+                    if (result.status === 'needs_account_type' || !result.user.account_type) {
+                        // Stocker l'utilisateur temporairement
+                        pendingUser = result.user;
+                        
+                        // Afficher le modal de choix du type de compte
+                        document.getElementById('accountTypeModal').classList.add('active');
+                        
+                        // Réinitialiser le formulaire
+                        selectedAccountType = null;
+                        document.getElementById('personalOption').classList.remove('selected');
+                        document.getElementById('professionalOption').classList.remove('selected');
+                        document.getElementById('companyNameInput').value = '';
+                        document.getElementById('companyNameInput').classList.remove('visible');
+                        
+                        return;
+                    }
+                    
                     // Vérifier les permissions d'accès
                     const hasAccess = checkAdminAccess(result.user);
                     
@@ -1754,9 +1718,6 @@
             return false;
         }
 
-        // Plus besoin de ces fonctions pour la création de compte
-        // On garde seulement pour le cas où on voudrait les réutiliser ailleurs
-        
         function showAnalytics() {
             // Cacher la page de connexion
             document.getElementById('authContainer').style.display = 'none';
@@ -1822,11 +1783,20 @@
                         // Recharger l'utilisateur avec authenticateWithEmail
                         const result = await licenseService.authenticateWithEmail(data.email);
                         
-                        if (result.valid && checkAdminAccess(result.user)) {
-                            authenticatedUser = result.user;
-                            licenseService.currentUser = authenticatedUser;
-                            showAnalytics();
-                            return;
+                        if (result.valid) {
+                            // Vérifier si le type de compte est défini
+                            if (result.status === 'needs_account_type' || !result.user.account_type) {
+                                // Forcer la reconnexion pour définir le type de compte
+                                sessionStorage.removeItem('analyticsAuth');
+                                return;
+                            }
+                            
+                            if (checkAdminAccess(result.user)) {
+                                authenticatedUser = result.user;
+                                licenseService.currentUser = authenticatedUser;
+                                showAnalytics();
+                                return;
+                            }
                         }
                     }
                 } catch (error) {
@@ -2883,7 +2853,7 @@
             };
         };
 
-        console.log('[Analytics Page] ✅ Analytics page with authentication and permissions initialized v2');
+        console.log('[Analytics Page] ✅ Analytics page with authentication and account type setup initialized v3');
         console.log('[Analytics Page] Use debugAnalytics() for debug information');
     </script>
 </body>
