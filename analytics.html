@@ -734,6 +734,11 @@
             color: #dc2626;
         }
 
+        .action-btn.dates {
+            background: #ecfdf5;
+            color: #059669;
+        }
+
         /* User Details Modal */
         .modal-overlay {
             display: none;
@@ -938,643 +943,6 @@
             background: #e2e8f0;
         }
 
-        /* License Management */
-        .license-management {
-            padding: 24px;
-        }
-
-        .license-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 32px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .license-header h2 {
-            font-size: 1.5rem;
-            color: #1f2937;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .add-user-form {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-            padding: 20px;
-            background: #f8fafc;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .add-user-form input {
-            flex: 1;
-            padding: 10px 16px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 0.875rem;
-        }
-
-        .add-user-form button {
-            padding: 10px 20px;
-            background: #10b981;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .add-user-form button:hover {
-            background: #059669;
-        }
-
-        .license-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 32px;
-        }
-
-        .license-stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
-        .license-stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #4F46E5;
-            margin-bottom: 4px;
-        }
-
-        .license-stat-label {
-            font-size: 0.875rem;
-            color: #64748b;
-        }
-
-        .license-users-table {
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .license-users-table table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .license-users-table th {
-            background: #f8fafc;
-            padding: 12px 16px;
-            text-align: left;
-            font-weight: 600;
-            color: #475569;
-            font-size: 0.875rem;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .license-users-table td {
-            padding: 16px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .license-users-table tr:hover {
-            background: #f8fafc;
-        }
-
-        .user-email {
-            font-weight: 500;
-            color: #1f2937;
-        }
-
-        .license-status {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .license-status.active {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-
-        .license-status.trial {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
-        .license-status.expired {
-            background: #fef2f2;
-            color: #dc2626;
-        }
-
-        .license-status.blocked {
-            background: #f3f4f6;
-            color: #6b7280;
-        }
-
-        .license-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .license-action-btn {
-            padding: 6px 12px;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .license-action-btn.activate {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-
-        .license-action-btn.block {
-            background: #fef2f2;
-            color: #dc2626;
-        }
-
-        .license-action-btn.extend {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .license-action-btn.edit-dates {
-            background: #f3e8ff;
-            color: #7c3aed;
-        }
-
-        .license-action-btn.delete {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-
-        /* License Extension Dropdown */
-        .license-extend-dropdown {
-            position: fixed;
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            display: none;
-            min-width: 200px;
-        }
-
-        .license-extend-dropdown.active {
-            display: block;
-        }
-
-        .license-extend-dropdown .license-extend-options {
-            padding: 8px;
-        }
-
-        .license-extend-dropdown .license-extend-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px;
-            border: none;
-            background: none;
-            width: 100%;
-            text-align: left;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 0.875rem;
-        }
-
-        .license-extend-dropdown .license-extend-option:hover {
-            background: #f8fafc;
-        }
-
-        .license-extend-dropdown .license-extend-option i {
-            color: #4F46E5;
-            width: 16px;
-        }
-
-        .company-info {
-            padding: 20px;
-            background: #f8fafc;
-            border-radius: 8px;
-            margin-bottom: 24px;
-            border-left: 4px solid #4F46E5;
-        }
-
-        .company-info h3 {
-            font-size: 1.125rem;
-            color: #1f2937;
-            margin-bottom: 8px;
-        }
-
-        .company-info p {
-            color: #64748b;
-            font-size: 0.875rem;
-        }
-
-        /* Billing Management */
-        .billing-management {
-            padding: 24px;
-        }
-
-        .billing-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 32px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .billing-header h2 {
-            font-size: 1.5rem;
-            color: #1f2937;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .pricing-section {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 32px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .pricing-section h3 {
-            font-size: 1.25rem;
-            color: #1f2937;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-
-        .pricing-card {
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 24px;
-            text-align: center;
-            position: relative;
-            transition: all 0.3s ease;
-        }
-
-        .pricing-card:hover {
-            border-color: #4F46E5;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
-        }
-
-        .pricing-card.popular {
-            border-color: #4F46E5;
-            background: linear-gradient(135deg, #f8fafc 0%, #f3e8ff 100%);
-        }
-
-        .pricing-card.popular::before {
-            content: "Populaire";
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #4F46E5;
-            color: white;
-            padding: 4px 16px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .pricing-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 8px;
-        }
-
-        .pricing-price {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #4F46E5;
-            margin-bottom: 4px;
-        }
-
-        .pricing-period {
-            font-size: 0.875rem;
-            color: #6b7280;
-            margin-bottom: 16px;
-        }
-
-        .pricing-features {
-            list-style: none;
-            padding: 0;
-            margin-bottom: 24px;
-        }
-
-        .pricing-features li {
-            padding: 8px 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.875rem;
-            color: #4b5563;
-        }
-
-        .pricing-features li i {
-            color: #10b981;
-            font-size: 0.75rem;
-        }
-
-        .pricing-button {
-            width: 100%;
-            padding: 12px 24px;
-            background: #4F46E5;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .pricing-button:hover {
-            background: #4338ca;
-            transform: translateY(-1px);
-        }
-
-        .pricing-button.secondary {
-            background: #f1f5f9;
-            color: #475569;
-            border: 1px solid #e2e8f0;
-        }
-
-        .pricing-button.secondary:hover {
-            background: #e2e8f0;
-        }
-
-        .billing-summary {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 32px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .billing-summary h3 {
-            font-size: 1.25rem;
-            color: #1f2937;
-            margin-bottom: 16px;
-        }
-
-        .billing-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .billing-stat-card {
-            background: #f8fafc;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            border-left: 4px solid #4F46E5;
-        }
-
-        .billing-stat-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 4px;
-        }
-
-        .billing-stat-label {
-            font-size: 0.875rem;
-            color: #64748b;
-        }
-
-        .billing-table {
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .billing-table table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .billing-table th {
-            background: #f8fafc;
-            padding: 12px 16px;
-            text-align: left;
-            font-weight: 600;
-            color: #475569;
-            font-size: 0.875rem;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .billing-table td {
-            padding: 16px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .billing-table tr:hover {
-            background: #f8fafc;
-        }
-
-        .license-type-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .license-type-badge.monthly {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .license-type-badge.yearly {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-
-        .license-type-badge.trial {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
-        .license-pricing-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .license-pricing-btn {
-            padding: 6px 12px;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .license-pricing-btn.edit {
-            background: #f3e8ff;
-            color: #7c3aed;
-        }
-
-        .license-pricing-btn.monthly {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .license-pricing-btn.yearly {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-
-        .license-pricing-btn.trial {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
-        .pricing-config {
-            background: #f8fafc;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 24px;
-            border-left: 4px solid #4F46E5;
-        }
-
-        .pricing-config h4 {
-            font-size: 1rem;
-            color: #1f2937;
-            margin-bottom: 12px;
-        }
-
-        .pricing-config-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-        }
-
-        .pricing-config-item {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .pricing-config-item label {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: #374151;
-        }
-
-        .pricing-config-item input {
-            padding: 8px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 0.875rem;
-        }
-
-        .pricing-config-item input:focus {
-            outline: none;
-            border-color: #4F46E5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
-
-        .save-pricing-btn {
-            padding: 10px 20px;
-            background: #10b981;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .save-pricing-btn:hover {
-            background: #059669;
-        }
-
-        .stripe-section {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 32px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            border: 2px solid #e2e8f0;
-        }
-
-        .stripe-section.ready {
-            border-color: #10b981;
-            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-        }
-
-        .stripe-section h3 {
-            font-size: 1.25rem;
-            color: #1f2937;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .stripe-status {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .stripe-status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #6b7280;
-        }
-
-        .stripe-status-dot.ready {
-            background: #10b981;
-        }
-
-        .stripe-status-text {
-            font-size: 0.875rem;
-            color: #6b7280;
-        }
-
-        .stripe-status-text.ready {
-            color: #10b981;
-        }
-
         .no-permissions {
             text-align: center;
             padding: 60px;
@@ -1707,12 +1075,12 @@
                 grid-template-columns: 1fr;
             }
 
-            .license-actions {
+            .actions-cell {
                 flex-direction: column;
                 gap: 4px;
             }
 
-            .license-action-btn {
+            .action-btn {
                 width: 100%;
                 text-align: center;
             }
@@ -1923,17 +1291,61 @@
                 </div>
             </div>
 
-            <!-- Licenses Tab -->
+            <!-- Licenses Tab - Même style que Users -->
             <div class="tab-content" id="licensesTab">
-                <div id="licenseManagement" class="license-management">
-                    <!-- Le contenu sera généré dynamiquement -->
+                <div class="users-controls">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Rechercher une licence..." id="licenseSearch">
+                    </div>
+                    <select class="filter-select" id="licenseStatusFilter">
+                        <option value="">Tous les statuts</option>
+                        <option value="active">Actifs</option>
+                        <option value="trial">En essai</option>
+                        <option value="expired">Expirés</option>
+                        <option value="blocked">Bloqués</option>
+                    </select>
+                    <select class="filter-select" id="licenseCompanyFilter">
+                        <option value="">Toutes les sociétés</option>
+                    </select>
+                    <button class="refresh-btn" onclick="refreshLicenses()">
+                        <i class="fas fa-sync-alt"></i>
+                        Actualiser
+                    </button>
+                </div>
+
+                <div class="users-table-container">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>Utilisateur</th>
+                                <th>Société</th>
+                                <th>Statut</th>
+                                <th>Date début</th>
+                                <th>Date fin</th>
+                                <th>Jours restants</th>
+                                <th>Type</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="licensesTableBody">
+                            <!-- Licenses will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="licensesEmptyState" class="empty-state" style="display: none;">
+                    <i class="fas fa-key"></i>
+                    <h3>Aucune licence trouvée</h3>
+                    <p>Essayez de modifier vos filtres de recherche</p>
                 </div>
             </div>
 
             <!-- Billing Tab -->
             <div class="tab-content" id="billingTab">
-                <div id="billingManagement" class="billing-management">
-                    <!-- Le contenu sera généré dynamiquement -->
+                <div id="billingContent" class="loading-container">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Chargement de la facturation...</div>
                 </div>
             </div>
         </div>
@@ -1988,24 +1400,6 @@
         </div>
     </div>
 
-    <!-- License Extension Dropdown -->
-    <div class="license-extend-dropdown" id="licenseExtendDropdown">
-        <div class="license-extend-options">
-            <button class="license-extend-option" onclick="extendLicenseBy(1)">
-                <i class="fas fa-calendar-day"></i> +1 mois (9,90€)
-            </button>
-            <button class="license-extend-option" onclick="extendLicenseBy(3)">
-                <i class="fas fa-calendar-week"></i> +3 mois (29,70€)
-            </button>
-            <button class="license-extend-option" onclick="extendLicenseBy(6)">
-                <i class="fas fa-calendar-alt"></i> +6 mois (59,40€)
-            </button>
-            <button class="license-extend-option" onclick="extendLicenseBy(12)">
-                <i class="fas fa-calendar"></i> +1 an (105,60€)
-            </button>
-        </div>
-    </div>
-
     <script>
         // Global variables
         let analyticsManager = null;
@@ -2014,27 +1408,14 @@
         let supabaseClient = null;
         let currentUsers = [];
         let filteredUsers = [];
+        let currentLicenses = [];
+        let filteredLicenses = [];
         let currentTab = 'overview';
         let authenticatedUser = null;
         let selectedAccountType = null;
         let pendingUser = null;
-        let selectedExtensionDuration = null;
-        let currentExtensionUserId = null;
-        let pricingConfig = {
-            monthly: 9.90,
-            yearly: 8.80,
-            currency: 'EUR',
-            taxRate: 0.20 // 20% TVA
-        };
 
         // Fonctions utilitaires
-        function formatPrice(price) {
-            return new Intl.NumberFormat('fr-FR', {
-                style: 'currency',
-                currency: pricingConfig.currency
-            }).format(price);
-        }
-
         function showAuthMessage(message, type) {
             const messageDiv = document.getElementById('authMessage');
             messageDiv.className = type === 'error' ? 'auth-error' : 'auth-success';
@@ -2060,36 +1441,19 @@
 
         // Vérifier si l'utilisateur a déjà fait le choix du type de compte
         function hasAccountTypeBeenSet(user) {
-            // Si l'utilisateur est un super admin, il n'a pas besoin de définir le type
             if (user.role === 'super_admin') {
-                console.log('[Analytics] Super admin detected, no account type needed');
                 return true;
             }
             
-            // IMPORTANT: Pour les analytics, on doit TOUJOURS permettre de reconfigurer le type
-            // car les comptes existants peuvent avoir été créés sans choix explicite
-            // On va vérifier si l'utilisateur a accès, sinon on lui propose de reconfigurer
-            
-            // Si l'utilisateur a déjà un rôle admin, pas besoin de reconfigurer
             if (user.role === 'company_admin') {
-                console.log('[Analytics] Company admin detected, no reconfiguration needed');
                 return true;
             }
             
-            // Si c'est un utilisateur professionnel normal, on lui propose de reconfigurer
-            // même s'il a déjà un account_type, car il pourrait vouloir passer en personnel
             if (user.account_type === 'professional' && user.role === 'user') {
-                console.log('[Analytics] Professional user detected, allowing reconfiguration');
-                return false; // Forcer la reconfiguration
+                return false;
             }
             
-            // Si account_type est défini et non null, alors c'est fait
             const hasType = user.account_type && user.account_type !== null;
-            console.log('[Analytics] Account type check:', {
-                account_type: user.account_type,
-                hasType: hasType
-            });
-            
             return hasType;
         }
 
@@ -2108,17 +1472,8 @@
             }
             
             try {
-                // Utiliser les valeurs autorisées par la contrainte de base de données
                 const validAccountType = selectedAccountType === 'personal' ? 'personal' : 'professional';
                 
-                console.log('[Analytics] Setting account type:', {
-                    userId: pendingUser.id,
-                    accountType: validAccountType,
-                    companyName: companyName,
-                    currentRole: pendingUser.role
-                });
-                
-                // Mettre à jour le type de compte de l'utilisateur
                 const result = await licenseService.setUserAccountType(
                     pendingUser.id,
                     validAccountType,
@@ -2126,30 +1481,23 @@
                 );
                 
                 if (result.success) {
-                    // Fermer le modal
                     document.getElementById('accountTypeModal').classList.remove('active');
                     
-                    // Recharger les informations utilisateur
                     const refreshResult = await licenseService.authenticateWithEmail(pendingUser.email);
                     
                     if (refreshResult.valid) {
-                        // Vérifier si l'utilisateur a maintenant accès
                         const hasAccess = checkAdminAccess(refreshResult.user);
                         
                         if (hasAccess) {
                             authenticatedUser = refreshResult.user;
                             licenseService.currentUser = authenticatedUser;
                             
-                            // Si c'est un compte personnel, s'assurer qu'il n'a pas de company_id
                             if (authenticatedUser.account_type === 'personal' && authenticatedUser.company_id) {
-                                console.log('[Analytics] Cleaning up personal account company association...');
                                 await cleanupPersonalAccount(authenticatedUser.id);
                             }
                             
-                            // Afficher analytics
                             showAnalytics();
                         } else {
-                            // Si toujours pas d'accès après reconfiguration
                             if (validAccountType === 'professional') {
                                 showAuthMessage('Compte professionnel configuré. Contactez votre administrateur pour obtenir les droits d\'accès aux analytics.', 'error');
                             } else {
@@ -2160,16 +1508,14 @@
                         showAuthMessage('Erreur lors de la mise à jour du compte', 'error');
                     }
                 } else {
-                    console.error('[Analytics] Error setting account type:', result.error);
                     showAuthMessage('Erreur lors de la configuration : ' + result.error, 'error');
                 }
             } catch (error) {
-                console.error('[Auth] Error setting account type:', error);
                 showAuthMessage('Erreur lors de la configuration du compte', 'error');
             }
         }
 
-        // Gestion de l'authentification pour la page admin
+        // Gestion de l'authentification
         async function handleAuthentication(event) {
             event.preventDefault();
             
@@ -2184,60 +1530,36 @@
                 return;
             }
             
-            // Afficher le spinner
             button.disabled = true;
             buttonText.style.display = 'none';
             spinner.style.display = 'block';
             messageDiv.innerHTML = '';
             
             try {
-                // Initialiser le service de licence
                 if (!licenseService) {
                     await loadLicenseService();
                 }
                 
-                // Initialiser Supabase
                 await initializeSupabase();
                 
-                // S'assurer que le service est initialisé
                 if (!licenseService.initialized) {
                     await licenseService.initialize();
                 }
                 
-                // Utiliser la méthode authenticateWithEmail qui fonctionne
                 const result = await licenseService.authenticateWithEmail(email);
                 
-                console.log('[Analytics] Authentication result:', {
-                    valid: result.valid,
-                    status: result.status,
-                    user: result.user ? {
-                        email: result.user.email,
-                        role: result.user.role,
-                        account_type: result.user.account_type
-                    } : null
-                });
-                
                 if (result.valid) {
-                    // Vérifier si l'utilisateur a besoin de configurer son type de compte
                     const needsAccountTypeSetup = !hasAccountTypeBeenSet(result.user);
                     
-                    console.log('[Analytics] Needs account type setup:', needsAccountTypeSetup);
-                    
                     if (needsAccountTypeSetup) {
-                        console.log('[Analytics] User needs account type setup');
-                        
-                        // Stocker l'utilisateur temporairement
                         pendingUser = result.user;
                         
-                        // Cacher le spinner
                         button.disabled = false;
                         buttonText.style.display = 'block';
                         spinner.style.display = 'none';
                         
-                        // Afficher le modal de choix du type de compte
                         document.getElementById('accountTypeModal').classList.add('active');
                         
-                        // Mettre à jour le message du modal selon la situation
                         const modalTitle = document.querySelector('.account-type-title');
                         const modalSubtitle = document.querySelector('.account-type-subtitle');
                         
@@ -2249,11 +1571,9 @@
                             modalSubtitle.textContent = 'Pour accéder aux analytics, vous devez configurer votre type d\'accès';
                         }
                         
-                        // Pré-sélectionner si déjà un type
                         if (result.user.account_type) {
                             selectAccountType(result.user.account_type);
                         } else {
-                            // Réinitialiser le formulaire
                             selectedAccountType = null;
                             document.getElementById('personalOption').classList.remove('selected');
                             document.getElementById('professionalOption').classList.remove('selected');
@@ -2264,10 +1584,7 @@
                         return;
                     }
                     
-                    // Vérifier les permissions d'accès
                     const hasAccess = checkAdminAccess(result.user);
-                    
-                    console.log('[Analytics] Has admin access:', hasAccess);
                     
                     if (hasAccess) {
                         authenticatedUser = result.user;
@@ -2275,12 +1592,10 @@
                         
                         showAuthMessage('Connexion réussie !', 'success');
                         
-                        // Attendre un peu avant de basculer
                         setTimeout(() => {
                             showAnalytics();
                         }, 1000);
                     } else {
-                        // Message d'erreur spécifique selon le type d'utilisateur
                         if (result.user.account_type === 'professional' && result.user.role === 'user') {
                             showAuthMessage('Accès restreint. Contactez votre administrateur pour obtenir les droits d\'accès aux analytics.', 'error');
                         } else {
@@ -2288,7 +1603,6 @@
                         }
                     }
                 } else {
-                    // Si l'utilisateur n'existe pas et c'est la page admin
                     if (result.status === 'not_found') {
                         showAuthMessage('Compte non trouvé. Veuillez créer votre compte sur l\'application principale.', 'error');
                     } else {
@@ -2297,10 +1611,8 @@
                 }
                 
             } catch (error) {
-                console.error('[Auth] Error:', error);
                 showAuthMessage('Erreur de connexion. Veuillez réessayer.', 'error');
             } finally {
-                // Réactiver le bouton
                 button.disabled = false;
                 buttonText.style.display = 'block';
                 spinner.style.display = 'none';
@@ -2311,59 +1623,36 @@
         function checkAdminAccess(user) {
             if (!user) return false;
             
-            console.log('[Analytics] Checking admin access for user:', {
-                email: user.email,
-                role: user.role,
-                account_type: user.account_type,
-                license_status: user.license_status
-            });
-            
-            // Les super admins ont toujours accès
             if (user.role === 'super_admin') {
-                console.log('[Analytics] Super admin access granted');
                 return true;
             }
             
-            // Les admins de société ont accès
             if (user.role === 'company_admin') {
-                console.log('[Analytics] Company admin access granted');
                 return true;
             }
             
-            // Les comptes personnels ont accès pour gérer leur propre licence
             if (user.account_type === 'personal') {
-                console.log('[Analytics] Personal account access granted');
                 return true;
             }
             
-            // Les utilisateurs professionnels normaux n'ont PAS accès aux analytics
-            // Ils doivent être promus "company_admin" par un super admin
-            console.log('[Analytics] Access denied - Professional users need company_admin role for analytics access');
             return false;
         }
 
         function showAnalytics() {
-            // Cacher la page de connexion
             document.getElementById('authContainer').style.display = 'none';
-            
-            // Afficher la page analytics
             document.getElementById('analyticsContainer').classList.add('authenticated');
             
-            // Mettre à jour les infos utilisateur
             document.getElementById('currentUserEmail').textContent = authenticatedUser.email;
             
-            // Afficher le rôle approprié
             let roleDisplay = authenticatedUser.role.replace('_', ' ');
             if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
                 roleDisplay = 'Personnel';
             }
             document.getElementById('currentUserRole').textContent = roleDisplay;
             
-            // Charger les données
             loadAnalytics();
             updateLastUpdated();
             
-            // Sauvegarder la session
             sessionStorage.setItem('analyticsAuth', JSON.stringify({
                 email: authenticatedUser.email,
                 role: authenticatedUser.role,
@@ -2372,15 +1661,14 @@
         }
 
         function logout() {
-            // Effacer la session
             sessionStorage.removeItem('analyticsAuth');
             
-            // Réinitialiser
             authenticatedUser = null;
             currentUsers = [];
             filteredUsers = [];
+            currentLicenses = [];
+            filteredLicenses = [];
             
-            // Retourner à la page de connexion
             document.getElementById('analyticsContainer').classList.remove('authenticated');
             document.getElementById('authContainer').style.display = 'flex';
             document.getElementById('authEmail').value = '';
@@ -2395,22 +1683,17 @@
                 try {
                     const data = JSON.parse(session);
                     
-                    // Vérifier que la session n'est pas trop vieille (24h)
                     if (Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
-                        // Initialiser d'abord
                         if (!licenseService) {
                             await loadLicenseService();
                         }
                         
                         await initializeSupabase();
                         
-                        // Recharger l'utilisateur avec authenticateWithEmail
                         const result = await licenseService.authenticateWithEmail(data.email);
                         
                         if (result.valid) {
-                            // Vérifier si le type de compte est défini
                             if (!hasAccountTypeBeenSet(result.user)) {
-                                // Forcer la reconnexion pour définir le type de compte
                                 sessionStorage.removeItem('analyticsAuth');
                                 return;
                             }
@@ -2427,7 +1710,6 @@
                     console.error('[Session] Error:', error);
                 }
                 
-                // Session invalide
                 sessionStorage.removeItem('analyticsAuth');
             }
         }
@@ -2442,8 +1724,6 @@
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', userId);
-                    
-                console.log('[Analytics] Personal account cleaned up');
             } catch (error) {
                 console.error('[Analytics] Error cleaning personal account:', error);
             }
@@ -2451,7 +1731,6 @@
 
         // Charger le service de licence
         async function loadLicenseService() {
-            // Charger la configuration Supabase d'abord
             const configScript = document.createElement('script');
             configScript.src = './config-supabase.js';
             await new Promise((resolve, reject) => {
@@ -2460,7 +1739,6 @@
                 document.head.appendChild(configScript);
             });
             
-            // Charger le service de licence
             const licenseScript = document.createElement('script');
             licenseScript.src = './LicenceService.js';
             await new Promise((resolve, reject) => {
@@ -2474,38 +1752,30 @@
 
         // Tab management
         function switchTab(tabName) {
-            // Update tab buttons
             document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
             document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
 
-            // Update tab content
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             document.getElementById(`${tabName}Tab`).classList.add('active');
 
             currentTab = tabName;
 
-            // Load content based on tab
             if (tabName === 'users') {
                 loadUsers();
             } else if (tabName === 'licenses') {
-                loadLicenseManagement();
+                loadLicenses();
             } else if (tabName === 'billing') {
-                loadBillingManagement();
+                loadBilling();
             }
         }
 
-        // Users management - avec filtrage selon les permissions
+        // Users management
         async function loadUsers() {
             try {
-                console.log('[Analytics] Loading users with permissions check...');
-                
-                // Vérifier que Supabase est initialisé
                 if (!supabaseClient) {
-                    console.log('[Analytics] Supabase not ready, initializing...');
                     await initializeSupabase();
                 }
                 
-                // Construire la requête avec les bonnes colonnes
                 let query = supabaseClient
                     .from('users')
                     .select(`
@@ -2527,30 +1797,22 @@
                     `)
                     .order('created_at', { ascending: false });
                 
-                // Filtrage selon les permissions
                 if (authenticatedUser) {
                     if (authenticatedUser.account_type === 'personal') {
-                        // Les comptes personnels ne voient QUE eux-mêmes
-                        // Même s'ils ont un company_id par erreur, on force le filtrage par ID
                         query = query.eq('id', authenticatedUser.id);
                     } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                        // Admin de société voit sa société
                         query = query.eq('company_id', authenticatedUser.company_id);
                     }
-                    // Si super admin, voir tout (pas de filtre supplémentaire)
                 }
                 
                 const { data: users, error } = await query;
 
                 if (error) {
-                    console.error('[Analytics] Error loading users:', error);
                     currentUsers = [];
                 } else {
-                    console.log('[Analytics] Loaded users:', users?.length || 0);
                     currentUsers = users || [];
                 }
                 
-                // Charger aussi les stats analytics si disponibles
                 await loadUserStats();
                 
                 populateCompanyFilter();
@@ -2573,13 +1835,10 @@
                     .from('user_email_stats')
                     .select('*');
                 
-                // Filtrer selon les permissions
                 if (authenticatedUser) {
                     if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
-                        // Compte personnel voit seulement ses stats
                         query = query.eq('email', authenticatedUser.email);
                     } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                        // Admin de société voit les stats de son domaine
                         const { data: company } = await supabaseClient
                             .from('companies')
                             .select('domain')
@@ -2595,7 +1854,6 @@
                 const { data: stats, error } = await query;
 
                 if (!error && stats) {
-                    // Fusionner les stats avec les utilisateurs
                     currentUsers = currentUsers.map(user => {
                         const userStats = stats.find(s => s.email === user.email);
                         return {
@@ -2613,25 +1871,21 @@
 
         // Mettre à jour le résumé avec les vraies données
         function updateSummaryFromRealData() {
-            // Utilisateurs actifs
             const activeUsers = currentUsers.filter(u => 
                 u.license_status === 'active' || u.license_status === 'trial'
             ).length;
             document.getElementById('summaryUsers').textContent = activeUsers;
             
-            // Total des scans
             const totalScans = currentUsers.reduce((sum, user) => 
                 sum + (user.total_scans || 0), 0
             );
             document.getElementById('summaryScans').textContent = totalScans.toLocaleString();
 
-            // Total des erreurs
             const totalErrors = currentUsers.reduce((sum, user) => 
                 sum + (user.total_errors || 0), 0
             );
             document.getElementById('summaryErrors').textContent = totalErrors;
 
-            // Licences actives
             const activeLicenses = currentUsers.filter(u => 
                 u.license_status === 'active'
             ).length;
@@ -2641,17 +1895,14 @@
         // Initialiser Supabase
         async function initializeSupabase() {
             if (supabaseClient) {
-                console.log('[Analytics] Supabase already initialized');
                 return;
             }
 
             if (!window.supabaseConfig) {
-                console.error('[Analytics] Supabase config not loaded');
                 return;
             }
 
             if (!window.supabase) {
-                // Charger la librairie Supabase
                 await loadSupabaseLibrary();
             }
 
@@ -2669,8 +1920,6 @@
                     }
                 }
             );
-            
-            console.log('[Analytics] Supabase client initialized');
         }
 
         // Charger la librairie Supabase
@@ -2690,7 +1939,6 @@
             ))];
             const filter = document.getElementById('companyFilter');
             
-            // Clear existing options except first one
             filter.innerHTML = '<option value="">Toutes les sociétés</option>';
             
             companies.forEach(company => {
@@ -2740,7 +1988,6 @@
                 const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
                 const companyName = user.company?.name || user.domain || 'Sans société';
                 
-                // Déterminer le statut de licence
                 const licenseClass = user.license_status === 'active' ? 'active' : 
                                    user.license_status === 'expired' ? 'expired' : 
                                    user.license_status === 'blocked' ? 'blocked' :
@@ -2774,7 +2021,7 @@
                                 <button class="action-btn edit" onclick="viewUserDetails('${user.id}')">
                                     <i class="fas fa-eye"></i> Voir
                                 </button>
-                                ${canManageLicense(user) ? `
+                                ${canManageUser(user) ? `
                                     <button class="action-btn license" onclick="manageLicense('${user.id}')">
                                         <i class="fas fa-key"></i> Licence
                                     </button>
@@ -2791,18 +2038,15 @@
             }).join('');
         }
 
-        // Vérifier si l'utilisateur peut gérer les licences
-        function canManageLicense(user) {
+        // Vérifier si l'utilisateur peut gérer un autre utilisateur
+        function canManageUser(user) {
             if (!authenticatedUser) return false;
             
-            // Super admin peut tout gérer
             if (authenticatedUser.role === 'super_admin') return true;
             
-            // Admin de société peut gérer sa société
             if (authenticatedUser.role === 'company_admin' && 
                 authenticatedUser.company_id === user.company_id) return true;
             
-            // Compte personnel peut gérer sa propre licence
             if (authenticatedUser.account_type === 'personal' && 
                 authenticatedUser.id === user.id) return true;
             
@@ -2813,13 +2057,10 @@
         function canDeleteUser(user) {
             if (!authenticatedUser) return false;
             
-            // On ne peut pas se supprimer soi-même
             if (authenticatedUser.id === user.id) return false;
             
-            // Super admin peut supprimer tout le monde sauf lui-même
             if (authenticatedUser.role === 'super_admin') return true;
             
-            // Admin de société peut supprimer les utilisateurs de sa société (sauf les super admins)
             if (authenticatedUser.role === 'company_admin' && 
                 authenticatedUser.company_id === user.company_id &&
                 user.role !== 'super_admin') return true;
@@ -2844,6 +2085,20 @@
                 return `Il y a ${days} jour${days > 1 ? 's' : ''}`;
             } else {
                 return date.toLocaleDateString('fr-FR');
+            }
+        }
+
+        function calculateDaysRemaining(expirationDate) {
+            const now = new Date();
+            const diff = expirationDate - now;
+            const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
+            
+            if (days < 0) {
+                return `Expirée depuis ${Math.abs(days)} jour${Math.abs(days) > 1 ? 's' : ''}`;
+            } else if (days === 0) {
+                return 'Expire aujourd\'hui';
+            } else {
+                return `${days} jour${days > 1 ? 's' : ''}`;
             }
         }
 
@@ -2934,43 +2189,159 @@
             document.getElementById('userModal').classList.add('active');
         }
 
-        function calculateDaysRemaining(expirationDate) {
-            const now = new Date();
-            const diff = expirationDate - now;
-            const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
-            
-            if (days < 0) {
-                return `Expirée depuis ${Math.abs(days)} jour${Math.abs(days) > 1 ? 's' : ''}`;
-            } else if (days === 0) {
-                return 'Expire aujourd\'hui';
-            } else {
-                return `${days} jour${days > 1 ? 's' : ''}`;
-            }
-        }
-
         function closeUserModal() {
             document.getElementById('userModal').classList.remove('active');
         }
 
         function manageLicense(userId) {
-            const user = currentUsers.find(u => u.id === userId);
-            if (!user) return;
-
-            // Basculer vers l'onglet licences
             switchTab('licenses');
         }
 
         async function refreshUsers() {
-            console.log('Refreshing users data...');
             await loadUsers();
             updateLastUpdated();
             
-            // Si on est sur l'onglet licences, le recharger aussi
             if (currentTab === 'licenses') {
-                await loadLicenseManagement();
-            } else if (currentTab === 'billing') {
-                await loadBillingManagement();
+                await loadLicenses();
             }
+        }
+
+        // License Management - Même style que Users
+        async function loadLicenses() {
+            try {
+                if (!supabaseClient) {
+                    await initializeSupabase();
+                }
+                
+                // Utiliser les mêmes données que pour les utilisateurs
+                if (currentUsers.length === 0) {
+                    await loadUsers();
+                }
+                
+                // Les licences sont les mêmes données que les utilisateurs
+                currentLicenses = [...currentUsers];
+                
+                populateLicenseCompanyFilter();
+                filterLicenses();
+                
+            } catch (error) {
+                console.error('[Analytics] Failed to load licenses:', error);
+                currentLicenses = [];
+                filterLicenses();
+            }
+        }
+
+        function populateLicenseCompanyFilter() {
+            const companies = [...new Set(currentLicenses.map(user => 
+                user.company?.name || user.domain || 'Sans société'
+            ))];
+            const filter = document.getElementById('licenseCompanyFilter');
+            
+            filter.innerHTML = '<option value="">Toutes les sociétés</option>';
+            
+            companies.forEach(company => {
+                const option = document.createElement('option');
+                option.value = company;
+                option.textContent = company;
+                filter.appendChild(option);
+            });
+        }
+
+        function filterLicenses() {
+            const searchTerm = document.getElementById('licenseSearch').value.toLowerCase();
+            const statusFilter = document.getElementById('licenseStatusFilter').value;
+            const companyFilter = document.getElementById('licenseCompanyFilter').value;
+
+            filteredLicenses = currentLicenses.filter(user => {
+                const userName = user.name || user.email.split('@')[0];
+                const companyName = user.company?.name || user.domain || 'Sans société';
+                
+                const matchesSearch = userName.toLowerCase().includes(searchTerm) || 
+                                    user.email.toLowerCase().includes(searchTerm) ||
+                                    companyName.toLowerCase().includes(searchTerm);
+                
+                const matchesStatus = !statusFilter || user.license_status === statusFilter;
+                const matchesCompany = !companyFilter || companyName === companyFilter;
+
+                return matchesSearch && matchesStatus && matchesCompany;
+            });
+
+            renderLicensesTable();
+        }
+
+        function renderLicensesTable() {
+            const tbody = document.getElementById('licensesTableBody');
+            const emptyState = document.getElementById('licensesEmptyState');
+
+            if (filteredLicenses.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            tbody.innerHTML = filteredLicenses.map(user => {
+                const userName = user.name || user.email.split('@')[0];
+                const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                const companyName = user.company?.name || user.domain || 'Sans société';
+                
+                const licenseClass = user.license_status === 'active' ? 'active' : 
+                                   user.license_status === 'expired' ? 'expired' : 
+                                   user.license_status === 'blocked' ? 'blocked' :
+                                   'trial';
+
+                const startDate = user.license_starts_at ? new Date(user.license_starts_at).toLocaleDateString('fr-FR') : 'N/A';
+                const endDate = user.license_expires_at ? new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 'N/A';
+                const daysRemaining = user.license_expires_at ? calculateDaysRemaining(new Date(user.license_expires_at)) : 'Illimitée';
+                const accountType = user.account_type === 'personal' ? 'Personnel' : 'Professionnel';
+
+                return `
+                    <tr>
+                        <td>
+                            <div class="user-info">
+                                <div class="user-avatar">${initials}</div>
+                                <div class="user-details">
+                                    <h4>${userName}</h4>
+                                    <p>${user.email}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${companyName}</td>
+                        <td><span class="status-badge ${licenseClass}">${user.license_status || 'trial'}</span></td>
+                        <td>${startDate}</td>
+                        <td>${endDate}</td>
+                        <td>
+                            <span class="license-badge ${licenseClass}">
+                                ${daysRemaining}
+                            </span>
+                        </td>
+                        <td>${accountType}</td>
+                        <td>
+                            <div class="actions-cell">
+                                <button class="action-btn edit" onclick="viewUserDetails('${user.id}')">
+                                    <i class="fas fa-eye"></i> Voir
+                                </button>
+                                ${canManageUser(user) ? `
+                                    <button class="action-btn dates" onclick="openLicenseEditModal('${user.id}')">
+                                        <i class="fas fa-calendar-alt"></i> Modifier dates
+                                    </button>
+                                ` : ''}
+                                ${canDeleteUser(user) ? `
+                                    <button class="action-btn delete" onclick="deleteUser('${user.id}')">
+                                        <i class="fas fa-trash"></i> Supprimer
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function refreshLicenses() {
+            await loadLicenses();
+            updateLastUpdated();
         }
 
         // License Edit Modal Functions
@@ -2980,7 +2351,6 @@
 
             document.getElementById('editUserId').value = userId;
             
-            // Pré-remplir les dates actuelles
             const startDate = user.license_starts_at ? 
                 new Date(user.license_starts_at).toISOString().split('T')[0] : 
                 new Date().toISOString().split('T')[0];
@@ -3017,7 +2387,8 @@
                 
                 if (result.success) {
                     closeLicenseEditModal();
-                    await loadLicenseManagement();
+                    await loadUsers();
+                    await loadLicenses();
                     alert('Dates de licence mises à jour avec succès');
                 } else {
                     alert('Erreur : ' + result.error);
@@ -3028,468 +2399,7 @@
             }
         }
 
-        // License Management Functions - avec permissions
-        async function loadLicenseManagement() {
-            const container = document.getElementById('licenseManagement');
-            
-            if (!window.licenseService || !authenticatedUser) {
-                container.innerHTML = `
-                    <div class="no-permissions">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h3>Service non disponible</h3>
-                        <p>Veuillez vous reconnecter</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // Vérifier que Supabase est initialisé
-            if (!supabaseClient) {
-                await initializeSupabase();
-            }
-
-            let companyUsers = [];
-            
-            try {
-                // Charger les utilisateurs selon les permissions
-                if (authenticatedUser.account_type === 'personal') {
-                    // Compte personnel voit seulement lui-même
-                    // Même s'il a un company_id par erreur, on force le filtrage par ID
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .select(`
-                            *,
-                            company:companies(name)
-                        `)
-                        .eq('id', authenticatedUser.id);
-                    
-                    if (!error) {
-                        companyUsers = data || [];
-                    }
-                } else if (authenticatedUser.role === 'super_admin') {
-                    // Super admin voit tous les utilisateurs
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .select(`
-                            *,
-                            company:companies(name)
-                        `)
-                        .order('created_at', { ascending: false });
-                    
-                    if (!error) {
-                        companyUsers = data || [];
-                    }
-                } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                    // Admin de société voit seulement ses utilisateurs
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .select(`
-                            *,
-                            company:companies(name)
-                        `)
-                        .eq('company_id', authenticatedUser.company_id)
-                        .order('created_at', { ascending: false });
-                    
-                    if (!error) {
-                        companyUsers = data || [];
-                    }
-                }
-            } catch (error) {
-                console.error('[Analytics] Failed to load users for license management:', error);
-            }
-
-            // Calculer les statistiques
-            const stats = {
-                total: companyUsers.length,
-                active: companyUsers.filter(u => u.license_status === 'active').length,
-                trial: companyUsers.filter(u => u.license_status === 'trial').length,
-                expired: companyUsers.filter(u => u.license_status === 'expired').length
-            };
-
-            // Affichage différent pour les comptes personnels
-            if (authenticatedUser.account_type === 'personal') {
-                container.innerHTML = `
-                    <div class="license-header">
-                        <h2>
-                            <i class="fas fa-key"></i>
-                            Ma licence personnelle
-                        </h2>
-                        <button class="refresh-btn" onclick="loadLicenseManagement()">
-                            <i class="fas fa-sync-alt"></i> Actualiser
-                        </button>
-                    </div>
-
-                    ${companyUsers.length > 0 ? `
-                        <div class="company-info">
-                            <h3>Compte personnel</h3>
-                            <p>Email : ${authenticatedUser.email}</p>
-                            <p>Gestion individuelle de votre licence</p>
-                        </div>
-
-                        <div class="license-stats">
-                            <div class="license-stat-card">
-                                <div class="license-stat-value">${companyUsers[0].license_status || 'trial'}</div>
-                                <div class="license-stat-label">Statut actuel</div>
-                            </div>
-                            <div class="license-stat-card">
-                                <div class="license-stat-value">${companyUsers[0].license_expires_at ? calculateDaysRemaining(new Date(companyUsers[0].license_expires_at)) : 'Illimitée'}</div>
-                                <div class="license-stat-label">Validité</div>
-                            </div>
-                            <div class="license-stat-card">
-                                <div class="license-stat-value">${companyUsers[0].login_count || 0}</div>
-                                <div class="license-stat-label">Connexions</div>
-                            </div>
-                            <div class="license-stat-card">
-                                <div class="license-stat-value">${companyUsers[0].total_scans || 0}</div>
-                                <div class="license-stat-label">Scans effectués</div>
-                            </div>
-                        </div>
-
-                        <div style="margin-top: 24px;">
-                            <h4 style="margin-bottom: 16px; color: #1f2937;">Gérer ma licence</h4>
-                            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                                <button class="license-action-btn extend" onclick="extendLicenseOptions('${companyUsers[0].id}')">
-                                    <i class="fas fa-plus"></i> Étendre ma licence
-                                </button>
-                                <button class="license-action-btn edit-dates" onclick="openLicenseEditModal('${companyUsers[0].id}')">
-                                    <i class="fas fa-calendar-alt"></i> Modifier les dates
-                                </button>
-                            </div>
-                        </div>
-                    ` : ''}
-                `;
-                return;
-            }
-
-            // Interface normale pour les admins
-            container.innerHTML = `
-                <div class="license-header">
-                    <h2>
-                        <i class="fas fa-key"></i>
-                        Gestion des licences
-                    </h2>
-                    <button class="refresh-btn" onclick="loadLicenseManagement()">
-                        <i class="fas fa-sync-alt"></i> Actualiser
-                    </button>
-                </div>
-
-                ${authenticatedUser.company_id && companyUsers.length > 0 && companyUsers[0].company ? `
-                    <div class="company-info">
-                        <h3>${companyUsers[0].company.name}</h3>
-                        <p>Administrateur : ${authenticatedUser.name || authenticatedUser.email}</p>
-                    </div>
-                ` : ''}
-
-                <div class="license-stats">
-                    <div class="license-stat-card">
-                        <div class="license-stat-value">${stats.total}</div>
-                        <div class="license-stat-label">Utilisateurs total</div>
-                    </div>
-                    <div class="license-stat-card">
-                        <div class="license-stat-value">${stats.active}</div>
-                        <div class="license-stat-label">Licences actives</div>
-                    </div>
-                    <div class="license-stat-card">
-                        <div class="license-stat-value">${stats.trial}</div>
-                        <div class="license-stat-label">Essais gratuits</div>
-                    </div>
-                    <div class="license-stat-card">
-                        <div class="license-stat-value">${stats.expired}</div>
-                        <div class="license-stat-label">Licences expirées</div>
-                    </div>
-                </div>
-
-                ${authenticatedUser.role === 'company_admin' || authenticatedUser.role === 'super_admin' ? `
-                    <div class="add-user-form">
-                        <input type="email" id="newUserEmail" placeholder="Email du nouvel utilisateur">
-                        <button onclick="addNewUser()">
-                            <i class="fas fa-user-plus"></i> Ajouter un utilisateur
-                        </button>
-                    </div>
-                ` : ''}
-
-                <div class="license-users-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Utilisateur</th>
-                                <th>Email</th>
-                                <th>Statut</th>
-                                <th>Début</th>
-                                <th>Expiration</th>
-                                <th>Dernière connexion</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${companyUsers.map(user => `
-                                <tr>
-                                    <td>${user.name || 'Non défini'}</td>
-                                    <td class="user-email">${user.email}</td>
-                                    <td>
-                                        <span class="license-status ${user.license_status}">
-                                            ${user.license_status}
-                                        </span>
-                                    </td>
-                                    <td>${user.license_starts_at ? new Date(user.license_starts_at).toLocaleDateString('fr-FR') : 'N/A'}</td>
-                                    <td>${user.license_expires_at ? new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 'N/A'}</td>
-                                    <td>${user.last_login_at ? new Date(user.last_login_at).toLocaleDateString('fr-FR') : 'Jamais'}</td>
-                                    <td>
-                                        <div class="license-actions">
-                                            ${user.license_status !== 'active' ? `
-                                                <button class="license-action-btn activate" 
-                                                        onclick="updateUserStatus('${user.id}', 'active')">
-                                                    Activer
-                                                </button>
-                                            ` : ''}
-                                            ${user.license_status === 'active' ? `
-                                                <button class="license-action-btn block" 
-                                                        onclick="updateUserStatus('${user.id}', 'blocked')">
-                                                    Bloquer
-                                                </button>
-                                            ` : ''}
-                                            <button class="license-action-btn extend" 
-                                                    onclick="extendLicenseOptions('${user.id}')">
-                                                <i class="fas fa-plus"></i> Étendre
-                                            </button>
-                                            <button class="license-action-btn edit-dates" 
-                                                    onclick="openLicenseEditModal('${user.id}')">
-                                                <i class="fas fa-calendar-alt"></i> Dates
-                                            </button>
-                                            ${canDeleteUser(user) ? `
-                                                <button class="license-action-btn delete" 
-                                                        onclick="deleteUser('${user.id}')">
-                                                    <i class="fas fa-trash"></i> Supprimer
-                                                </button>
-                                            ` : ''}
-                                        </div>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }
-
-        // License Extension Functions - Version simplifiée
-        function extendLicenseOptions(userId) {
-            const user = currentUsers.find(u => u.id === userId);
-            if (!user) return;
-
-            currentExtensionUserId = userId;
-            
-            // Positionner le dropdown près du bouton cliqué
-            const dropdown = document.getElementById('licenseExtendDropdown');
-            const button = event.target.closest('.license-action-btn');
-            
-            if (button) {
-                const rect = button.getBoundingClientRect();
-                dropdown.style.left = rect.left + 'px';
-                dropdown.style.top = (rect.bottom + 5) + 'px';
-            }
-            
-            // Mettre à jour les prix dans le dropdown
-            updateDropdownPrices();
-            
-            // Afficher le dropdown
-            dropdown.classList.add('active');
-            
-            // Ajouter un écouteur pour fermer le dropdown en cliquant ailleurs
-            setTimeout(() => {
-                document.addEventListener('click', closeDropdownOnClickOutside);
-            }, 100);
-        }
-
-        function updateDropdownPrices() {
-            const options = document.querySelectorAll('.license-extend-dropdown .license-extend-option');
-            options.forEach(option => {
-                const text = option.textContent;
-                if (text.includes('+1 mois')) {
-                    option.innerHTML = `<i class="fas fa-calendar-day"></i> +1 mois (${formatPrice(pricingConfig.monthly)})`;
-                } else if (text.includes('+3 mois')) {
-                    option.innerHTML = `<i class="fas fa-calendar-week"></i> +3 mois (${formatPrice(pricingConfig.monthly * 3)})`;
-                } else if (text.includes('+6 mois')) {
-                    option.innerHTML = `<i class="fas fa-calendar-alt"></i> +6 mois (${formatPrice(pricingConfig.monthly * 6)})`;
-                } else if (text.includes('+1 an')) {
-                    option.innerHTML = `<i class="fas fa-calendar"></i> +1 an (${formatPrice(pricingConfig.yearly * 12)})`;
-                }
-            });
-        }
-
-        function closeDropdownOnClickOutside(event) {
-            const dropdown = document.getElementById('licenseExtendDropdown');
-            if (!dropdown.contains(event.target) && !event.target.closest('.license-action-btn.extend')) {
-                dropdown.classList.remove('active');
-                document.removeEventListener('click', closeDropdownOnClickOutside);
-            }
-        }
-
-        async function extendLicenseBy(months) {
-            if (!currentExtensionUserId) return;
-
-            try {
-                const user = currentUsers.find(u => u.id === currentExtensionUserId);
-                if (!user) throw new Error('Utilisateur non trouvé');
-
-                // Calculer la nouvelle date d'expiration
-                const currentExpiry = user.license_expires_at ? new Date(user.license_expires_at) : new Date();
-                const newExpiry = new Date(currentExpiry);
-                newExpiry.setMonth(newExpiry.getMonth() + months);
-
-                // Initialiser le service de licence
-                if (!window.licenseService.initialized) {
-                    await window.licenseService.initialize();
-                }
-
-                window.licenseService.currentUser = authenticatedUser;
-
-                // Mettre à jour la licence
-                const result = await window.licenseService.updateUserLicense(
-                    currentExtensionUserId, 
-                    'active', 
-                    newExpiry
-                );
-
-                if (result.success) {
-                    // Mettre à jour le cycle de facturation
-                    const billingCycle = months >= 12 ? 'yearly' : 'monthly';
-                    await updateUserBillingCycle(currentExtensionUserId, billingCycle);
-                    
-                    // Fermer le dropdown
-                    document.getElementById('licenseExtendDropdown').classList.remove('active');
-                    
-                    // Recharger les données
-                    await loadLicenseManagement();
-                    
-                    const durationText = months === 1 ? '1 mois' : 
-                                       months === 3 ? '3 mois' : 
-                                       months === 6 ? '6 mois' : 
-                                       months === 12 ? '1 an' : `${months} mois`;
-                    
-                    alert(`Licence étendue de ${durationText} avec succès ! Nouvelle expiration : ${newExpiry.toLocaleDateString('fr-FR')}`);
-                } else {
-                    alert('Erreur : ' + result.error);
-                }
-            } catch (error) {
-                console.error('[Analytics] Error extending license:', error);
-                alert('Erreur lors de l\'extension de la licence');
-            } finally {
-                currentExtensionUserId = null;
-                document.removeEventListener('click', closeDropdownOnClickOutside);
-            }
-        }
-
-        async function updateUserBillingCycle(userId, billingCycle) {
-            try {
-                const { error } = await supabaseClient
-                    .from('users')
-                    .update({ 
-                        billing_cycle: billingCycle,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', userId);
-
-                if (error) throw error;
-            } catch (error) {
-                console.error('[Analytics] Error updating billing cycle:', error);
-            }
-        }
-
-        // Fonction pour étendre la licence (ancienne version - gardée pour compatibilité)
-        async function extendLicense(userId) {
-            // Rediriger vers le nouveau système
-            extendLicenseOptions(userId);
-        }
-
-        // Fonction pour ajouter un utilisateur
-        async function addNewUser() {
-            const emailInput = document.getElementById('newUserEmail');
-            const email = emailInput.value.trim();
-
-            if (!email || !email.includes('@')) {
-                alert('Veuillez entrer une adresse email valide');
-                return;
-            }
-
-            try {
-                // Initialiser le service de licence s'il n'est pas déjà prêt
-                if (!window.licenseService.initialized) {
-                    await window.licenseService.initialize();
-                }
-
-                // Définir l'utilisateur actuel pour le service
-                window.licenseService.currentUser = authenticatedUser;
-
-                const result = await window.licenseService.addUserToCompany(email);
-                
-                if (result.success) {
-                    emailInput.value = '';
-                    await loadLicenseManagement();
-                    alert('Utilisateur ajouté avec succès');
-                } else {
-                    alert('Erreur : ' + result.error);
-                }
-            } catch (error) {
-                console.error('[Analytics] Error adding user:', error);
-                alert('Erreur lors de l\'ajout de l\'utilisateur');
-            }
-        }
-
-        // Fonction pour mettre à jour le statut
-        async function updateUserStatus(userId, newStatus) {
-            try {
-                // Initialiser le service de licence s'il n'est pas déjà prêt
-                if (!window.licenseService.initialized) {
-                    await window.licenseService.initialize();
-                }
-
-                // Définir l'utilisateur actuel pour le service
-                window.licenseService.currentUser = authenticatedUser;
-
-                const result = await window.licenseService.updateUserLicense(userId, newStatus);
-                
-                if (result.success) {
-                    await loadLicenseManagement();
-                    alert('Statut mis à jour avec succès');
-                } else {
-                    alert('Erreur : ' + result.error);
-                }
-            } catch (error) {
-                console.error('[Analytics] Error updating status:', error);
-                alert('Erreur lors de la mise à jour du statut');
-            }
-        }
-
-        // Fonction pour étendre la licence
-        async function extendLicense(userId) {
-            try {
-                const newExpiry = new Date();
-                newExpiry.setDate(newExpiry.getDate() + 30);
-                
-                // Initialiser le service de licence s'il n'est pas déjà prêt
-                if (!window.licenseService.initialized) {
-                    await window.licenseService.initialize();
-                }
-
-                // Définir l'utilisateur actuel pour le service
-                window.licenseService.currentUser = authenticatedUser;
-
-                const result = await window.licenseService.updateUserLicense(userId, 'active', newExpiry);
-                
-                if (result.success) {
-                    await loadLicenseManagement();
-                    alert('Licence étendue de 30 jours');
-                } else {
-                    alert('Erreur : ' + result.error);
-                }
-            } catch (error) {
-                console.error('[Analytics] Error extending license:', error);
-                alert('Erreur lors de l\'extension de la licence');
-            }
-        }
-
-        // Fonction pour supprimer un utilisateur
+        // Supprimer un utilisateur
         async function deleteUser(userId) {
             const user = currentUsers.find(u => u.id === userId);
             if (!user) return;
@@ -3501,7 +2411,6 @@
             }
             
             try {
-                // Initialiser le service si nécessaire
                 if (!window.licenseService.initialized) {
                     await window.licenseService.initialize();
                 }
@@ -3512,7 +2421,6 @@
                 
                 if (result.success) {
                     alert('Utilisateur supprimé avec succès');
-                    // Recharger la liste
                     await refreshUsers();
                 } else {
                     alert('Erreur : ' + result.error);
@@ -3523,448 +2431,17 @@
             }
         }
 
-        // Billing Management Functions
-        async function loadBillingManagement() {
-            const container = document.getElementById('billingManagement');
+        // Billing Management
+        async function loadBilling() {
+            const billingContent = document.getElementById('billingContent');
             
-            if (!window.licenseService || !authenticatedUser) {
-                container.innerHTML = `
-                    <div class="no-permissions">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h3>Service non disponible</h3>
-                        <p>Veuillez vous reconnecter</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // Vérifier que Supabase est initialisé
-            if (!supabaseClient) {
-                await initializeSupabase();
-            }
-
-            let billingUsers = [];
-            let isPersonalAccount = authenticatedUser.account_type === 'personal';
-            
-            try {
-                // Charger les utilisateurs selon les permissions (même logique que loadLicenseManagement)
-                if (isPersonalAccount) {
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .select('*, company:companies(name)')
-                        .eq('id', authenticatedUser.id);
-                    
-                    if (!error) {
-                        billingUsers = data || [];
-                    }
-                } else if (authenticatedUser.role === 'super_admin') {
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .select('*, company:companies(name)')
-                        .order('created_at', { ascending: false });
-                    
-                    if (!error) {
-                        billingUsers = data || [];
-                    }
-                } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .select('*, company:companies(name)')
-                        .eq('company_id', authenticatedUser.company_id)
-                        .order('created_at', { ascending: false });
-                    
-                    if (!error) {
-                        billingUsers = data || [];
-                    }
-                }
-            } catch (error) {
-                console.error('[Analytics] Failed to load users for billing:', error);
-            }
-
-            // Calculer les statistiques de facturation
-            const billingStats = calculateBillingStats(billingUsers);
-            
-            // Affichage pour compte personnel
-            if (isPersonalAccount) {
-                container.innerHTML = generatePersonalBillingInterface(billingUsers, billingStats);
-            } else {
-                container.innerHTML = generateCompanyBillingInterface(billingUsers, billingStats);
-            }
-        }
-
-        function calculateBillingStats(users) {
-            const stats = {
-                totalUsers: users.length,
-                activeUsers: users.filter(u => u.license_status === 'active').length,
-                trialUsers: users.filter(u => u.license_status === 'trial').length,
-                monthlyUsers: users.filter(u => u.billing_cycle === 'monthly').length,
-                yearlyUsers: users.filter(u => u.billing_cycle === 'yearly').length,
-                monthlyRevenue: 0,
-                yearlyRevenue: 0,
-                totalRevenue: 0
-            };
-
-            // Calculer les revenus
-            users.forEach(user => {
-                if (user.license_status === 'active') {
-                    if (user.billing_cycle === 'yearly') {
-                        stats.yearlyRevenue += pricingConfig.yearly * 12;
-                    } else {
-                        stats.monthlyRevenue += pricingConfig.monthly;
-                    }
-                }
-            });
-
-            stats.totalRevenue = stats.monthlyRevenue + stats.yearlyRevenue;
-
-            return stats;
-        }
-
-        function generatePersonalBillingInterface(users, stats) {
-            const user = users[0];
-            if (!user) return '<div class="no-permissions"><h3>Aucune donnée disponible</h3></div>';
-
-            const currentPlan = user.billing_cycle || 'monthly';
-            const currentPrice = currentPlan === 'yearly' ? pricingConfig.yearly : pricingConfig.monthly;
-            const currentTotal = currentPlan === 'yearly' ? (currentPrice * 12) : currentPrice;
-
-            return `
-                <div class="billing-header">
-                    <h2>
-                        <i class="fas fa-credit-card"></i>
-                        Ma facturation
-                    </h2>
-                    <button class="refresh-btn" onclick="loadBillingManagement()">
-                        <i class="fas fa-sync-alt"></i> Actualiser
-                    </button>
-                </div>
-
-                <div class="billing-summary">
-                    <h3>Mon abonnement actuel</h3>
-                    <div class="billing-stats">
-                        <div class="billing-stat-card">
-                            <div class="billing-stat-value">${formatPrice(currentPrice)}</div>
-                            <div class="billing-stat-label">Prix ${currentPlan === 'yearly' ? 'mensuel' : 'actuel'}</div>
-                        </div>
-                        <div class="billing-stat-card">
-                            <div class="billing-stat-value">${formatPrice(currentTotal)}</div>
-                            <div class="billing-stat-label">${currentPlan === 'yearly' ? 'Total annuel' : 'Prix mensuel'}</div>
-                        </div>
-                        <div class="billing-stat-card">
-                            <div class="billing-stat-value">${user.license_status || 'trial'}</div>
-                            <div class="billing-stat-label">Statut</div>
-                        </div>
-                        <div class="billing-stat-card">
-                            <div class="billing-stat-value">${user.license_expires_at ? calculateDaysRemaining(new Date(user.license_expires_at)) : 'Illimitée'}</div>
-                            <div class="billing-stat-label">Validité</div>
-                        </div>
-                    </div>
-                </div>
-
-                ${generatePricingSection(true)}
-                ${generateStripeSection()}
-            `;
-        }
-
-        function generateCompanyBillingInterface(users, stats) {
-            return `
-                <div class="billing-header">
-                    <h2>
-                        <i class="fas fa-credit-card"></i>
-                        Facturation et tarifs
-                    </h2>
-                    <button class="refresh-btn" onclick="loadBillingManagement()">
-                        <i class="fas fa-sync-alt"></i> Actualiser
-                    </button>
-                </div>
-
-                <div class="billing-summary">
-                    <h3>Résumé financier</h3>
-                    <div class="billing-stats">
-                        <div class="billing-stat-card">
-                            <div class="billing-stat-value">${stats.totalUsers}</div>
-                            <div class="billing-stat-label">Utilisateurs total</div>
-                        </div>
-                        <div class="billing-stat-card">
-                            <div class="billing-stat-value">${stats.activeUsers}</div>
-                            <div class="billing-stat-label">Licences actives</div>
-                        </div>
-                        <div class="billing-stat-card">
-                            <div class="billing-stat-value">${formatPrice(stats.monthlyRevenue)}</div>
-                            <div class="billing-stat-label">Revenus mensuels</div>
-                        </div>
-                        <div class="billing-stat-card">
-                            <div class="billing-stat-value">${formatPrice(stats.yearlyRevenue)}</div>
-                            <div class="billing-stat-label">Revenus annuels</div>
-                        </div>
-                    </div>
-                </div>
-
-                ${generatePricingSection(false)}
-                ${generateUserBillingTable(users)}
-                ${generateStripeSection()}
-            `;
-        }
-
-        function generatePricingSection(isPersonal) {
-            const monthlyPrice = pricingConfig.monthly;
-            const yearlyPrice = pricingConfig.yearly;
-            const yearlyTotal = yearlyPrice * 12;
-            const monthlyTotal = monthlyPrice * 12;
-            const savings = monthlyTotal - yearlyTotal;
-            const savingsPercent = Math.round((savings / monthlyTotal) * 100);
-
-            return `
-                <div class="pricing-section">
-                    <h3>
-                        <i class="fas fa-tags"></i>
-                        Tarification ${isPersonal ? 'personnelle' : 'et configuration'}
-                    </h3>
-                    
-                    ${!isPersonal ? `
-                        <div class="pricing-config">
-                            <h4>Configuration des tarifs</h4>
-                            <div class="pricing-config-grid">
-                                <div class="pricing-config-item">
-                                    <label>Prix mensuel (€ HT)</label>
-                                    <input type="number" id="monthlyPrice" value="${monthlyPrice}" step="0.01">
-                                </div>
-                                <div class="pricing-config-item">
-                                    <label>Prix annuel (€ HT/mois)</label>
-                                    <input type="number" id="yearlyPrice" value="${yearlyPrice}" step="0.01">
-                                </div>
-                                <div class="pricing-config-item">
-                                    <label>Taux TVA (%)</label>
-                                    <input type="number" id="taxRate" value="${pricingConfig.taxRate * 100}" step="0.1">
-                                </div>
-                            </div>
-                            <button class="save-pricing-btn" onclick="savePricingConfig()">
-                                <i class="fas fa-save"></i> Sauvegarder la configuration
-                            </button>
-                        </div>
-                    ` : ''}
-
-                    <div class="pricing-grid">
-                        <div class="pricing-card">
-                            <div class="pricing-title">Mensuel</div>
-                            <div class="pricing-price">${formatPrice(monthlyPrice)}</div>
-                            <div class="pricing-period">par mois et par utilisateur</div>
-                            <ul class="pricing-features">
-                                <li><i class="fas fa-check"></i> Facturation mensuelle</li>
-                                <li><i class="fas fa-check"></i> Résiliation à tout moment</li>
-                                <li><i class="fas fa-check"></i> Support inclus</li>
-                                <li><i class="fas fa-check"></i> Mises à jour automatiques</li>
-                            </ul>
-                            <button class="pricing-button secondary" onclick="changeBillingCycle('monthly')">
-                                Basculer vers mensuel
-                            </button>
-                        </div>
-                        
-                        <div class="pricing-card popular">
-                            <div class="pricing-title">Annuel</div>
-                            <div class="pricing-price">${formatPrice(yearlyPrice)}</div>
-                            <div class="pricing-period">par mois et par utilisateur</div>
-                            <ul class="pricing-features">
-                                <li><i class="fas fa-check"></i> Facturation annuelle</li>
-                                <li><i class="fas fa-check"></i> Économie de ${savingsPercent}% (${formatPrice(savings)})</li>
-                                <li><i class="fas fa-check"></i> Support prioritaire</li>
-                                <li><i class="fas fa-check"></i> Mises à jour automatiques</li>
-                            </ul>
-                            <button class="pricing-button" onclick="changeBillingCycle('yearly')">
-                                Basculer vers annuel
-                            </button>
-                        </div>
-                    </div>
+            billingContent.innerHTML = `
+                <div class="no-permissions">
+                    <i class="fas fa-credit-card"></i>
+                    <h3>Module de facturation</h3>
+                    <p>Cette section sera développée avec l'intégration Stripe</p>
                 </div>
             `;
-        }
-
-        function generateUserBillingTable(users) {
-            return `
-                <div class="billing-section">
-                    <h3>Détail des licences</h3>
-                    <div class="billing-table">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Utilisateur</th>
-                                    <th>Email</th>
-                                    <th>Statut</th>
-                                    <th>Cycle</th>
-                                    <th>Prix</th>
-                                    <th>Prochaine facture</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${users.map(user => {
-                                    const cycle = user.billing_cycle || 'monthly';
-                                    const price = cycle === 'yearly' ? pricingConfig.yearly : pricingConfig.monthly;
-                                    const nextBilling = calculateNextBilling(user);
-                                    
-                                    return `
-                                        <tr>
-                                            <td>${user.name || 'Non défini'}</td>
-                                            <td>${user.email}</td>
-                                            <td>
-                                                <span class="license-status ${user.license_status}">
-                                                    ${user.license_status || 'trial'}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span class="license-type-badge ${cycle}">
-                                                    ${cycle === 'yearly' ? 'Annuel' : 'Mensuel'}
-                                                </span>
-                                            </td>
-                                            <td>${formatPrice(price)}</td>
-                                            <td>${nextBilling}</td>
-                                            <td>
-                                                <div class="license-pricing-actions">
-                                                    <button class="license-pricing-btn edit" onclick="editUserPricing('${user.id}')">
-                                                        <i class="fas fa-edit"></i> Modifier
-                                                    </button>
-                                                    <button class="license-pricing-btn ${cycle === 'monthly' ? 'yearly' : 'monthly'}" 
-                                                            onclick="toggleUserBilling('${user.id}', '${cycle === 'monthly' ? 'yearly' : 'monthly'}')">
-                                                        ${cycle === 'monthly' ? 'Annuel' : 'Mensuel'}
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    `;
-                                }).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        function generateStripeSection() {
-            return `
-                <div class="stripe-section">
-                    <h3>
-                        <i class="fab fa-stripe"></i>
-                        Intégration Stripe
-                    </h3>
-                    <div class="stripe-status">
-                        <div class="stripe-status-dot"></div>
-                        <span class="stripe-status-text">Prêt pour l'intégration Stripe</span>
-                    </div>
-                    <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 16px;">
-                        Cette section est prête pour l'intégration du module Stripe. 
-                        Toutes les fonctionnalités de facturation et de paiement seront ajoutées ici.
-                    </p>
-                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #4F46E5;">
-                        <h4 style="color: #1f2937; margin-bottom: 8px;">Fonctionnalités Stripe à venir :</h4>
-                        <ul style="color: #6b7280; font-size: 0.875rem;">
-                            <li>• Paiements sécurisés par carte</li>
-                            <li>• Abonnements automatiques</li>
-                            <li>• Gestion des factures</li>
-                            <li>• Webhooks pour les notifications</li>
-                            <li>• Tableau de bord des paiements</li>
-                        </ul>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Fonctions utilitaires pour la facturation
-        function formatPrice(price) {
-            return new Intl.NumberFormat('fr-FR', {
-                style: 'currency',
-                currency: pricingConfig.currency
-            }).format(price);
-        }
-
-        function calculateNextBilling(user) {
-            if (!user.license_expires_at) return 'N/A';
-            
-            const expiryDate = new Date(user.license_expires_at);
-            const now = new Date();
-            
-            if (expiryDate < now) return 'Expiré';
-            
-            return expiryDate.toLocaleDateString('fr-FR');
-        }
-
-        function savePricingConfig() {
-            const monthlyPrice = parseFloat(document.getElementById('monthlyPrice').value);
-            const yearlyPrice = parseFloat(document.getElementById('yearlyPrice').value);
-            const taxRate = parseFloat(document.getElementById('taxRate').value) / 100;
-
-            if (monthlyPrice > 0 && yearlyPrice > 0 && taxRate >= 0) {
-                pricingConfig.monthly = monthlyPrice;
-                pricingConfig.yearly = yearlyPrice;
-                pricingConfig.taxRate = taxRate;
-                
-                // Sauvegarder dans localStorage pour persistence
-                localStorage.setItem('emailsortpro_pricing', JSON.stringify(pricingConfig));
-                
-                // Recharger l'interface
-                loadBillingManagement();
-                
-                alert('Configuration des tarifs sauvegardée avec succès !');
-            } else {
-                alert('Veuillez entrer des valeurs valides pour tous les champs.');
-            }
-        }
-
-        function loadPricingConfig() {
-            const saved = localStorage.getItem('emailsortpro_pricing');
-            if (saved) {
-                try {
-                    pricingConfig = { ...pricingConfig, ...JSON.parse(saved) };
-                } catch (error) {
-                    console.error('Error loading pricing config:', error);
-                }
-            }
-        }
-
-        async function changeBillingCycle(newCycle) {
-            if (!authenticatedUser) return;
-            
-            try {
-                const { error } = await supabaseClient
-                    .from('users')
-                    .update({ 
-                        billing_cycle: newCycle,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', authenticatedUser.id);
-
-                if (error) throw error;
-
-                alert(`Cycle de facturation changé vers ${newCycle === 'yearly' ? 'annuel' : 'mensuel'} avec succès !`);
-                loadBillingManagement();
-            } catch (error) {
-                console.error('Error changing billing cycle:', error);
-                alert('Erreur lors du changement de cycle de facturation.');
-            }
-        }
-
-        async function toggleUserBilling(userId, newCycle) {
-            try {
-                const { error } = await supabaseClient
-                    .from('users')
-                    .update({ 
-                        billing_cycle: newCycle,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', userId);
-
-                if (error) throw error;
-
-                alert(`Cycle de facturation modifié avec succès !`);
-                loadBillingManagement();
-            } catch (error) {
-                console.error('Error toggling user billing:', error);
-                alert('Erreur lors de la modification du cycle de facturation.');
-            }
-        }
-
-        function editUserPricing(userId) {
-            // Cette fonction sera étendue pour permettre l'édition des tarifs personnalisés
-            alert('Fonctionnalité d\'édition des tarifs personnalisés à venir avec l\'intégration Stripe.');
         }
 
         // Analytics loading
@@ -3973,11 +2450,9 @@
                 const script = document.createElement('script');
                 script.src = './analytics.js';
                 script.onload = () => {
-                    console.log('[Analytics Page] Analytics script loaded successfully');
                     resolve();
                 };
                 script.onerror = () => {
-                    console.error('[Analytics Page] Failed to load analytics script');
                     reject(new Error('Failed to load analytics.js'));
                 };
                 document.head.appendChild(script);
@@ -3986,10 +2461,7 @@
 
         async function loadAnalytics() {
             try {
-                console.log('[Analytics Page] Starting analytics load...');
-                
                 if (!window.analyticsManager || !window.analyticsModule) {
-                    console.log('[Analytics Page] Loading analytics script...');
                     await loadAnalyticsScript();
                     
                     let attempts = 0;
@@ -4001,8 +2473,6 @@
 
                 analyticsManager = window.analyticsManager;
                 analyticsModule = window.analyticsModule;
-
-                const data = analyticsManager ? analyticsManager.getAnalyticsData() : {};
 
                 const analyticsContent = document.getElementById('analyticsContent');
                 const pageContent = document.createElement('div');
@@ -4017,10 +2487,8 @@
                 document.getElementById('loadingContainer').style.display = 'none';
                 updateLastUpdated();
 
-                console.log('[Analytics Page] ✅ Analytics loaded successfully');
-
             } catch (error) {
-                console.error('[Analytics Page] ❌ Error loading analytics:', error);
+                console.error('[Analytics Page] Error loading analytics:', error);
                 document.getElementById('loadingContainer').innerHTML = `
                     <div style="text-align: center; color: #dc2626;">
                         <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 16px;"></i>
@@ -4041,6 +2509,9 @@
         document.getElementById('userSearch').addEventListener('input', filterUsers);
         document.getElementById('statusFilter').addEventListener('change', filterUsers);
         document.getElementById('companyFilter').addEventListener('change', filterUsers);
+        document.getElementById('licenseSearch').addEventListener('input', filterLicenses);
+        document.getElementById('licenseStatusFilter').addEventListener('change', filterLicenses);
+        document.getElementById('licenseCompanyFilter').addEventListener('change', filterLicenses);
         document.getElementById('licenseEditForm').addEventListener('submit', handleLicenseEditSubmit);
 
         // Close modal when clicking outside
@@ -4064,12 +2535,6 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('[Analytics Page] DOM loaded, initializing with authentication...');
-            
-            // Charger la configuration de prix
-            loadPricingConfig();
-            
-            // Vérifier la session existante
             await checkSession();
         });
 
@@ -4080,6 +2545,8 @@
             console.log('Current tab:', currentTab);
             console.log('Current users:', currentUsers);
             console.log('Filtered users:', filteredUsers);
+            console.log('Current licenses:', currentLicenses);
+            console.log('Filtered licenses:', filteredLicenses);
             console.log('Analytics manager:', analyticsManager);
             console.log('Analytics module:', analyticsModule);
             console.log('License service:', licenseService);
@@ -4091,7 +2558,9 @@
                 userAccountType: authenticatedUser?.account_type,
                 currentTab,
                 usersCount: currentUsers.length,
-                filteredCount: filteredUsers.length,
+                filteredUsersCount: filteredUsers.length,
+                licensesCount: currentLicenses.length,
+                filteredLicensesCount: filteredLicenses.length,
                 analyticsManager: !!analyticsManager,
                 analyticsModule: !!analyticsModule,
                 licenseService: !!licenseService,
@@ -4100,7 +2569,7 @@
             };
         };
 
-        console.log('[Analytics Page] ✅ Analytics page with complete authentication and management features initialized v5');
+        console.log('[Analytics Page] ✅ Analytics page with complete license management initialized');
         console.log('[Analytics Page] Use debugAnalytics() for debug information');
     </script>
 </body>
