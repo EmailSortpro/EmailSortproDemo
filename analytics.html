@@ -1590,6 +1590,23 @@
                 return true;
             }
             
+            // IMPORTANT: Pour les analytics, on doit TOUJOURS permettre de reconfigurer le type
+            // car les comptes existants peuvent avoir été créés sans choix explicite
+            // On va vérifier si l'utilisateur a accès, sinon on lui propose de reconfigurer
+            
+            // Si l'utilisateur a déjà un rôle admin, pas besoin de reconfigurer
+            if (user.role === 'company_admin') {
+                console.log('[Analytics] Company admin detected, no reconfiguration needed');
+                return true;
+            }
+            
+            // Si c'est un utilisateur professionnel normal, on lui propose de reconfigurer
+            // même s'il a déjà un account_type, car il pourrait vouloir passer en personnel
+            if (user.account_type === 'professional' && user.role === 'user') {
+                console.log('[Analytics] Professional user detected, allowing reconfiguration');
+                return false; // Forcer la reconfiguration
+            }
+            
             // Si account_type est défini et non null, alors c'est fait
             const hasType = user.account_type && user.account_type !== null;
             console.log('[Analytics] Account type check:', {
@@ -1621,7 +1638,8 @@
                 console.log('[Analytics] Setting account type:', {
                     userId: pendingUser.id,
                     accountType: validAccountType,
-                    companyName: companyName
+                    companyName: companyName,
+                    currentRole: pendingUser.role
                 });
                 
                 // Mettre à jour le type de compte de l'utilisateur
@@ -1639,11 +1657,23 @@
                     const refreshResult = await licenseService.authenticateWithEmail(pendingUser.email);
                     
                     if (refreshResult.valid) {
-                        authenticatedUser = refreshResult.user;
-                        licenseService.currentUser = authenticatedUser;
+                        // Vérifier si l'utilisateur a maintenant accès
+                        const hasAccess = checkAdminAccess(refreshResult.user);
                         
-                        // Afficher analytics
-                        showAnalytics();
+                        if (hasAccess) {
+                            authenticatedUser = refreshResult.user;
+                            licenseService.currentUser = authenticatedUser;
+                            
+                            // Afficher analytics
+                            showAnalytics();
+                        } else {
+                            // Si toujours pas d'accès après reconfiguration
+                            if (validAccountType === 'professional') {
+                                showAuthMessage('Compte professionnel configuré. Contactez votre administrateur pour obtenir les droits d\'accès aux analytics.', 'error');
+                            } else {
+                                showAuthMessage('Erreur lors de la configuration du compte', 'error');
+                            }
+                        }
                     } else {
                         showAuthMessage('Erreur lors de la mise à jour du compte', 'error');
                     }
@@ -1724,6 +1754,18 @@
                         
                         // Afficher le modal de choix du type de compte
                         document.getElementById('accountTypeModal').classList.add('active');
+                        
+                        // Mettre à jour le message du modal selon la situation
+                        const modalTitle = document.querySelector('.account-type-title');
+                        const modalSubtitle = document.querySelector('.account-type-subtitle');
+                        
+                        if (result.user.account_type === 'professional' && result.user.role === 'user') {
+                            modalTitle.textContent = 'Reconfiguration de votre accès Analytics';
+                            modalSubtitle.textContent = 'Votre compte professionnel actuel n\'a pas accès aux analytics. Choisissez votre type d\'accès :';
+                        } else {
+                            modalTitle.textContent = 'Configuration de votre accès Analytics';
+                            modalSubtitle.textContent = 'Pour accéder aux analytics, vous devez configurer votre type d\'accès';
+                        }
                         
                         // Pré-sélectionner si déjà un type
                         if (result.user.account_type) {
