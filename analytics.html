@@ -1324,9 +1324,15 @@
                             .single();
                         
                         if (error) {
+                            console.error('Error creating user:', error);
                             throw error;
                         }
                         
+                        if (!newUser) {
+                            throw new Error('Aucun utilisateur créé');
+                        }
+                        
+                        // Conserver l'utilisateur créé pour la connexion
                         this.pendingUser = newUser;
                         
                         // Si c'est un compte professionnel, créer la société
@@ -1380,7 +1386,9 @@
                             }
                         }
                         
-                        this.showMessage('success', 'Compte créé avec succès !');
+                            console.log('New user created:', newUser);
+                            this.showMessage('success', 'Compte créé avec succès ! Connexion en cours...');
+                        }
                     } else {
                         // Mettre à jour un compte existant
                         const updateData = {
@@ -1461,16 +1469,31 @@
                     // Recharger l'utilisateur
                     const authResult = await this.licenseService.authenticateWithEmail(this.pendingUser.email);
                     
-                    if (authResult.valid && this.hasAdminAccess(authResult.user)) {
-                        this.currentUser = authResult.user;
-                        this.saveSession(this.pendingUser.email);
-                        this.showApp();
+                    if (authResult.valid || authResult.user) {
+                        const finalUser = authResult.user || this.pendingUser;
+                        
+                        // Pour les comptes individual, ils ont toujours accès
+                        if (finalUser.account_type === 'individual' || this.hasAdminAccess(finalUser)) {
+                            this.currentUser = finalUser;
+                            this.saveSession(this.pendingUser.email);
+                            this.showApp();
+                        } else {
+                            this.showMessage('error', 'Configuration réussie. Contactez votre administrateur pour l\'accès aux analytics.');
+                        }
                     } else {
-                        this.showMessage('error', 'Configuration réussie. Contactez votre administrateur pour l\'accès aux analytics.');
+                        // Si l'auth échoue mais qu'on a créé un compte individual, connecter quand même
+                        if (this.pendingUser.account_type === 'individual') {
+                            this.currentUser = this.pendingUser;
+                            this.saveSession(this.pendingUser.email);
+                            this.showApp();
+                        } else {
+                            this.showMessage('error', 'Erreur lors de la connexion. Veuillez réessayer.');
+                        }
                     }
                 } catch (error) {
                     console.error('Account type error:', error);
-                    alert('Erreur lors de la configuration : ' + error.message);
+                    console.error('Error details:', error.message, error.details);
+                    alert('Erreur lors de la configuration : ' + (error.details?.message || error.message));
                 }
             }
 
@@ -1496,6 +1519,12 @@
                     this.currentUser.role === 'super_admin' ? 'Super Admin' :
                     this.currentUser.role === 'company_admin' ? 'Admin Société' :
                     this.currentUser.account_type === 'individual' ? 'Admin Personnel' : 'Utilisateur';
+                
+                // Message spécial pour les nouveaux comptes
+                if (this.isNewUser) {
+                    this.showMessage('success', 'Bienvenue ! Votre compte a été créé avec succès.');
+                    this.isNewUser = false;
+                }
                 
                 this.loadOverview();
                 this.updateLastUpdate();
@@ -1543,10 +1572,8 @@
                     
                     // Appliquer les filtres selon le rôle
                     if (this.currentUser.account_type === 'individual') {
-                        // Les comptes personnels ne voient qu'eux-mêmes (pas le super admin)
-                        query = query
-                            .eq('id', this.currentUser.id)
-                            .neq('role', 'super_admin'); // Exclure explicitement le super admin
+                        // Les comptes personnels ne voient qu'eux-mêmes
+                        query = query.eq('id', this.currentUser.id);
                     } else if (this.currentUser.role === 'company_admin' && this.currentUser.company_id) {
                         query = query.eq('company_id', this.currentUser.company_id);
                     }
@@ -1614,20 +1641,24 @@
             }
 
             updateStats() {
-                const activeUsers = this.users.filter(u => 
-                    (u.license_status === 'active' || u.license_status === 'trial') &&
-                    u.role !== 'super_admin' // Ne pas compter le super admin dans les stats
+                // Filtrer les utilisateurs visibles (exclure super admin pour les comptes individual)
+                const visibleUsers = this.currentUser.account_type === 'individual' 
+                    ? this.users.filter(u => u.id === this.currentUser.id)
+                    : this.users;
+                
+                const activeUsers = visibleUsers.filter(u => 
+                    (u.license_status === 'active' || u.license_status === 'trial')
                 ).length;
                 
-                const totalScans = this.users.reduce((sum, user) => 
+                const totalScans = visibleUsers.reduce((sum, user) => 
                     sum + (user.total_scans || 0), 0
                 );
                 
-                const totalErrors = this.users.reduce((sum, user) => 
+                const totalErrors = visibleUsers.reduce((sum, user) => 
                     sum + (user.total_errors || 0), 0
                 );
                 
-                const activeLicenses = this.users.filter(u => 
+                const activeLicenses = visibleUsers.filter(u => 
                     u.license_status === 'active'
                 ).length;
                 
