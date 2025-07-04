@@ -1784,9 +1784,9 @@
                                 let message = 'Compte professionnel configuré.';
                                 
                                 if (adminInfo) {
-                                    message = 'Compte professionnel configuré.\n\nContactez l\'administrateur pour obtenir les droits d\'accès aux analytics :\n' + adminInfo.email + '\n' + (adminInfo.name || 'Nom non défini') + '\n' + (adminInfo.company_name || 'Entreprise');
+                                    message = "Compte professionnel configure.\n\nContactez l'administrateur pour obtenir les droits d'acces aux analytics :\n" + adminInfo.email + "\n" + (adminInfo.name || "Nom non defini") + "\n" + (adminInfo.company_name || "Entreprise");
                                 } else {
-                                    message = 'Compte professionnel configuré.\n\nContactez l\'administrateur de votre entreprise pour obtenir les droits d\'accès aux analytics.';
+                                    message = "Compte professionnel configure.\n\nContactez l'administrateur de votre entreprise pour obtenir les droits d'acces aux analytics.";
                                 }
                                 
                                 showAuthMessage(message, 'error');
@@ -1880,7 +1880,7 @@
                         authenticatedUser = result.user;
                         licenseService.currentUser = authenticatedUser;
                         
-                        showAuthMessage('Connexion réussie !', 'success');
+                        showAuthMessage('Connexion reussie !', 'success');
                         
                         setTimeout(() => {
                             showAnalytics();
@@ -1892,26 +1892,26 @@
                             let message = 'Accès restreint aux analytics.';
                             
                             if (adminInfo) {
-                                message = 'Accès restreint aux analytics.\n\nContactez l\'administrateur de votre entreprise :\n' + adminInfo.email + '\n' + (adminInfo.name || 'Nom non défini') + '\n' + (adminInfo.company_name || 'Entreprise');
+                                message = "Acces restreint aux analytics.\n\nContactez l'administrateur de votre entreprise :\n" + adminInfo.email + "\n" + (adminInfo.name || "Nom non defini") + "\n" + (adminInfo.company_name || "Entreprise");
                             } else {
-                                message = 'Accès restreint aux analytics.\n\nContactez l\'administrateur de votre entreprise pour obtenir les droits d\'accès.';
+                                message = "Acces restreint aux analytics.\n\nContactez l'administrateur de votre entreprise pour obtenir les droits d'acces.";
                             }
                             
                             showAuthMessage(message, 'error');
                         } else {
-                            showAuthMessage('Accès réservé aux administrateurs', 'error');
+                            showAuthMessage('Acces reserve aux administrateurs', 'error');
                         }
                     }
                 } else {
                     if (result.status === 'not_found') {
-                        showAuthMessage('Compte non trouvé. Veuillez créer votre compte sur l\'application principale.', 'error');
+                        showAuthMessage('Compte non trouve. Veuillez creer votre compte sur l\'application principale.', 'error');
                     } else {
-                        showAuthMessage(result.message || 'Accès non autorisé', 'error');
+                        showAuthMessage(result.message || 'Acces non autorise', 'error');
                     }
                 }
                 
             } catch (error) {
-                showAuthMessage('Erreur de connexion. Veuillez réessayer.', 'error');
+                showAuthMessage('Erreur de connexion. Veuillez reessayer.', 'error');
             } finally {
                 button.disabled = false;
                 buttonText.style.display = 'block';
@@ -2777,7 +2777,7 @@
             const user = currentUsers.find(u => u.id === userId);
             if (!user) return;
             
-            const confirmMessage = `Êtes-vous sûr de vouloir supprimer l'utilisateur ${user.email} ?\n\nCette action supprimera définitivement :\n- Le compte utilisateur\n- Toutes ses données\n- Son historique de licence\n\nCette action est irréversible.`;
+            const confirmMessage = "Etes-vous sur de vouloir supprimer l'utilisateur " + user.email + " ?\n\nCette action supprimera definitivement :\n- Le compte utilisateur\n- Toutes ses donnees\n- Son historique de licence\n\nCette action est irreversible.";
             
             if (!confirm(confirmMessage)) {
                 return;
@@ -2790,7 +2790,7 @@
                 
                 // Vérifier les permissions
                 if (!canDeleteUser(user)) {
-                    alert('Vous n\'avez pas les permissions pour supprimer cet utilisateur');
+                    alert("Vous n'avez pas les permissions pour supprimer cet utilisateur");
                     return;
                 }
                 
@@ -2812,7 +2812,7 @@
                 
                 if (userError) {
                     console.error('[Analytics] Error deleting user:', userError);
-                    alert(`Erreur lors de la suppression : ${userError.message}`);
+                    alert("Erreur lors de la suppression : " + userError.message);
                     return;
                 }
                 
@@ -2827,11 +2827,11 @@
                 renderLicensesTable();
                 updateSummaryFromRealData();
                 
-                alert('Utilisateur supprimé avec succès de la base de données');
+                alert("Utilisateur supprime avec succes de la base de donnees");
                 
             } catch (error) {
                 console.error('[Analytics] Error deleting user:', error);
-                alert('Erreur lors de la suppression de l\'utilisateur : ' + error.message);
+                alert("Erreur lors de la suppression de l'utilisateur : " + error.message);
             }
         }
         
@@ -2840,12 +2840,12 @@
             const user = currentUsers.find(u => u.id === userId);
             if (!user) return;
             
-            const confirmMessage = 'SUPPRESSION DÉFINITIVE\n\nVous allez supprimer définitivement l\'utilisateur ' + user.email + ' de la base de données.\n\nCette action :\n- Supprime toutes les données utilisateur\n- Supprime l\'historique des licences\n- Supprime les statistiques d\'utilisation\n- Ne peut PAS être annulée\n\nTapez "SUPPRIMER" pour confirmer :';
+            const confirmMessage = "SUPPRESSION DEFINITIVE\n\nVous allez supprimer definitivement l'utilisateur " + user.email + " de la base de donnees.\n\nCette action :\n- Supprime toutes les donnees utilisateur\n- Supprime l'historique des licences\n- Supprime les statistiques d'utilisation\n- Ne peut PAS etre annulee\n\nTapez SUPPRIMER pour confirmer :";
             
             const confirmation = prompt(confirmMessage);
             
             if (confirmation !== 'SUPPRIMER') {
-                alert('Suppression annulée');
+                alert("Suppression annulee");
                 return;
             }
             
@@ -2854,32 +2854,12 @@
                     await initializeSupabase();
                 }
                 
-                // Transaction pour supprimer toutes les données liées
-                const { error } = await supabaseClient.rpc('delete_user_completely', {
-                    user_id: userId
-                });
-                
-                if (error) {
-                    // Fallback : suppression manuelle
-                    await deleteUserManually(userId, user.email);
-                } else {
-                    // Mettre à jour les listes locales
-                    currentUsers = currentUsers.filter(u => u.id !== userId);
-                    filteredUsers = filteredUsers.filter(u => u.id !== userId);
-                    currentLicenses = currentLicenses.filter(u => u.id !== userId);
-                    filteredLicenses = filteredLicenses.filter(u => u.id !== userId);
-                    
-                    // Mettre à jour l'affichage
-                    renderUsersTable();
-                    renderLicensesTable();
-                    updateSummaryFromRealData();
-                    
-                    alert('Utilisateur supprimé définitivement de la base de données');
-                }
+                // Suppression manuelle directe
+                await deleteUserManually(userId, user.email);
                 
             } catch (error) {
                 console.error('[Analytics] Error permanently deleting user:', error);
-                alert('Erreur lors de la suppression définitive : ' + error.message);
+                alert("Erreur lors de la suppression definitive : " + error.message);
             }
         }
         
@@ -2900,10 +2880,10 @@
                     const { error } = await query;
                     
                     if (error) {
-                        console.warn(`[Analytics] Warning deleting from ${table}:`, error);
+                        console.warn('[Analytics] Warning deleting from ' + table + ':', error);
                     }
                 } catch (error) {
-                    console.warn(`[Analytics] Error deleting from ${table}:`, error);
+                    console.warn('[Analytics] Error deleting from ' + table + ':', error);
                 }
             }
             
@@ -2918,7 +2898,7 @@
             renderLicensesTable();
             updateSummaryFromRealData();
             
-            alert('Utilisateur supprimé définitivement de la base de données');
+            alert("Utilisateur supprime definitivement de la base de donnees");
         }
 
         // Billing Management - Version optimisée avec focus sur résumé et paiement
