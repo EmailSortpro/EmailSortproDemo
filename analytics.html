@@ -1439,6 +1439,30 @@
                         }
                         
                         this.showMessage('success', 'Compte créé avec succès !');
+                        
+                        // Important : attendre un peu pour que la base de données se synchronise
+                        setTimeout(async () => {
+                            // Réessayer l'authentification après création
+                            const finalAuth = await this.licenseService.authenticateWithEmail(newUser.email);
+                            
+                            if (finalAuth.user && this.hasAdminAccess(finalAuth.user)) {
+                                this.currentUser = finalAuth.user;
+                                this.saveSession(newUser.email);
+                                this.closeModal('accountTypeModal');
+                                this.showApp();
+                            } else {
+                                // Si l'authentification échoue, forcer la connexion pour les comptes individual
+                                if (accountType === 'individual') {
+                                    this.currentUser = newUser;
+                                    this.saveSession(newUser.email);
+                                    this.closeModal('accountTypeModal');
+                                    this.showApp();
+                                } else {
+                                    this.showMessage('error', 'Compte créé. Veuillez vous reconnecter.');
+                                    this.closeModal('accountTypeModal');
+                                }
+                            }
+                        }, 1000);
                     } else {
                         // Mettre à jour un compte existant
                         const updateData = {
@@ -2304,18 +2328,32 @@
                 const user = this.users.find(u => u.id === userId);
                 if (!user) return;
                 
-                if (!confirm(`Êtes-vous sûr de vouloir supprimer ${user.email} ?`)) {
+                if (!confirm(`Êtes-vous sûr de vouloir supprimer ${user.email} ?\n\nCette action est définitive.`)) {
                     return;
                 }
                 
                 try {
-                    // Supprimer les stats
-                    await this.supabaseClient
+                    // Supprimer d'abord l'entrée dans user_email_stats pour éviter la recréation
+                    const { error: statsError } = await this.supabaseClient
                         .from('user_email_stats')
                         .delete()
                         .eq('email', user.email);
                     
-                    // Supprimer l'utilisateur
+                    if (statsError) {
+                        console.error('Error deleting stats:', statsError);
+                    }
+                    
+                    // Supprimer aussi dans email_analytics pour éviter la recréation
+                    const { error: analyticsError } = await this.supabaseClient
+                        .from('email_analytics')
+                        .delete()
+                        .eq('user_email', user.email);
+                    
+                    if (analyticsError) {
+                        console.error('Error deleting analytics:', analyticsError);
+                    }
+                    
+                    // Enfin supprimer l'utilisateur
                     const { error } = await this.supabaseClient
                         .from('users')
                         .delete()
@@ -2325,11 +2363,35 @@
                         this.users = this.users.filter(u => u.id !== userId);
                         this.updateStats();
                         this.renderUsers();
+                        
+                        // Si c'est un compte personnel, ajouter à une liste de blocage
+                        if (user.account_type === 'individual') {
+                            await this.addToBlocklist(user.email);
+                        }
+                        
                         alert('Utilisateur supprimé avec succès');
+                    } else {
+                        throw error;
                     }
                 } catch (error) {
                     console.error('Delete error:', error);
-                    alert('Erreur lors de la suppression');
+                    alert('Erreur lors de la suppression : ' + error.message);
+                }
+            }
+
+            async addToBlocklist(email) {
+                // Créer une entrée pour bloquer la recréation automatique
+                try {
+                    await this.supabaseClient
+                        .from('user_email_stats')
+                        .insert({
+                            email: email,
+                            domain: email.split('@')[1],
+                            is_blocked: true,
+                            created_at: new Date().toISOString()
+                        });
+                } catch (error) {
+                    console.error('Error adding to blocklist:', error);
                 }
             }
 
