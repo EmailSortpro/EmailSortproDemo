@@ -1156,9 +1156,9 @@
                         <input type="date" class="form-control" id="editEndDate" required>
                     </div>
                     
-                    <div class="alert alert-info">
+                    <div class="alert alert-info" id="licenseEditAlert">
                         <i class="fas fa-info-circle"></i>
-                        La modification des dates de licence est réservée aux super administrateurs.
+                        <span id="licenseEditMessage">Chargement...</span>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -2300,8 +2300,9 @@
                 const user = this.users.find(u => u.id === userId);
                 if (!user) return;
                 
-                // Seuls les super admins peuvent modifier les dates
-                const canEdit = this.currentUser.role === 'super_admin';
+                // Les admins de société peuvent modifier les dates de leur société
+                const canEdit = this.currentUser.role === 'super_admin' || 
+                    (this.currentUser.role === 'company_admin' && this.currentUser.company_id === user.company_id);
                 
                 document.getElementById('editUserId').value = userId;
                 
@@ -2316,10 +2317,29 @@
                 document.getElementById('editStartDate').value = startDate;
                 document.getElementById('editEndDate').value = endDate;
                 
-                // Désactiver les champs si pas super admin
+                // Activer/désactiver les champs selon les permissions
                 document.getElementById('editStartDate').disabled = !canEdit;
                 document.getElementById('editEndDate').disabled = !canEdit;
                 document.getElementById('saveLicenseBtn').style.display = canEdit ? 'flex' : 'none';
+                
+                // Mettre à jour le message d'information
+                const alertDiv = document.querySelector('#licenseEditModal .alert-info');
+                if (alertDiv) {
+                    if (canEdit) {
+                        alertDiv.innerHTML = `
+                            <i class="fas fa-info-circle"></i>
+                            ${this.currentUser.role === 'super_admin' 
+                                ? 'En tant que super administrateur, vous pouvez modifier toutes les licences.' 
+                                : 'En tant qu\'administrateur de société, vous pouvez modifier les licences de votre société.'}
+                        `;
+                    } else {
+                        alertDiv.innerHTML = `
+                            <i class="fas fa-info-circle"></i>
+                            Vous ne pouvez pas modifier cette licence. Seuls les administrateurs peuvent le faire.
+                        `;
+                        alertDiv.className = 'alert alert-warning';
+                    }
+                }
                 
                 this.showModal('licenseEditModal');
             }
@@ -2327,12 +2347,23 @@
             async saveLicenseDates(event) {
                 event.preventDefault();
                 
-                if (this.currentUser.role !== 'super_admin') {
-                    alert('Seul le super administrateur peut modifier les dates');
+                const userId = document.getElementById('editUserId').value;
+                const user = this.users.find(u => u.id === userId);
+                
+                if (!user) {
+                    alert('Utilisateur non trouvé');
                     return;
                 }
                 
-                const userId = document.getElementById('editUserId').value;
+                // Vérifier les permissions
+                const canEdit = this.currentUser.role === 'super_admin' || 
+                    (this.currentUser.role === 'company_admin' && this.currentUser.company_id === user.company_id);
+                
+                if (!canEdit) {
+                    alert('Vous n\'avez pas les permissions pour modifier cette licence');
+                    return;
+                }
+                
                 const startDate = document.getElementById('editStartDate').value;
                 const endDate = document.getElementById('editEndDate').value;
                 
@@ -2509,8 +2540,9 @@
                 // Le super admin peut tout gérer
                 if (this.currentUser.role === 'super_admin') return true;
                 
-                // Les admins de société peuvent gérer leur société
+                // Les admins de société peuvent gérer leur société (y compris les licences)
                 if (this.currentUser.role === 'company_admin' && 
+                    this.currentUser.company_id && 
                     this.currentUser.company_id === user.company_id) return true;
                 
                 // Les comptes personnels peuvent se gérer eux-mêmes
