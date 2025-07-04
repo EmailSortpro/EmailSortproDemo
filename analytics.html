@@ -2423,7 +2423,8 @@
             }
             
             try {
-                const validAccountType = selectedAccountType === 'personal' ? 'personal' : 'professional';
+                // Utiliser 'individual' au lieu de 'personal' pour correspondre à la BDD
+                const validAccountType = selectedAccountType === 'personal' ? 'individual' : 'professional';
                 
                 const result = await licenseService.setUserAccountType(
                     pendingUser.id,
@@ -2443,7 +2444,7 @@
                             authenticatedUser = refreshResult.user;
                             licenseService.currentUser = authenticatedUser;
                             
-                            if (authenticatedUser.account_type === 'personal' && authenticatedUser.company_id) {
+                            if (authenticatedUser.account_type === 'individual' && authenticatedUser.company_id) {
                                 await cleanupPersonalAccount(authenticatedUser.id);
                             }
                             
