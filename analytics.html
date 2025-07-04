@@ -1305,20 +1305,21 @@
                 try {
                     if (this.isNewUser) {
                         // Créer un nouveau compte
+                        const newUserData = {
+                            email: this.pendingUser.email,
+                            name: this.pendingUser.email.split('@')[0],
+                            role: 'user',
+                            account_type: accountType === 'individual' ? 'individual' : 'professional',
+                            license_status: 'trial',
+                            license_expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+                            license_starts_at: new Date().toISOString(),
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        };
+
                         const { data: newUser, error } = await this.supabaseClient
                             .from('users')
-                            .insert({
-                                email: this.pendingUser.email,
-                                name: this.pendingUser.email.split('@')[0],
-                                role: 'user',
-                                account_type: accountType === 'individual' ? 'individual' : 'professional',
-                                company_name: accountType === 'professional' ? companyName : null,
-                                license_status: 'trial',
-                                license_expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-                                license_starts_at: new Date().toISOString(),
-                                created_at: new Date().toISOString(),
-                                updated_at: new Date().toISOString()
-                            })
+                            .insert(newUserData)
                             .select()
                             .single();
                         
@@ -1331,27 +1332,50 @@
                         // Si c'est un compte professionnel, créer la société
                         if (accountType === 'professional' && companyName) {
                             const domain = this.pendingUser.email.split('@')[1];
-                            const { data: company } = await this.supabaseClient
+                            
+                            // Vérifier si la société existe déjà
+                            const { data: existingCompany } = await this.supabaseClient
                                 .from('companies')
-                                .insert({
-                                    name: companyName,
-                                    domain: domain,
-                                    created_at: new Date().toISOString()
-                                })
-                                .select()
+                                .select('id')
+                                .eq('domain', domain)
                                 .single();
                             
-                            if (company) {
+                            let companyId;
+                            
+                            if (existingCompany) {
+                                companyId = existingCompany.id;
+                            } else {
+                                // Créer une nouvelle société
+                                const { data: company, error: companyError } = await this.supabaseClient
+                                    .from('companies')
+                                    .insert({
+                                        name: companyName,
+                                        domain: domain,
+                                        created_at: new Date().toISOString()
+                                    })
+                                    .select()
+                                    .single();
+                                
+                                if (companyError) {
+                                    console.error('Company creation error:', companyError);
+                                    // Continuer sans société
+                                } else {
+                                    companyId = company.id;
+                                }
+                            }
+                            
+                            if (companyId) {
                                 // Mettre à jour l'utilisateur avec l'ID de la société et le promouvoir admin
                                 await this.supabaseClient
                                     .from('users')
                                     .update({
-                                        company_id: company.id,
-                                        role: 'company_admin'
+                                        company_id: companyId,
+                                        role: 'company_admin',
+                                        updated_at: new Date().toISOString()
                                     })
                                     .eq('id', newUser.id);
                                 
-                                newUser.company_id = company.id;
+                                newUser.company_id = companyId;
                                 newUser.role = 'company_admin';
                             }
                         }
@@ -1359,14 +1383,76 @@
                         this.showMessage('success', 'Compte créé avec succès !');
                     } else {
                         // Mettre à jour un compte existant
-                        const result = await this.licenseService.setUserAccountType(
-                            this.pendingUser.id,
-                            accountType === 'individual' ? 'individual' : 'professional',
-                            companyName || null
-                        );
+                        const updateData = {
+                            account_type: accountType === 'individual' ? 'individual' : 'professional',
+                            updated_at: new Date().toISOString()
+                        };
                         
-                        if (!result.success) {
-                            throw new Error(result.error);
+                        // Si individual, retirer la société
+                        if (accountType === 'individual') {
+                            updateData.company_id = null;
+                        }
+                        
+                        const { error } = await this.supabaseClient
+                            .from('users')
+                            .update(updateData)
+                            .eq('id', this.pendingUser.id);
+                        
+                        if (error) {
+                            throw error;
+                        }
+                        
+                        // Si professional, gérer la société
+                        if (accountType === 'professional' && companyName) {
+                            const domain = this.pendingUser.email.split('@')[1];
+                            
+                            // Vérifier si la société existe
+                            const { data: existingCompany } = await this.supabaseClient
+                                .from('companies')
+                                .select('id')
+                                .eq('domain', domain)
+                                .single();
+                            
+                            let companyId;
+                            
+                            if (existingCompany) {
+                                companyId = existingCompany.id;
+                            } else {
+                                // Créer la société
+                                const { data: company } = await this.supabaseClient
+                                    .from('companies')
+                                    .insert({
+                                        name: companyName,
+                                        domain: domain,
+                                        created_at: new Date().toISOString()
+                                    })
+                                    .select()
+                                    .single();
+                                
+                                if (company) {
+                                    companyId = company.id;
+                                }
+                            }
+                            
+                            if (companyId) {
+                                // Mettre à jour avec la société et promouvoir admin si premier
+                                const { data: companyUsers } = await this.supabaseClient
+                                    .from('users')
+                                    .select('id')
+                                    .eq('company_id', companyId)
+                                    .eq('role', 'company_admin');
+                                
+                                const role = (!companyUsers || companyUsers.length === 0) ? 'company_admin' : 'user';
+                                
+                                await this.supabaseClient
+                                    .from('users')
+                                    .update({
+                                        company_id: companyId,
+                                        role: role,
+                                        updated_at: new Date().toISOString()
+                                    })
+                                    .eq('id', this.pendingUser.id);
+                            }
                         }
                     }
                     
@@ -1455,11 +1541,16 @@
                     
                     // Appliquer les filtres selon le rôle
                     if (this.currentUser.account_type === 'individual') {
+                        // Les comptes personnels ne voient qu'eux-mêmes (pas le super admin)
                         query = query.eq('id', this.currentUser.id);
                     } else if (this.currentUser.role === 'company_admin' && this.currentUser.company_id) {
                         query = query.eq('company_id', this.currentUser.company_id);
                     }
                     // Les super admins voient tout
+                    
+                    // Si c'est un compte individual, masquer le filtre de société
+                    document.getElementById('userStatusFilter').parentElement.style.display = 
+                        this.currentUser.account_type === 'individual' ? 'none' : 'flex';
                     
                     const { data, error } = await query;
                     
@@ -1626,6 +1717,8 @@
                                         <button class="btn btn-primary btn-sm" onclick="app.editLicense('${user.id}')">
                                             <i class="fas fa-edit"></i>
                                         </button>
+                                    ` : ''}
+                                    ${this.canDeleteUser(user) ? `
                                         <button class="btn btn-danger btn-sm" onclick="app.deleteUser('${user.id}')">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -2082,6 +2175,16 @@
                     this.currentUser.company_id === user.company_id) return true;
                 if (this.currentUser.account_type === 'individual' && 
                     this.currentUser.id === user.id) return true;
+                return false;
+            }
+
+            canDeleteUser(user) {
+                // On ne peut pas se supprimer soi-même
+                if (this.currentUser.id === user.id) return false;
+                
+                if (this.currentUser.role === 'super_admin') return true;
+                if (this.currentUser.role === 'company_admin' && 
+                    this.currentUser.company_id === user.company_id) return true;
                 return false;
             }
 
