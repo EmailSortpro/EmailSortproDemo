@@ -177,34 +177,39 @@ class App {
     async ensureLicenseServiceReady() {
         console.log('[App] Ensuring LicenseService is ready...');
         
-        if (!window.licenseService) {
-            console.warn('[App] LicenseService not available, trying to load...');
-            
-            // Attendre un peu que le service se charge
-            let attempts = 0;
-            const maxAttempts = 30;
-            
-            while (!window.licenseService && attempts < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
+        try {
+            if (!window.licenseService) {
+                console.warn('[App] LicenseService not available, trying to load...');
+                
+                // Attendre un peu que le service se charge
+                let attempts = 0;
+                const maxAttempts = 30;
+                
+                while (!window.licenseService && attempts < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                if (!window.licenseService) {
+                    console.warn('[App] LicenseService not available after 3 seconds - continuing without it');
+                    return false;
+                }
             }
             
-            if (!window.licenseService) {
-                console.error('[App] LicenseService not available after 3 seconds');
+            // Initialiser le service si nécessaire
+            try {
+                if (!window.licenseService.initialized) {
+                    console.log('[App] Initializing LicenseService...');
+                    await window.licenseService.initialize();
+                }
+                console.log('[App] ✅ LicenseService ready');
+                return true;
+            } catch (error) {
+                console.error('[App] Error initializing LicenseService:', error);
                 return false;
             }
-        }
-        
-        // Initialiser le service si nécessaire
-        try {
-            if (!window.licenseService.initialized) {
-                console.log('[App] Initializing LicenseService...');
-                await window.licenseService.initialize();
-            }
-            console.log('[App] ✅ LicenseService ready');
-            return true;
         } catch (error) {
-            console.error('[App] Error initializing LicenseService:', error);
+            console.error('[App] Error in ensureLicenseServiceReady:', error);
             return false;
         }
     }
@@ -558,19 +563,7 @@ class App {
                     this.user = await window.authService.getUserInfo();
                     this.user.provider = 'microsoft';
                     
-                    // VÉRIFICATION DE LICENCE
-                    const email = this.user.mail || this.user.email || this.user.userPrincipalName;
-                    console.log('[App] Checking license for Microsoft user:', email);
-                    
-                    const licenseCheck = await this.checkUserLicense(email);
-                    
-                    if (!licenseCheck.valid) {
-                        console.log('[App] ❌ License check failed for Microsoft user');
-                        await this.handleLicenseError(licenseCheck);
-                        return;
-                    }
-                    
-                    console.log('[App] ✅ License valid for Microsoft user');
+                    // D'abord, afficher l'application normalement
                     this.isAuthenticated = true;
                     this.activeProvider = 'microsoft';
                     
@@ -579,6 +572,23 @@ class App {
                     
                     console.log('[App] ✅ Microsoft user authenticated:', this.user.displayName || this.user.mail);
                     this.showAppWithTransition();
+                    
+                    // VÉRIFICATION DE LICENCE APRÈS L'AFFICHAGE
+                    // Attendre un peu pour que l'application soit complètement chargée
+                    setTimeout(async () => {
+                        const email = this.user.mail || this.user.email || this.user.userPrincipalName;
+                        console.log('[App] Checking license for Microsoft user:', email);
+                        
+                        const licenseCheck = await this.checkUserLicense(email);
+                        
+                        if (!licenseCheck.valid) {
+                            console.log('[App] ❌ License check failed for Microsoft user');
+                            await this.handleLicenseError(licenseCheck);
+                        } else {
+                            console.log('[App] ✅ License valid for Microsoft user');
+                        }
+                    }, 2000); // 2 secondes de délai
+                    
                     return;
                 } catch (userInfoError) {
                     console.error('[App] Error getting Microsoft user info:', userInfoError);
@@ -599,19 +609,7 @@ class App {
                     this.user = await window.googleAuthService.getUserInfo();
                     this.user.provider = 'google';
                     
-                    // VÉRIFICATION DE LICENCE
-                    const email = this.user.email || this.user.mail;
-                    console.log('[App] Checking license for Google user:', email);
-                    
-                    const licenseCheck = await this.checkUserLicense(email);
-                    
-                    if (!licenseCheck.valid) {
-                        console.log('[App] ❌ License check failed for Google user');
-                        await this.handleLicenseError(licenseCheck);
-                        return;
-                    }
-                    
-                    console.log('[App] ✅ License valid for Google user');
+                    // D'abord, afficher l'application normalement
                     this.isAuthenticated = true;
                     this.activeProvider = 'google';
                     
@@ -620,6 +618,23 @@ class App {
                     
                     console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
                     this.showAppWithTransition();
+                    
+                    // VÉRIFICATION DE LICENCE APRÈS L'AFFICHAGE
+                    // Attendre un peu pour que l'application soit complètement chargée
+                    setTimeout(async () => {
+                        const email = this.user.email || this.user.mail;
+                        console.log('[App] Checking license for Google user:', email);
+                        
+                        const licenseCheck = await this.checkUserLicense(email);
+                        
+                        if (!licenseCheck.valid) {
+                            console.log('[App] ❌ License check failed for Google user');
+                            await this.handleLicenseError(licenseCheck);
+                        } else {
+                            console.log('[App] ✅ License valid for Google user');
+                        }
+                    }, 2000); // 2 secondes de délai
+                    
                     return;
                 } catch (userInfoError) {
                     console.error('[App] Error getting Google user info:', userInfoError);
@@ -667,19 +682,7 @@ class App {
                 this.user = await window.googleAuthService.getUserInfo();
                 this.user.provider = 'google';
                 
-                // VÉRIFICATION DE LICENCE
-                const email = this.user.email || this.user.mail;
-                console.log('[App] Checking license for Google callback user:', email);
-                
-                const licenseCheck = await this.checkUserLicense(email);
-                
-                if (!licenseCheck.valid) {
-                    console.log('[App] ❌ License check failed for Google callback user');
-                    await this.handleLicenseError(licenseCheck);
-                    return true; // Retourner true car le callback a été traité
-                }
-                
-                console.log('[App] ✅ License valid for Google callback user');
+                // D'abord, afficher l'application normalement
                 this.isAuthenticated = true;
                 this.activeProvider = 'google';
                 
@@ -688,6 +691,23 @@ class App {
                 
                 console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
                 this.showAppWithTransition();
+                
+                // VÉRIFICATION DE LICENCE APRÈS L'AFFICHAGE
+                // Attendre un peu pour que l'application soit complètement chargée
+                setTimeout(async () => {
+                    const email = this.user.email || this.user.mail;
+                    console.log('[App] Checking license for Google callback user:', email);
+                    
+                    const licenseCheck = await this.checkUserLicense(email);
+                    
+                    if (!licenseCheck.valid) {
+                        console.log('[App] ❌ License check failed for Google callback user');
+                        await this.handleLicenseError(licenseCheck);
+                    } else {
+                        console.log('[App] ✅ License valid for Google callback user');
+                    }
+                }, 2000); // 2 secondes de délai
+                
                 return true;
             } else {
                 throw new Error('Google callback processing failed');
@@ -1593,6 +1613,7 @@ class App {
             await window.authService.login();
             
             // La vérification de licence sera faite dans checkAuthenticationStatus
+            // Ne pas faire la vérification ici pour permettre la connexion normale
             
         } catch (error) {
             console.error('[App] Microsoft login error:', error);
