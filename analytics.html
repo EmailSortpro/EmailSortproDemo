@@ -2475,9 +2475,38 @@
             }
         }
         
-        // Rendre les fonctions globales
-        window.selectAccountType = selectAccountType;
-        window.confirmAccountType = confirmAccountType;
+        // Rendre les fonctions globales pour les événements onclick
+        window.selectAccountType = function(type) {
+            selectAccountType(type);
+        };
+        
+        window.confirmAccountType = function() {
+            confirmAccountType();
+        };
+        
+        window.openCoadminModal = openCoadminModal;
+        window.closeCoadminModal = closeCoadminModal;
+        window.addCoadmin = addCoadmin;
+        window.promoteToAdmin = promoteToAdmin;
+        window.demoteFromAdmin = demoteFromAdmin;
+        window.switchTab = switchTab;
+        window.refreshUsers = refreshUsers;
+        window.refreshLicenses = refreshLicenses;
+        window.refreshBilling = refreshBilling;
+        window.viewUserDetails = viewUserDetails;
+        window.closeUserModal = closeUserModal;
+        window.manageLicense = manageLicense;
+        window.openLicenseEditModal = openLicenseEditModal;
+        window.closeLicenseEditModal = closeLicenseEditModal;
+        window.deleteUser = deleteUser;
+        window.permanentDeleteUser = permanentDeleteUser;
+        window.exportBillingData = exportBillingData;
+        window.exportActiveUsers = exportActiveUsers;
+        window.exportExpiredUsers = exportExpiredUsers;
+        window.exportRenewalAlerts = exportRenewalAlerts;
+        window.processPayment = processPayment;
+        window.downloadInvoice = downloadInvoice;
+        window.logout = logout;
 
         // Gestion de l'authentification
         async function handleAuthentication(event) {
@@ -2511,7 +2540,41 @@
                 }
                 
                 // Adaptation : utiliser une requête directe si la fonction RPC n'existe pas
-                const result = await licenseService.authenticateWithEmail(email);
+                // Si la fonction RPC échoue avec 404, essayer une méthode alternative
+                if (!result.valid && result.status === 'not_found') {
+                    try {
+                        // Vérifier d'abord si l'utilisateur existe via une requête simple
+                        const { data: checkUser, error: checkError } = await supabaseClient
+                            .from('users')
+                            .select('id')
+                            .eq('email', email)
+                            .maybeSingle();
+                        
+                        if (!checkError && !checkUser) {
+                            // L'utilisateur n'existe vraiment pas
+                            console.log('[Analytics] User does not exist, can create account');
+                        } else if (checkUser) {
+                            // L'utilisateur existe, essayer de récupérer ses données
+                            const { data: directUser, error: directError } = await supabaseClient
+                                .from('users')
+                                .select('*')
+                                .eq('email', email)
+                                .single();
+                            
+                            if (directUser && !directError) {
+                                const now = new Date();
+                                const expiresAt = directUser.license_expires_at ? new Date(directUser.license_expires_at) : null;
+                                const isExpired = expiresAt && expiresAt < now;
+                                
+                                result.valid = !isExpired || checkAdminAccess(directUser) || directUser.account_type === 'individual';
+                                result.user = directUser;
+                                result.status = isExpired ? 'expired' : 'valid';
+                            }
+                        }
+                    } catch (error) {
+                        console.error('[Analytics] Error checking user existence:', error);
+                    }
+                }
                 
                 // Si la fonction RPC échoue, essayer une requête directe
                 if (!result.valid && result.status === 'not_found') {
@@ -2654,6 +2717,11 @@
                         setTimeout(async () => {
                             if (confirm('Voulez-vous créer un compte administrateur pour ' + email + ' ?')) {
                                 try {
+                                    // S'assurer que supabaseClient est initialisé
+                                    if (!supabaseClient) {
+                                        await initializeSupabase();
+                                    }
+                                    
                                     // Créer un nouveau compte avec 15 jours d'essai
                                     const domain = email.split('@')[1];
                                     const { data: newUser, error } = await supabaseClient
@@ -2674,6 +2742,8 @@
                                     
                                     if (!error && newUser) {
                                         pendingUser = newUser;
+                                        selectedAccountType = null; // Réinitialiser la sélection
+                                        
                                         showAuthMessage('Compte créé avec succès ! Veuillez configurer votre type d\'accès.', 'success');
                                         
                                         // Afficher le modal de sélection du type de compte
@@ -2681,8 +2751,15 @@
                                         buttonText.style.display = 'block';
                                         spinner.style.display = 'none';
                                         
+                                        // Réinitialiser le modal
+                                        document.getElementById('personalOption').classList.remove('selected');
+                                        document.getElementById('professionalOption').classList.remove('selected');
+                                        document.getElementById('companyNameInput').value = '';
+                                        document.getElementById('companyNameInput').classList.remove('visible');
+                                        
                                         document.getElementById('accountTypeModal').classList.add('active');
                                     } else {
+                                        console.error('[Analytics] Error creating user:', error);
                                         showAuthMessage('Erreur lors de la création du compte. Veuillez utiliser l\'application principale.', 'error');
                                     }
                                 } catch (error) {
