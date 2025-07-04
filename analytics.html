@@ -627,6 +627,35 @@
             gap: 8px;
         }
 
+        .company-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .company-name {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 0.85rem;
+        }
+
+        .admin-info {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        .admin-info i {
+            font-size: 0.7rem;
+            color: #3b82f6;
+        }
+
+        .admin-info.unknown i {
+            color: #f59e0b;
+        }
+
         .user-avatar {
             width: 32px;
             height: 32px;
@@ -734,9 +763,14 @@
             color: #7c3aed;
         }
 
-        .action-btn.delete {
-            background: #fee2e2;
-            color: #dc2626;
+        .action-btn.delete.permanent {
+            background: #dc2626;
+            color: white;
+            font-weight: 700;
+        }
+
+        .action-btn.delete.permanent:hover {
+            background: #b91c1c;
         }
 
         .action-btn.dates {
@@ -1745,7 +1779,17 @@
                             showAnalytics();
                         } else {
                             if (validAccountType === 'professional') {
-                                showAuthMessage('Compte professionnel configuré. Contactez votre administrateur pour obtenir les droits d\'accès aux analytics.', 'error');
+                                // Chercher l'admin de l'entreprise
+                                const adminInfo = await getCompanyAdminInfo(authenticatedUser.company_id);
+                                let message = 'Compte professionnel configuré.';
+                                
+                                if (adminInfo) {
+                                    message = `Compte professionnel configuré.\n\nContactez l'administrateur pour obtenir les droits d'accès aux analytics :\n📧 ${adminInfo.email}\n👤 ${adminInfo.name || 'Nom non défini'}\n🏢 ${adminInfo.company_name || 'Entreprise'}`;
+                                } else {
+                                    message = 'Compte professionnel configuré.\n\nContactez l\'administrateur de votre entreprise pour obtenir les droits d\'accès aux analytics.';
+                                }
+                                
+                                showAuthMessage(message, 'error');
                             } else {
                                 showAuthMessage('Erreur lors de la configuration du compte', 'error');
                             }
@@ -1843,7 +1887,17 @@
                         }, 1000);
                     } else {
                         if (result.user.account_type === 'professional' && result.user.role === 'user') {
-                            showAuthMessage('Accès restreint. Contactez votre administrateur pour obtenir les droits d\'accès aux analytics.', 'error');
+                            // Chercher l'admin de l'entreprise
+                            const adminInfo = await getCompanyAdminInfo(result.user.company_id);
+                            let message = 'Accès restreint aux analytics.';
+                            
+                            if (adminInfo) {
+                                message = `Accès restreint aux analytics.\n\nContactez l'administrateur de votre entreprise :\n📧 ${adminInfo.email}\n👤 ${adminInfo.name || 'Nom non défini'}\n🏢 ${adminInfo.company_name || 'Entreprise'}`;
+                            } else {
+                                message = 'Accès restreint aux analytics.\n\nContactez l\'administrateur de votre entreprise pour obtenir les droits d\'accès.';
+                            }
+                            
+                            showAuthMessage(message, 'error');
                         } else {
                             showAuthMessage('Accès réservé aux administrateurs', 'error');
                         }
@@ -1869,15 +1923,24 @@
         function checkAdminAccess(user) {
             if (!user) return false;
             
+            // Super admin : accès total
             if (user.role === 'super_admin') {
                 return true;
             }
             
+            // Admin d'entreprise : accès total
             if (user.role === 'company_admin') {
                 return true;
             }
             
+            // Compte personnel : accès total (même si période d'essai expirée)
             if (user.account_type === 'personal') {
+                return true;
+            }
+            
+            // Utilisateur professionnel avec statut actif ou essai
+            if (user.account_type === 'professional' && 
+                (user.license_status === 'active' || user.license_status === 'trial')) {
                 return true;
             }
             
@@ -1960,6 +2023,62 @@
             }
         }
 
+        // Afficher les informations d'administration d'entreprise
+        function getCompanyAdminDisplay(user) {
+            if (!user.company_id || user.role === 'company_admin' || user.account_type === 'personal') {
+                return '';
+            }
+            
+            // Chercher l'admin dans la liste des utilisateurs actuels
+            const companyAdmin = currentUsers.find(u => 
+                u.company_id === user.company_id && 
+                u.role === 'company_admin'
+            );
+            
+            if (companyAdmin) {
+                return `<div class="admin-info">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Admin: ${companyAdmin.email}</span>
+                </div>`;
+            }
+            
+            return `<div class="admin-info unknown">
+                <i class="fas fa-question-circle"></i>
+                <span>Admin non trouvé</span>
+            </div>`;
+        }
+        // Récupérer les informations de l'administrateur d'entreprise
+        async function getCompanyAdminInfo(companyId) {
+            if (!companyId || !supabaseClient) return null;
+            
+            try {
+                const { data: admin, error } = await supabaseClient
+                    .from('users')
+                    .select(`
+                        id,
+                        email,
+                        name,
+                        company:companies(id, name, domain)
+                    `)
+                    .eq('company_id', companyId)
+                    .eq('role', 'company_admin')
+                    .single();
+                
+                if (error || !admin) {
+                    console.warn('[Analytics] No company admin found for company:', companyId);
+                    return null;
+                }
+                
+                return {
+                    email: admin.email,
+                    name: admin.name,
+                    company_name: admin.company?.name || admin.company?.domain
+                };
+            } catch (error) {
+                console.error('[Analytics] Error fetching company admin:', error);
+                return null;
+            }
+        }
         // Nettoyer un compte personnel mal configuré
         async function cleanupPersonalAccount(userId) {
             try {
@@ -2250,7 +2369,12 @@
                                 </div>
                             </div>
                         </td>
-                        <td>${companyName}</td>
+                        <td>
+                            <div class="company-info">
+                                <div class="company-name">${companyName}</div>
+                                ${getCompanyAdminDisplay(user)}
+                            </div>
+                        </td>
                         <td><span class="status-badge ${licenseClass}">${user.license_status || 'trial'}</span></td>
                         <td>${formatLastLogin(user.last_login_at ? new Date(user.last_login_at) : null)}</td>
                         <td>${user.login_count || 0}</td>
@@ -2275,6 +2399,9 @@
                                 ${canDeleteUser(user) ? `
                                     <button class="action-btn delete" onclick="deleteUser('${user.id}')">
                                         <i class="fas fa-trash"></i> Supprimer
+                                    </button>
+                                    <button class="action-btn delete permanent" onclick="permanentDeleteUser('${user.id}')" title="Suppression définitive de la BDD">
+                                        <i class="fas fa-trash-alt"></i> Suppr. déf.
                                     </button>
                                 ` : ''}
                             </div>
@@ -2551,7 +2678,12 @@
                                 </div>
                             </div>
                         </td>
-                        <td>${companyName}</td>
+                        <td>
+                            <div class="company-info">
+                                <div class="company-name">${companyName}</div>
+                                ${getCompanyAdminDisplay(user)}
+                            </div>
+                        </td>
                         <td><span class="status-badge ${licenseClass}">${user.license_status || 'trial'}</span></td>
                         <td>${startDate}</td>
                         <td>${endDate}</td>
@@ -2575,13 +2707,10 @@
                                     <button class="action-btn delete" onclick="deleteUser('${user.id}')">
                                         <i class="fas fa-trash"></i> Supprimer
                                     </button>
+                                    <button class="action-btn delete permanent" onclick="permanentDeleteUser('${user.id}')" title="Suppression définitive de la BDD">
+                                        <i class="fas fa-trash-alt"></i> Suppr. déf.
+                                    </button>
                                 ` : ''}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
 
         async function refreshLicenses() {
             await loadLicenses();
@@ -2648,34 +2777,151 @@
             const user = currentUsers.find(u => u.id === userId);
             if (!user) return;
             
-            const confirmMessage = `Êtes-vous sûr de vouloir supprimer l'utilisateur ${user.email} ?\n\nCette action est irréversible.`;
+            const confirmMessage = `Êtes-vous sûr de vouloir supprimer l'utilisateur ${user.email} ?\n\nCette action supprimera définitivement :\n- Le compte utilisateur\n- Toutes ses données\n- Son historique de licence\n\nCette action est irréversible.`;
             
             if (!confirm(confirmMessage)) {
                 return;
             }
             
             try {
-                if (!window.licenseService.initialized) {
-                    await window.licenseService.initialize();
+                if (!supabaseClient) {
+                    await initializeSupabase();
                 }
                 
-                window.licenseService.currentUser = authenticatedUser;
-                
-                const result = await window.licenseService.deleteUser(userId);
-                
-                if (result.success) {
-                    alert('Utilisateur supprimé avec succès');
-                    await refreshUsers();
-                } else {
-                    alert('Erreur : ' + result.error);
+                // Vérifier les permissions
+                if (!canDeleteUser(user)) {
+                    alert('Vous n\'avez pas les permissions pour supprimer cet utilisateur');
+                    return;
                 }
+                
+                // Supprimer d'abord les statistiques utilisateur
+                const { error: statsError } = await supabaseClient
+                    .from('user_email_stats')
+                    .delete()
+                    .eq('email', user.email);
+                
+                if (statsError) {
+                    console.warn('[Analytics] Warning deleting user stats:', statsError);
+                }
+                
+                // Supprimer l'utilisateur principal
+                const { error: userError } = await supabaseClient
+                    .from('users')
+                    .delete()
+                    .eq('id', userId);
+                
+                if (userError) {
+                    console.error('[Analytics] Error deleting user:', userError);
+                    alert(`Erreur lors de la suppression : ${userError.message}`);
+                    return;
+                }
+                
+                // Supprimer l'utilisateur des listes locales
+                currentUsers = currentUsers.filter(u => u.id !== userId);
+                filteredUsers = filteredUsers.filter(u => u.id !== userId);
+                currentLicenses = currentLicenses.filter(u => u.id !== userId);
+                filteredLicenses = filteredLicenses.filter(u => u.id !== userId);
+                
+                // Mettre à jour l'affichage
+                renderUsersTable();
+                renderLicensesTable();
+                updateSummaryFromRealData();
+                
+                alert('Utilisateur supprimé avec succès de la base de données');
+                
             } catch (error) {
                 console.error('[Analytics] Error deleting user:', error);
-                alert('Erreur lors de la suppression de l\'utilisateur');
+                alert('Erreur lors de la suppression de l\'utilisateur : ' + error.message);
             }
         }
+        
+        // Fonction pour supprimer définitivement un utilisateur expiré
+        async function permanentDeleteUser(userId) {
+            const user = currentUsers.find(u => u.id === userId);
+            if (!user) return;
+            
+            const confirmMessage = `⚠️ SUPPRESSION DÉFINITIVE ⚠️\n\nVous allez supprimer définitivement l'utilisateur ${user.email} de la base de données.\n\nCette action :\n- Supprime toutes les données utilisateur\n- Supprime l'historique des licences\n- Supprime les statistiques d'utilisation\n- Ne peut PAS être annulée\n\nTapez "SUPPRIMER" pour confirmer :`;
+            
+            const confirmation = prompt(confirmMessage);
+            
+            if (confirmation !== 'SUPPRIMER') {
+                alert('Suppression annulée');
+                return;
+            }
+            
+            try {
+                if (!supabaseClient) {
+                    await initializeSupabase();
+                }
+                
+                // Transaction pour supprimer toutes les données liées
+                const { error } = await supabaseClient.rpc('delete_user_completely', {
+                    user_id: userId
+                });
+                
+                if (error) {
+                    // Fallback : suppression manuelle
+                    await deleteUserManually(userId, user.email);
+                } else {
+                    // Mettre à jour les listes locales
+                    currentUsers = currentUsers.filter(u => u.id !== userId);
+                    filteredUsers = filteredUsers.filter(u => u.id !== userId);
+                    currentLicenses = currentLicenses.filter(u => u.id !== userId);
+                    filteredLicenses = filteredLicenses.filter(u => u.id !== userId);
+                    
+                    // Mettre à jour l'affichage
+                    renderUsersTable();
+                    renderLicensesTable();
+                    updateSummaryFromRealData();
+                    
+                    alert('✅ Utilisateur supprimé définitivement de la base de données');
+                }
+                
+            } catch (error) {
+                console.error('[Analytics] Error permanently deleting user:', error);
+                alert('Erreur lors de la suppression définitive : ' + error.message);
+            }
+        }
+        
+        // Suppression manuelle si la fonction RPC n'existe pas
+        async function deleteUserManually(userId, userEmail) {
+            const tables = ['user_email_stats', 'users'];
+            
+            for (const table of tables) {
+                try {
+                    let query = supabaseClient.from(table).delete();
+                    
+                    if (table === 'user_email_stats') {
+                        query = query.eq('email', userEmail);
+                    } else {
+                        query = query.eq('id', userId);
+                    }
+                    
+                    const { error } = await query;
+                    
+                    if (error) {
+                        console.warn(`[Analytics] Warning deleting from ${table}:`, error);
+                    }
+                } catch (error) {
+                    console.warn(`[Analytics] Error deleting from ${table}:`, error);
+                }
+            }
+            
+            // Mettre à jour les listes locales
+            currentUsers = currentUsers.filter(u => u.id !== userId);
+            filteredUsers = filteredUsers.filter(u => u.id !== userId);
+            currentLicenses = currentLicenses.filter(u => u.id !== userId);
+            filteredLicenses = filteredLicenses.filter(u => u.id !== userId);
+            
+            // Mettre à jour l'affichage
+            renderUsersTable();
+            renderLicensesTable();
+            updateSummaryFromRealData();
+            
+            alert('✅ Utilisateur supprimé définitivement de la base de données');
+        }
 
-        // Billing Management - Version optimisée et condensée
+        // Billing Management - Version optimisée avec focus sur résumé et paiement
         async function loadBilling() {
             const billingContent = document.getElementById('billingContent');
             
@@ -2685,113 +2931,254 @@
                 }
                 
                 const billingStats = calculateBillingStats();
+                const expiredUsers = getExpiredUsers();
+                const renewalStats = getRenewalStats();
                 
                 billingContent.innerHTML = `
-                    <div class="billing-container">
+                    <div class="billing-dashboard">
+                        <!-- Header avec actions -->
                         <div class="billing-header">
                             <h2>
                                 <i class="fas fa-credit-card"></i>
-                                Facturation
+                                Tableau de bord Facturation
                             </h2>
-                            <button class="refresh-btn" onclick="refreshBilling()">
-                                <i class="fas fa-sync-alt"></i>
-                                Actualiser
-                            </button>
-                        </div>
-
-                        <!-- Résumé financier -->
-                        <div class="billing-summary-card">
-                            <h3>
-                                <i class="fas fa-chart-pie"></i>
-                                Résumé financier
-                            </h3>
-                            <div class="billing-metrics">
-                                <div class="billing-metric">
-                                    <div class="billing-metric-value">${billingStats.totalUsers}</div>
-                                    <div class="billing-metric-label">Utilisateurs</div>
-                                    <div class="billing-metric-detail">${billingStats.monthlyUsers}M + ${billingStats.yearlyUsers}A</div>
-                                </div>
-                                <div class="billing-metric">
-                                    <div class="billing-metric-value">${formatPrice(billingStats.grandTotal)}</div>
-                                    <div class="billing-metric-label">Total mensuel</div>
-                                    <div class="billing-metric-detail">${formatPrice(billingStats.grandTotalHT)} HT</div>
-                                </div>
-                                <div class="billing-metric">
-                                    <div class="billing-metric-value">${formatPrice(billingStats.grandTotal * 12)}</div>
-                                    <div class="billing-metric-label">Projection annuelle</div>
-                                    <div class="billing-metric-detail">Sur 12 mois</div>
-                                </div>
-                                <div class="billing-metric">
-                                    <div class="billing-metric-value">${formatPrice(billingStats.potentialSavings)}</div>
-                                    <div class="billing-metric-label">Économies possibles</div>
-                                    <div class="billing-metric-detail">Si tout en annuel</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Module de paiement -->
-                        <div class="payment-section">
-                            <h3>
-                                <i class="fas fa-credit-card"></i>
-                                Paiement
-                            </h3>
-                            <div class="payment-amount">
-                                <div class="payment-amount-value">${formatPrice(billingStats.grandTotal)}</div>
-                                <div class="payment-amount-label">À payer ce mois</div>
-                                <div class="payment-amount-details">${formatPrice(billingStats.grandTotalHT)} HT + ${formatPrice(billingStats.grandTotalTax)} TVA</div>
-                            </div>
-                            <div class="payment-buttons">
-                                <button class="payment-btn primary" onclick="processPayment()">
-                                    <i class="fas fa-lock"></i>
-                                    Payer
+                            <div class="billing-actions">
+                                <button class="export-btn" onclick="exportBillingData()">
+                                    <i class="fas fa-file-export"></i>
+                                    Exporter données
                                 </button>
-                                <button class="payment-btn secondary" onclick="downloadInvoice()">
+                                <button class="refresh-btn" onclick="refreshBilling()">
+                                    <i class="fas fa-sync-alt"></i>
+                                    Actualiser
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Grands résumés financiers -->
+                        <div class="financial-overview">
+                            <div class="financial-card primary">
+                                <div class="financial-icon">
+                                    <i class="fas fa-euro-sign"></i>
+                                </div>
+                                <div class="financial-content">
+                                    <div class="financial-amount">${formatPrice(billingStats.grandTotal)}</div>
+                                    <div class="financial-label">Chiffre d'affaires mensuel</div>
+                                    <div class="financial-detail">
+                                        ${formatPrice(billingStats.grandTotalHT)} HT + ${formatPrice(billingStats.grandTotalTax)} TVA (20%)
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="financial-card secondary">
+                                <div class="financial-icon">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                                <div class="financial-content">
+                                    <div class="financial-amount">${formatPrice(billingStats.grandTotal * 12)}</div>
+                                    <div class="financial-label">Projection annuelle</div>
+                                    <div class="financial-detail">
+                                        Basée sur le rythme actuel
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="financial-card tertiary">
+                                <div class="financial-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="financial-content">
+                                    <div class="financial-amount">${billingStats.totalUsers}</div>
+                                    <div class="financial-label">Utilisateurs actifs</div>
+                                    <div class="financial-detail">
+                                        ${billingStats.monthlyUsers} mensuel • ${billingStats.yearlyUsers} annuel
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="financial-card quaternary">
+                                <div class="financial-icon">
+                                    <i class="fas fa-piggy-bank"></i>
+                                </div>
+                                <div class="financial-content">
+                                    <div class="financial-amount">${formatPrice(billingStats.potentialSavings)}</div>
+                                    <div class="financial-label">Économies potentielles</div>
+                                    <div class="financial-detail">
+                                        Migration vers abonnement annuel
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Module de paiement étendu -->
+                        <div class="payment-dashboard">
+                            <div class="payment-main">
+                                <div class="payment-header">
+                                    <h3>
+                                        <i class="fas fa-credit-card"></i>
+                                        Paiement du mois
+                                    </h3>
+                                    <div class="payment-status">
+                                        <span class="status-dot pending"></span>
+                                        En attente
+                                    </div>
+                                </div>
+                                
+                                <div class="payment-amount-section">
+                                    <div class="payment-main-amount">
+                                        <div class="payment-currency">€</div>
+                                        <div class="payment-value">${(billingStats.grandTotal).toFixed(2)}</div>
+                                    </div>
+                                    <div class="payment-breakdown">
+                                        <div class="breakdown-item">
+                                            <span>Sous-total HT</span>
+                                            <span>${formatPrice(billingStats.grandTotalHT)}</span>
+                                        </div>
+                                        <div class="breakdown-item">
+                                            <span>TVA (20%)</span>
+                                            <span>${formatPrice(billingStats.grandTotalTax)}</span>
+                                        </div>
+                                        <div class="breakdown-item total">
+                                            <span>Total TTC</span>
+                                            <span>${formatPrice(billingStats.grandTotal)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="payment-actions-section">
+                                    <button class="payment-btn-large primary" onclick="processPayment()">
+                                        <i class="fas fa-lock"></i>
+                                        Payer maintenant
+                                    </button>
+                                    <button class="payment-btn-large secondary" onclick="downloadInvoice()">
+                                        <i class="fas fa-download"></i>
+                                        Télécharger facture
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="payment-sidebar">
+                                <div class="payment-methods-section">
+                                    <h4>Méthodes de paiement</h4>
+                                    <div class="payment-methods-grid">
+                                        <div class="payment-method-item">
+                                            <i class="fab fa-cc-visa"></i>
+                                            <span>Visa</span>
+                                        </div>
+                                        <div class="payment-method-item">
+                                            <i class="fab fa-cc-mastercard"></i>
+                                            <span>Mastercard</span>
+                                        </div>
+                                        <div class="payment-method-item">
+                                            <i class="fab fa-cc-amex"></i>
+                                            <span>Amex</span>
+                                        </div>
+                                        <div class="payment-method-item">
+                                            <i class="fab fa-paypal"></i>
+                                            <span>PayPal</span>
+                                        </div>
+                                        <div class="payment-method-item">
+                                            <i class="fas fa-university"></i>
+                                            <span>Virement</span>
+                                        </div>
+                                        <div class="payment-method-item">
+                                            <i class="fas fa-money-check"></i>
+                                            <span>SEPA</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="payment-security">
+                                    <div class="security-item">
+                                        <i class="fas fa-shield-alt"></i>
+                                        <span>Paiement sécurisé SSL</span>
+                                    </div>
+                                    <div class="security-item">
+                                        <i class="fas fa-history"></i>
+                                        <span>Facturation automatique</span>
+                                    </div>
+                                    <div class="security-item">
+                                        <i class="fas fa-times-circle"></i>
+                                        <span>Annulation libre</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Résumé compact des utilisateurs -->
+                        <div class="users-summary">
+                            <div class="summary-card active-users">
+                                <h4>
+                                    <i class="fas fa-user-check"></i>
+                                    Utilisateurs actifs
+                                </h4>
+                                <div class="summary-stats">
+                                    <div class="stat-item">
+                                        <div class="stat-value">${billingStats.totalUsers}</div>
+                                        <div class="stat-label">Total</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">${billingStats.monthlyUsers}</div>
+                                        <div class="stat-label">Mensuel</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">${billingStats.yearlyUsers}</div>
+                                        <div class="stat-label">Annuel</div>
+                                    </div>
+                                </div>
+                                <button class="summary-action" onclick="exportActiveUsers()">
                                     <i class="fas fa-download"></i>
-                                    Facture
+                                    Exporter liste
                                 </button>
                             </div>
-                            <div class="payment-methods">
-                                <div class="payment-method">
-                                    <i class="fab fa-cc-visa"></i>
-                                    <span>Visa</span>
+                            
+                            <div class="summary-card expired-users">
+                                <h4>
+                                    <i class="fas fa-user-times"></i>
+                                    Utilisateurs expirés
+                                </h4>
+                                <div class="summary-stats">
+                                    <div class="stat-item">
+                                        <div class="stat-value">${expiredUsers.length}</div>
+                                        <div class="stat-label">Expirés</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">${renewalStats.thisMonth}</div>
+                                        <div class="stat-label">Ce mois</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">${renewalStats.nextMonth}</div>
+                                        <div class="stat-label">Mois prochain</div>
+                                    </div>
                                 </div>
-                                <div class="payment-method">
-                                    <i class="fab fa-cc-mastercard"></i>
-                                    <span>MC</span>
-                                </div>
-                                <div class="payment-method">
-                                    <i class="fab fa-paypal"></i>
-                                    <span>PayPal</span>
-                                </div>
-                                <div class="payment-method">
-                                    <i class="fas fa-university"></i>
-                                    <span>SEPA</span>
-                                </div>
+                                <button class="summary-action" onclick="exportExpiredUsers()">
+                                    <i class="fas fa-download"></i>
+                                    Exporter liste
+                                </button>
                             </div>
-                        </div>
-
-                        <!-- Détail des utilisateurs facturés -->
-                        <div class="billing-users-section">
-                            <h3>
-                                <i class="fas fa-list"></i>
-                                Détail des utilisateurs facturés (${billingStats.totalUsers})
-                            </h3>
-                            <div class="billing-table">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Utilisateur</th>
-                                            <th>Statut</th>
-                                            <th>Cycle</th>
-                                            <th>Prix/mois</th>
-                                            <th>Prix/an</th>
-                                            <th>Prochaine échéance</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${generateBillingTableRows(currentUsers)}
-                                    </tbody>
-                                </table>
+                            
+                            <div class="summary-card renewal-alert">
+                                <h4>
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Alertes renouvellement
+                                </h4>
+                                <div class="summary-stats">
+                                    <div class="stat-item">
+                                        <div class="stat-value">${renewalStats.soon}</div>
+                                        <div class="stat-label">Bientôt</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">${renewalStats.overdue}</div>
+                                        <div class="stat-label">En retard</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">${formatPrice(renewalStats.potentialRevenue)}</div>
+                                        <div class="stat-label">CA potentiel</div>
+                                    </div>
+                                </div>
+                                <button class="summary-action" onclick="exportRenewalAlerts()">
+                                    <i class="fas fa-download"></i>
+                                    Exporter liste
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -2862,46 +3249,154 @@
             };
         }
 
-        function generateBillingTableRows(users) {
-            const MONTHLY_PRICE = 9.90;
-            const YEARLY_PRICE = 8.80;
-            const TAX_RATE = 0.20;
+        // Fonctions pour les données expirées et renouvellements
+        function getExpiredUsers() {
+            const now = new Date();
+            return currentUsers.filter(user => {
+                if (!user.license_expires_at) return false;
+                return new Date(user.license_expires_at) < now;
+            });
+        }
+
+        function getRenewalStats() {
+            const now = new Date();
+            const thisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            const nextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+            const soonThreshold = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 jours
             
-            return users
-                .filter(user => user.license_status === 'active' || user.license_status === 'trial')
-                .map(user => {
-                    const isYearly = user.billing_cycle === 'yearly';
-                    const monthlyPriceHT = isYearly ? YEARLY_PRICE : MONTHLY_PRICE;
-                    const monthlyPriceTTC = monthlyPriceHT * (1 + TAX_RATE);
-                    const yearlyPriceTTC = monthlyPriceTTC * 12;
-                    const userName = user.name || user.email.split('@')[0];
-                    
-                    const licenseClass = user.license_status === 'active' ? 'active' : 'trial';
-                    const nextBilling = calculateNextBilling(user);
-                    
-                    return `
-                        <tr>
-                            <td>
-                                <div class="user-info">
-                                    <div class="user-avatar">${userName.slice(0, 2).toUpperCase()}</div>
-                                    <div class="user-details">
-                                        <h4>${userName}</h4>
-                                        <p>${user.email}</p>
-                                    </div>
-                                </div>
-                            </td>
-                            <td><span class="status-badge ${licenseClass}">${user.license_status}</span></td>
-                            <td>
-                                <span class="billing-cycle ${isYearly ? 'yearly' : 'monthly'}">
-                                    ${isYearly ? 'Annuel' : 'Mensuel'}
-                                </span>
-                            </td>
-                            <td>${formatPrice(monthlyPriceTTC)}</td>
-                            <td>${formatPrice(yearlyPriceTTC)}</td>
-                            <td>${nextBilling}</td>
-                        </tr>
-                    `;
-                }).join('');
+            const thisMonthExpiring = currentUsers.filter(user => {
+                if (!user.license_expires_at) return false;
+                const expiry = new Date(user.license_expires_at);
+                return expiry <= thisMonth && expiry > now;
+            });
+            
+            const nextMonthExpiring = currentUsers.filter(user => {
+                if (!user.license_expires_at) return false;
+                const expiry = new Date(user.license_expires_at);
+                return expiry <= nextMonth && expiry > thisMonth;
+            });
+            
+            const soonExpiring = currentUsers.filter(user => {
+                if (!user.license_expires_at) return false;
+                const expiry = new Date(user.license_expires_at);
+                return expiry <= soonThreshold && expiry > now;
+            });
+            
+            const overdue = currentUsers.filter(user => {
+                if (!user.license_expires_at) return false;
+                return new Date(user.license_expires_at) < now;
+            });
+            
+            // Calcul du CA potentiel (utilisateurs qui vont expirer bientôt)
+            const potentialRevenue = [...thisMonthExpiring, ...nextMonthExpiring].reduce((sum, user) => {
+                const price = user.billing_cycle === 'yearly' ? 8.80 : 9.90;
+                return sum + (price * 1.20); // TTC
+            }, 0);
+            
+            return {
+                thisMonth: thisMonthExpiring.length,
+                nextMonth: nextMonthExpiring.length,
+                soon: soonExpiring.length,
+                overdue: overdue.length,
+                potentialRevenue
+            };
+        }
+
+        // Fonctions d'export
+        function exportBillingData() {
+            const billingStats = calculateBillingStats();
+            const expiredUsers = getExpiredUsers();
+            const renewalStats = getRenewalStats();
+            
+            const data = {
+                resume: {
+                    chiffre_affaires_mensuel: billingStats.grandTotal,
+                    chiffre_affaires_annuel: billingStats.grandTotal * 12,
+                    utilisateurs_actifs: billingStats.totalUsers,
+                    utilisateurs_mensuels: billingStats.monthlyUsers,
+                    utilisateurs_annuels: billingStats.yearlyUsers,
+                    economies_potentielles: billingStats.potentialSavings,
+                    date_export: new Date().toISOString()
+                },
+                utilisateurs_actifs: currentUsers.filter(u => u.license_status === 'active' || u.license_status === 'trial'),
+                utilisateurs_expires: expiredUsers,
+                statistiques_renouvellement: renewalStats
+            };
+            
+            downloadJSON(data, `facturation_complete_${new Date().toISOString().split('T')[0]}.json`);
+        }
+
+        function exportActiveUsers() {
+            const activeUsers = currentUsers.filter(u => 
+                u.license_status === 'active' || u.license_status === 'trial'
+            ).map(user => ({
+                nom: user.name || user.email.split('@')[0],
+                email: user.email,
+                societe: user.company?.name || user.domain || 'Sans société',
+                statut: user.license_status,
+                cycle_facturation: user.billing_cycle === 'yearly' ? 'Annuel' : 'Mensuel',
+                prix_mensuel: user.billing_cycle === 'yearly' ? 8.80 * 1.20 : 9.90 * 1.20,
+                date_debut: user.license_starts_at,
+                date_expiration: user.license_expires_at,
+                derniere_connexion: user.last_login_at,
+                nombre_connexions: user.login_count || 0
+            }));
+            
+            downloadJSON(activeUsers, `utilisateurs_actifs_${new Date().toISOString().split('T')[0]}.json`);
+        }
+
+        function exportExpiredUsers() {
+            const expiredUsers = getExpiredUsers().map(user => ({
+                nom: user.name || user.email.split('@')[0],
+                email: user.email,
+                societe: user.company?.name || user.domain || 'Sans société',
+                statut: user.license_status,
+                date_expiration: user.license_expires_at,
+                jours_expires: Math.floor((new Date() - new Date(user.license_expires_at)) / (24 * 60 * 60 * 1000)),
+                derniere_connexion: user.last_login_at,
+                ca_perdu_mensuel: user.billing_cycle === 'yearly' ? 8.80 * 1.20 : 9.90 * 1.20
+            }));
+            
+            downloadJSON(expiredUsers, `utilisateurs_expires_${new Date().toISOString().split('T')[0]}.json`);
+        }
+
+        function exportRenewalAlerts() {
+            const now = new Date();
+            const soonThreshold = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 jours
+            
+            const renewalAlerts = currentUsers.filter(user => {
+                if (!user.license_expires_at) return false;
+                const expiry = new Date(user.license_expires_at);
+                return expiry <= soonThreshold && expiry > now;
+            }).map(user => {
+                const daysUntilExpiry = Math.floor((new Date(user.license_expires_at) - new Date()) / (24 * 60 * 60 * 1000));
+                return {
+                    nom: user.name || user.email.split('@')[0],
+                    email: user.email,
+                    societe: user.company?.name || user.domain || 'Sans société',
+                    statut: user.license_status,
+                    date_expiration: user.license_expires_at,
+                    jours_restants: daysUntilExpiry,
+                    urgence: daysUntilExpiry <= 7 ? 'Critique' : daysUntilExpiry <= 15 ? 'Élevée' : 'Moyenne',
+                    cycle_actuel: user.billing_cycle === 'yearly' ? 'Annuel' : 'Mensuel',
+                    ca_potentiel: user.billing_cycle === 'yearly' ? 8.80 * 1.20 : 9.90 * 1.20,
+                    derniere_connexion: user.last_login_at
+                };
+            }).sort((a, b) => a.jours_restants - b.jours_restants);
+            
+            downloadJSON(renewalAlerts, `alertes_renouvellement_${new Date().toISOString().split('T')[0]}.json`);
+        }
+
+        function downloadJSON(data, filename) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         function calculateNextBilling(user) {
