@@ -247,6 +247,11 @@
             color: #1d4ed8;
         }
 
+        .alert-warning {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+
         /* Modal générique */
         .modal {
             position: fixed;
@@ -1177,7 +1182,8 @@
                 if (session && Date.now() - session.timestamp < 24 * 60 * 60 * 1000) {
                     await this.loadDependencies();
                     const result = await this.licenseService.authenticateWithEmail(session.email);
-                    if (result.valid && result.user) {
+                    // Accepter même si result.valid est false pour les comptes individual
+                    if (result.user && this.hasAdminAccess(result.user)) {
                         this.currentUser = result.user;
                         this.showApp();
                         return;
@@ -1260,7 +1266,8 @@
                     
                     const result = await this.licenseService.authenticateWithEmail(email);
                     
-                    if (result.valid && result.user) {
+                    // Pour les comptes individual, on accepte même si la licence est expirée
+                    if (result.user) {
                         const user = result.user;
                         
                         // Vérifier le type de compte uniquement pour les nouveaux utilisateurs ou ceux sans type
@@ -1296,6 +1303,13 @@
                         this.showModal('accountTypeModal');
                         button.disabled = false;
                         button.innerHTML = originalText;
+                    } else if (result.status === 'expired' && result.user && result.user.account_type === 'individual') {
+                        // Pour les comptes individual expirés, on les laisse quand même accéder
+                        const user = result.user;
+                        this.currentUser = user;
+                        this.saveSession(email);
+                        this.showMessage('warning', 'Connexion réussie. Votre licence est expirée mais vous pouvez toujours accéder à vos analytics.');
+                        setTimeout(() => this.showApp(), 1000);
                     } else {
                         this.showMessage('error', result.message || 'Email non trouvé');
                     }
@@ -1506,7 +1520,8 @@
                     // Recharger l'utilisateur
                     const authResult = await this.licenseService.authenticateWithEmail(this.pendingUser.email);
                     
-                    if (authResult.valid && this.hasAdminAccess(authResult.user)) {
+                    // Pour les comptes individual, accepter même si la licence est expirée
+                    if (authResult.user && this.hasAdminAccess(authResult.user)) {
                         this.currentUser = authResult.user;
                         this.saveSession(this.pendingUser.email);
                         this.showApp();
