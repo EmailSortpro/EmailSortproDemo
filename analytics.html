@@ -786,18 +786,41 @@
                 await window.initializeSupabaseConfig();
                 await window.licenseService.initialize();
                 
+                // Initialize supabaseClient global
+                window.supabaseClient = window.licenseService.supabaseClient;
+                
                 // Check session
                 const session = sessionStorage.getItem('analyticsAuth');
                 if (session) {
                     const data = JSON.parse(session);
                     if (Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
                         const result = await window.licenseService.authenticateWithEmail(data.email);
-                        if (result.valid && result.user) {
+                        
+                        // Fallback to direct query if RPC fails
+                        if (!result.valid && result.status === 'not_found') {
+                            try {
+                                const { data: directUser } = await window.supabaseClient
+                                    .from('users')
+                                    .select('*')
+                                    .eq('email', data.email)
+                                    .single();
+                                
+                                if (directUser) {
+                                    result.user = directUser;
+                                    result.valid = checkAdminAccess(directUser);
+                                }
+                            } catch (error) {
+                                console.error('Session check error:', error);
+                            }
+                        }
+                        
+                        if (result.valid && result.user && checkAdminAccess(result.user)) {
                             state.user = result.user;
                             showApp();
                             return;
                         }
                     }
+                    sessionStorage.removeItem('analyticsAuth');
                 }
             } catch (error) {
                 console.error('Initialization error:', error);
@@ -820,34 +843,76 @@
             try {
                 const result = await window.licenseService.authenticateWithEmail(email);
                 
+                // Si la fonction RPC échoue, essayer une requête directe
+                if (!result.valid && result.status === 'not_found') {
+                    try {
+                        const { data: directUser, error: directError } = await window.supabaseClient
+                            .from('users')
+                            .select('*')
+                            .eq('email', email)
+                            .single();
+                        
+                        if (directUser && !directError) {
+                            // Utilisateur trouvé
+                            const now = new Date();
+                            const expiresAt = directUser.license_expires_at ? new Date(directUser.license_expires_at) : null;
+                            const isExpired = expiresAt && expiresAt < now;
+                            
+                            result.valid = !isExpired || checkAdminAccess(directUser);
+                            result.user = directUser;
+                            result.status = isExpired ? 'expired' : 'valid';
+                        }
+                    } catch (error) {
+                        console.error('Direct query error:', error);
+                    }
+                }
+                
                 if (result.valid && result.user) {
                     // Check if account type is set
-                    if (!result.user.account_type) {
+                    if (!result.user.account_type || 
+                        (result.user.account_type === 'professional' && result.user.role === 'user' && !result.user.company_id)) {
                         state.pendingUser = result.user;
                         showAccountTypeModal();
-                    } else {
+                    } else if (checkAdminAccess(result.user)) {
                         state.user = result.user;
                         showApp();
+                    } else {
+                        showAuthMessage('Accès réservé aux administrateurs. Contactez votre administrateur pour obtenir les droits.', 'error');
                     }
-                } else if (result.status === 'not_found') {
+                } else if (result.status === 'not_found' || (!result.valid && !result.user)) {
                     // Create new account
-                    if (confirm(`Créer un nouveau compte pour ${email} ?`)) {
+                    showAuthMessage(`Compte non trouvé. Création d'un nouveau compte...`, 'info');
+                    setTimeout(async () => {
                         const newUser = await createNewUser(email);
                         if (newUser) {
                             state.pendingUser = newUser;
                             showAccountTypeModal();
                         }
-                    }
+                    }, 1000);
+                } else if (result.status === 'expired') {
+                    showAuthMessage('Votre période d\'essai a expiré. Contactez votre administrateur pour renouveler votre licence.', 'error');
                 } else {
                     showAuthMessage('Accès non autorisé', 'error');
                 }
             } catch (error) {
+                console.error('Auth error:', error);
                 showAuthMessage('Erreur de connexion', 'error');
             } finally {
                 button.disabled = false;
                 buttonText.style.display = 'block';
                 spinner.style.display = 'none';
             }
+        }
+        
+        // Check admin access permissions
+        function checkAdminAccess(user) {
+            if (!user) return false;
+            
+            if (user.role === 'super_admin') return true;
+            if (user.role === 'company_admin') return true;
+            if (user.account_type === 'individual') return true;
+            
+            return false;
         }
 
         async function createNewUser(email) {
@@ -916,11 +981,42 @@
                 
                 if (result.success) {
                     const refreshResult = await window.licenseService.authenticateWithEmail(state.pendingUser.email);
+                    
+                    // Fallback to direct query
+                    if (!refreshResult.valid && refreshResult.status === 'not_found') {
+                        try {
+                            const { data: directUser } = await window.supabaseClient
+                                .from('users')
+                                .select('*')
+                                .eq('id', state.pendingUser.id)
+                                .single();
+                            
+                            if (directUser) {
+                                refreshResult.user = directUser;
+                                refreshResult.valid = true;
+                            }
+                        } catch (error) {
+                            console.error('Refresh error:', error);
+                        }
+                    }
+                    
                     if (refreshResult.user) {
                         state.user = refreshResult.user;
                         document.getElementById('accountTypeModal').classList.remove('active');
-                        showApp();
+                        
+                        // Check admin access after account type setup
+                        if (checkAdminAccess(state.user)) {
+                            showApp();
+                        } else {
+                            // For professional accounts without admin rights
+                            showAuthMessage('Compte configuré. Contactez votre administrateur pour obtenir les droits d\'accès aux analytics.', 'info');
+                            setTimeout(() => {
+                                window.location.href = './index.html';
+                            }, 3000);
+                        }
                     }
+                } else {
+                    alert('Erreur lors de la configuration : ' + (result.error || 'Erreur inconnue'));
                 }
             } catch (error) {
                 console.error('Error setting account type:', error);
@@ -998,34 +1094,112 @@
         // Load users
         async function loadUsers() {
             try {
-                let query = window.supabaseClient.from('users').select('*');
+                // Ensure supabaseClient is available
+                const client = window.supabaseClient || window.licenseService?.supabaseClient;
+                if (!client) {
+                    console.error('Supabase client not available');
+                    return;
+                }
+                
+                let query = client.from('users').select(`
+                    id,
+                    email,
+                    name,
+                    role,
+                    license_status,
+                    license_expires_at,
+                    license_starts_at,
+                    company_id,
+                    first_login_at,
+                    last_login_at,
+                    login_count,
+                    created_at,
+                    updated_at,
+                    account_type
+                `);
                 
                 // Filter based on user type
                 if (state.user.account_type === 'individual') {
                     query = query.eq('id', state.user.id);
                 } else if (state.user.role === 'company_admin' && state.user.company_id) {
                     query = query.eq('company_id', state.user.company_id);
+                } else if (state.user.role !== 'super_admin') {
+                    query = query.eq('id', state.user.id);
                 }
                 
                 const { data, error } = await query.order('created_at', { ascending: false });
                 
                 if (!error && data) {
                     state.users = data;
+                    
+                    // Load user stats
+                    await loadUserStats(client);
+                    
                     updateStats();
+                    renderUsers();
+                } else if (error) {
+                    console.error('Error loading users:', error);
+                    state.users = [];
                     renderUsers();
                 }
             } catch (error) {
                 console.error('Error loading users:', error);
+                state.users = [];
+                renderUsers();
+            }
+        }
+        
+        // Load user stats
+        async function loadUserStats(client) {
+            try {
+                let query = client.from('user_email_stats').select('*');
+                
+                // Filter stats based on user type
+                if (state.user.account_type === 'individual') {
+                    query = query.eq('email', state.user.email);
+                } else if (state.user.role === 'company_admin' && state.user.company_id) {
+                    // Get company domain
+                    const { data: company } = await client
+                        .from('companies')
+                        .select('domain')
+                        .eq('id', state.user.company_id)
+                        .single();
+                    
+                    if (company && company.domain) {
+                        query = query.eq('domain', company.domain);
+                    }
+                } else if (state.user.role !== 'super_admin') {
+                    query = query.eq('email', state.user.email);
+                }
+                
+                const { data: stats, error } = await query;
+                
+                if (!error && stats) {
+                    // Merge stats with users
+                    state.users = state.users.map(user => {
+                        const userStats = stats.find(s => s.email === user.email);
+                        return {
+                            ...user,
+                            total_scans: userStats?.total_emails_scanned || 0,
+                            total_sessions: userStats?.total_sessions || 0,
+                            total_errors: userStats?.total_errors || 0
+                        };
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading user stats:', error);
             }
         }
 
         function updateStats() {
             const active = state.users.filter(u => u.license_status === 'active' || u.license_status === 'trial').length;
             const licenses = state.users.filter(u => u.license_status === 'active').length;
+            const totalScans = state.users.reduce((sum, user) => sum + (user.total_scans || 0), 0);
+            const totalErrors = state.users.reduce((sum, user) => sum + (user.total_errors || 0), 0);
             
             document.getElementById('statUsers').textContent = active;
-            document.getElementById('statScans').textContent = '0';
-            document.getElementById('statErrors').textContent = '0';
+            document.getElementById('statScans').textContent = totalScans.toLocaleString();
+            document.getElementById('statErrors').textContent = totalErrors;
             document.getElementById('statLicenses').textContent = licenses;
         }
 
