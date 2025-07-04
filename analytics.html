@@ -2773,10 +2773,13 @@
                 header.insertAdjacentElement('afterend', warningDiv);
             }
             
-            // Afficher la section admin si nécessaire
+            // Afficher la section admin seulement pour company_admin et super_admin
             if (authenticatedUser.role === 'company_admin' || authenticatedUser.role === 'super_admin') {
                 document.getElementById('adminManagementSection').style.display = 'block';
                 loadAdminPreview();
+            } else {
+                // Masquer pour les comptes individual et autres utilisateurs
+                document.getElementById('adminManagementSection').style.display = 'none';
             }
             
             // Afficher un message spécial pour le super_admin
@@ -3151,14 +3154,19 @@
                     `)
                     .order('created_at', { ascending: false });
                 
+                // Filtrer selon le type d'utilisateur
                 if (authenticatedUser) {
                     if (authenticatedUser.account_type === 'individual') {
                         // Les comptes individuels ne voient que leurs propres données
                         query = query.eq('id', authenticatedUser.id);
                     } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                        // Les company_admin ne voient que les utilisateurs de leur société
                         query = query.eq('company_id', authenticatedUser.company_id);
+                    } else if (authenticatedUser.role !== 'super_admin') {
+                        // Les autres utilisateurs ne voient que leurs propres données
+                        query = query.eq('id', authenticatedUser.id);
                     }
-                    // Les super_admin voient tout par défaut
+                    // Les super_admin voient tout (pas de filtre)
                 }
                 
                 const { data: users, error } = await query;
@@ -3191,10 +3199,13 @@
                     .from('user_email_stats')
                     .select('*');
                 
+                // Filtrer les statistiques selon le type d'utilisateur
                 if (authenticatedUser) {
-                    if (authenticatedUser.account_type === 'individual' && authenticatedUser.role === 'user') {
+                    if (authenticatedUser.account_type === 'individual') {
+                        // Les comptes individuels ne voient que leurs propres stats
                         query = query.eq('email', authenticatedUser.email);
                     } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
+                        // Les company_admin voient les stats de leur société
                         const { data: company } = await supabaseClient
                             .from('companies')
                             .select('domain')
@@ -3204,7 +3215,11 @@
                         if (company && company.domain) {
                             query = query.eq('domain', company.domain);
                         }
+                    } else if (authenticatedUser.role !== 'super_admin') {
+                        // Les autres utilisateurs ne voient que leurs propres stats
+                        query = query.eq('email', authenticatedUser.email);
                     }
+                    // Les super_admin voient tout
                 }
                 
                 const { data: stats, error } = await query;
@@ -3290,6 +3305,12 @@
         }
 
         function populateCompanyFilter() {
+            // Ne pas afficher le filtre société pour les comptes individual
+            if (authenticatedUser && authenticatedUser.account_type === 'individual') {
+                document.getElementById('companyFilter').style.display = 'none';
+                return;
+            }
+            
             const companies = [...new Set(currentUsers.map(user => 
                 user.company?.name || user.domain || 'Sans société'
             ))];
@@ -3608,6 +3629,12 @@
         }
 
         function populateLicenseCompanyFilter() {
+            // Ne pas afficher le filtre société pour les comptes individual
+            if (authenticatedUser && authenticatedUser.account_type === 'individual') {
+                document.getElementById('licenseCompanyFilter').style.display = 'none';
+                return;
+            }
+            
             const companies = [...new Set(currentLicenses.map(user => 
                 user.company?.name || user.domain || 'Sans société'
             ))];
@@ -4478,6 +4505,11 @@
 
         async function loadAnalytics() {
             try {
+                // Pour les comptes individual, charger d'abord les utilisateurs pour avoir les bonnes stats
+                if (authenticatedUser && authenticatedUser.account_type === 'individual') {
+                    await loadUsers();
+                }
+                
                 if (!window.analyticsManager || !window.analyticsModule) {
                     await loadAnalyticsScript();
                     
@@ -4498,6 +4530,15 @@
                 analyticsContent.appendChild(pageContent);
 
                 if (analyticsModule) {
+                    // Passer le contexte utilisateur au module analytics
+                    if (window.analyticsManager && window.analyticsManager.setUserContext) {
+                        window.analyticsManager.setUserContext({
+                            userId: authenticatedUser.id,
+                            userRole: authenticatedUser.role,
+                            accountType: authenticatedUser.account_type,
+                            companyId: authenticatedUser.company_id
+                        });
+                    }
                     analyticsModule.render();
                 }
 
