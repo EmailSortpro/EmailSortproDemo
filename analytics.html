@@ -1308,7 +1308,7 @@
                         const newUserData = {
                             email: this.pendingUser.email,
                             name: this.pendingUser.email.split('@')[0],
-                            role: 'user',
+                            role: accountType === 'individual' ? 'user' : 'user', // Les individual restent 'user' mais ont accès via account_type
                             account_type: accountType === 'individual' ? 'individual' : 'professional',
                             license_status: 'trial',
                             license_expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
@@ -1475,9 +1475,11 @@
             }
 
             hasAdminAccess(user) {
+                // Les comptes individual ont toujours accès (ils sont admin de leur propre compte)
+                if (user.account_type === 'individual') return true;
+                
                 return user.role === 'super_admin' || 
-                       user.role === 'company_admin' || 
-                       user.account_type === 'individual';
+                       user.role === 'company_admin';
             }
 
             showApp() {
@@ -1493,7 +1495,7 @@
                 document.getElementById('userRole').textContent = 
                     this.currentUser.role === 'super_admin' ? 'Super Admin' :
                     this.currentUser.role === 'company_admin' ? 'Admin Société' :
-                    this.currentUser.account_type === 'individual' ? 'Personnel' : 'Utilisateur';
+                    this.currentUser.account_type === 'individual' ? 'Admin Personnel' : 'Utilisateur';
                 
                 this.loadOverview();
                 this.updateLastUpdate();
@@ -1542,7 +1544,9 @@
                     // Appliquer les filtres selon le rôle
                     if (this.currentUser.account_type === 'individual') {
                         // Les comptes personnels ne voient qu'eux-mêmes (pas le super admin)
-                        query = query.eq('id', this.currentUser.id);
+                        query = query
+                            .eq('id', this.currentUser.id)
+                            .neq('role', 'super_admin'); // Exclure explicitement le super admin
                     } else if (this.currentUser.role === 'company_admin' && this.currentUser.company_id) {
                         query = query.eq('company_id', this.currentUser.company_id);
                     }
@@ -1590,8 +1594,13 @@
                     const { data: stats } = await query;
                     
                     if (stats) {
+                        // Pour les comptes individual, filtrer le super admin des stats aussi
+                        const filteredStats = this.currentUser.account_type === 'individual' 
+                            ? stats.filter(s => s.email === this.currentUser.email)
+                            : stats;
+                            
                         this.users = this.users.map(user => {
-                            const userStats = stats.find(s => s.email === user.email);
+                            const userStats = filteredStats.find(s => s.email === user.email);
                             return {
                                 ...user,
                                 total_scans: userStats?.total_emails_scanned || 0,
@@ -1606,7 +1615,8 @@
 
             updateStats() {
                 const activeUsers = this.users.filter(u => 
-                    u.license_status === 'active' || u.license_status === 'trial'
+                    (u.license_status === 'active' || u.license_status === 'trial') &&
+                    u.role !== 'super_admin' // Ne pas compter le super admin dans les stats
                 ).length;
                 
                 const totalScans = this.users.reduce((sum, user) => 
