@@ -2402,6 +2402,11 @@
                 return true;
             }
             
+            // Les comptes individual sont toujours configurés
+            if (user.account_type === 'individual') {
+                return true;
+            }
+            
             if (user.account_type === 'professional' && user.role === 'user') {
                 return false;
             }
@@ -2578,13 +2583,15 @@
                     
                     const hasAccess = checkAdminAccess(user);
                     
-                    // Vérifier si c'est un admin même avec compte expiré
-                    if (hasAccess) {
+                    // Les comptes individual ont toujours accès, même expirés
+                    if (hasAccess || user.account_type === 'individual') {
                         authenticatedUser = user;
                         licenseService.currentUser = authenticatedUser;
                         
-                        if (result.status === 'expired') {
+                        if (result.status === 'expired' && user.account_type !== 'individual') {
                             showAuthMessage('⚠️ Votre période d\'essai a expiré. Vous avez accès aux analytics en tant qu\'administrateur.', 'info');
+                        } else if (result.status === 'expired' && user.account_type === 'individual') {
+                            showAuthMessage('⚠️ Votre période d\'essai a expiré. En tant que compte personnel, vous conservez l\'accès aux analytics.', 'info');
                         } else {
                             showAuthMessage('Connexion réussie !', 'success');
                         }
@@ -2756,7 +2763,13 @@
                 const header = document.querySelector('.page-header');
                 const warningDiv = document.createElement('div');
                 warningDiv.style.cssText = 'background: #fef3c7; color: #92400e; padding: 12px; border-radius: 8px; margin-bottom: 16px; text-align: center; font-weight: 600;';
-                warningDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Votre période d\'essai a expiré. Accès analytics maintenu car vous êtes administrateur.';
+                
+                if (authenticatedUser.account_type === 'individual') {
+                    warningDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Votre période d\'essai a expiré. En tant que compte personnel, vous conservez l\'accès aux analytics.';
+                } else {
+                    warningDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Votre période d\'essai a expiré. Accès analytics maintenu car vous êtes administrateur.';
+                }
+                
                 header.insertAdjacentElement('afterend', warningDiv);
             }
             
