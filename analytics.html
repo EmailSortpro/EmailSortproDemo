@@ -789,6 +789,26 @@
         .mt-4 { margin-top: 16px; }
         .mb-4 { margin-bottom: 16px; }
         .hidden { display: none !important; }
+        
+        /* Account type options */
+        .account-type-option {
+            border: 2px solid var(--gray-200);
+            padding: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+        
+        .account-type-option:hover {
+            border-color: var(--primary) !important;
+            background: var(--gray-50);
+        }
+        
+        .account-type-option:has(input:checked) {
+            border-color: var(--primary) !important;
+            background: #f3e8ff;
+        }
     </style>
 </head>
 <body>
@@ -1050,17 +1070,17 @@
                 <h2 class="modal-title">Configuration du compte</h2>
             </div>
             <div class="modal-body">
-                <p class="mb-4">Choisissez le type de compte pour configurer l'accès aux analytics :</p>
+                <p class="mb-4" id="accountTypeMessage">Choisissez le type de compte pour configurer l'accès aux analytics :</p>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
-                    <label class="account-type-option" style="border: 2px solid var(--gray-200); padding: 20px; border-radius: 8px; cursor: pointer; text-align: center;">
+                    <label class="account-type-option">
                         <input type="radio" name="accountType" value="individual" style="margin-bottom: 8px;">
                         <i class="fas fa-user" style="font-size: 2rem; color: var(--primary); display: block; margin-bottom: 8px;"></i>
                         <h4 style="margin-bottom: 4px;">Personnel</h4>
                         <p style="font-size: 0.875rem; color: var(--gray-500);">Gérer votre licence personnelle</p>
                     </label>
                     
-                    <label class="account-type-option" style="border: 2px solid var(--gray-200); padding: 20px; border-radius: 8px; cursor: pointer; text-align: center;">
+                    <label class="account-type-option">
                         <input type="radio" name="accountType" value="professional" style="margin-bottom: 8px;">
                         <i class="fas fa-building" style="font-size: 2rem; color: var(--primary); display: block; margin-bottom: 8px;"></i>
                         <h4 style="margin-bottom: 4px;">Professionnel</h4>
@@ -1240,11 +1260,11 @@
                     
                     const result = await this.licenseService.authenticateWithEmail(email);
                     
-                    if (result.valid || result.user) {
+                    if (result.valid && result.user) {
                         const user = result.user;
                         
-                        // Vérifier le type de compte
-                        if (!user.account_type || (user.account_type === 'professional' && user.role === 'user')) {
+                        // Vérifier le type de compte uniquement pour les nouveaux utilisateurs ou ceux sans type
+                        if (!user.account_type) {
                             this.pendingUser = user;
                             this.isNewUser = false;
                             this.showModal('accountTypeModal');
@@ -1253,7 +1273,7 @@
                             return;
                         }
                         
-                        // Vérifier les permissions
+                        // Pour les comptes existants, vérifier les permissions
                         if (this.hasAdminAccess(user)) {
                             this.currentUser = user;
                             this.saveSession(email);
@@ -1268,8 +1288,8 @@
                         this.isNewUser = true;
                         
                         // Mettre à jour le modal pour la création
-                        document.querySelector('.modal-title').textContent = 'Créer votre compte Analytics';
-                        document.querySelector('#accountTypeModal .modal-body > p').textContent = 
+                        document.querySelector('#accountTypeModal .modal-title').textContent = 'Créer votre compte Analytics';
+                        document.querySelector('#accountTypeMessage').textContent = 
                             'Aucun compte trouvé. Créez votre compte en choisissant le type :';
                         
                         this.showModal('accountTypeModal');
@@ -1308,13 +1328,14 @@
                         const newUserData = {
                             email: this.pendingUser.email,
                             name: this.pendingUser.email.split('@')[0],
-                            role: accountType === 'individual' ? 'user' : 'user', // Les individual restent 'user' mais ont accès via account_type
-                            account_type: accountType === 'individual' ? 'individual' : 'professional',
+                            role: accountType === 'individual' ? 'user' : 'user',
+                            account_type: accountType,
                             license_status: 'trial',
                             license_expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
                             license_starts_at: new Date().toISOString(),
                             created_at: new Date().toISOString(),
-                            updated_at: new Date().toISOString()
+                            updated_at: new Date().toISOString(),
+                            company_id: null // Important : pas de société par défaut
                         };
 
                         const { data: newUser, error } = await this.supabaseClient
@@ -1324,18 +1345,12 @@
                             .single();
                         
                         if (error) {
-                            console.error('Error creating user:', error);
                             throw error;
                         }
                         
-                        if (!newUser) {
-                            throw new Error('Aucun utilisateur créé');
-                        }
-                        
-                        // Conserver l'utilisateur créé pour la connexion
                         this.pendingUser = newUser;
                         
-                        // Si c'est un compte professionnel, créer la société
+                        // Si c'est un compte professionnel, créer ou rejoindre la société
                         if (accountType === 'professional' && companyName) {
                             const domain = this.pendingUser.email.split('@')[1];
                             
@@ -1362,37 +1377,50 @@
                                     .select()
                                     .single();
                                 
-                                if (companyError) {
-                                    console.error('Company creation error:', companyError);
-                                    // Continuer sans société
-                                } else {
+                                if (!companyError && company) {
                                     companyId = company.id;
                                 }
                             }
                             
                             if (companyId) {
-                                // Mettre à jour l'utilisateur avec l'ID de la société et le promouvoir admin
+                                // Vérifier s'il y a déjà des admins dans cette société
+                                const { data: existingAdmins } = await this.supabaseClient
+                                    .from('users')
+                                    .select('id')
+                                    .eq('company_id', companyId)
+                                    .eq('role', 'company_admin');
+                                
+                                const role = (!existingAdmins || existingAdmins.length === 0) ? 'company_admin' : 'user';
+                                
+                                // Mettre à jour l'utilisateur avec l'ID de la société
                                 await this.supabaseClient
                                     .from('users')
                                     .update({
                                         company_id: companyId,
-                                        role: 'company_admin',
+                                        role: role,
                                         updated_at: new Date().toISOString()
                                     })
                                     .eq('id', newUser.id);
                                 
                                 newUser.company_id = companyId;
-                                newUser.role = 'company_admin';
+                                newUser.role = role;
                             }
+                        } else if (accountType === 'individual') {
+                            // Pour les comptes personnels, promouvoir en admin pour l'accès aux analytics
+                            await this.supabaseClient
+                                .from('users')
+                                .update({
+                                    role: 'user', // Garder user mais avec account_type = individual
+                                    updated_at: new Date().toISOString()
+                                })
+                                .eq('id', newUser.id);
                         }
                         
-                            console.log('New user created:', newUser);
-                            this.showMessage('success', 'Compte créé avec succès ! Connexion en cours...');
-                        }
+                        this.showMessage('success', 'Compte créé avec succès !');
                     } else {
                         // Mettre à jour un compte existant
                         const updateData = {
-                            account_type: accountType === 'individual' ? 'individual' : 'professional',
+                            account_type: accountType,
                             updated_at: new Date().toISOString()
                         };
                         
@@ -1443,14 +1471,14 @@
                             }
                             
                             if (companyId) {
-                                // Mettre à jour avec la société et promouvoir admin si premier
-                                const { data: companyUsers } = await this.supabaseClient
+                                // Vérifier s'il y a déjà des admins
+                                const { data: companyAdmins } = await this.supabaseClient
                                     .from('users')
                                     .select('id')
                                     .eq('company_id', companyId)
                                     .eq('role', 'company_admin');
                                 
-                                const role = (!companyUsers || companyUsers.length === 0) ? 'company_admin' : 'user';
+                                const role = (!companyAdmins || companyAdmins.length === 0) ? 'company_admin' : 'user';
                                 
                                 await this.supabaseClient
                                     .from('users')
@@ -1469,31 +1497,16 @@
                     // Recharger l'utilisateur
                     const authResult = await this.licenseService.authenticateWithEmail(this.pendingUser.email);
                     
-                    if (authResult.valid || authResult.user) {
-                        const finalUser = authResult.user || this.pendingUser;
-                        
-                        // Pour les comptes individual, ils ont toujours accès
-                        if (finalUser.account_type === 'individual' || this.hasAdminAccess(finalUser)) {
-                            this.currentUser = finalUser;
-                            this.saveSession(this.pendingUser.email);
-                            this.showApp();
-                        } else {
-                            this.showMessage('error', 'Configuration réussie. Contactez votre administrateur pour l\'accès aux analytics.');
-                        }
+                    if (authResult.valid && this.hasAdminAccess(authResult.user)) {
+                        this.currentUser = authResult.user;
+                        this.saveSession(this.pendingUser.email);
+                        this.showApp();
                     } else {
-                        // Si l'auth échoue mais qu'on a créé un compte individual, connecter quand même
-                        if (this.pendingUser.account_type === 'individual') {
-                            this.currentUser = this.pendingUser;
-                            this.saveSession(this.pendingUser.email);
-                            this.showApp();
-                        } else {
-                            this.showMessage('error', 'Erreur lors de la connexion. Veuillez réessayer.');
-                        }
+                        this.showMessage('error', 'Configuration réussie. Contactez votre administrateur pour l\'accès aux analytics.');
                     }
                 } catch (error) {
                     console.error('Account type error:', error);
-                    console.error('Error details:', error.message, error.details);
-                    alert('Erreur lors de la configuration : ' + (error.details?.message || error.message));
+                    alert('Erreur lors de la configuration : ' + error.message);
                 }
             }
 
@@ -1501,8 +1514,8 @@
                 // Les comptes individual ont toujours accès (ils sont admin de leur propre compte)
                 if (user.account_type === 'individual') return true;
                 
-                return user.role === 'super_admin' || 
-                       user.role === 'company_admin';
+                // Pour les comptes professional, seuls les admins ont accès
+                return user.role === 'super_admin' || user.role === 'company_admin';
             }
 
             showApp() {
@@ -1519,12 +1532,6 @@
                     this.currentUser.role === 'super_admin' ? 'Super Admin' :
                     this.currentUser.role === 'company_admin' ? 'Admin Société' :
                     this.currentUser.account_type === 'individual' ? 'Admin Personnel' : 'Utilisateur';
-                
-                // Message spécial pour les nouveaux comptes
-                if (this.isNewUser) {
-                    this.showMessage('success', 'Bienvenue ! Votre compte a été créé avec succès.');
-                    this.isNewUser = false;
-                }
                 
                 this.loadOverview();
                 this.updateLastUpdate();
@@ -1570,18 +1577,23 @@
                         `)
                         .order('created_at', { ascending: false });
                     
-                    // Appliquer les filtres selon le rôle
+                    // Appliquer les filtres selon le type de compte et le rôle
                     if (this.currentUser.account_type === 'individual') {
                         // Les comptes personnels ne voient qu'eux-mêmes
                         query = query.eq('id', this.currentUser.id);
                     } else if (this.currentUser.role === 'company_admin' && this.currentUser.company_id) {
+                        // Les admins de société voient tous les utilisateurs de leur société
                         query = query.eq('company_id', this.currentUser.company_id);
                     }
-                    // Les super admins voient tout
+                    // Les super admins voient tout (pas de filtre)
                     
-                    // Si c'est un compte individual, masquer le filtre de société
-                    document.getElementById('userStatusFilter').parentElement.style.display = 
-                        this.currentUser.account_type === 'individual' ? 'none' : 'flex';
+                    // Masquer le filtre de statut pour les comptes personnels
+                    const filterContainer = document.querySelector('.content-actions');
+                    if (filterContainer && this.currentUser.account_type === 'individual') {
+                        document.getElementById('userStatusFilter').style.display = 'none';
+                        // Masquer aussi la recherche si c'est un compte personnel
+                        document.querySelector('.search-box').style.display = 'none';
+                    }
                     
                     const { data, error } = await query;
                     
@@ -1605,8 +1617,10 @@
                         .select('*');
                     
                     if (this.currentUser.account_type === 'individual') {
+                        // Pour les comptes personnels, ne charger que leurs propres stats
                         query = query.eq('email', this.currentUser.email);
                     } else if (this.currentUser.role === 'company_admin' && this.currentUser.company_id) {
+                        // Pour les admins de société, charger les stats de leur domaine
                         const { data: company } = await this.supabaseClient
                             .from('companies')
                             .select('domain')
@@ -1621,13 +1635,8 @@
                     const { data: stats } = await query;
                     
                     if (stats) {
-                        // Pour les comptes individual, filtrer le super admin des stats aussi
-                        const filteredStats = this.currentUser.account_type === 'individual' 
-                            ? stats.filter(s => s.email === this.currentUser.email)
-                            : stats;
-                            
                         this.users = this.users.map(user => {
-                            const userStats = filteredStats.find(s => s.email === user.email);
+                            const userStats = stats.find(s => s.email === user.email);
                             return {
                                 ...user,
                                 total_scans: userStats?.total_emails_scanned || 0,
@@ -1641,24 +1650,19 @@
             }
 
             updateStats() {
-                // Filtrer les utilisateurs visibles (exclure super admin pour les comptes individual)
-                const visibleUsers = this.currentUser.account_type === 'individual' 
-                    ? this.users.filter(u => u.id === this.currentUser.id)
-                    : this.users;
-                
-                const activeUsers = visibleUsers.filter(u => 
-                    (u.license_status === 'active' || u.license_status === 'trial')
+                const activeUsers = this.users.filter(u => 
+                    u.license_status === 'active' || u.license_status === 'trial'
                 ).length;
                 
-                const totalScans = visibleUsers.reduce((sum, user) => 
+                const totalScans = this.users.reduce((sum, user) => 
                     sum + (user.total_scans || 0), 0
                 );
                 
-                const totalErrors = visibleUsers.reduce((sum, user) => 
+                const totalErrors = this.users.reduce((sum, user) => 
                     sum + (user.total_errors || 0), 0
                 );
                 
-                const activeLicenses = visibleUsers.filter(u => 
+                const activeLicenses = this.users.filter(u => 
                     u.license_status === 'active'
                 ).length;
                 
@@ -1726,7 +1730,7 @@
                 
                 tbody.innerHTML = users.map(user => {
                     const initials = (user.name || user.email).split(/[\s@]/)[0].slice(0, 2).toUpperCase();
-                    const company = user.company?.name || 'Sans société';
+                    const company = user.company?.name || (user.account_type === 'individual' ? 'Compte personnel' : 'Sans société');
                     const lastLogin = this.formatDate(user.last_login_at);
                     const daysRemaining = this.calculateDaysRemaining(user.license_expires_at);
                     
@@ -1976,11 +1980,15 @@
                                 </div>
                                 <div>
                                     <label style="font-size: 0.75rem; color: var(--gray-500);">Société</label>
-                                    <p style="font-weight: 600;">${user.company?.name || 'Sans société'}</p>
+                                    <p style="font-weight: 600;">${user.company?.name || (user.account_type === 'individual' ? 'Compte personnel' : 'Sans société')}</p>
                                 </div>
                                 <div>
                                     <label style="font-size: 0.75rem; color: var(--gray-500);">Rôle</label>
-                                    <p style="font-weight: 600;">${user.role || 'user'}</p>
+                                    <p style="font-weight: 600;">${
+                                        user.role === 'super_admin' ? 'Super Admin' :
+                                        user.role === 'company_admin' ? 'Admin Société' :
+                                        user.account_type === 'individual' ? 'Admin Personnel' : 'Utilisateur'
+                                    }</p>
                                 </div>
                                 <div>
                                     <label style="font-size: 0.75rem; color: var(--gray-500);">Type de compte</label>
@@ -2211,11 +2219,17 @@
             }
 
             canManageUser(user) {
+                // Le super admin peut tout gérer
                 if (this.currentUser.role === 'super_admin') return true;
+                
+                // Les admins de société peuvent gérer leur société
                 if (this.currentUser.role === 'company_admin' && 
                     this.currentUser.company_id === user.company_id) return true;
+                
+                // Les comptes personnels peuvent se gérer eux-mêmes
                 if (this.currentUser.account_type === 'individual' && 
                     this.currentUser.id === user.id) return true;
+                
                 return false;
             }
 
@@ -2223,9 +2237,15 @@
                 // On ne peut pas se supprimer soi-même
                 if (this.currentUser.id === user.id) return false;
                 
+                // Le super admin peut supprimer tout le monde sauf lui-même
                 if (this.currentUser.role === 'super_admin') return true;
+                
+                // Les admins de société peuvent supprimer dans leur société
                 if (this.currentUser.role === 'company_admin' && 
-                    this.currentUser.company_id === user.company_id) return true;
+                    this.currentUser.company_id === user.company_id &&
+                    user.role !== 'company_admin') return true;
+                
+                // Les comptes personnels ne peuvent supprimer personne
                 return false;
             }
 
@@ -2287,21 +2307,6 @@
             confirmAccountType: () => app.confirmAccountType(),
             closeModal: (id) => app.closeModal(id)
         };
-
-        // Style pour les options de type de compte
-        const style = document.createElement('style');
-        style.textContent = `
-            .account-type-option:hover {
-                border-color: var(--primary) !important;
-                background: var(--gray-50);
-            }
-            
-            .account-type-option:has(input:checked) {
-                border-color: var(--primary) !important;
-                background: #f3e8ff;
-            }
-        `;
-        document.head.appendChild(style);
     </script>
 </body>
 </html>
