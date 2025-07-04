@@ -159,390 +159,17 @@ class App {
         // 6. Vérifier les modules de scan
         await this.ensureScanModulesReady();
         
-        // 7. Vérifier le service de licence
-        await this.ensureLicenseServiceReady();
-        
-        // 8. Bind methods
+        // 7. Bind methods
         this.bindModuleMethods();
         
-        // 9. Initialiser la gestion du scroll
+        // 8. Initialiser la gestion du scroll
         this.initializeScrollManager();
         
         console.log('[App] Critical modules initialized');
     }
 
     // =====================================
-    // VÉRIFICATION DU SERVICE DE LICENCE
-    // =====================================
-    async ensureLicenseServiceReady() {
-        console.log('[App] Ensuring LicenseService is ready...');
-        
-        try {
-            if (!window.licenseService) {
-                console.warn('[App] LicenseService not available, trying to load...');
-                
-                // Attendre un peu que le service se charge
-                let attempts = 0;
-                const maxAttempts = 30;
-                
-                while (!window.licenseService && attempts < maxAttempts) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    attempts++;
-                }
-                
-                if (!window.licenseService) {
-                    console.warn('[App] LicenseService not available after 3 seconds - continuing without it');
-                    return false;
-                }
-            }
-            
-            // Initialiser le service si nécessaire
-            try {
-                if (!window.licenseService.initialized) {
-                    console.log('[App] Initializing LicenseService...');
-                    await window.licenseService.initialize();
-                }
-                console.log('[App] ✅ LicenseService ready');
-                return true;
-            } catch (error) {
-                console.error('[App] Error initializing LicenseService:', error);
-                return false;
-            }
-        } catch (error) {
-            console.error('[App] Error in ensureLicenseServiceReady:', error);
-            return false;
-        }
-    }
-
-    // =====================================
-    // VÉRIFICATION DE LA LICENCE UTILISATEUR
-    // =====================================
-    async checkUserLicense(email) {
-        console.log('[App] Checking user license for:', email);
-        
-        try {
-            // Si le service de licence n'est pas disponible, permettre l'accès
-            if (!window.licenseService) {
-                console.warn('[App] License service not available, allowing access');
-                return { valid: true, status: 'no_check' };
-            }
-            
-            // S'assurer que le service est initialisé
-            if (!window.licenseService.initialized) {
-                await window.licenseService.initialize();
-            }
-            
-            // Vérifier la licence via le service
-            const result = await window.licenseService.authenticateWithEmail(email);
-            
-            console.log('[App] License check result:', {
-                valid: result.valid,
-                status: result.status,
-                message: result.message
-            });
-            
-            // Ajouter le tracking analytics de la vérification de licence
-            if (window.analyticsManager) {
-                window.analyticsManager.trackEvent('license_check', {
-                    email: email,
-                    status: result.status,
-                    valid: result.valid
-                });
-            }
-            
-            return result;
-            
-        } catch (error) {
-            console.error('[App] License check error:', error);
-            
-            // En cas d'erreur, permettre l'accès pour ne pas bloquer l'utilisateur
-            return { 
-                valid: true, 
-                status: 'error',
-                error: error.message,
-                message: 'Vérification de licence temporairement indisponible'
-            };
-        }
-    }
-
-    // =====================================
-    // GESTION DES ERREURS DE LICENCE
-    // =====================================
-    async handleLicenseError(licenseResult) {
-        console.log('[App] Handling license error:', licenseResult);
-        
-        // Tracking analytics de l'erreur de licence
-        if (window.analyticsManager) {
-            window.analyticsManager.trackEvent('license_error', {
-                status: licenseResult.status,
-                message: licenseResult.message,
-                provider: this.activeProvider
-            });
-        }
-        
-        // Déconnecter l'utilisateur selon le provider
-        try {
-            if (this.activeProvider === 'microsoft' && window.authService) {
-                await window.authService.reset();
-            } else if (this.activeProvider === 'google' && window.googleAuthService) {
-                await window.googleAuthService.reset();
-            }
-        } catch (error) {
-            console.error('[App] Error during provider reset:', error);
-        }
-        
-        // Réinitialiser l'état
-        this.user = null;
-        this.isAuthenticated = false;
-        this.activeProvider = null;
-        
-        // Afficher la page de login
-        this.showLogin();
-        
-        // Préparer le message d'erreur selon le statut
-        let errorMessage = '';
-        let errorType = 'error';
-        let showAdminContact = true;
-        
-        switch (licenseResult.status) {
-            case 'expired':
-                errorMessage = 'Votre période d\'essai ou licence a expiré. Contactez votre administrateur pour renouveler votre accès.';
-                errorType = 'warning';
-                break;
-                
-            case 'blocked':
-                errorMessage = 'Votre compte a été bloqué par l\'administrateur. Veuillez le contacter pour plus d\'informations.';
-                errorType = 'error';
-                break;
-                
-            case 'not_found':
-                errorMessage = 'Aucun compte trouvé pour cette adresse email. Contactez votre administrateur pour créer votre compte.';
-                errorType = 'error';
-                break;
-                
-            case 'not_started':
-                errorMessage = `Votre licence n'est pas encore active. Elle commencera le ${licenseResult.startsAt ? new Date(licenseResult.startsAt).toLocaleDateString('fr-FR') : 'bientôt'}.`;
-                errorType = 'info';
-                showAdminContact = false;
-                break;
-                
-            case 'needs_account_type':
-                errorMessage = 'Configuration de compte requise. Contactez votre administrateur.';
-                errorType = 'warning';
-                break;
-                
-            default:
-                errorMessage = 'Problème de vérification de licence. Veuillez réessayer ou contacter votre administrateur.';
-                errorType = 'warning';
-        }
-        
-        // Afficher le message d'erreur
-        this.showLicenseError(errorMessage, errorType, licenseResult.adminContact || licenseResult.user, showAdminContact);
-    }
-
-    // =====================================
-    // AFFICHAGE DES ERREURS DE LICENCE
-    // =====================================
-    showLicenseError(message, type, userOrAdmin, showAdminContact = true) {
-        console.log('[App] Showing license error:', { message, type });
-        
-        const loginPage = document.getElementById('loginPage');
-        if (!loginPage) {
-            console.error('[App] Login page not found');
-            return;
-        }
-        
-        // Supprimer les alertes existantes
-        const existingAlerts = loginPage.querySelectorAll('.license-alert');
-        existingAlerts.forEach(alert => alert.remove());
-        
-        // Créer la nouvelle alerte
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'license-alert fade-in';
-        
-        // Déterminer l'icône et les couleurs
-        const icons = {
-            error: 'fa-times-circle',
-            warning: 'fa-exclamation-triangle',
-            info: 'fa-info-circle'
-        };
-        
-        const colors = {
-            error: { bg: 'rgba(239, 68, 68, 0.1)', border: 'rgba(239, 68, 68, 0.3)', text: '#dc2626' },
-            warning: { bg: 'rgba(251, 191, 36, 0.1)', border: 'rgba(251, 191, 36, 0.3)', text: '#d97706' },
-            info: { bg: 'rgba(59, 130, 246, 0.1)', border: 'rgba(59, 130, 246, 0.3)', text: '#3b82f6' }
-        };
-        
-        const color = colors[type] || colors.warning;
-        
-        alertDiv.innerHTML = `
-            <div style="
-                max-width: 600px;
-                margin: 0 auto 2rem;
-                padding: 2rem;
-                background: ${color.bg};
-                border: 2px solid ${color.border};
-                border-radius: 16px;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                animation: slideIn 0.5s ease-out;
-            ">
-                <div style="text-align: center;">
-                    <i class="fas ${icons[type] || icons.warning}" style="
-                        font-size: 3rem;
-                        color: ${color.text};
-                        margin-bottom: 1rem;
-                        display: block;
-                    "></i>
-                    <h3 style="
-                        color: ${color.text};
-                        font-size: 1.5rem;
-                        margin-bottom: 1rem;
-                        font-weight: 700;
-                    ">
-                        ${type === 'error' ? 'Accès refusé' : type === 'warning' ? 'Attention' : 'Information'}
-                    </h3>
-                    <p style="
-                        font-size: 1.1rem;
-                        line-height: 1.8;
-                        color: #374151;
-                        margin-bottom: ${showAdminContact ? '1.5rem' : '0'};
-                    ">
-                        ${message}
-                    </p>
-                    
-                    ${showAdminContact && this.getAdminContact(userOrAdmin) ? `
-                        <div style="
-                            background: white;
-                            border: 1px solid #e5e7eb;
-                            padding: 1.5rem;
-                            border-radius: 12px;
-                            margin-top: 1.5rem;
-                            text-align: left;
-                        ">
-                            <h4 style="
-                                color: #1f2937;
-                                font-size: 1rem;
-                                margin-bottom: 1rem;
-                                display: flex;
-                                align-items: center;
-                                gap: 0.5rem;
-                            ">
-                                <i class="fas fa-user-shield" style="color: #6b7280;"></i>
-                                Contacter l'administrateur
-                            </h4>
-                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                ${this.getAdminContact(userOrAdmin).name ? `
-                                    <div style="color: #4b5563;">
-                                        <i class="fas fa-user" style="width: 20px; color: #9ca3af;"></i>
-                                        ${this.getAdminContact(userOrAdmin).name}
-                                    </div>
-                                ` : ''}
-                                <div>
-                                    <a href="mailto:${this.getAdminContact(userOrAdmin).email}" style="
-                                        color: #3b82f6;
-                                        text-decoration: none;
-                                        font-weight: 600;
-                                        display: inline-flex;
-                                        align-items: center;
-                                        gap: 0.5rem;
-                                        padding: 0.5rem 1rem;
-                                        background: rgba(59, 130, 246, 0.1);
-                                        border-radius: 8px;
-                                        transition: all 0.2s;
-                                    " onmouseover="this.style.background='rgba(59, 130, 246, 0.2)'" 
-                                       onmouseout="this.style.background='rgba(59, 130, 246, 0.1)'">
-                                        <i class="fas fa-envelope"></i>
-                                        ${this.getAdminContact(userOrAdmin).email}
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-        `;
-        
-        // Ajouter les styles CSS si nécessaire
-        if (!document.getElementById('license-alert-styles')) {
-            const style = document.createElement('style');
-            style.id = 'license-alert-styles';
-            style.textContent = `
-                @keyframes slideIn {
-                    from {
-                        opacity: 0;
-                        transform: translateY(-20px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-                
-                .license-alert {
-                    position: relative;
-                    z-index: 1000;
-                }
-                
-                .fade-in {
-                    animation: fadeIn 0.3s ease;
-                }
-                
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-        
-        // Insérer l'alerte
-        const loginContainer = loginPage.querySelector('.login-container');
-        if (loginContainer) {
-            loginPage.insertBefore(alertDiv, loginContainer);
-        } else {
-            loginPage.appendChild(alertDiv);
-        }
-        
-        // Faire défiler jusqu'à l'alerte
-        alertDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
-    // =====================================
-    // EXTRACTION DES INFOS ADMIN
-    // =====================================
-    getAdminContact(data) {
-        if (!data) return null;
-        
-        // Si c'est directement les infos admin
-        if (data.email && data.email.includes('@')) {
-            return {
-                email: data.email,
-                name: data.name || null
-            };
-        }
-        
-        // Si c'est l'objet user avec adminContact
-        if (data.adminContact) {
-            return data.adminContact;
-        }
-        
-        // Si c'est un objet user avec company
-        if (data.company && data.company.admin_email) {
-            return {
-                email: data.company.admin_email,
-                name: data.company.admin_name || null
-            };
-        }
-        
-        // Fallback vers un email de support générique
-        return {
-            email: 'support@emailsortpro.com',
-            name: 'Support EmailSortPro'
-        };
-    }
-
-    // =====================================
-    // VÉRIFICATION DE L'AUTHENTIFICATION AVEC LICENCE
+    // VÉRIFICATION DE L'AUTHENTIFICATION AVEC ANALYTICS
     // =====================================
     async checkAuthenticationStatus() {
         console.log('[App] Checking authentication status for both providers...');
@@ -550,7 +177,7 @@ class App {
         // Vérifier d'abord s'il y a un callback Google à traiter
         const googleCallbackHandled = await this.handleGoogleCallback();
         if (googleCallbackHandled) {
-            // La vérification de licence sera faite dans handleGoogleCallback
+            this.showAppWithTransition();
             return;
         }
         
@@ -562,8 +189,6 @@ class App {
                 try {
                     this.user = await window.authService.getUserInfo();
                     this.user.provider = 'microsoft';
-                    
-                    // D'abord, afficher l'application normalement
                     this.isAuthenticated = true;
                     this.activeProvider = 'microsoft';
                     
@@ -573,21 +198,8 @@ class App {
                     console.log('[App] ✅ Microsoft user authenticated:', this.user.displayName || this.user.mail);
                     this.showAppWithTransition();
                     
-                    // VÉRIFICATION DE LICENCE APRÈS L'AFFICHAGE
-                    // Attendre un peu pour que l'application soit complètement chargée
-                    setTimeout(async () => {
-                        const email = this.user.mail || this.user.email || this.user.userPrincipalName;
-                        console.log('[App] Checking license for Microsoft user:', email);
-                        
-                        const licenseCheck = await this.checkUserLicense(email);
-                        
-                        if (!licenseCheck.valid) {
-                            console.log('[App] ❌ License check failed for Microsoft user');
-                            await this.handleLicenseError(licenseCheck);
-                        } else {
-                            console.log('[App] ✅ License valid for Microsoft user');
-                        }
-                    }, 2000); // 2 secondes de délai
+                    // Vérifier la licence APRÈS avoir affiché l'app
+                    this.checkLicenseInBackground();
                     
                     return;
                 } catch (userInfoError) {
@@ -608,8 +220,6 @@ class App {
                 try {
                     this.user = await window.googleAuthService.getUserInfo();
                     this.user.provider = 'google';
-                    
-                    // D'abord, afficher l'application normalement
                     this.isAuthenticated = true;
                     this.activeProvider = 'google';
                     
@@ -619,21 +229,8 @@ class App {
                     console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
                     this.showAppWithTransition();
                     
-                    // VÉRIFICATION DE LICENCE APRÈS L'AFFICHAGE
-                    // Attendre un peu pour que l'application soit complètement chargée
-                    setTimeout(async () => {
-                        const email = this.user.email || this.user.mail;
-                        console.log('[App] Checking license for Google user:', email);
-                        
-                        const licenseCheck = await this.checkUserLicense(email);
-                        
-                        if (!licenseCheck.valid) {
-                            console.log('[App] ❌ License check failed for Google user');
-                            await this.handleLicenseError(licenseCheck);
-                        } else {
-                            console.log('[App] ✅ License valid for Google user');
-                        }
-                    }, 2000); // 2 secondes de délai
+                    // Vérifier la licence APRÈS avoir affiché l'app
+                    this.checkLicenseInBackground();
                     
                     return;
                 } catch (userInfoError) {
@@ -649,87 +246,173 @@ class App {
     }
 
     // =====================================
-    // GESTION DU CALLBACK GOOGLE OAuth2 AVEC LICENCE
+    // VÉRIFICATION DE LICENCE EN ARRIÈRE-PLAN
     // =====================================
-    async handleGoogleCallback() {
-        console.log('[App] Handling Google OAuth2 callback...');
+    async checkLicenseInBackground() {
+        // Attendre un peu que l'application soit complètement chargée
+        setTimeout(async () => {
+            console.log('[App] Starting background license check...');
+            
+            if (!this.user) return;
+            
+            const email = this.user.email || this.user.mail || this.user.userPrincipalName;
+            
+            // Vérifier d'abord si le service de licence est disponible
+            if (!window.licenseService) {
+                console.warn('[App] License service not available, skipping check');
+                return;
+            }
+            
+            try {
+                // Initialiser le service si nécessaire
+                if (!window.licenseService.initialized) {
+                    console.log('[App] Initializing license service...');
+                    await window.licenseService.initialize();
+                }
+                
+                // Vérifier la licence
+                console.log('[App] Checking license for:', email);
+                const result = await window.licenseService.authenticateWithEmail(email);
+                
+                console.log('[App] License check result:', {
+                    valid: result.valid,
+                    status: result.status,
+                    message: result.message
+                });
+                
+                // Si la licence n'est pas valide, afficher le message d'erreur
+                if (!result.valid) {
+                    console.log('[App] ❌ License invalid, showing error...');
+                    this.handleLicenseError(result);
+                } else {
+                    console.log('[App] ✅ License valid');
+                }
+                
+            } catch (error) {
+                console.error('[App] Error checking license:', error);
+                // En cas d'erreur, ne pas bloquer l'utilisateur
+            }
+        }, 3000); // 3 secondes de délai
+    }
+
+    // =====================================
+    // GESTION DES ERREURS DE LICENCE
+    // =====================================
+    async handleLicenseError(licenseResult) {
+        console.log('[App] Handling license error:', licenseResult);
         
-        try {
-            // Vérifier s'il y a des données de callback Google
-            const callbackDataStr = sessionStorage.getItem('google_callback_data');
-            if (!callbackDataStr) {
-                console.log('[App] No Google callback data found');
-                return false;
-            }
-            
-            const callbackData = JSON.parse(callbackDataStr);
-            console.log('[App] Found Google callback data:', callbackData);
-            
-            // Nettoyer les données de callback
-            sessionStorage.removeItem('google_callback_data');
-            
-            // Traiter le callback avec le service Google
-            const urlParams = new URLSearchParams();
-            urlParams.set('code', callbackData.code);
-            urlParams.set('state', callbackData.state);
-            
-            const success = await window.googleAuthService.handleOAuthCallback(urlParams);
-            
-            if (success) {
-                console.log('[App] ✅ Google callback handled successfully');
-                
-                // Obtenir les informations utilisateur
-                this.user = await window.googleAuthService.getUserInfo();
-                this.user.provider = 'google';
-                
-                // D'abord, afficher l'application normalement
-                this.isAuthenticated = true;
-                this.activeProvider = 'google';
-                
-                // ANALYTICS: Track authentication
-                this.trackUserAuthentication(this.user);
-                
-                console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
-                this.showAppWithTransition();
-                
-                // VÉRIFICATION DE LICENCE APRÈS L'AFFICHAGE
-                // Attendre un peu pour que l'application soit complètement chargée
-                setTimeout(async () => {
-                    const email = this.user.email || this.user.mail;
-                    console.log('[App] Checking license for Google callback user:', email);
-                    
-                    const licenseCheck = await this.checkUserLicense(email);
-                    
-                    if (!licenseCheck.valid) {
-                        console.log('[App] ❌ License check failed for Google callback user');
-                        await this.handleLicenseError(licenseCheck);
-                    } else {
-                        console.log('[App] ✅ License valid for Google callback user');
-                    }
-                }, 2000); // 2 secondes de délai
-                
-                return true;
-            } else {
-                throw new Error('Google callback processing failed');
-            }
-            
-        } catch (error) {
-            console.error('[App] ❌ Error handling Google callback:', error);
-            
-            // ANALYTICS: Track error
-            this.trackError('google_callback_error', {
-                message: error.message
-            });
-            
-            if (window.uiManager) {
-                window.uiManager.showToast(
-                    'Erreur de traitement Google: ' + error.message,
-                    'error',
-                    8000
-                );
-            }
-            
-            return false;
+        // Préparer le message d'erreur
+        let message = '';
+        let type = 'error';
+        
+        switch (licenseResult.status) {
+            case 'expired':
+                message = 'Votre période d\'essai ou licence a expiré. Contactez votre administrateur pour renouveler votre accès.';
+                type = 'warning';
+                break;
+            case 'blocked':
+                message = 'Votre compte a été bloqué par l\'administrateur.';
+                type = 'error';
+                break;
+            case 'not_found':
+                message = 'Aucun compte trouvé pour cette adresse email. Contactez votre administrateur.';
+                type = 'error';
+                break;
+            default:
+                message = 'Problème de licence. Contactez votre administrateur.';
+                type = 'warning';
+        }
+        
+        // Afficher un toast avec le message
+        if (window.uiManager) {
+            window.uiManager.showToast(message, type, 10000);
+        }
+        
+        // Afficher une modal avec plus d'infos
+        this.showLicenseErrorModal(licenseResult);
+        
+        // Déconnecter après un délai
+        setTimeout(() => {
+            console.log('[App] Logging out due to license error...');
+            this.logout();
+        }, 10000); // 10 secondes pour lire le message
+    }
+
+    // =====================================
+    // AFFICHAGE MODAL ERREUR DE LICENCE
+    // =====================================
+    showLicenseErrorModal(licenseResult) {
+        // Créer la modal
+        const modal = document.createElement('div');
+        modal.className = 'license-error-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+        
+        const content = document.createElement('div');
+        content.style.cssText = `
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            max-width: 500px;
+            box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+            text-align: center;
+        `;
+        
+        const icon = licenseResult.status === 'blocked' ? '🚫' : '⚠️';
+        const color = licenseResult.status === 'blocked' ? '#dc2626' : '#d97706';
+        
+        content.innerHTML = `
+            <div style="font-size: 3rem; margin-bottom: 1rem;">${icon}</div>
+            <h2 style="color: ${color}; margin-bottom: 1rem;">Accès refusé</h2>
+            <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+                ${this.getLicenseErrorMessage(licenseResult)}
+            </p>
+            <p style="margin-bottom: 2rem; color: #6b7280;">
+                Vous allez être déconnecté dans quelques secondes.
+            </p>
+            <button onclick="window.app.logout()" style="
+                background: #3b82f6;
+                color: white;
+                border: none;
+                padding: 0.75rem 2rem;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 1rem;
+                font-weight: 600;
+            ">
+                Se déconnecter maintenant
+            </button>
+        `;
+        
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+        
+        // Animation d'entrée
+        setTimeout(() => {
+            modal.style.opacity = '1';
+        }, 10);
+    }
+
+    getLicenseErrorMessage(result) {
+        switch (result.status) {
+            case 'expired':
+                return 'Votre période d\'essai ou licence a expiré. Veuillez contacter votre administrateur pour renouveler votre accès à EmailSortPro.';
+            case 'blocked':
+                return 'Votre compte a été bloqué par l\'administrateur. Veuillez le contacter pour plus d\'informations.';
+            case 'not_found':
+                return 'Aucun compte trouvé pour votre adresse email. Veuillez contacter votre administrateur pour créer votre compte.';
+            default:
+                return 'Un problème de licence a été détecté. Veuillez contacter votre administrateur.';
         }
     }
 
@@ -822,7 +505,7 @@ class App {
         }
     }
 
-    // [Les autres méthodes restent identiques - je copie le reste du code sans modification]
+    // [Les autres méthodes restent identiques...]
 
     async ensureMailServiceReady() {
         console.log('[App] Ensuring MailService is ready...');
@@ -908,6 +591,8 @@ class App {
         
         console.log('[App] ✅ MailService fallback created');
     }
+
+    // [Méthodes de vérification des modules identiques...]
 
     async ensureTaskManagerReady() {
         console.log('[App] Ensuring TaskManager is ready...');
@@ -1402,6 +1087,75 @@ class App {
         return true;
     }
 
+    // =====================================
+    // GESTION DU CALLBACK GOOGLE OAuth2
+    // =====================================
+    async handleGoogleCallback() {
+        console.log('[App] Handling Google OAuth2 callback...');
+        
+        try {
+            // Vérifier s'il y a des données de callback Google
+            const callbackDataStr = sessionStorage.getItem('google_callback_data');
+            if (!callbackDataStr) {
+                console.log('[App] No Google callback data found');
+                return false;
+            }
+            
+            const callbackData = JSON.parse(callbackDataStr);
+            console.log('[App] Found Google callback data:', callbackData);
+            
+            // Nettoyer les données de callback
+            sessionStorage.removeItem('google_callback_data');
+            
+            // Traiter le callback avec le service Google
+            const urlParams = new URLSearchParams();
+            urlParams.set('code', callbackData.code);
+            urlParams.set('state', callbackData.state);
+            
+            const success = await window.googleAuthService.handleOAuthCallback(urlParams);
+            
+            if (success) {
+                console.log('[App] ✅ Google callback handled successfully');
+                
+                // Obtenir les informations utilisateur
+                this.user = await window.googleAuthService.getUserInfo();
+                this.user.provider = 'google';
+                this.isAuthenticated = true;
+                this.activeProvider = 'google';
+                
+                // ANALYTICS: Track authentication
+                this.trackUserAuthentication(this.user);
+                
+                console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
+                
+                // Vérifier la licence en arrière-plan APRÈS connexion
+                this.checkLicenseInBackground();
+                
+                return true;
+            } else {
+                throw new Error('Google callback processing failed');
+            }
+            
+        } catch (error) {
+            console.error('[App] ❌ Error handling Google callback:', error);
+            
+            // ANALYTICS: Track error
+            this.trackError('google_callback_error', {
+                message: error.message
+            });
+            
+            if (window.uiManager) {
+                window.uiManager.showToast(
+                    'Erreur de traitement Google: ' + error.message,
+                    'error',
+                    8000
+                );
+            }
+            
+            return false;
+        }
+    }
+
     async handleInitializationError(error) {
         console.error('[App] Initialization error:', error);
         
@@ -1611,9 +1365,6 @@ class App {
             }
             
             await window.authService.login();
-            
-            // La vérification de licence sera faite dans checkAuthenticationStatus
-            // Ne pas faire la vérification ici pour permettre la connexion normale
             
         } catch (error) {
             console.error('[App] Microsoft login error:', error);
@@ -2024,6 +1775,13 @@ class App {
             .provider-badge.google {
                 background: linear-gradient(135deg, #4285f4, #34a853);
             }
+            .license-error-modal {
+                animation: fadeIn 0.3s ease;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
         `;
         
         const oldStyle = document.getElementById('force-app-display');
@@ -2196,10 +1954,6 @@ class App {
                 tracking: !!window.analyticsManager && typeof window.analyticsManager.trackEvent === 'function',
                 lastSession: window.analyticsManager ? window.analyticsManager.currentSession : null
             },
-            license: {
-                serviceAvailable: !!window.licenseService,
-                serviceInitialized: window.licenseService ? window.licenseService.initialized : false
-            },
             services: {
                 microsoftAuth: window.authService ? {
                     available: true,
@@ -2245,6 +1999,10 @@ class App {
                     hasTrackEvent: typeof window.analyticsManager.trackEvent === 'function',
                     hasTrackAuth: typeof window.analyticsManager.trackAuthentication === 'function',
                     hasOnError: typeof window.analyticsManager.onError === 'function'
+                } : { available: false },
+                licenseService: window.licenseService ? {
+                    available: true,
+                    initialized: window.licenseService.initialized || false
                 } : { available: false }
             },
             dom: {
@@ -2272,19 +2030,6 @@ class App {
         console.group('🧪 Test des services critiques avec analytics');
         
         const tests = [];
-        
-        // Test LicenseService
-        try {
-            if (window.licenseService && window.licenseService.initialized) {
-                tests.push({ service: 'LicenseService', status: '✅ OK', details: 'Service initialisé' });
-            } else if (window.licenseService) {
-                tests.push({ service: 'LicenseService', status: '⚠️ WARNING', details: 'Service présent mais non initialisé' });
-            } else {
-                tests.push({ service: 'LicenseService', status: '❌ ERROR', details: 'Service non disponible' });
-            }
-        } catch (error) {
-            tests.push({ service: 'LicenseService', status: '❌ ERROR', details: error.message });
-        }
         
         // Test MailService
         try {
@@ -2349,6 +2094,19 @@ class App {
             }
         } catch (error) {
             tests.push({ service: 'Analytics Manager', status: '❌ ERROR', details: error.message });
+        }
+        
+        // Test License Service
+        try {
+            if (window.licenseService && window.licenseService.initialized) {
+                tests.push({ service: 'License Service', status: '✅ OK', details: 'Service initialisé' });
+            } else if (window.licenseService) {
+                tests.push({ service: 'License Service', status: '⚠️ WARNING', details: 'Service présent mais non initialisé' });
+            } else {
+                tests.push({ service: 'License Service', status: '❌ ERROR', details: 'Service non disponible' });
+            }
+        } catch (error) {
+            tests.push({ service: 'License Service', status: '❌ ERROR', details: error.message });
         }
         
         tests.forEach(test => {
@@ -2459,7 +2217,7 @@ window.repairScanModule = function() {
 function checkServicesReady() {
     const requiredServices = ['uiManager'];
     const authServices = ['authService', 'googleAuthService'];
-    const optionalServices = ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule', 'analyticsManager', 'licenseService'];
+    const optionalServices = ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule', 'analyticsManager'];
     
     try {
         const missingRequired = requiredServices.filter(service => !window[service]);
@@ -2487,7 +2245,6 @@ function checkServicesReady() {
         
         console.log('[App] Available auth services:', availableAuthServices);
         console.log('[App] Analytics available:', !!window.analyticsManager);
-        console.log('[App] License service available:', !!window.licenseService);
         return true;
     } catch (error) {
         console.error('[App] Error checking services:', error);
@@ -2579,7 +2336,7 @@ window.addEventListener('unhandledrejection', (event) => {
 // =====================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[App] DOM loaded, creating dual provider app instance with analytics and license check...');
+    console.log('[App] DOM loaded, creating dual provider app instance with analytics...');
     
     try {
         document.body.classList.add('login-mode');
@@ -2591,7 +2348,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             try {
                 if (checkServicesReady()) {
-                    console.log('[App] All required services ready, initializing dual provider app with analytics and license check...');
+                    console.log('[App] All required services ready, initializing dual provider app with analytics...');
                     
                     setTimeout(() => {
                         try {
@@ -2692,7 +2449,7 @@ window.addEventListener('load', () => {
 // DIAGNOSTIC GLOBAL AVEC ANALYTICS
 // =====================================
 window.diagnoseApp = function() {
-    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER + ANALYTICS + LICENSE - EmailSortPro v4.3');
+    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER + ANALYTICS - EmailSortPro v4.3');
     
     try {
         if (window.app) {
@@ -2702,7 +2459,6 @@ window.diagnoseApp = function() {
             console.log('📱 App Status:', appDiag.app);
             console.log('👤 User:', appDiag.user);
             console.log('📊 Analytics:', appDiag.analytics);
-            console.log('🔑 License:', appDiag.license);
             console.log('🛠️ Services:', appDiag.services);
             console.log('🏗️ DOM Elements:', appDiag.dom);
             console.log('💾 Session Data:', appDiag.sessionData);
@@ -2722,11 +2478,6 @@ window.diagnoseApp = function() {
                 console.log('🏢 Company Stats:', window.analyticsManager.getAllCompanies().length + ' sociétés');
             }
             
-            // Diagnostic licence spécifique
-            if (window.licenseService) {
-                console.log('🔐 License Service Debug:', await window.licenseService.debug());
-            }
-            
             return appDiag;
         } else {
             console.log('❌ App instance not available');
@@ -2738,10 +2489,6 @@ window.diagnoseApp = function() {
                 analytics: {
                     available: !!window.analyticsManager,
                     hasData: window.analyticsManager ? !!window.analyticsManager.getGlobalStats : false
-                },
-                license: {
-                    available: !!window.licenseService,
-                    initialized: window.licenseService ? window.licenseService.initialized : false
                 },
                 dom: {
                     loginPage: !!document.getElementById('loginPage'),
@@ -2840,26 +2587,6 @@ window.netlifyHelpers = {
         }
         
         console.log('Analytics test results:', results);
-        return results;
-    },
-    
-    testLicense: async () => {
-        const results = {
-            available: !!window.licenseService,
-            initialized: false,
-            debug: null
-        };
-        
-        if (window.licenseService) {
-            try {
-                results.initialized = window.licenseService.initialized;
-                results.debug = await window.licenseService.debug();
-            } catch (error) {
-                results.error = error.message;
-            }
-        }
-        
-        console.log('License test results:', results);
         return results;
     }
 };
@@ -2995,4 +2722,4 @@ console.log('🔧 Fonctions globales disponibles: window.diagnoseApp(), window.t
 console.log('🌐 Helpers Netlify: window.netlifyHelpers');
 console.log('📊 Helpers Analytics: window.analyticsHelpers');
 console.log('📈 Analytics tracking: Email en clair, filtrage par domaine et par société');
-console.log('🔐 License check: Vérification automatique après authentification');
+console.log('🔐 License check: Vérification 3 secondes après connexion réussie');
