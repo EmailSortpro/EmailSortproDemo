@@ -1784,7 +1784,7 @@
                                 let message = 'Compte professionnel configuré.';
                                 
                                 if (adminInfo) {
-                                    message = `Compte professionnel configuré.\n\nContactez l'administrateur pour obtenir les droits d'accès aux analytics :\n📧 ${adminInfo.email}\n👤 ${adminInfo.name || 'Nom non défini'}\n🏢 ${adminInfo.company_name || 'Entreprise'}`;
+                                    message = 'Compte professionnel configuré.\n\nContactez l\'administrateur pour obtenir les droits d\'accès aux analytics :\n' + adminInfo.email + '\n' + (adminInfo.name || 'Nom non défini') + '\n' + (adminInfo.company_name || 'Entreprise');
                                 } else {
                                     message = 'Compte professionnel configuré.\n\nContactez l\'administrateur de votre entreprise pour obtenir les droits d\'accès aux analytics.';
                                 }
@@ -1892,7 +1892,7 @@
                             let message = 'Accès restreint aux analytics.';
                             
                             if (adminInfo) {
-                                message = `Accès restreint aux analytics.\n\nContactez l'administrateur de votre entreprise :\n📧 ${adminInfo.email}\n👤 ${adminInfo.name || 'Nom non défini'}\n🏢 ${adminInfo.company_name || 'Entreprise'}`;
+                                message = 'Accès restreint aux analytics.\n\nContactez l\'administrateur de votre entreprise :\n' + adminInfo.email + '\n' + (adminInfo.name || 'Nom non défini') + '\n' + (adminInfo.company_name || 'Entreprise');
                             } else {
                                 message = 'Accès restreint aux analytics.\n\nContactez l\'administrateur de votre entreprise pour obtenir les droits d\'accès.';
                             }
@@ -2840,7 +2840,7 @@
             const user = currentUsers.find(u => u.id === userId);
             if (!user) return;
             
-            const confirmMessage = `⚠️ SUPPRESSION DÉFINITIVE ⚠️\n\nVous allez supprimer définitivement l'utilisateur ${user.email} de la base de données.\n\nCette action :\n- Supprime toutes les données utilisateur\n- Supprime l'historique des licences\n- Supprime les statistiques d'utilisation\n- Ne peut PAS être annulée\n\nTapez "SUPPRIMER" pour confirmer :`;
+            const confirmMessage = 'SUPPRESSION DÉFINITIVE\n\nVous allez supprimer définitivement l\'utilisateur ' + user.email + ' de la base de données.\n\nCette action :\n- Supprime toutes les données utilisateur\n- Supprime l\'historique des licences\n- Supprime les statistiques d\'utilisation\n- Ne peut PAS être annulée\n\nTapez "SUPPRIMER" pour confirmer :';
             
             const confirmation = prompt(confirmMessage);
             
@@ -2874,7 +2874,7 @@
                     renderLicensesTable();
                     updateSummaryFromRealData();
                     
-                    alert('✅ Utilisateur supprimé définitivement de la base de données');
+                    alert('Utilisateur supprimé définitivement de la base de données');
                 }
                 
             } catch (error) {
@@ -2918,7 +2918,7 @@
             renderLicensesTable();
             updateSummaryFromRealData();
             
-            alert('✅ Utilisateur supprimé définitivement de la base de données');
+            alert('Utilisateur supprimé définitivement de la base de données');
         }
 
         // Billing Management - Version optimisée avec focus sur résumé et paiement
