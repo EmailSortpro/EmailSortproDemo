@@ -1543,9 +1543,38 @@
                 return user.role === 'super_admin' || user.role === 'company_admin';
             }
 
+            async cleanupIndividualAccounts() {
+                // Nettoyer les comptes individual qui ont encore une société
+                if (this.currentUser.account_type === 'individual' && this.currentUser.company_id) {
+                    try {
+                        console.log('[Analytics] Cleaning up individual account with company_id');
+                        
+                        const { error } = await this.supabaseClient
+                            .from('users')
+                            .update({
+                                company_id: null,
+                                role: 'user',
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('id', this.currentUser.id);
+                        
+                        if (!error) {
+                            this.currentUser.company_id = null;
+                            this.currentUser.company = null;
+                            console.log('[Analytics] Individual account cleaned up successfully');
+                        }
+                    } catch (error) {
+                        console.error('[Analytics] Cleanup error:', error);
+                    }
+                }
+            }
+
             showApp() {
                 document.getElementById('authPage').style.display = 'none';
                 document.getElementById('appPage').classList.add('active');
+                
+                // Nettoyer les comptes individual qui ont une société
+                this.cleanupIndividualAccounts();
                 
                 // Mettre à jour les infos utilisateur
                 const initials = (this.currentUser.name || this.currentUser.email)
@@ -1625,6 +1654,21 @@
                     if (!error) {
                         this.users = data || [];
                         
+                        // Nettoyer les données pour les comptes individual
+                        this.users = this.users.map(user => {
+                            if (user.account_type === 'individual') {
+                                // Forcer company à null pour les comptes individual
+                                user.company = null;
+                                user.company_id = null;
+                            }
+                            return user;
+                        });
+                        
+                        // Si on est super admin, nettoyer tous les comptes individual dans la base
+                        if (this.currentUser.role === 'super_admin') {
+                            await this.cleanupAllIndividualAccounts();
+                        }
+                        
                         // Charger les stats
                         await this.loadUserStats();
                     }
@@ -1632,6 +1676,36 @@
                 } catch (error) {
                     console.error('Load users error:', error);
                     this.users = [];
+                }
+            }
+
+            async cleanupAllIndividualAccounts() {
+                // Fonction pour nettoyer tous les comptes individual qui ont une company_id
+                try {
+                    const { data: individualWithCompany } = await this.supabaseClient
+                        .from('users')
+                        .select('id')
+                        .eq('account_type', 'individual')
+                        .not('company_id', 'is', null);
+                    
+                    if (individualWithCompany && individualWithCompany.length > 0) {
+                        console.log(`[Analytics] Found ${individualWithCompany.length} individual accounts with company_id to clean`);
+                        
+                        const { error } = await this.supabaseClient
+                            .from('users')
+                            .update({
+                                company_id: null,
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('account_type', 'individual')
+                            .not('company_id', 'is', null);
+                        
+                        if (!error) {
+                            console.log('[Analytics] All individual accounts cleaned successfully');
+                        }
+                    }
+                } catch (error) {
+                    console.error('[Analytics] Batch cleanup error:', error);
                 }
             }
 
@@ -1760,7 +1834,10 @@
                 
                 tbody.innerHTML = users.map(user => {
                     const initials = (user.name || user.email).split(/[\s@]/)[0].slice(0, 2).toUpperCase();
-                    const company = user.company?.name || (user.account_type === 'individual' ? 'Compte personnel' : 'Sans société');
+                    // Pour les comptes individual, toujours afficher "Compte personnel" même si une société est encore présente
+                    const company = user.account_type === 'individual' 
+                        ? 'Compte personnel' 
+                        : (user.company?.name || 'Sans société');
                     const lastLogin = this.formatDate(user.last_login_at);
                     const daysRemaining = this.calculateDaysRemaining(user.license_expires_at);
                     
@@ -2010,7 +2087,7 @@
                                 </div>
                                 <div>
                                     <label style="font-size: 0.75rem; color: var(--gray-500);">Société</label>
-                                    <p style="font-weight: 600;">${user.company?.name || (user.account_type === 'individual' ? 'Compte personnel' : 'Sans société')}</p>
+                                    <p style="font-weight: 600;">${user.account_type === 'individual' ? 'Compte personnel' : (user.company?.name || 'Sans société')}</p>
                                 </div>
                                 <div>
                                     <label style="font-size: 0.75rem; color: var(--gray-500);">Rôle</label>
