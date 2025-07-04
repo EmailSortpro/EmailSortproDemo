@@ -1096,6 +1096,46 @@
         </div>
     </div>
 
+    <!-- License Edit Modal -->
+    <div class="modal" id="licenseEditModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Modifier les dates de licence</h2>
+                <button class="modal-close" onclick="app.closeModal('licenseEditModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="licenseEditForm" onsubmit="app.saveLicenseDates(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="editUserId">
+                    
+                    <div class="form-group">
+                        <label class="form-label">Date de début</label>
+                        <input type="date" class="form-control" id="editStartDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Date d'expiration</label>
+                        <input type="date" class="form-control" id="editEndDate" required>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        La modification des dates de licence est réservée aux super administrateurs.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('licenseEditModal')">
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="saveLicenseBtn">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Application principale
         class AnalyticsApp {
@@ -1105,6 +1145,8 @@
                 this.users = [];
                 this.currentTab = 'overview';
                 this.licenseService = null;
+                this.pendingUser = null;
+                this.isNewUser = false;
                 
                 this.init();
             }
@@ -1204,6 +1246,7 @@
                         // Vérifier le type de compte
                         if (!user.account_type || (user.account_type === 'professional' && user.role === 'user')) {
                             this.pendingUser = user;
+                            this.isNewUser = false;
                             this.showModal('accountTypeModal');
                             button.disabled = false;
                             button.innerHTML = originalText;
@@ -1219,6 +1262,19 @@
                         } else {
                             this.showMessage('error', 'Accès réservé aux administrateurs');
                         }
+                    } else if (result.status === 'not_found') {
+                        // Proposer de créer un compte
+                        this.pendingUser = { email };
+                        this.isNewUser = true;
+                        
+                        // Mettre à jour le modal pour la création
+                        document.querySelector('.modal-title').textContent = 'Créer votre compte Analytics';
+                        document.querySelector('#accountTypeModal .modal-body > p').textContent = 
+                            'Aucun compte trouvé. Créez votre compte en choisissant le type :';
+                        
+                        this.showModal('accountTypeModal');
+                        button.disabled = false;
+                        button.innerHTML = originalText;
                     } else {
                         this.showMessage('error', result.message || 'Email non trouvé');
                     }
@@ -1247,29 +1303,88 @@
                 }
                 
                 try {
-                    const result = await this.licenseService.setUserAccountType(
-                        this.pendingUser.id,
-                        accountType === 'individual' ? 'individual' : 'professional',
-                        companyName || null
-                    );
-                    
-                    if (result.success) {
-                        this.closeModal('accountTypeModal');
+                    if (this.isNewUser) {
+                        // Créer un nouveau compte
+                        const { data: newUser, error } = await this.supabaseClient
+                            .from('users')
+                            .insert({
+                                email: this.pendingUser.email,
+                                name: this.pendingUser.email.split('@')[0],
+                                role: 'user',
+                                account_type: accountType === 'individual' ? 'individual' : 'professional',
+                                company_name: accountType === 'professional' ? companyName : null,
+                                license_status: 'trial',
+                                license_expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+                                license_starts_at: new Date().toISOString(),
+                                created_at: new Date().toISOString(),
+                                updated_at: new Date().toISOString()
+                            })
+                            .select()
+                            .single();
                         
-                        // Recharger l'utilisateur
-                        const authResult = await this.licenseService.authenticateWithEmail(this.pendingUser.email);
-                        
-                        if (authResult.valid && this.hasAdminAccess(authResult.user)) {
-                            this.currentUser = authResult.user;
-                            this.saveSession(this.pendingUser.email);
-                            this.showApp();
-                        } else {
-                            this.showMessage('error', 'Configuration réussie. Contactez votre administrateur pour l\'accès aux analytics.');
+                        if (error) {
+                            throw error;
                         }
+                        
+                        this.pendingUser = newUser;
+                        
+                        // Si c'est un compte professionnel, créer la société
+                        if (accountType === 'professional' && companyName) {
+                            const domain = this.pendingUser.email.split('@')[1];
+                            const { data: company } = await this.supabaseClient
+                                .from('companies')
+                                .insert({
+                                    name: companyName,
+                                    domain: domain,
+                                    created_at: new Date().toISOString()
+                                })
+                                .select()
+                                .single();
+                            
+                            if (company) {
+                                // Mettre à jour l'utilisateur avec l'ID de la société et le promouvoir admin
+                                await this.supabaseClient
+                                    .from('users')
+                                    .update({
+                                        company_id: company.id,
+                                        role: 'company_admin'
+                                    })
+                                    .eq('id', newUser.id);
+                                
+                                newUser.company_id = company.id;
+                                newUser.role = 'company_admin';
+                            }
+                        }
+                        
+                        this.showMessage('success', 'Compte créé avec succès !');
+                    } else {
+                        // Mettre à jour un compte existant
+                        const result = await this.licenseService.setUserAccountType(
+                            this.pendingUser.id,
+                            accountType === 'individual' ? 'individual' : 'professional',
+                            companyName || null
+                        );
+                        
+                        if (!result.success) {
+                            throw new Error(result.error);
+                        }
+                    }
+                    
+                    this.closeModal('accountTypeModal');
+                    
+                    // Recharger l'utilisateur
+                    const authResult = await this.licenseService.authenticateWithEmail(this.pendingUser.email);
+                    
+                    if (authResult.valid && this.hasAdminAccess(authResult.user)) {
+                        this.currentUser = authResult.user;
+                        this.saveSession(this.pendingUser.email);
+                        this.showApp();
+                    } else {
+                        this.showMessage('error', 'Configuration réussie. Contactez votre administrateur pour l\'accès aux analytics.');
                     }
                 } catch (error) {
                     console.error('Account type error:', error);
-                    alert('Erreur lors de la configuration');
+                    alert('Erreur lors de la configuration : ' + error.message);
                 }
             }
 
@@ -1344,6 +1459,7 @@
                     } else if (this.currentUser.role === 'company_admin' && this.currentUser.company_id) {
                         query = query.eq('company_id', this.currentUser.company_id);
                     }
+                    // Les super admins voient tout
                     
                     const { data, error } = await query;
                     
@@ -1507,6 +1623,9 @@
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     ${this.canManageUser(user) ? `
+                                        <button class="btn btn-primary btn-sm" onclick="app.editLicense('${user.id}')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
                                         <button class="btn btn-danger btn-sm" onclick="app.deleteUser('${user.id}')">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -1564,6 +1683,11 @@
                                     <button class="btn btn-secondary btn-sm" onclick="app.viewUser('${user.id}')">
                                         <i class="fas fa-eye"></i>
                                     </button>
+                                    ${this.canManageUser(user) ? `
+                                        <button class="btn btn-primary btn-sm" onclick="app.editLicense('${user.id}')">
+                                            <i class="fas fa-calendar-edit"></i>
+                                        </button>
+                                    ` : ''}
                                 </div>
                             </td>
                         </tr>
@@ -1784,6 +1908,74 @@
                 this.showModal('userDetailsModal');
             }
 
+            async editLicense(userId) {
+                const user = this.users.find(u => u.id === userId);
+                if (!user) return;
+                
+                // Seuls les super admins peuvent modifier les dates
+                const canEdit = this.currentUser.role === 'super_admin';
+                
+                document.getElementById('editUserId').value = userId;
+                
+                const startDate = user.license_starts_at ? 
+                    new Date(user.license_starts_at).toISOString().split('T')[0] : 
+                    new Date().toISOString().split('T')[0];
+                
+                const endDate = user.license_expires_at ? 
+                    new Date(user.license_expires_at).toISOString().split('T')[0] : 
+                    '';
+                
+                document.getElementById('editStartDate').value = startDate;
+                document.getElementById('editEndDate').value = endDate;
+                
+                // Désactiver les champs si pas super admin
+                document.getElementById('editStartDate').disabled = !canEdit;
+                document.getElementById('editEndDate').disabled = !canEdit;
+                document.getElementById('saveLicenseBtn').style.display = canEdit ? 'flex' : 'none';
+                
+                this.showModal('licenseEditModal');
+            }
+
+            async saveLicenseDates(event) {
+                event.preventDefault();
+                
+                if (this.currentUser.role !== 'super_admin') {
+                    alert('Seul le super administrateur peut modifier les dates');
+                    return;
+                }
+                
+                const userId = document.getElementById('editUserId').value;
+                const startDate = document.getElementById('editStartDate').value;
+                const endDate = document.getElementById('editEndDate').value;
+                
+                try {
+                    // Calculer le statut basé sur les dates
+                    const now = new Date();
+                    const end = new Date(endDate);
+                    const status = end > now ? 'active' : 'expired';
+                    
+                    const { error } = await this.supabaseClient
+                        .from('users')
+                        .update({
+                            license_starts_at: startDate,
+                            license_expires_at: endDate,
+                            license_status: status,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', userId);
+                    
+                    if (error) throw error;
+                    
+                    this.closeModal('licenseEditModal');
+                    await this.refreshUsers();
+                    this.showMessage('success', 'Dates de licence mises à jour');
+                    
+                } catch (error) {
+                    console.error('Save license error:', error);
+                    alert('Erreur lors de la sauvegarde');
+                }
+            }
+
             async deleteUser(userId) {
                 const user = this.users.find(u => u.id === userId);
                 if (!user) return;
@@ -1946,6 +2138,8 @@
             refreshLicenses: () => app.refreshLicenses(),
             viewUser: (id) => app.viewUser(id),
             deleteUser: (id) => app.deleteUser(id),
+            editLicense: (id) => app.editLicense(id),
+            saveLicenseDates: (e) => app.saveLicenseDates(e),
             confirmAccountType: () => app.confirmAccountType(),
             closeModal: (id) => app.closeModal(id)
         };
