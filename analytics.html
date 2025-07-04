@@ -2497,7 +2497,32 @@
                     await licenseService.initialize();
                 }
                 
+                // Adaptation : utiliser une requête directe si la fonction RPC n'existe pas
                 const result = await licenseService.authenticateWithEmail(email);
+                
+                // Si la fonction RPC échoue, essayer une requête directe
+                if (!result.valid && result.status === 'not_found') {
+                    try {
+                        const { data: directUser, error: directError } = await supabaseClient
+                            .from('users')
+                            .select('*')
+                            .eq('email', email)
+                            .single();
+                        
+                        if (directUser && !directError) {
+                            // Utilisateur trouvé, vérifier son statut
+                            const now = new Date();
+                            const expiresAt = directUser.license_expires_at ? new Date(directUser.license_expires_at) : null;
+                            const isExpired = expiresAt && expiresAt < now;
+                            
+                            result.valid = !isExpired || checkAdminAccess(directUser);
+                            result.user = directUser;
+                            result.status = isExpired ? 'expired' : 'valid';
+                        }
+                    } catch (error) {
+                        console.error('[Analytics] Direct query error:', error);
+                    }
+                }
                 
                 if (result.valid || (result.status === 'expired' && result.user)) {
                     // Permettre l'accès même si expiré pour les admins
