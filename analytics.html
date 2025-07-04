@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analytics - EmailSortPro</title>
+    
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* Reset & Base */
+        /* Reset et Base */
         * {
             margin: 0;
             padding: 0;
@@ -17,10 +19,13 @@
         :root {
             --primary: #4F46E5;
             --primary-dark: #4338ca;
-            --secondary: #6366F1;
+            --primary-light: #6366F1;
             --success: #16a34a;
+            --success-light: #dcfce7;
             --warning: #d97706;
+            --warning-light: #fef3c7;
             --danger: #dc2626;
+            --danger-light: #fef2f2;
             --gray-50: #f9fafb;
             --gray-100: #f3f4f6;
             --gray-200: #e5e7eb;
@@ -31,16 +36,21 @@
             --gray-700: #374151;
             --gray-800: #1f2937;
             --gray-900: #111827;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: var(--gray-50);
             color: var(--gray-800);
             line-height: 1.6;
         }
 
-        /* Utilities */
+        /* Utilitaires */
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -49,21 +59,16 @@
 
         .btn {
             padding: 8px 16px;
-            border: none;
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
+            border: none;
+            font-size: 0.875rem;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            font-size: 0.875rem;
             text-decoration: none;
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
         }
 
         .btn-primary {
@@ -71,7 +76,7 @@
             color: white;
         }
 
-        .btn-primary:hover:not(:disabled) {
+        .btn-primary:hover {
             background: var(--primary-dark);
             transform: translateY(-1px);
         }
@@ -82,22 +87,27 @@
             border: 1px solid var(--gray-200);
         }
 
-        .btn-secondary:hover:not(:disabled) {
+        .btn-secondary:hover {
             background: var(--gray-200);
         }
 
         .btn-danger {
-            background: var(--danger);
-            color: white;
+            background: var(--danger-light);
+            color: var(--danger);
         }
 
-        .btn-danger:hover:not(:disabled) {
-            background: #b91c1c;
+        .btn-danger:hover {
+            background: #fee2e2;
         }
 
         .btn-sm {
             padding: 4px 8px;
             font-size: 0.75rem;
+        }
+
+        .btn-lg {
+            padding: 12px 24px;
+            font-size: 1rem;
         }
 
         .badge {
@@ -106,12 +116,23 @@
             font-size: 0.7rem;
             font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.03em;
         }
 
-        .badge-success { background: #dcfce7; color: var(--success); }
-        .badge-warning { background: #fef3c7; color: var(--warning); }
-        .badge-danger { background: #fef2f2; color: var(--danger); }
-        .badge-gray { background: var(--gray-100); color: var(--gray-600); }
+        .badge-success {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .badge-warning {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+
+        .badge-danger {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
 
         .loading {
             display: flex;
@@ -130,23 +151,24 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        /* Auth Screen */
-        .auth-container {
+        /* Page de connexion */
+        .auth-wrapper {
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
         }
 
         .auth-card {
             background: white;
             padding: 48px;
             border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-xl);
             width: 100%;
             max-width: 400px;
         }
@@ -154,7 +176,7 @@
         .auth-logo {
             width: 80px;
             height: 80px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
             border-radius: 16px;
             display: flex;
             align-items: center;
@@ -184,20 +206,20 @@
         .form-label {
             display: block;
             font-weight: 600;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             font-size: 0.875rem;
         }
 
-        .form-input {
+        .form-control {
             width: 100%;
             padding: 10px 14px;
             border: 1px solid var(--gray-300);
             border-radius: 8px;
             font-size: 1rem;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
         }
 
-        .form-input:focus {
+        .form-control:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
@@ -210,34 +232,52 @@
             font-size: 0.875rem;
         }
 
-        .alert-error { background: #fef2f2; color: var(--danger); }
-        .alert-success { background: #dcfce7; color: var(--success); }
-        .alert-info { background: #dbeafe; color: #1d4ed8; }
+        .alert-error {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
 
-        /* Modal */
+        .alert-success {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .alert-info {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        /* Modal générique */
         .modal {
             position: fixed;
-            inset: 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background: rgba(0, 0, 0, 0.5);
-            display: none;
+            display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
-            padding: 20px;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
         }
 
         .modal.active {
-            display: flex;
+            opacity: 1;
+            visibility: visible;
         }
 
         .modal-content {
             background: white;
             border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            width: 100%;
-            max-width: 500px;
+            box-shadow: var(--shadow-xl);
+            max-width: 90%;
             max-height: 90vh;
-            overflow-y: auto;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         .modal-header {
@@ -257,131 +297,172 @@
             background: none;
             border: none;
             cursor: pointer;
-            color: var(--gray-400);
-            font-size: 1.5rem;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            transition: all 0.2s;
+            color: var(--gray-500);
+            font-size: 1.25rem;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
         }
 
         .modal-close:hover {
             background: var(--gray-100);
-            color: var(--gray-600);
+            color: var(--gray-700);
         }
 
         .modal-body {
             padding: 24px;
+            overflow-y: auto;
+            flex: 1;
         }
 
         .modal-footer {
             padding: 16px 24px;
             border-top: 1px solid var(--gray-200);
             display: flex;
-            justify-content: flex-end;
             gap: 8px;
+            justify-content: flex-end;
         }
 
-        /* Account Type Selection */
-        .account-types {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .account-type-option {
-            border: 2px solid var(--gray-200);
-            padding: 24px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-        }
-
-        .account-type-option:hover {
-            border-color: var(--primary);
-            background: var(--gray-50);
-        }
-
-        .account-type-option.selected {
-            border-color: var(--primary);
-            background: #f3e8ff;
-        }
-
-        .account-type-option i {
-            font-size: 2.5rem;
-            color: var(--primary);
-            margin-bottom: 12px;
-            display: block;
-        }
-
-        .account-type-option h3 {
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .account-type-option p {
-            font-size: 0.875rem;
-            color: var(--gray-500);
-        }
-
-        /* Main App */
-        .app-container {
-            display: none;
+        /* Page principale */
+        .app-wrapper {
             min-height: 100vh;
+            display: none;
         }
 
-        .app-container.active {
+        .app-wrapper.active {
             display: block;
         }
 
         .app-header {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            padding: 32px 0;
-            margin-bottom: 32px;
+            background: white;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        .app-header-content {
+        .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 16px;
+            padding: 16px 0;
         }
 
-        .app-title {
-            font-size: 2rem;
-            font-weight: 700;
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .header-logo {
             display: flex;
             align-items: center;
             gap: 12px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--gray-800);
+            text-decoration: none;
+        }
+
+        .header-logo i {
+            color: var(--primary);
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 4px;
+        }
+
+        .nav-item {
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--gray-600);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-item:hover {
+            background: var(--gray-100);
+            color: var(--gray-800);
+        }
+
+        .nav-item.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
 
         .user-menu {
             display: flex;
             align-items: center;
-            gap: 16px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 8px 16px;
+            gap: 12px;
+            padding: 6px 12px;
+            background: var(--gray-100);
             border-radius: 8px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
         }
 
         .user-email {
             font-weight: 600;
+            font-size: 0.875rem;
         }
 
         .user-role {
-            padding: 4px 8px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
             font-size: 0.75rem;
-            font-weight: 600;
+            color: var(--gray-500);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 48px 0;
+            margin-bottom: 32px;
+        }
+
+        .hero-content {
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .hero-subtitle {
+            font-size: 1.125rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
         /* Stats Cards */
@@ -396,7 +477,10 @@
             background: white;
             border-radius: 12px;
             padding: 24px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
 
         .stat-icon {
@@ -406,102 +490,84 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 16px;
-            font-size: 1.5rem;
+            font-size: 1.25rem;
         }
 
-        .stat-icon.blue { background: #dbeafe; color: #1d4ed8; }
-        .stat-icon.green { background: #dcfce7; color: var(--success); }
-        .stat-icon.red { background: #fef2f2; color: var(--danger); }
-        .stat-icon.purple { background: #f3e8ff; color: #7c3aed; }
+        .stat-icon.blue {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .stat-icon.green {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .stat-icon.yellow {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+
+        .stat-icon.purple {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+
+        .stat-content {
+            flex: 1;
+        }
 
         .stat-value {
             font-size: 2rem;
             font-weight: 700;
+            line-height: 1;
             margin-bottom: 4px;
         }
 
         .stat-label {
-            color: var(--gray-500);
             font-size: 0.875rem;
+            color: var(--gray-500);
         }
 
-        /* Tabs */
-        .tabs {
+        /* Main Content */
+        .main-content {
             background: white;
             border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow);
             overflow: hidden;
         }
 
-        .tab-nav {
-            display: flex;
+        .content-header {
+            padding: 20px;
             border-bottom: 1px solid var(--gray-200);
-            overflow-x: auto;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 12px 24px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            color: var(--gray-500);
-            transition: all 0.2s;
-            white-space: nowrap;
-            position: relative;
-        }
-
-        .tab-btn:hover {
-            color: var(--gray-700);
-            background: var(--gray-50);
-        }
-
-        .tab-btn.active {
-            color: var(--primary);
-            background: var(--gray-50);
-        }
-
-        .tab-btn.active::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: var(--primary);
-        }
-
-        .tab-content {
-            display: none;
-            padding: 24px;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        /* Table Controls */
-        .table-controls {
             display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .content-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .content-actions {
+            display: flex;
+            gap: 8px;
             flex-wrap: wrap;
         }
 
         .search-box {
-            flex: 1;
-            min-width: 200px;
             position: relative;
         }
 
         .search-input {
-            width: 100%;
             padding: 8px 12px 8px 36px;
             border: 1px solid var(--gray-300);
             border-radius: 8px;
             font-size: 0.875rem;
+            width: 250px;
         }
 
         .search-icon {
@@ -510,9 +576,10 @@
             top: 50%;
             transform: translateY(-50%);
             color: var(--gray-400);
+            font-size: 0.875rem;
         }
 
-        .select {
+        .filter-select {
             padding: 8px 12px;
             border: 1px solid var(--gray-300);
             border-radius: 8px;
@@ -524,9 +591,6 @@
         /* Table */
         .table-wrapper {
             overflow-x: auto;
-            background: white;
-            border-radius: 8px;
-            border: 1px solid var(--gray-200);
         }
 
         .table {
@@ -536,7 +600,7 @@
 
         .table th,
         .table td {
-            padding: 12px;
+            padding: 12px 16px;
             text-align: left;
             border-bottom: 1px solid var(--gray-200);
         }
@@ -544,57 +608,55 @@
         .table th {
             background: var(--gray-50);
             font-weight: 600;
-            font-size: 0.75rem;
+            color: var(--gray-700);
+            font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: var(--gray-600);
         }
 
         .table tbody tr:hover {
             background: var(--gray-50);
         }
 
-        .table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .user-cell {
+        .table-user {
             display: flex;
             align-items: center;
             gap: 12px;
         }
 
-        .user-avatar {
+        .table-user-avatar {
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            background: var(--primary);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
             font-size: 0.875rem;
+            flex-shrink: 0;
         }
 
-        .user-info h4 {
+        .table-user-info h4 {
             font-weight: 600;
-            font-size: 0.875rem;
+            margin-bottom: 2px;
         }
 
-        .user-info p {
-            font-size: 0.75rem;
+        .table-user-info p {
+            font-size: 0.8rem;
             color: var(--gray-500);
         }
 
-        .action-buttons {
+        .table-actions {
             display: flex;
             gap: 4px;
         }
 
+        /* Empty State */
         .empty-state {
             text-align: center;
-            padding: 48px;
+            padding: 48px 24px;
             color: var(--gray-500);
         }
 
@@ -604,72 +666,155 @@
             color: var(--gray-300);
         }
 
+        .empty-state h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--gray-700);
+        }
+
+        /* Billing Cards */
+        .billing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .billing-card {
+            background: var(--gray-50);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid var(--gray-200);
+        }
+
+        .billing-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .billing-card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .billing-amount {
+            text-align: center;
+            margin: 24px 0;
+        }
+
+        .billing-amount-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .billing-amount-label {
+            color: var(--gray-500);
+            font-size: 0.875rem;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .container {
                 padding: 0 16px;
             }
 
-            .auth-card {
-                padding: 32px 24px;
+            .header-content {
+                flex-direction: column;
+                gap: 16px;
             }
 
-            .account-types {
+            .header-nav {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .hero-title {
+                font-size: 1.875rem;
+            }
+
+            .stats-grid {
                 grid-template-columns: 1fr;
             }
 
-            .app-header-content {
+            .content-header {
                 flex-direction: column;
                 align-items: stretch;
             }
 
-            .user-menu {
-                justify-content: center;
+            .search-input {
+                width: 100%;
             }
 
-            .tab-nav {
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
+            .table {
+                font-size: 0.875rem;
             }
 
-            .tab-btn {
-                flex: 0 0 auto;
-            }
-
-            .table-controls {
+            .table-actions {
                 flex-direction: column;
             }
 
-            .search-box {
-                min-width: 100%;
+            .modal-content {
+                max-width: 95%;
+                margin: 16px;
             }
         }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Utilities */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .font-bold { font-weight: 700; }
+        .mt-4 { margin-top: 16px; }
+        .mb-4 { margin-bottom: 16px; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <!-- Auth Screen -->
-    <div class="auth-container" id="authScreen">
+    <!-- Page de connexion -->
+    <div class="auth-wrapper" id="authPage">
         <div class="auth-card">
             <div class="auth-logo">
                 <i class="fas fa-chart-line"></i>
             </div>
             <h1 class="auth-title">Analytics EmailSortPro</h1>
-            <p class="auth-subtitle">Tableau de bord d'administration</p>
+            <p class="auth-subtitle">Accès réservé aux administrateurs</p>
             
-            <form id="authForm" onsubmit="handleAuth(event)">
+            <form id="authForm">
                 <div class="form-group">
                     <input 
                         type="email" 
-                        class="form-input" 
+                        class="form-control" 
                         id="authEmail" 
                         placeholder="Votre adresse email"
                         required
+                        autocomplete="email"
                     >
                 </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;" id="authBtn">
-                    <span id="authBtnText">Se connecter</span>
-                    <div class="spinner" id="authSpinner" style="display: none; width: 20px; height: 20px;"></div>
+                <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Se connecter
                 </button>
             </form>
             
@@ -677,56 +822,45 @@
         </div>
     </div>
 
-    <!-- Account Type Modal -->
-    <div class="modal" id="accountTypeModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title">Configuration du compte</h2>
-            </div>
-            <div class="modal-body">
-                <p style="margin-bottom: 24px; color: var(--gray-600);">
-                    Choisissez votre type de compte pour continuer
-                </p>
-                
-                <div class="account-types">
-                    <div class="account-type-option" onclick="selectAccountType('individual')" data-type="individual">
-                        <i class="fas fa-user"></i>
-                        <h3>Personnel</h3>
-                        <p>Pour gérer votre licence personnelle</p>
-                    </div>
-                    <div class="account-type-option" onclick="selectAccountType('professional')" data-type="professional">
-                        <i class="fas fa-building"></i>
-                        <h3>Professionnel</h3>
-                        <p>Pour gérer une entreprise</p>
-                    </div>
-                </div>
-                
-                <div class="form-group" id="companyNameGroup" style="display: none;">
-                    <label class="form-label">Nom de votre entreprise</label>
-                    <input type="text" class="form-input" id="companyName" placeholder="Ex: Ma Société">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" onclick="confirmAccountType()">
-                    Confirmer et continuer
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main App -->
-    <div class="app-container" id="appScreen">
+    <!-- Page principale -->
+    <div class="app-wrapper" id="appPage">
+        <!-- Header -->
         <header class="app-header">
             <div class="container">
-                <div class="app-header-content">
-                    <h1 class="app-title">
-                        <i class="fas fa-chart-line"></i>
-                        Analytics Dashboard
-                    </h1>
-                    <div class="user-menu">
-                        <span class="user-email" id="userEmail">-</span>
-                        <span class="user-role" id="userRole">-</span>
-                        <button class="btn btn-secondary btn-sm" onclick="logout()">
+                <div class="header-content">
+                    <div class="header-left">
+                        <a href="./index.html" class="header-logo">
+                            <i class="fas fa-arrow-left"></i>
+                            <span>EmailSortPro</span>
+                        </a>
+                        <nav class="header-nav">
+                            <button class="nav-item active" data-tab="overview">
+                                <i class="fas fa-chart-bar"></i>
+                                Vue d'ensemble
+                            </button>
+                            <button class="nav-item" data-tab="users">
+                                <i class="fas fa-users"></i>
+                                Utilisateurs
+                            </button>
+                            <button class="nav-item" data-tab="licenses">
+                                <i class="fas fa-key"></i>
+                                Licences
+                            </button>
+                            <button class="nav-item" data-tab="billing">
+                                <i class="fas fa-credit-card"></i>
+                                Facturation
+                            </button>
+                        </nav>
+                    </div>
+                    <div class="header-right">
+                        <div class="user-menu">
+                            <div class="user-avatar" id="userAvatar">-</div>
+                            <div class="user-info">
+                                <div class="user-email" id="userEmail">-</div>
+                                <div class="user-role" id="userRole">-</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="app.logout()">
                             <i class="fas fa-sign-out-alt"></i>
                             Déconnexion
                         </button>
@@ -735,84 +869,101 @@
             </div>
         </header>
 
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <h1 class="hero-title">
+                        <i class="fas fa-chart-line"></i>
+                        Analytics EmailSortPro
+                    </h1>
+                    <p class="hero-subtitle">
+                        Tableau de bord complet pour analyser l'utilisation et gérer les utilisateurs
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Container -->
         <main class="container">
-            <!-- Stats -->
-            <div class="stats-grid">
+            <!-- Stats Cards -->
+            <div class="stats-grid" id="statsGrid">
                 <div class="stat-card">
                     <div class="stat-icon blue">
                         <i class="fas fa-users"></i>
                     </div>
-                    <div class="stat-value" id="statActiveUsers">0</div>
-                    <div class="stat-label">Utilisateurs actifs</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="statUsers">-</div>
+                        <div class="stat-label">Utilisateurs actifs</div>
+                    </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon green">
                         <i class="fas fa-search"></i>
                     </div>
-                    <div class="stat-value" id="statTotalScans">0</div>
-                    <div class="stat-label">Scans effectués</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="statScans">-</div>
+                        <div class="stat-label">Scans effectués</div>
+                    </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon red">
+                    <div class="stat-icon yellow">
                         <i class="fas fa-exclamation-triangle"></i>
                     </div>
-                    <div class="stat-value" id="statTotalErrors">0</div>
-                    <div class="stat-label">Erreurs détectées</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="statErrors">-</div>
+                        <div class="stat-label">Erreurs détectées</div>
+                    </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon purple">
                         <i class="fas fa-key"></i>
                     </div>
-                    <div class="stat-value" id="statActiveLicenses">0</div>
-                    <div class="stat-label">Licences actives</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="statLicenses">-</div>
+                        <div class="stat-label">Licences actives</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Tabs -->
-            <div class="tabs">
-                <div class="tab-nav">
-                    <button class="tab-btn active" onclick="switchTab('overview')">
-                        <i class="fas fa-chart-bar"></i> Vue d'ensemble
-                    </button>
-                    <button class="tab-btn" onclick="switchTab('users')">
-                        <i class="fas fa-users"></i> Utilisateurs
-                    </button>
-                    <button class="tab-btn" onclick="switchTab('licenses')">
-                        <i class="fas fa-key"></i> Licences
-                    </button>
-                    <button class="tab-btn" onclick="switchTab('billing')">
-                        <i class="fas fa-credit-card"></i> Facturation
-                    </button>
-                </div>
-
+            <!-- Content Container -->
+            <div class="main-content">
                 <!-- Overview Tab -->
-                <div class="tab-content active" id="overviewTab">
-                    <div class="loading">
+                <div class="tab-content active" data-content="overview">
+                    <div class="loading" id="overviewLoading">
                         <div class="spinner"></div>
+                    </div>
+                    <div id="overviewContent" style="display: none;">
+                        <!-- Le contenu analytics sera chargé ici -->
                     </div>
                 </div>
 
                 <!-- Users Tab -->
-                <div class="tab-content" id="usersTab">
-                    <div class="table-controls">
-                        <div class="search-box">
-                            <i class="fas fa-search search-icon"></i>
-                            <input type="text" class="search-input" placeholder="Rechercher..." onkeyup="filterData('users')">
+                <div class="tab-content" data-content="users" style="display: none;">
+                    <div class="content-header">
+                        <h2 class="content-title">Gestion des utilisateurs</h2>
+                        <div class="content-actions">
+                            <div class="search-box">
+                                <i class="fas fa-search search-icon"></i>
+                                <input 
+                                    type="text" 
+                                    class="search-input" 
+                                    placeholder="Rechercher..." 
+                                    id="userSearch"
+                                >
+                            </div>
+                            <select class="filter-select" id="userStatusFilter">
+                                <option value="">Tous les statuts</option>
+                                <option value="active">Actifs</option>
+                                <option value="trial">En essai</option>
+                                <option value="expired">Expirés</option>
+                            </select>
+                            <button class="btn btn-primary btn-sm" onclick="app.refreshUsers()">
+                                <i class="fas fa-sync-alt"></i>
+                                Actualiser
+                            </button>
                         </div>
-                        <select class="select" onchange="filterData('users')" id="usersStatusFilter">
-                            <option value="">Tous les statuts</option>
-                            <option value="active">Actif</option>
-                            <option value="trial">Essai</option>
-                            <option value="expired">Expiré</option>
-                        </select>
-                        <select class="select" onchange="filterData('users')" id="usersCompanyFilter">
-                            <option value="">Toutes les sociétés</option>
-                        </select>
-                        <button class="btn btn-primary" onclick="refreshData()">
-                            <i class="fas fa-sync-alt"></i> Actualiser
-                        </button>
                     </div>
-                    
                     <div class="table-wrapper">
                         <table class="table">
                             <thead>
@@ -821,758 +972,998 @@
                                     <th>Société</th>
                                     <th>Statut</th>
                                     <th>Dernière connexion</th>
-                                    <th>Scans</th>
+                                    <th>Licence</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="usersTableBody">
-                                <tr>
-                                    <td colspan="6" class="empty-state">
-                                        <i class="fas fa-spinner fa-spin"></i>
-                                        <p>Chargement...</p>
-                                    </td>
-                                </tr>
+                                <!-- Les utilisateurs seront chargés ici -->
                             </tbody>
                         </table>
+                        <div class="empty-state" id="usersEmpty" style="display: none;">
+                            <i class="fas fa-users"></i>
+                            <h3>Aucun utilisateur trouvé</h3>
+                            <p>Modifiez vos filtres ou actualisez la page</p>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Licenses Tab -->
-                <div class="tab-content" id="licensesTab">
-                    <div class="table-controls">
-                        <div class="search-box">
-                            <i class="fas fa-search search-icon"></i>
-                            <input type="text" class="search-input" placeholder="Rechercher..." onkeyup="filterData('licenses')">
+                <div class="tab-content" data-content="licenses" style="display: none;">
+                    <div class="content-header">
+                        <h2 class="content-title">Gestion des licences</h2>
+                        <div class="content-actions">
+                            <button class="btn btn-primary btn-sm" onclick="app.refreshLicenses()">
+                                <i class="fas fa-sync-alt"></i>
+                                Actualiser
+                            </button>
                         </div>
-                        <select class="select" onchange="filterData('licenses')" id="licensesStatusFilter">
-                            <option value="">Tous les statuts</option>
-                            <option value="active">Actif</option>
-                            <option value="trial">Essai</option>
-                            <option value="expired">Expiré</option>
-                        </select>
-                        <button class="btn btn-primary" onclick="refreshData()">
-                            <i class="fas fa-sync-alt"></i> Actualiser
-                        </button>
                     </div>
-                    
                     <div class="table-wrapper">
                         <table class="table">
                             <thead>
                                 <tr>
                                     <th>Utilisateur</th>
-                                    <th>Société</th>
+                                    <th>Type</th>
                                     <th>Statut</th>
-                                    <th>Début</th>
-                                    <th>Expiration</th>
+                                    <th>Date début</th>
+                                    <th>Date fin</th>
                                     <th>Jours restants</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="licensesTableBody">
-                                <tr>
-                                    <td colspan="7" class="empty-state">
-                                        <i class="fas fa-key"></i>
-                                        <p>Sélectionnez l'onglet pour charger les licences</p>
-                                    </td>
-                                </tr>
+                                <!-- Les licences seront chargées ici -->
                             </tbody>
                         </table>
+                        <div class="empty-state" id="licensesEmpty" style="display: none;">
+                            <i class="fas fa-key"></i>
+                            <h3>Aucune licence trouvée</h3>
+                            <p>Actualisez la page pour voir les licences</p>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Billing Tab -->
-                <div class="tab-content" id="billingTab">
-                    <div id="billingContent" class="loading">
-                        <div class="spinner"></div>
+                <div class="tab-content" data-content="billing" style="display: none;">
+                    <div id="billingContent">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center mt-4 mb-4" style="color: var(--gray-500); font-size: 0.875rem;">
+                <i class="fas fa-clock"></i>
+                Dernière mise à jour : <span id="lastUpdate">-</span>
             </div>
         </main>
     </div>
 
-    <!-- License Edit Modal -->
-    <div class="modal" id="licenseModal">
-        <div class="modal-content">
+    <!-- Modals -->
+    <!-- Account Type Modal -->
+    <div class="modal" id="accountTypeModal">
+        <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
-                <h2 class="modal-title">Modifier la licence</h2>
-                <button class="modal-close" onclick="closeLicenseModal()">
-                    <i class="fas fa-times"></i>
+                <h2 class="modal-title">Configuration du compte</h2>
+            </div>
+            <div class="modal-body">
+                <p class="mb-4">Choisissez le type de compte pour configurer l'accès aux analytics :</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                    <label class="account-type-option" style="border: 2px solid var(--gray-200); padding: 20px; border-radius: 8px; cursor: pointer; text-align: center;">
+                        <input type="radio" name="accountType" value="individual" style="margin-bottom: 8px;">
+                        <i class="fas fa-user" style="font-size: 2rem; color: var(--primary); display: block; margin-bottom: 8px;"></i>
+                        <h4 style="margin-bottom: 4px;">Personnel</h4>
+                        <p style="font-size: 0.875rem; color: var(--gray-500);">Gérer votre licence personnelle</p>
+                    </label>
+                    
+                    <label class="account-type-option" style="border: 2px solid var(--gray-200); padding: 20px; border-radius: 8px; cursor: pointer; text-align: center;">
+                        <input type="radio" name="accountType" value="professional" style="margin-bottom: 8px;">
+                        <i class="fas fa-building" style="font-size: 2rem; color: var(--primary); display: block; margin-bottom: 8px;"></i>
+                        <h4 style="margin-bottom: 4px;">Professionnel</h4>
+                        <p style="font-size: 0.875rem; color: var(--gray-500);">Gérer les licences de votre entreprise</p>
+                    </label>
+                </div>
+                
+                <div class="form-group" id="companyNameGroup" style="display: none;">
+                    <label class="form-label">Nom de l'entreprise</label>
+                    <input type="text" class="form-control" id="companyName" placeholder="Nom de votre entreprise">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="app.confirmAccountType()">
+                    Configurer l'accès
                 </button>
             </div>
-            <form onsubmit="saveLicense(event)">
-                <div class="modal-body">
-                    <input type="hidden" id="licenseUserId">
-                    
-                    <div class="form-group">
-                        <label class="form-label">Date de début</label>
-                        <input type="date" class="form-input" id="licenseStartDate" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Date d'expiration</label>
-                        <input type="date" class="form-input" id="licenseEndDate" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeLicenseModal()">
-                        Annuler
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Enregistrer
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="./config-supabase.js"></script>
-    <script src="./LicenceService.js"></script>
-    <script>
-        // App State
-        const APP = {
-            user: null,
-            users: [],
-            stats: {},
-            currentTab: 'overview',
-            filters: {
-                users: { search: '', status: '', company: '' },
-                licenses: { search: '', status: '' }
-            }
-        };
+    <!-- User Details Modal -->
+    <div class="modal" id="userDetailsModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title" id="userDetailsTitle">Détails utilisateur</h2>
+                <button class="modal-close" onclick="app.closeModal('userDetailsModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="userDetailsBody">
+                <!-- Les détails seront chargés ici -->
+            </div>
+        </div>
+    </div>
 
-        // Initialize
-        async function init() {
-            try {
-                await window.initializeSupabaseConfig();
-                await window.licenseService.initialize();
-                window.supabaseClient = window.licenseService.supabaseClient;
+    <script>
+        // Application principale
+        class AnalyticsApp {
+            constructor() {
+                this.supabaseClient = null;
+                this.currentUser = null;
+                this.users = [];
+                this.currentTab = 'overview';
+                this.licenseService = null;
                 
-                // Check session
-                const session = sessionStorage.getItem('analyticsAuth');
-                if (session) {
-                    const { email, timestamp } = JSON.parse(session);
-                    if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
-                        const user = await authenticateUser(email);
-                        if (user) {
-                            APP.user = user;
-                            showApp();
+                this.init();
+            }
+
+            async init() {
+                // Vérifier la session
+                const session = this.getSession();
+                if (session && Date.now() - session.timestamp < 24 * 60 * 60 * 1000) {
+                    await this.loadDependencies();
+                    const result = await this.licenseService.authenticateWithEmail(session.email);
+                    if (result.valid && result.user) {
+                        this.currentUser = result.user;
+                        this.showApp();
+                        return;
+                    }
+                }
+                
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                // Auth form
+                document.getElementById('authForm').addEventListener('submit', (e) => this.handleAuth(e));
+                
+                // Navigation
+                document.querySelectorAll('.nav-item').forEach(btn => {
+                    btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
+                });
+                
+                // Filters
+                document.getElementById('userSearch').addEventListener('input', () => this.filterUsers());
+                document.getElementById('userStatusFilter').addEventListener('change', () => this.filterUsers());
+                
+                // Account type selection
+                document.querySelectorAll('input[name="accountType"]').forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        document.getElementById('companyNameGroup').style.display = 
+                            e.target.value === 'professional' ? 'block' : 'none';
+                    });
+                });
+            }
+
+            async loadDependencies() {
+                // Charger Supabase
+                if (!window.supabase) {
+                    await this.loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+                }
+                
+                // Charger la configuration
+                await this.loadScript('./config-supabase.js');
+                await this.loadScript('./LicenceService.js');
+                
+                // Initialiser
+                await window.initializeSupabaseConfig();
+                const config = window.supabaseConfig.getConfig();
+                
+                this.supabaseClient = window.supabase.createClient(config.url, config.anonKey, {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: false,
+                        detectSessionInUrl: false
+                    }
+                });
+                
+                this.licenseService = window.licenseService;
+                await this.licenseService.initialize();
+            }
+
+            loadScript(src) {
+                return new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = src;
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+            }
+
+            async handleAuth(event) {
+                event.preventDefault();
+                
+                const email = document.getElementById('authEmail').value.trim();
+                const button = event.target.querySelector('button[type="submit"]');
+                const originalText = button.innerHTML;
+                
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
+                
+                try {
+                    await this.loadDependencies();
+                    
+                    const result = await this.licenseService.authenticateWithEmail(email);
+                    
+                    if (result.valid || result.user) {
+                        const user = result.user;
+                        
+                        // Vérifier le type de compte
+                        if (!user.account_type || (user.account_type === 'professional' && user.role === 'user')) {
+                            this.pendingUser = user;
+                            this.showModal('accountTypeModal');
+                            button.disabled = false;
+                            button.innerHTML = originalText;
                             return;
                         }
-                    }
-                }
-                sessionStorage.removeItem('analyticsAuth');
-            } catch (error) {
-                console.error('Init error:', error);
-            }
-        }
-
-        // Authentication
-        async function handleAuth(event) {
-            event.preventDefault();
-            const email = document.getElementById('authEmail').value.trim();
-            const btn = document.getElementById('authBtn');
-            const btnText = document.getElementById('authBtnText');
-            const spinner = document.getElementById('authSpinner');
-            
-            btn.disabled = true;
-            btnText.style.display = 'none';
-            spinner.style.display = 'block';
-            
-            try {
-                const user = await authenticateUser(email);
-                
-                if (user) {
-                    if (!user.account_type) {
-                        // New user or needs configuration
-                        APP.pendingUser = user;
-                        showAccountTypeModal();
-                    } else if (canAccessAnalytics(user)) {
-                        APP.user = user;
-                        showApp();
+                        
+                        // Vérifier les permissions
+                        if (this.hasAdminAccess(user)) {
+                            this.currentUser = user;
+                            this.saveSession(email);
+                            this.showMessage('success', 'Connexion réussie !');
+                            setTimeout(() => this.showApp(), 1000);
+                        } else {
+                            this.showMessage('error', 'Accès réservé aux administrateurs');
+                        }
                     } else {
-                        // Show appropriate error with admin contact
-                        await showAccessError(user);
+                        this.showMessage('error', result.message || 'Email non trouvé');
                     }
-                } else {
-                    // Create new user
-                    const newUser = await createUser(email);
-                    if (newUser) {
-                        APP.pendingUser = newUser;
-                        showAccountTypeModal();
+                    
+                } catch (error) {
+                    console.error('Auth error:', error);
+                    this.showMessage('error', 'Erreur de connexion');
+                } finally {
+                    button.disabled = false;
+                    button.innerHTML = originalText;
+                }
+            }
+
+            async confirmAccountType() {
+                const accountType = document.querySelector('input[name="accountType"]:checked')?.value;
+                const companyName = document.getElementById('companyName').value.trim();
+                
+                if (!accountType) {
+                    alert('Veuillez sélectionner un type de compte');
+                    return;
+                }
+                
+                if (accountType === 'professional' && !companyName) {
+                    alert('Veuillez entrer le nom de votre entreprise');
+                    return;
+                }
+                
+                try {
+                    const result = await this.licenseService.setUserAccountType(
+                        this.pendingUser.id,
+                        accountType === 'individual' ? 'individual' : 'professional',
+                        companyName || null
+                    );
+                    
+                    if (result.success) {
+                        this.closeModal('accountTypeModal');
+                        
+                        // Recharger l'utilisateur
+                        const authResult = await this.licenseService.authenticateWithEmail(this.pendingUser.email);
+                        
+                        if (authResult.valid && this.hasAdminAccess(authResult.user)) {
+                            this.currentUser = authResult.user;
+                            this.saveSession(this.pendingUser.email);
+                            this.showApp();
+                        } else {
+                            this.showMessage('error', 'Configuration réussie. Contactez votre administrateur pour l\'accès aux analytics.');
+                        }
                     }
-                }
-            } catch (error) {
-                showMessage('Erreur de connexion', 'error');
-            } finally {
-                btn.disabled = false;
-                btnText.style.display = 'block';
-                spinner.style.display = 'none';
-            }
-        }
-
-        async function authenticateUser(email) {
-            try {
-                // Try license service first
-                const result = await window.licenseService.authenticateWithEmail(email);
-                if (result.user) return result.user;
-                
-                // Fallback to direct query
-                const { data } = await window.supabaseClient
-                    .from('users')
-                    .select('*')
-                    .eq('email', email)
-                    .single();
-                
-                return data;
-            } catch (error) {
-                console.error('Auth error:', error);
-                return null;
-            }
-        }
-
-        function canAccessAnalytics(user) {
-            // Individual accounts always have access
-            if (user.account_type === 'individual') return true;
-            // Admins have access
-            if (user.role === 'super_admin' || user.role === 'company_admin') return true;
-            return false;
-        }
-
-        async function showAccessError(user) {
-            let message = 'Accès réservé aux administrateurs.';
-            
-            if (user.company_id) {
-                const admin = await getCompanyAdmin(user.company_id);
-                if (admin) {
-                    message = `Accès réservé aux administrateurs. Contactez ${admin.email}${admin.name ? ' (' + admin.name + ')' : ''} pour obtenir les droits.`;
+                } catch (error) {
+                    console.error('Account type error:', error);
+                    alert('Erreur lors de la configuration');
                 }
             }
-            
-            if (user.license_status === 'expired' && user.account_type !== 'individual') {
-                message = 'Votre licence a expiré. ' + message;
-            }
-            
-            showMessage(message, 'error');
-        }
 
-        async function getCompanyAdmin(companyId) {
-            try {
-                const { data } = await window.supabaseClient
-                    .from('users')
-                    .select('email, name')
-                    .eq('company_id', companyId)
-                    .eq('role', 'company_admin')
-                    .limit(1);
+            hasAdminAccess(user) {
+                return user.role === 'super_admin' || 
+                       user.role === 'company_admin' || 
+                       user.account_type === 'individual';
+            }
+
+            showApp() {
+                document.getElementById('authPage').style.display = 'none';
+                document.getElementById('appPage').classList.add('active');
                 
-                return data?.[0] || null;
-            } catch (error) {
-                return null;
-            }
-        }
-
-        async function createUser(email) {
-            try {
-                const { data, error } = await window.supabaseClient
-                    .from('users')
-                    .insert({
-                        email,
-                        name: email.split('@')[0],
-                        role: 'user',
-                        license_status: 'trial',
-                        license_expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-                        license_starts_at: new Date().toISOString()
-                    })
-                    .select()
-                    .single();
+                // Mettre à jour les infos utilisateur
+                const initials = (this.currentUser.name || this.currentUser.email)
+                    .split(/[\s@]/)[0][0].toUpperCase();
                 
-                if (!error) {
-                    showMessage('Compte créé avec succès !', 'success');
-                    return data;
-                }
-            } catch (error) {
-                console.error('Create user error:', error);
-            }
-            return null;
-        }
-
-        // Account Type Selection
-        function showAccountTypeModal() {
-            document.getElementById('accountTypeModal').classList.add('active');
-        }
-
-        function selectAccountType(type) {
-            document.querySelectorAll('.account-type-option').forEach(opt => {
-                opt.classList.toggle('selected', opt.dataset.type === type);
-            });
-            
-            document.getElementById('companyNameGroup').style.display = 
-                type === 'professional' ? 'block' : 'none';
-            
-            APP.selectedAccountType = type;
-        }
-
-        async function confirmAccountType() {
-            if (!APP.selectedAccountType) {
-                alert('Veuillez sélectionner un type de compte');
-                return;
-            }
-            
-            const companyName = document.getElementById('companyName').value.trim();
-            if (APP.selectedAccountType === 'professional' && !companyName) {
-                alert('Veuillez entrer le nom de votre entreprise');
-                return;
-            }
-            
-            try {
-                const result = await window.licenseService.setUserAccountType(
-                    APP.pendingUser.id,
-                    APP.selectedAccountType,
-                    companyName || null
-                );
+                document.getElementById('userAvatar').textContent = initials;
+                document.getElementById('userEmail').textContent = this.currentUser.email;
+                document.getElementById('userRole').textContent = 
+                    this.currentUser.role === 'super_admin' ? 'Super Admin' :
+                    this.currentUser.role === 'company_admin' ? 'Admin Société' :
+                    this.currentUser.account_type === 'individual' ? 'Personnel' : 'Utilisateur';
                 
-                if (result.success) {
-                    // Refresh user data
-                    const user = await authenticateUser(APP.pendingUser.email);
-                    if (user && canAccessAnalytics(user)) {
-                        APP.user = user;
-                        document.getElementById('accountTypeModal').classList.remove('active');
-                        showApp();
-                    } else {
-                        document.getElementById('accountTypeModal').classList.remove('active');
-                        showMessage('Compte configuré. Contactez votre administrateur pour accéder aux analytics.', 'info');
-                    }
-                }
-            } catch (error) {
-                alert('Erreur lors de la configuration');
+                this.loadOverview();
+                this.updateLastUpdate();
             }
-        }
 
-        // Show App
-        function showApp() {
-            document.getElementById('authScreen').style.display = 'none';
-            document.getElementById('appScreen').classList.add('active');
-            
-            // Update user info
-            document.getElementById('userEmail').textContent = APP.user.email;
-            const role = APP.user.account_type === 'individual' ? 'Personnel' :
-                        APP.user.role === 'super_admin' ? 'Super Admin' :
-                        APP.user.role === 'company_admin' ? 'Admin' : 'User';
-            document.getElementById('userRole').textContent = role;
-            
-            // Save session
-            sessionStorage.setItem('analyticsAuth', JSON.stringify({
-                email: APP.user.email,
-                timestamp: Date.now()
-            }));
-            
-            // Load data
-            loadOverview();
-            loadUsers();
-        }
-
-        function logout() {
-            sessionStorage.removeItem('analyticsAuth');
-            window.location.reload();
-        }
-
-        function showMessage(text, type) {
-            const msg = document.getElementById('authMessage');
-            msg.className = `alert alert-${type}`;
-            msg.textContent = text;
-        }
-
-        // Tab Management
-        function switchTab(tab) {
-            APP.currentTab = tab;
-            
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.textContent.toLowerCase().includes(tab));
-            });
-            
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            
-            document.getElementById(`${tab}Tab`).classList.add('active');
-            
-            // Load tab data
-            if (tab === 'licenses' && APP.users.length > 0) {
-                renderLicenses();
-            } else if (tab === 'billing') {
-                loadBilling();
-            }
-        }
-
-        // Load Overview
-        async function loadOverview() {
-            try {
-                const script = document.createElement('script');
-                script.src = './analytics.js';
-                script.onload = () => {
+            async loadOverview() {
+                const loading = document.getElementById('overviewLoading');
+                const content = document.getElementById('overviewContent');
+                
+                try {
+                    await this.loadScript('./analytics.js');
+                    
+                    loading.style.display = 'none';
+                    content.style.display = 'block';
+                    
+                    // Créer le conteneur pour analytics
+                    const pageContent = document.createElement('div');
+                    pageContent.id = 'pageContent';
+                    content.appendChild(pageContent);
+                    
+                    // Initialiser le module analytics
                     if (window.analyticsModule) {
-                        const content = document.getElementById('overviewTab');
-                        content.innerHTML = '<div id="pageContent"></div>';
                         window.analyticsModule.render();
                     }
-                };
-                document.head.appendChild(script);
-            } catch (error) {
-                console.error('Overview error:', error);
-            }
-        }
-
-        // Load Users
-        async function loadUsers() {
-            try {
-                let query = window.supabaseClient
-                    .from('users')
-                    .select(`
-                        *,
-                        company:companies(name, domain)
-                    `);
-                
-                // Apply filters based on user role
-                if (APP.user.account_type === 'individual') {
-                    query = query.eq('id', APP.user.id);
-                } else if (APP.user.role === 'company_admin' && APP.user.company_id) {
-                    query = query.eq('company_id', APP.user.company_id);
+                    
+                    // Charger les stats
+                    await this.loadUsers();
+                    this.updateStats();
+                    
+                } catch (error) {
+                    console.error('Overview error:', error);
+                    loading.innerHTML = '<p style="color: var(--danger);">Erreur de chargement</p>';
                 }
-                
-                const { data: users } = await query.order('created_at', { ascending: false });
-                
-                if (users) {
-                    // Load stats
-                    const { data: stats } = await window.supabaseClient
+            }
+
+            async loadUsers() {
+                try {
+                    let query = this.supabaseClient
+                        .from('users')
+                        .select(`
+                            *,
+                            company:companies(id, name, domain)
+                        `)
+                        .order('created_at', { ascending: false });
+                    
+                    // Appliquer les filtres selon le rôle
+                    if (this.currentUser.account_type === 'individual') {
+                        query = query.eq('id', this.currentUser.id);
+                    } else if (this.currentUser.role === 'company_admin' && this.currentUser.company_id) {
+                        query = query.eq('company_id', this.currentUser.company_id);
+                    }
+                    
+                    const { data, error } = await query;
+                    
+                    if (!error) {
+                        this.users = data || [];
+                        
+                        // Charger les stats
+                        await this.loadUserStats();
+                    }
+                    
+                } catch (error) {
+                    console.error('Load users error:', error);
+                    this.users = [];
+                }
+            }
+
+            async loadUserStats() {
+                try {
+                    let query = this.supabaseClient
                         .from('user_email_stats')
                         .select('*');
                     
-                    // Merge stats
-                    APP.users = users.map(user => {
-                        const userStats = stats?.find(s => s.email === user.email);
-                        return {
-                            ...user,
-                            total_scans: userStats?.total_emails_scanned || 0,
-                            total_errors: userStats?.total_errors || 0
-                        };
-                    });
+                    if (this.currentUser.account_type === 'individual') {
+                        query = query.eq('email', this.currentUser.email);
+                    } else if (this.currentUser.role === 'company_admin' && this.currentUser.company_id) {
+                        const { data: company } = await this.supabaseClient
+                            .from('companies')
+                            .select('domain')
+                            .eq('id', this.currentUser.company_id)
+                            .single();
+                        
+                        if (company && company.domain) {
+                            query = query.eq('domain', company.domain);
+                        }
+                    }
                     
-                    updateStats();
-                    populateFilters();
-                    renderUsers();
+                    const { data: stats } = await query;
+                    
+                    if (stats) {
+                        this.users = this.users.map(user => {
+                            const userStats = stats.find(s => s.email === user.email);
+                            return {
+                                ...user,
+                                total_scans: userStats?.total_emails_scanned || 0,
+                                total_errors: userStats?.total_errors || 0
+                            };
+                        });
+                    }
+                } catch (error) {
+                    console.error('Load stats error:', error);
                 }
-            } catch (error) {
-                console.error('Load users error:', error);
             }
-        }
 
-        // Update Stats
-        function updateStats() {
-            const active = APP.users.filter(u => u.license_status === 'active' || u.license_status === 'trial');
-            const totalScans = APP.users.reduce((sum, u) => sum + u.total_scans, 0);
-            const totalErrors = APP.users.reduce((sum, u) => sum + u.total_errors, 0);
-            const activeLicenses = APP.users.filter(u => u.license_status === 'active');
-            
-            document.getElementById('statActiveUsers').textContent = active.length;
-            document.getElementById('statTotalScans').textContent = totalScans.toLocaleString();
-            document.getElementById('statTotalErrors').textContent = totalErrors;
-            document.getElementById('statActiveLicenses').textContent = activeLicenses.length;
-        }
+            updateStats() {
+                const activeUsers = this.users.filter(u => 
+                    u.license_status === 'active' || u.license_status === 'trial'
+                ).length;
+                
+                const totalScans = this.users.reduce((sum, user) => 
+                    sum + (user.total_scans || 0), 0
+                );
+                
+                const totalErrors = this.users.reduce((sum, user) => 
+                    sum + (user.total_errors || 0), 0
+                );
+                
+                const activeLicenses = this.users.filter(u => 
+                    u.license_status === 'active'
+                ).length;
+                
+                document.getElementById('statUsers').textContent = activeUsers;
+                document.getElementById('statScans').textContent = totalScans.toLocaleString();
+                document.getElementById('statErrors').textContent = totalErrors;
+                document.getElementById('statLicenses').textContent = activeLicenses;
+            }
 
-        // Populate Filters
-        function populateFilters() {
-            const companies = [...new Set(APP.users.map(u => u.company?.name || u.domain || 'Sans société'))];
-            const select = document.getElementById('usersCompanyFilter');
-            
-            if (APP.user.account_type === 'individual') {
-                select.style.display = 'none';
-            } else {
-                select.innerHTML = '<option value="">Toutes les sociétés</option>';
-                companies.forEach(company => {
-                    select.innerHTML += `<option value="${company}">${company}</option>`;
+            switchTab(tabName) {
+                // Mettre à jour la navigation
+                document.querySelectorAll('.nav-item').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.tab === tabName);
                 });
-            }
-        }
-
-        // Filter Data
-        function filterData(type) {
-            const searchInput = event.target.closest('.table-controls').querySelector('.search-input');
-            const statusSelect = document.getElementById(`${type}StatusFilter`);
-            const companySelect = document.getElementById(`${type}CompanyFilter`);
-            
-            APP.filters[type] = {
-                search: searchInput?.value.toLowerCase() || '',
-                status: statusSelect?.value || '',
-                company: companySelect?.value || ''
-            };
-            
-            if (type === 'users') renderUsers();
-            else if (type === 'licenses') renderLicenses();
-        }
-
-        // Render Users
-        function renderUsers() {
-            const tbody = document.getElementById('usersTableBody');
-            const filters = APP.filters.users;
-            
-            const filtered = APP.users.filter(user => {
-                const name = user.name || user.email.split('@')[0];
-                const company = user.company?.name || user.domain || 'Sans société';
                 
-                const matchSearch = !filters.search || 
-                    name.toLowerCase().includes(filters.search) ||
-                    user.email.toLowerCase().includes(filters.search) ||
-                    company.toLowerCase().includes(filters.search);
+                // Mettre à jour le contenu
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.style.display = content.dataset.content === tabName ? 'block' : 'none';
+                });
                 
-                const matchStatus = !filters.status || user.license_status === filters.status;
-                const matchCompany = !filters.company || company === filters.company;
+                this.currentTab = tabName;
                 
-                return matchSearch && matchStatus && matchCompany;
-            });
-            
-            if (filtered.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="empty-state">
-                            <i class="fas fa-users"></i>
-                            <p>Aucun utilisateur trouvé</p>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-            
-            tbody.innerHTML = filtered.map(user => {
-                const name = user.name || user.email.split('@')[0];
-                const initials = name.split(/[\s@]/).map(n => n[0]).join('').toUpperCase().slice(0, 2);
-                const company = user.company?.name || user.domain || 'Sans société';
-                const status = user.license_status || 'trial';
-                const lastLogin = formatDate(user.last_login_at);
-                
-                const canEdit = APP.user.role === 'super_admin' || 
-                    (APP.user.role === 'company_admin' && APP.user.company_id === user.company_id) ||
-                    (APP.user.account_type === 'individual' && APP.user.id === user.id);
-                
-                const canDelete = APP.user.role === 'super_admin' || 
-                    (APP.user.role === 'company_admin' && APP.user.company_id === user.company_id && user.id !== APP.user.id);
-                
-                return `
-                    <tr>
-                        <td>
-                            <div class="user-cell">
-                                <div class="user-avatar">${initials}</div>
-                                <div class="user-info">
-                                    <h4>${name}</h4>
-                                    <p>${user.email}</p>
-                                </div>
-                            </div>
-                        </td>
-                        <td>${company}</td>
-                        <td><span class="badge badge-${status === 'active' ? 'success' : status === 'trial' ? 'warning' : 'danger'}">${status}</span></td>
-                        <td>${lastLogin}</td>
-                        <td>${user.total_scans || 0}</td>
-                        <td>
-                            <div class="action-buttons">
-                                ${canEdit ? `<button class="btn btn-secondary btn-sm" onclick="editLicense('${user.id}')"><i class="fas fa-edit"></i></button>` : ''}
-                                ${canDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${user.id}')"><i class="fas fa-trash"></i></button>` : ''}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        // Render Licenses
-        function renderLicenses() {
-            const tbody = document.getElementById('licensesTableBody');
-            const filters = APP.filters.licenses;
-            
-            const filtered = APP.users.filter(user => {
-                const name = user.name || user.email.split('@')[0];
-                const company = user.company?.name || user.domain || 'Sans société';
-                
-                const matchSearch = !filters.search || 
-                    name.toLowerCase().includes(filters.search) ||
-                    user.email.toLowerCase().includes(filters.search) ||
-                    company.toLowerCase().includes(filters.search);
-                
-                const matchStatus = !filters.status || user.license_status === filters.status;
-                
-                return matchSearch && matchStatus;
-            });
-            
-            tbody.innerHTML = filtered.map(user => {
-                const name = user.name || user.email.split('@')[0];
-                const initials = name.split(/[\s@]/).map(n => n[0]).join('').toUpperCase().slice(0, 2);
-                const company = user.company?.name || user.domain || 'Sans société';
-                const status = user.license_status || 'trial';
-                const startDate = formatDate(user.license_starts_at);
-                const endDate = formatDate(user.license_expires_at);
-                const daysLeft = calculateDaysLeft(user.license_expires_at);
-                
-                const canEdit = APP.user.role === 'super_admin';
-                
-                return `
-                    <tr>
-                        <td>
-                            <div class="user-cell">
-                                <div class="user-avatar">${initials}</div>
-                                <div class="user-info">
-                                    <h4>${name}</h4>
-                                    <p>${user.email}</p>
-                                </div>
-                            </div>
-                        </td>
-                        <td>${company}</td>
-                        <td><span class="badge badge-${status === 'active' ? 'success' : status === 'trial' ? 'warning' : 'danger'}">${status}</span></td>
-                        <td>${startDate}</td>
-                        <td>${endDate}</td>
-                        <td>${daysLeft}</td>
-                        <td>
-                            <div class="action-buttons">
-                                ${canEdit ? `<button class="btn btn-primary btn-sm" onclick="editLicense('${user.id}')"><i class="fas fa-edit"></i></button>` : ''}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        // Load Billing
-        function loadBilling() {
-            const content = document.getElementById('billingContent');
-            const activeUsers = APP.users.filter(u => u.license_status === 'active' || u.license_status === 'trial');
-            const revenue = activeUsers.length * 9.90 * 1.20;
-            
-            content.innerHTML = `
-                <div style="max-width: 800px; margin: 0 auto;">
-                    <div style="text-align: center; margin-bottom: 40px;">
-                        <h2 style="font-size: 2rem; margin-bottom: 8px;">Facturation</h2>
-                        <p style="color: var(--gray-500);">Vue d'ensemble de vos revenus</p>
-                    </div>
-                    
-                    <div class="stats-grid" style="margin-bottom: 40px;">
-                        <div class="stat-card">
-                            <div class="stat-icon green">
-                                <i class="fas fa-euro-sign"></i>
-                            </div>
-                            <div class="stat-value">${revenue.toFixed(2)} €</div>
-                            <div class="stat-label">Revenus mensuels</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon blue">
-                                <i class="fas fa-users"></i>
-                            </div>
-                            <div class="stat-value">${activeUsers.length}</div>
-                            <div class="stat-label">Utilisateurs payants</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon purple">
-                                <i class="fas fa-chart-line"></i>
-                            </div>
-                            <div class="stat-value">${(revenue * 12).toFixed(2)} €</div>
-                            <div class="stat-label">Projection annuelle</div>
-                        </div>
-                    </div>
-                    
-                    <div style="text-align: center;">
-                        <button class="btn btn-primary" onclick="alert('Export en développement')">
-                            <i class="fas fa-download"></i> Exporter les données
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        // License Management
-        function editLicense(userId) {
-            const user = APP.users.find(u => u.id === userId);
-            if (!user) return;
-            
-            document.getElementById('licenseUserId').value = userId;
-            document.getElementById('licenseStartDate').value = 
-                user.license_starts_at ? user.license_starts_at.split('T')[0] : '';
-            document.getElementById('licenseEndDate').value = 
-                user.license_expires_at ? user.license_expires_at.split('T')[0] : '';
-            
-            document.getElementById('licenseModal').classList.add('active');
-        }
-
-        function closeLicenseModal() {
-            document.getElementById('licenseModal').classList.remove('active');
-        }
-
-        async function saveLicense(event) {
-            event.preventDefault();
-            
-            const userId = document.getElementById('licenseUserId').value;
-            const startDate = document.getElementById('licenseStartDate').value;
-            const endDate = document.getElementById('licenseEndDate').value;
-            
-            try {
-                const result = await window.licenseService.updateUserLicenseDates(userId, startDate, endDate);
-                
-                if (result.success) {
-                    closeLicenseModal();
-                    await loadUsers();
-                    if (APP.currentTab === 'licenses') renderLicenses();
-                    alert('Licence mise à jour');
-                } else {
-                    alert('Erreur : ' + result.error);
+                // Charger le contenu si nécessaire
+                if (tabName === 'users') {
+                    this.renderUsers();
+                } else if (tabName === 'licenses') {
+                    this.renderLicenses();
+                } else if (tabName === 'billing') {
+                    this.loadBilling();
                 }
-            } catch (error) {
-                alert('Erreur lors de la mise à jour');
             }
-        }
 
-        async function deleteUser(userId) {
-            const user = APP.users.find(u => u.id === userId);
-            if (!user || !confirm(`Supprimer ${user.email} ?`)) return;
-            
-            try {
-                await window.supabaseClient.from('user_email_stats').delete().eq('email', user.email);
-                await window.supabaseClient.from('users').delete().eq('id', userId);
+            filterUsers() {
+                const search = document.getElementById('userSearch').value.toLowerCase();
+                const status = document.getElementById('userStatusFilter').value;
                 
-                await loadUsers();
-                alert('Utilisateur supprimé');
-            } catch (error) {
-                alert('Erreur lors de la suppression');
+                const filtered = this.users.filter(user => {
+                    const matchesSearch = !search || 
+                        user.email.toLowerCase().includes(search) ||
+                        (user.name && user.name.toLowerCase().includes(search));
+                    
+                    const matchesStatus = !status || user.license_status === status;
+                    
+                    return matchesSearch && matchesStatus;
+                });
+                
+                this.renderUsersTable(filtered);
+            }
+
+            renderUsers() {
+                this.filterUsers();
+            }
+
+            renderUsersTable(users) {
+                const tbody = document.getElementById('usersTableBody');
+                const empty = document.getElementById('usersEmpty');
+                
+                if (users.length === 0) {
+                    tbody.innerHTML = '';
+                    empty.style.display = 'block';
+                    return;
+                }
+                
+                empty.style.display = 'none';
+                
+                tbody.innerHTML = users.map(user => {
+                    const initials = (user.name || user.email).split(/[\s@]/)[0].slice(0, 2).toUpperCase();
+                    const company = user.company?.name || 'Sans société';
+                    const lastLogin = this.formatDate(user.last_login_at);
+                    const daysRemaining = this.calculateDaysRemaining(user.license_expires_at);
+                    
+                    return `
+                        <tr>
+                            <td>
+                                <div class="table-user">
+                                    <div class="table-user-avatar">${initials}</div>
+                                    <div class="table-user-info">
+                                        <h4>${user.name || user.email.split('@')[0]}</h4>
+                                        <p>${user.email}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>${company}</td>
+                            <td>
+                                <span class="badge badge-${this.getStatusClass(user.license_status)}">
+                                    ${user.license_status || 'trial'}
+                                </span>
+                            </td>
+                            <td>${lastLogin}</td>
+                            <td>${daysRemaining}</td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="btn btn-secondary btn-sm" onclick="app.viewUser('${user.id}')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    ${this.canManageUser(user) ? `
+                                        <button class="btn btn-danger btn-sm" onclick="app.deleteUser('${user.id}')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            renderLicenses() {
+                const tbody = document.getElementById('licensesTableBody');
+                const empty = document.getElementById('licensesEmpty');
+                
+                const licenses = this.users.filter(u => u.license_expires_at);
+                
+                if (licenses.length === 0) {
+                    tbody.innerHTML = '';
+                    empty.style.display = 'block';
+                    return;
+                }
+                
+                empty.style.display = 'none';
+                
+                tbody.innerHTML = licenses.map(user => {
+                    const initials = (user.name || user.email).split(/[\s@]/)[0].slice(0, 2).toUpperCase();
+                    const type = user.account_type === 'individual' ? 'Personnel' : 'Professionnel';
+                    const startDate = this.formatDate(user.license_starts_at, true);
+                    const endDate = this.formatDate(user.license_expires_at, true);
+                    const daysRemaining = this.calculateDaysRemaining(user.license_expires_at);
+                    
+                    return `
+                        <tr>
+                            <td>
+                                <div class="table-user">
+                                    <div class="table-user-avatar">${initials}</div>
+                                    <div class="table-user-info">
+                                        <h4>${user.name || user.email.split('@')[0]}</h4>
+                                        <p>${user.email}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>${type}</td>
+                            <td>
+                                <span class="badge badge-${this.getStatusClass(user.license_status)}">
+                                    ${user.license_status || 'trial'}
+                                </span>
+                            </td>
+                            <td>${startDate}</td>
+                            <td>${endDate}</td>
+                            <td>${daysRemaining}</td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="btn btn-secondary btn-sm" onclick="app.viewUser('${user.id}')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            async loadBilling() {
+                const content = document.getElementById('billingContent');
+                
+                try {
+                    const stats = this.calculateBillingStats();
+                    
+                    content.innerHTML = `
+                        <div class="billing-grid">
+                            <div class="billing-card">
+                                <div class="billing-card-header">
+                                    <h3 class="billing-card-title">
+                                        <i class="fas fa-euro-sign"></i>
+                                        Chiffre d'affaires mensuel
+                                    </h3>
+                                </div>
+                                <div class="billing-amount">
+                                    <div class="billing-amount-value">${this.formatPrice(stats.total)}</div>
+                                    <div class="billing-amount-label">TTC / mois</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <button class="btn btn-primary">
+                                        <i class="fas fa-download"></i>
+                                        Télécharger la facture
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="billing-card">
+                                <div class="billing-card-header">
+                                    <h3 class="billing-card-title">
+                                        <i class="fas fa-users"></i>
+                                        Répartition des licences
+                                    </h3>
+                                </div>
+                                <div style="margin: 20px 0;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                        <span>Mensuelles (${stats.monthly} × 9,90€)</span>
+                                        <strong>${this.formatPrice(stats.monthlyTotal)}</strong>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                        <span>Annuelles (${stats.yearly} × 8,80€)</span>
+                                        <strong>${this.formatPrice(stats.yearlyTotal)}</strong>
+                                    </div>
+                                    <hr style="margin: 16px 0;">
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span>Total HT</span>
+                                        <strong>${this.formatPrice(stats.subtotal)}</strong>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span>TVA (20%)</span>
+                                        <strong>${this.formatPrice(stats.tax)}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="billing-card">
+                                <div class="billing-card-header">
+                                    <h3 class="billing-card-title">
+                                        <i class="fas fa-chart-line"></i>
+                                        Projections
+                                    </h3>
+                                </div>
+                                <div style="margin: 20px 0;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                        <span>Chiffre d'affaires annuel</span>
+                                        <strong>${this.formatPrice(stats.total * 12)}</strong>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span>Économies potentielles</span>
+                                        <strong>${this.formatPrice(stats.savings)}</strong>
+                                    </div>
+                                    <p style="font-size: 0.75rem; color: var(--gray-500); margin-top: 8px;">
+                                        En migrant tous les utilisateurs vers l'abonnement annuel
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                } catch (error) {
+                    console.error('Billing error:', error);
+                    content.innerHTML = '<p style="text-align: center; color: var(--danger);">Erreur de chargement</p>';
+                }
+            }
+
+            calculateBillingStats() {
+                const MONTHLY_PRICE = 9.90;
+                const YEARLY_PRICE = 8.80;
+                const TAX_RATE = 0.20;
+                
+                const activeUsers = this.users.filter(u => 
+                    u.license_status === 'active' || u.license_status === 'trial'
+                );
+                
+                let monthly = 0;
+                let yearly = 0;
+                
+                activeUsers.forEach(user => {
+                    if (user.billing_cycle === 'yearly') {
+                        yearly++;
+                    } else {
+                        monthly++;
+                    }
+                });
+                
+                const monthlyTotal = monthly * MONTHLY_PRICE;
+                const yearlyTotal = yearly * YEARLY_PRICE;
+                const subtotal = monthlyTotal + yearlyTotal;
+                const tax = subtotal * TAX_RATE;
+                const total = subtotal + tax;
+                const savings = monthly * ((MONTHLY_PRICE - YEARLY_PRICE) * 12);
+                
+                return {
+                    monthly,
+                    yearly,
+                    monthlyTotal,
+                    yearlyTotal,
+                    subtotal,
+                    tax,
+                    total,
+                    savings
+                };
+            }
+
+            async viewUser(userId) {
+                const user = this.users.find(u => u.id === userId);
+                if (!user) return;
+                
+                const modal = document.getElementById('userDetailsModal');
+                const title = document.getElementById('userDetailsTitle');
+                const body = document.getElementById('userDetailsBody');
+                
+                title.textContent = `Détails - ${user.name || user.email}`;
+                
+                body.innerHTML = `
+                    <div style="display: grid; gap: 24px;">
+                        <div>
+                            <h4 style="margin-bottom: 12px;">
+                                <i class="fas fa-user"></i> Informations générales
+                            </h4>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--gray-500);">Email</label>
+                                    <p style="font-weight: 600;">${user.email}</p>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--gray-500);">Société</label>
+                                    <p style="font-weight: 600;">${user.company?.name || 'Sans société'}</p>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--gray-500);">Rôle</label>
+                                    <p style="font-weight: 600;">${user.role || 'user'}</p>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--gray-500);">Type de compte</label>
+                                    <p style="font-weight: 600;">${user.account_type === 'individual' ? 'Personnel' : 'Professionnel'}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 style="margin-bottom: 12px;">
+                                <i class="fas fa-chart-line"></i> Statistiques
+                            </h4>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--gray-500);">Connexions</label>
+                                    <p style="font-weight: 600;">${user.login_count || 0}</p>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--gray-500);">Scans effectués</label>
+                                    <p style="font-weight: 600;">${user.total_scans || 0}</p>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--gray-500);">Première connexion</label>
+                                    <p style="font-weight: 600;">${this.formatDate(user.first_login_at) || 'Jamais'}</p>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--gray-500);">Dernière connexion</label>
+                                    <p style="font-weight: 600;">${this.formatDate(user.last_login_at) || 'Jamais'}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 style="margin-bottom: 12px;">
+                                <i class="fas fa-key"></i> Licence
+                            </h4>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--gray-500);">Statut</label>
+                                    <p><span class="badge badge-${this.getStatusClass(user.license_status)}">${user.license_status || 'trial'}</span></p>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--gray-500);">Jours restants</label>
+                                    <p style="font-weight: 600;">${this.calculateDaysRemaining(user.license_expires_at)}</p>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--gray-500);">Date de début</label>
+                                    <p style="font-weight: 600;">${this.formatDate(user.license_starts_at, true) || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.75rem; color: var(--gray-500);">Date d'expiration</label>
+                                    <p style="font-weight: 600;">${this.formatDate(user.license_expires_at, true) || 'N/A'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                this.showModal('userDetailsModal');
+            }
+
+            async deleteUser(userId) {
+                const user = this.users.find(u => u.id === userId);
+                if (!user) return;
+                
+                if (!confirm(`Êtes-vous sûr de vouloir supprimer ${user.email} ?`)) {
+                    return;
+                }
+                
+                try {
+                    // Supprimer les stats
+                    await this.supabaseClient
+                        .from('user_email_stats')
+                        .delete()
+                        .eq('email', user.email);
+                    
+                    // Supprimer l'utilisateur
+                    const { error } = await this.supabaseClient
+                        .from('users')
+                        .delete()
+                        .eq('id', userId);
+                    
+                    if (!error) {
+                        this.users = this.users.filter(u => u.id !== userId);
+                        this.updateStats();
+                        this.renderUsers();
+                        alert('Utilisateur supprimé avec succès');
+                    }
+                } catch (error) {
+                    console.error('Delete error:', error);
+                    alert('Erreur lors de la suppression');
+                }
+            }
+
+            async refreshUsers() {
+                await this.loadUsers();
+                this.updateStats();
+                this.renderUsers();
+                this.updateLastUpdate();
+            }
+
+            async refreshLicenses() {
+                await this.loadUsers();
+                this.renderLicenses();
+                this.updateLastUpdate();
+            }
+
+            // Fonctions utilitaires
+            formatDate(date, full = false) {
+                if (!date) return 'Jamais';
+                
+                const d = new Date(date);
+                
+                if (full) {
+                    return d.toLocaleDateString('fr-FR');
+                }
+                
+                const now = new Date();
+                const diff = now - d;
+                const days = Math.floor(diff / (24 * 60 * 60 * 1000));
+                
+                if (days === 0) return "Aujourd'hui";
+                if (days === 1) return "Hier";
+                if (days < 7) return `Il y a ${days} jours`;
+                
+                return d.toLocaleDateString('fr-FR');
+            }
+
+            calculateDaysRemaining(expirationDate) {
+                if (!expirationDate) return 'Illimitée';
+                
+                const now = new Date();
+                const expiry = new Date(expirationDate);
+                const diff = expiry - now;
+                const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
+                
+                if (days < 0) {
+                    return `Expirée depuis ${Math.abs(days)} jour${Math.abs(days) > 1 ? 's' : ''}`;
+                } else if (days === 0) {
+                    return 'Expire aujourd\'hui';
+                } else {
+                    return `${days} jour${days > 1 ? 's' : ''}`;
+                }
+            }
+
+            formatPrice(amount) {
+                return new Intl.NumberFormat('fr-FR', {
+                    style: 'currency',
+                    currency: 'EUR'
+                }).format(amount);
+            }
+
+            getStatusClass(status) {
+                switch (status) {
+                    case 'active': return 'success';
+                    case 'trial': return 'warning';
+                    case 'expired': return 'danger';
+                    default: return 'warning';
+                }
+            }
+
+            canManageUser(user) {
+                if (this.currentUser.role === 'super_admin') return true;
+                if (this.currentUser.role === 'company_admin' && 
+                    this.currentUser.company_id === user.company_id) return true;
+                if (this.currentUser.account_type === 'individual' && 
+                    this.currentUser.id === user.id) return true;
+                return false;
+            }
+
+            updateLastUpdate() {
+                document.getElementById('lastUpdate').textContent = 
+                    new Date().toLocaleString('fr-FR');
+            }
+
+            // Gestion des modals
+            showModal(modalId) {
+                document.getElementById(modalId).classList.add('active');
+            }
+
+            closeModal(modalId) {
+                document.getElementById(modalId).classList.remove('active');
+            }
+
+            // Messages
+            showMessage(type, message) {
+                const div = document.createElement('div');
+                div.className = `alert alert-${type} fade-in`;
+                div.textContent = message;
+                document.getElementById('authMessage').appendChild(div);
+                
+                setTimeout(() => div.remove(), 5000);
+            }
+
+            // Session
+            saveSession(email) {
+                sessionStorage.setItem('analyticsAuth', JSON.stringify({
+                    email,
+                    timestamp: Date.now()
+                }));
+            }
+
+            getSession() {
+                const session = sessionStorage.getItem('analyticsAuth');
+                return session ? JSON.parse(session) : null;
+            }
+
+            logout() {
+                sessionStorage.removeItem('analyticsAuth');
+                window.location.reload();
             }
         }
 
-        // Utilities
-        function formatDate(date) {
-            if (!date) return 'N/A';
-            const d = new Date(date);
-            const now = new Date();
-            const diff = now - d;
-            const days = Math.floor(diff / (24 * 60 * 60 * 1000));
+        // Initialiser l'application
+        const app = new AnalyticsApp();
+
+        // Exposer certaines méthodes globalement pour les onclick
+        window.app = {
+            logout: () => app.logout(),
+            refreshUsers: () => app.refreshUsers(),
+            refreshLicenses: () => app.refreshLicenses(),
+            viewUser: (id) => app.viewUser(id),
+            deleteUser: (id) => app.deleteUser(id),
+            confirmAccountType: () => app.confirmAccountType(),
+            closeModal: (id) => app.closeModal(id)
+        };
+
+        // Style pour les options de type de compte
+        const style = document.createElement('style');
+        style.textContent = `
+            .account-type-option:hover {
+                border-color: var(--primary) !important;
+                background: var(--gray-50);
+            }
             
-            if (days === 0) return "Aujourd'hui";
-            if (days === 1) return "Hier";
-            if (days < 7) return `Il y a ${days} jours`;
-            return d.toLocaleDateString('fr-FR');
-        }
-
-        function calculateDaysLeft(date) {
-            if (!date) return 'Illimitée';
-            const d = new Date(date);
-            const now = new Date();
-            const diff = d - now;
-            const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
-            
-            if (days < 0) return `Expirée (${Math.abs(days)}j)`;
-            if (days === 0) return 'Expire aujourd\'hui';
-            return `${days} jours`;
-        }
-
-        async function refreshData() {
-            await loadUsers();
-            if (APP.currentTab === 'licenses') renderLicenses();
-        }
-
-        // Initialize on load
-        init();
+            .account-type-option:has(input:checked) {
+                border-color: var(--primary) !important;
+                background: #f3e8ff;
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
