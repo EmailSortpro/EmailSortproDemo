@@ -4,110 +4,142 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analytics - EmailSortPro</title>
-    
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
+        /* Reset & Base */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        :root {
+            --primary: #4F46E5;
+            --primary-dark: #4338ca;
+            --secondary: #6366F1;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-800);
             line-height: 1.6;
         }
 
-        /* Base Components */
+        /* Utilities */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
         .btn {
             padding: 8px 16px;
             border: none;
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
             display: inline-flex;
             align-items: center;
             gap: 6px;
             font-size: 0.875rem;
+            text-decoration: none;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .btn-primary {
-            background: #4F46E5;
+            background: var(--primary);
             color: white;
         }
 
-        .btn-primary:hover {
-            background: #4338ca;
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-dark);
             transform: translateY(-1px);
         }
 
         .btn-secondary {
-            background: #f3f4f6;
-            color: #374151;
-            border: 1px solid #e5e7eb;
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border: 1px solid var(--gray-200);
         }
 
-        .btn-secondary:hover {
-            background: #e5e7eb;
+        .btn-secondary:hover:not(:disabled) {
+            background: var(--gray-200);
         }
 
         .btn-danger {
-            background: #ef4444;
+            background: var(--danger);
             color: white;
         }
 
-        .btn-danger:hover {
-            background: #dc2626;
+        .btn-danger:hover:not(:disabled) {
+            background: #b91c1c;
+        }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 0.75rem;
         }
 
         .badge {
-            padding: 3px 8px;
-            border-radius: 16px;
+            padding: 2px 8px;
+            border-radius: 12px;
             font-size: 0.7rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.03em;
         }
 
-        .badge-active { background: #dcfce7; color: #16a34a; }
-        .badge-trial { background: #fef3c7; color: #d97706; }
-        .badge-expired { background: #fef2f2; color: #dc2626; }
-        .badge-blocked { background: #f3f4f6; color: #6b7280; }
+        .badge-success { background: #dcfce7; color: var(--success); }
+        .badge-warning { background: #fef3c7; color: var(--warning); }
+        .badge-danger { background: #fef2f2; color: var(--danger); }
+        .badge-gray { background: var(--gray-100); color: var(--gray-600); }
 
         .loading {
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 200px;
-            flex-direction: column;
-            gap: 16px;
         }
 
         .spinner {
             width: 40px;
             height: 40px;
-            border: 3px solid #f3f4f6;
-            border-top: 3px solid #4F46E5;
+            border: 3px solid var(--gray-200);
+            border-top: 3px solid var(--primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
         }
 
-        /* Auth Container */
+        /* Auth Screen */
         .auth-container {
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
         }
 
         .auth-card {
@@ -117,13 +149,12 @@
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
             width: 100%;
             max-width: 400px;
-            text-align: center;
         }
 
         .auth-logo {
             width: 80px;
             height: 80px;
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             border-radius: 16px;
             display: flex;
             align-items: center;
@@ -136,97 +167,63 @@
         .auth-title {
             font-size: 1.875rem;
             font-weight: 700;
-            color: #1f2937;
+            text-align: center;
             margin-bottom: 8px;
         }
 
         .auth-subtitle {
-            color: #6b7280;
+            color: var(--gray-500);
+            text-align: center;
             margin-bottom: 32px;
         }
 
-        .auth-form {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+        .form-group {
+            margin-bottom: 16px;
         }
 
-        .auth-input {
-            padding: 12px 16px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.2s ease;
-        }
-
-        .auth-input:focus {
-            outline: none;
-            border-color: #4F46E5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
-
-        .auth-button {
-            padding: 12px 24px;
-            background: #4F46E5;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
+        .form-label {
+            display: block;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            margin-bottom: 4px;
+            font-size: 0.875rem;
         }
 
-        .auth-button:hover:not(:disabled) {
-            background: #4338ca;
-            transform: translateY(-1px);
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s;
         }
 
-        .auth-button:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-            transform: none;
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         }
 
         .alert {
             padding: 12px;
             border-radius: 8px;
-            font-size: 0.875rem;
             margin-top: 16px;
+            font-size: 0.875rem;
         }
 
-        .alert-error {
-            background: #fef2f2;
-            color: #dc2626;
-        }
+        .alert-error { background: #fef2f2; color: var(--danger); }
+        .alert-success { background: #dcfce7; color: var(--success); }
+        .alert-info { background: #dbeafe; color: #1d4ed8; }
 
-        .alert-success {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-
-        .alert-info {
-            background: #dbeafe;
-            color: #1d4ed8;
-            text-align: left;
-        }
-
-        /* Modal System */
+        /* Modal */
         .modal {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            inset: 0;
             background: rgba(0, 0, 0, 0.5);
             display: none;
             align-items: center;
             justify-content: center;
-            z-index: 10000;
+            z-index: 1000;
+            padding: 20px;
         }
 
         .modal.active {
@@ -235,7 +232,6 @@
 
         .modal-content {
             background: white;
-            padding: 32px;
             border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
             width: 100%;
@@ -245,32 +241,48 @@
         }
 
         .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--gray-200);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
         }
 
         .modal-title {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             font-weight: 700;
-            color: #1f2937;
         }
 
         .modal-close {
             background: none;
             border: none;
             cursor: pointer;
-            color: #6b7280;
-            font-size: 1.25rem;
-            padding: 4px;
-            border-radius: 4px;
-            transition: all 0.2s ease;
+            color: var(--gray-400);
+            font-size: 1.5rem;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s;
         }
 
         .modal-close:hover {
-            background: #f3f4f6;
-            color: #374151;
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
         }
 
         /* Account Type Selection */
@@ -281,168 +293,137 @@
             margin-bottom: 24px;
         }
 
-        .account-type-card {
-            border: 2px solid #e2e8f0;
+        .account-type-option {
+            border: 2px solid var(--gray-200);
             padding: 24px;
             border-radius: 12px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
             text-align: center;
         }
 
-        .account-type-card:hover {
-            border-color: #4F46E5;
-            background: #f8fafc;
+        .account-type-option:hover {
+            border-color: var(--primary);
+            background: var(--gray-50);
         }
 
-        .account-type-card.selected {
-            border-color: #4F46E5;
+        .account-type-option.selected {
+            border-color: var(--primary);
             background: #f3e8ff;
         }
 
-        .account-type-card i {
+        .account-type-option i {
             font-size: 2.5rem;
-            color: #4F46E5;
+            color: var(--primary);
             margin-bottom: 12px;
+            display: block;
         }
 
-        .account-type-card h3 {
+        .account-type-option h3 {
             font-size: 1.125rem;
             font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
 
-        .account-type-card p {
+        .account-type-option p {
             font-size: 0.875rem;
-            color: #6b7280;
-        }
-
-        .company-input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 1rem;
-            margin-bottom: 24px;
-            display: none;
-        }
-
-        .company-input.visible {
-            display: block;
+            color: var(--gray-500);
         }
 
         /* Main App */
         .app-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
             display: none;
+            min-height: 100vh;
         }
 
         .app-container.active {
             display: block;
         }
 
-        .back-link {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: white;
-            color: #4F46E5;
+        .app-header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 32px 0;
+            margin-bottom: 32px;
+        }
+
+        .app-header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .app-title {
+            font-size: 2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: rgba(255, 255, 255, 0.1);
             padding: 8px 16px;
             border-radius: 8px;
-            text-decoration: none;
+        }
+
+        .user-email {
             font-weight: 600;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border: 1px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-            z-index: 1000;
-            font-size: 0.9rem;
         }
 
-        .back-link:hover {
-            background: #f8fafc;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        .user-role {
+            padding: 4px 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
         }
 
-        .page-header {
-            text-align: center;
-            margin-bottom: 24px;
-            padding: 32px;
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-            color: white;
-            border-radius: 16px;
-            position: relative;
-        }
-
-        .page-header h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        .user-info {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            background: white;
-            padding: 6px 12px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.8rem;
-            color: #1f2937;
-        }
-
-        /* Stats Grid */
+        /* Stats Cards */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
         }
 
         .stat-card {
             background: white;
             border-radius: 12px;
-            padding: 20px;
-            text-align: center;
+            padding: 24px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .stat-icon {
             width: 48px;
             height: 48px;
-            border-radius: 50%;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 12px;
-            font-size: 1.25rem;
+            margin-bottom: 16px;
+            font-size: 1.5rem;
         }
 
-        .stat-icon.users { background: #dbeafe; color: #1d4ed8; }
-        .stat-icon.scans { background: #dcfce7; color: #16a34a; }
-        .stat-icon.errors { background: #fef2f2; color: #dc2626; }
-        .stat-icon.licenses { background: #f3e8ff; color: #7c3aed; }
+        .stat-icon.blue { background: #dbeafe; color: #1d4ed8; }
+        .stat-icon.green { background: #dcfce7; color: var(--success); }
+        .stat-icon.red { background: #fef2f2; color: var(--danger); }
+        .stat-icon.purple { background: #f3e8ff; color: #7c3aed; }
 
         .stat-value {
             font-size: 2rem;
             font-weight: 700;
-            color: #1f2937;
             margin-bottom: 4px;
         }
 
         .stat-label {
+            color: var(--gray-500);
             font-size: 0.875rem;
-            color: #64748b;
         }
 
         /* Tabs */
@@ -450,52 +431,102 @@
             background: white;
             border-radius: 12px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
             overflow: hidden;
         }
 
         .tab-nav {
             display: flex;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid var(--gray-200);
+            overflow-x: auto;
         }
 
         .tab-btn {
             flex: 1;
-            padding: 12px 20px;
+            padding: 12px 24px;
             background: none;
             border: none;
             cursor: pointer;
             font-weight: 600;
-            color: #64748b;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-size: 0.9rem;
+            color: var(--gray-500);
+            transition: all 0.2s;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .tab-btn:hover {
+            color: var(--gray-700);
+            background: var(--gray-50);
         }
 
         .tab-btn.active {
-            color: #4F46E5;
-            background: #f8fafc;
-            border-bottom: 2px solid #4F46E5;
+            color: var(--primary);
+            background: var(--gray-50);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary);
         }
 
         .tab-content {
             display: none;
-            padding: 20px;
+            padding: 24px;
         }
 
         .tab-content.active {
             display: block;
         }
 
+        /* Table Controls */
+        .table-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 0.875rem;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-400);
+        }
+
+        .select {
+            padding: 8px 12px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            background: white;
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+
         /* Table */
         .table-wrapper {
+            overflow-x: auto;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
+            border-radius: 8px;
+            border: 1px solid var(--gray-200);
         }
 
         .table {
@@ -507,99 +538,137 @@
         .table td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 0.875rem;
+            border-bottom: 1px solid var(--gray-200);
         }
 
         .table th {
-            background: #f8fafc;
+            background: var(--gray-50);
             font-weight: 600;
-            color: #374151;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            color: var(--gray-600);
         }
 
         .table tbody tr:hover {
-            background: #f8fafc;
+            background: var(--gray-50);
         }
 
-        /* Controls */
-        .controls {
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .user-cell {
             display: flex;
+            align-items: center;
             gap: 12px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .user-info h4 {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .user-info p {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px;
+            color: var(--gray-500);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
             margin-bottom: 16px;
-            flex-wrap: wrap;
-        }
-
-        .search-box {
-            flex: 1;
-            min-width: 200px;
-            position: relative;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 8px 12px 8px 32px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 0.875rem;
-        }
-
-        .search-box i {
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #9ca3af;
-            font-size: 0.875rem;
+            color: var(--gray-300);
         }
 
         /* Responsive */
         @media (max-width: 768px) {
+            .container {
+                padding: 0 16px;
+            }
+
+            .auth-card {
+                padding: 32px 24px;
+            }
+
             .account-types {
                 grid-template-columns: 1fr;
             }
 
-            .tab-nav {
+            .app-header-content {
                 flex-direction: column;
+                align-items: stretch;
             }
 
-            .controls {
+            .user-menu {
+                justify-content: center;
+            }
+
+            .tab-nav {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .tab-btn {
+                flex: 0 0 auto;
+            }
+
+            .table-controls {
                 flex-direction: column;
             }
 
             .search-box {
-                min-width: auto;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
+                min-width: 100%;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Auth Container -->
-    <div class="auth-container" id="authContainer">
+    <!-- Auth Screen -->
+    <div class="auth-container" id="authScreen">
         <div class="auth-card">
             <div class="auth-logo">
                 <i class="fas fa-chart-line"></i>
             </div>
             <h1 class="auth-title">Analytics EmailSortPro</h1>
-            <p class="auth-subtitle">Accès réservé aux administrateurs</p>
+            <p class="auth-subtitle">Tableau de bord d'administration</p>
             
-            <form class="auth-form" id="authForm">
-                <input 
-                    type="email" 
-                    class="auth-input" 
-                    id="authEmail" 
-                    placeholder="Votre adresse email"
-                    required
-                    autocomplete="email"
-                >
-                <button type="submit" class="auth-button" id="authButton">
-                    <span id="authButtonText">Se connecter</span>
+            <form id="authForm" onsubmit="handleAuth(event)">
+                <div class="form-group">
+                    <input 
+                        type="email" 
+                        class="form-input" 
+                        id="authEmail" 
+                        placeholder="Votre adresse email"
+                        required
+                    >
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;" id="authBtn">
+                    <span id="authBtnText">Se connecter</span>
                     <div class="spinner" id="authSpinner" style="display: none; width: 20px; height: 20px;"></div>
                 </button>
             </form>
@@ -612,158 +681,247 @@
     <div class="modal" id="accountTypeModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">Configuration de votre accès</h2>
+                <h2 class="modal-title">Configuration du compte</h2>
             </div>
-            
-            <p style="color: #6b7280; margin-bottom: 24px;">
-                Choisissez votre type de compte pour accéder aux analytics
-            </p>
-            
-            <div class="account-types">
-                <div class="account-type-card" onclick="selectAccountType('individual')">
-                    <i class="fas fa-user"></i>
-                    <h3>Personnel</h3>
-                    <p>Gérer votre licence personnelle</p>
+            <div class="modal-body">
+                <p style="margin-bottom: 24px; color: var(--gray-600);">
+                    Choisissez votre type de compte pour continuer
+                </p>
+                
+                <div class="account-types">
+                    <div class="account-type-option" onclick="selectAccountType('individual')" data-type="individual">
+                        <i class="fas fa-user"></i>
+                        <h3>Personnel</h3>
+                        <p>Pour gérer votre licence personnelle</p>
+                    </div>
+                    <div class="account-type-option" onclick="selectAccountType('professional')" data-type="professional">
+                        <i class="fas fa-building"></i>
+                        <h3>Professionnel</h3>
+                        <p>Pour gérer une entreprise</p>
+                    </div>
                 </div>
-                <div class="account-type-card" onclick="selectAccountType('professional')">
-                    <i class="fas fa-building"></i>
-                    <h3>Professionnel</h3>
-                    <p>Gérer les licences de votre entreprise</p>
+                
+                <div class="form-group" id="companyNameGroup" style="display: none;">
+                    <label class="form-label">Nom de votre entreprise</label>
+                    <input type="text" class="form-input" id="companyName" placeholder="Ex: Ma Société">
                 </div>
             </div>
-            
-            <input 
-                type="text" 
-                class="company-input" 
-                id="companyNameInput" 
-                placeholder="Nom de votre entreprise"
-            >
-            
-            <button class="btn btn-primary" style="width: 100%;" onclick="confirmAccountType()">
-                Configurer l'accès
-            </button>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="confirmAccountType()">
+                    Confirmer et continuer
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- Main App -->
-    <div class="app-container" id="appContainer">
-        <a href="./index.html" class="back-link">
-            <i class="fas fa-arrow-left"></i>
-            Retour à l'application
-        </a>
-
-        <div class="page-header">
-            <div class="user-info">
-                <span id="currentUserEmail">-</span>
-                <span class="badge badge-active" id="currentUserRole">-</span>
-                <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.7rem;" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> Déconnexion
-                </button>
-            </div>
-            
-            <h1>
-                <i class="fas fa-chart-line"></i>
-                Analytics EmailSortPro
-            </h1>
-            <p>Tableau de bord complet pour analyser et gérer votre application</p>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon users">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="stat-value" id="statUsers">-</div>
-                <div class="stat-label">Utilisateurs actifs</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon scans">
-                    <i class="fas fa-search"></i>
-                </div>
-                <div class="stat-value" id="statScans">-</div>
-                <div class="stat-label">Scans effectués</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon errors">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <div class="stat-value" id="statErrors">-</div>
-                <div class="stat-label">Erreurs détectées</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon licenses">
-                    <i class="fas fa-key"></i>
-                </div>
-                <div class="stat-value" id="statLicenses">-</div>
-                <div class="stat-label">Licences actives</div>
-            </div>
-        </div>
-
-        <div class="tabs">
-            <div class="tab-nav">
-                <button class="tab-btn active" onclick="switchTab('overview')">
-                    <i class="fas fa-chart-bar"></i>
-                    Vue d'ensemble
-                </button>
-                <button class="tab-btn" onclick="switchTab('users')">
-                    <i class="fas fa-users"></i>
-                    Utilisateurs
-                </button>
-                <button class="tab-btn" onclick="switchTab('billing')">
-                    <i class="fas fa-credit-card"></i>
-                    Facturation
-                </button>
-            </div>
-
-            <div class="tab-content active" id="overviewTab">
-                <div id="analyticsContent" class="loading">
-                    <div class="spinner"></div>
-                    <div>Chargement des analytics...</div>
-                </div>
-            </div>
-
-            <div class="tab-content" id="usersTab">
-                <div class="controls">
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Rechercher..." id="userSearch" onkeyup="filterUsers()">
+    <div class="app-container" id="appScreen">
+        <header class="app-header">
+            <div class="container">
+                <div class="app-header-content">
+                    <h1 class="app-title">
+                        <i class="fas fa-chart-line"></i>
+                        Analytics Dashboard
+                    </h1>
+                    <div class="user-menu">
+                        <span class="user-email" id="userEmail">-</span>
+                        <span class="user-role" id="userRole">-</span>
+                        <button class="btn btn-secondary btn-sm" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Déconnexion
+                        </button>
                     </div>
-                    <select class="btn btn-secondary" id="statusFilter" onchange="filterUsers()">
-                        <option value="">Tous les statuts</option>
-                        <option value="active">Actifs</option>
-                        <option value="trial">En essai</option>
-                        <option value="expired">Expirés</option>
-                    </select>
-                    <button class="btn btn-primary" onclick="refreshUsers()">
-                        <i class="fas fa-sync-alt"></i>
-                        Actualiser
+                </div>
+            </div>
+        </header>
+
+        <main class="container">
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-value" id="statActiveUsers">0</div>
+                    <div class="stat-label">Utilisateurs actifs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="stat-value" id="statTotalScans">0</div>
+                    <div class="stat-label">Scans effectués</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon red">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-value" id="statTotalErrors">0</div>
+                    <div class="stat-label">Erreurs détectées</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    <div class="stat-value" id="statActiveLicenses">0</div>
+                    <div class="stat-label">Licences actives</div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <div class="tab-nav">
+                    <button class="tab-btn active" onclick="switchTab('overview')">
+                        <i class="fas fa-chart-bar"></i> Vue d'ensemble
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('users')">
+                        <i class="fas fa-users"></i> Utilisateurs
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('licenses')">
+                        <i class="fas fa-key"></i> Licences
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('billing')">
+                        <i class="fas fa-credit-card"></i> Facturation
                     </button>
                 </div>
 
-                <div class="table-wrapper">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Utilisateur</th>
-                                <th>Statut</th>
-                                <th>Dernière connexion</th>
-                                <th>Licence</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="usersTableBody">
-                            <!-- Users will be loaded here -->
-                        </tbody>
-                    </table>
+                <!-- Overview Tab -->
+                <div class="tab-content active" id="overviewTab">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="tab-content" id="billingTab">
-                <div id="billingContent" class="loading">
-                    <div class="spinner"></div>
-                    <div>Chargement de la facturation...</div>
+                <!-- Users Tab -->
+                <div class="tab-content" id="usersTab">
+                    <div class="table-controls">
+                        <div class="search-box">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="search-input" placeholder="Rechercher..." onkeyup="filterData('users')">
+                        </div>
+                        <select class="select" onchange="filterData('users')" id="usersStatusFilter">
+                            <option value="">Tous les statuts</option>
+                            <option value="active">Actif</option>
+                            <option value="trial">Essai</option>
+                            <option value="expired">Expiré</option>
+                        </select>
+                        <select class="select" onchange="filterData('users')" id="usersCompanyFilter">
+                            <option value="">Toutes les sociétés</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="refreshData()">
+                            <i class="fas fa-sync-alt"></i> Actualiser
+                        </button>
+                    </div>
+                    
+                    <div class="table-wrapper">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Utilisateur</th>
+                                    <th>Société</th>
+                                    <th>Statut</th>
+                                    <th>Dernière connexion</th>
+                                    <th>Scans</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <tr>
+                                    <td colspan="6" class="empty-state">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        <p>Chargement...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Licenses Tab -->
+                <div class="tab-content" id="licensesTab">
+                    <div class="table-controls">
+                        <div class="search-box">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="search-input" placeholder="Rechercher..." onkeyup="filterData('licenses')">
+                        </div>
+                        <select class="select" onchange="filterData('licenses')" id="licensesStatusFilter">
+                            <option value="">Tous les statuts</option>
+                            <option value="active">Actif</option>
+                            <option value="trial">Essai</option>
+                            <option value="expired">Expiré</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="refreshData()">
+                            <i class="fas fa-sync-alt"></i> Actualiser
+                        </button>
+                    </div>
+                    
+                    <div class="table-wrapper">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Utilisateur</th>
+                                    <th>Société</th>
+                                    <th>Statut</th>
+                                    <th>Début</th>
+                                    <th>Expiration</th>
+                                    <th>Jours restants</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="licensesTableBody">
+                                <tr>
+                                    <td colspan="7" class="empty-state">
+                                        <i class="fas fa-key"></i>
+                                        <p>Sélectionnez l'onglet pour charger les licences</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Billing Tab -->
+                <div class="tab-content" id="billingTab">
+                    <div id="billingContent" class="loading">
+                        <div class="spinner"></div>
+                    </div>
                 </div>
             </div>
+        </main>
+    </div>
+
+    <!-- License Edit Modal -->
+    <div class="modal" id="licenseModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Modifier la licence</h2>
+                <button class="modal-close" onclick="closeLicenseModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form onsubmit="saveLicense(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="licenseUserId">
+                    
+                    <div class="form-group">
+                        <label class="form-label">Date de début</label>
+                        <input type="date" class="form-input" id="licenseStartDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Date d'expiration</label>
+                        <input type="date" class="form-input" id="licenseEndDate" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeLicenseModal()">
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -771,13 +929,16 @@
     <script src="./config-supabase.js"></script>
     <script src="./LicenceService.js"></script>
     <script>
-        // Global state
-        const state = {
+        // App State
+        const APP = {
             user: null,
             users: [],
-            selectedAccountType: null,
-            pendingUser: null,
-            currentTab: 'overview'
+            stats: {},
+            currentTab: 'overview',
+            filters: {
+                users: { search: '', status: '', company: '' },
+                licenses: { search: '', status: '' }
+            }
         };
 
         // Initialize
@@ -785,526 +946,633 @@
             try {
                 await window.initializeSupabaseConfig();
                 await window.licenseService.initialize();
-                
-                // Initialize supabaseClient global
                 window.supabaseClient = window.licenseService.supabaseClient;
                 
                 // Check session
                 const session = sessionStorage.getItem('analyticsAuth');
                 if (session) {
-                    const data = JSON.parse(session);
-                    if (Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
-                        const result = await window.licenseService.authenticateWithEmail(data.email);
-                        
-                        // Fallback to direct query if RPC fails
-                        if (!result.valid && result.status === 'not_found') {
-                            try {
-                                const { data: directUser } = await window.supabaseClient
-                                    .from('users')
-                                    .select('*')
-                                    .eq('email', data.email)
-                                    .single();
-                                
-                                if (directUser) {
-                                    result.user = directUser;
-                                    result.valid = checkAdminAccess(directUser);
-                                }
-                            } catch (error) {
-                                console.error('Session check error:', error);
-                            }
-                        }
-                        
-                        if (result.valid && result.user && checkAdminAccess(result.user)) {
-                            state.user = result.user;
+                    const { email, timestamp } = JSON.parse(session);
+                    if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+                        const user = await authenticateUser(email);
+                        if (user) {
+                            APP.user = user;
                             showApp();
                             return;
                         }
                     }
-                    sessionStorage.removeItem('analyticsAuth');
                 }
+                sessionStorage.removeItem('analyticsAuth');
             } catch (error) {
-                console.error('Initialization error:', error);
+                console.error('Init error:', error);
             }
         }
 
-        // Auth handlers
+        // Authentication
         async function handleAuth(event) {
             event.preventDefault();
-            
             const email = document.getElementById('authEmail').value.trim();
-            const button = document.getElementById('authButton');
-            const buttonText = document.getElementById('authButtonText');
+            const btn = document.getElementById('authBtn');
+            const btnText = document.getElementById('authBtnText');
             const spinner = document.getElementById('authSpinner');
             
-            button.disabled = true;
-            buttonText.style.display = 'none';
+            btn.disabled = true;
+            btnText.style.display = 'none';
             spinner.style.display = 'block';
             
             try {
-                const result = await window.licenseService.authenticateWithEmail(email);
+                const user = await authenticateUser(email);
                 
-                // Si la fonction RPC échoue, essayer une requête directe
-                if (!result.valid && result.status === 'not_found') {
-                    try {
-                        const { data: directUser, error: directError } = await window.supabaseClient
-                            .from('users')
-                            .select('*')
-                            .eq('email', email)
-                            .single();
-                        
-                        if (directUser && !directError) {
-                            // Utilisateur trouvé
-                            const now = new Date();
-                            const expiresAt = directUser.license_expires_at ? new Date(directUser.license_expires_at) : null;
-                            const isExpired = expiresAt && expiresAt < now;
-                            
-                            result.valid = !isExpired || checkAdminAccess(directUser);
-                            result.user = directUser;
-                            result.status = isExpired ? 'expired' : 'valid';
-                        }
-                    } catch (error) {
-                        console.error('Direct query error:', error);
-                    }
-                }
-                
-                if (result.valid && result.user) {
-                    // Check if account type is set
-                    if (!result.user.account_type || 
-                        (result.user.account_type === 'professional' && result.user.role === 'user' && !result.user.company_id)) {
-                        state.pendingUser = result.user;
+                if (user) {
+                    if (!user.account_type) {
+                        // New user or needs configuration
+                        APP.pendingUser = user;
                         showAccountTypeModal();
-                    } else if (checkAdminAccess(result.user)) {
-                        state.user = result.user;
+                    } else if (canAccessAnalytics(user)) {
+                        APP.user = user;
                         showApp();
                     } else {
-                        showAuthMessage('Accès réservé aux administrateurs. Contactez votre administrateur pour obtenir les droits.', 'error');
+                        // Show appropriate error with admin contact
+                        await showAccessError(user);
                     }
-                } else if (result.status === 'not_found' || (!result.valid && !result.user)) {
-                    // Create new account
-                    showAuthMessage(`Compte non trouvé. Création d'un nouveau compte...`, 'info');
-                    setTimeout(async () => {
-                        const newUser = await createNewUser(email);
-                        if (newUser) {
-                            state.pendingUser = newUser;
-                            showAccountTypeModal();
-                        }
-                    }, 1000);
-                } else if (result.status === 'expired') {
-                    showAuthMessage('Votre période d\'essai a expiré. Contactez votre administrateur pour renouveler votre licence.', 'error');
                 } else {
-                    showAuthMessage('Accès non autorisé', 'error');
+                    // Create new user
+                    const newUser = await createUser(email);
+                    if (newUser) {
+                        APP.pendingUser = newUser;
+                        showAccountTypeModal();
+                    }
                 }
             } catch (error) {
-                console.error('Auth error:', error);
-                showAuthMessage('Erreur de connexion', 'error');
+                showMessage('Erreur de connexion', 'error');
             } finally {
-                button.disabled = false;
-                buttonText.style.display = 'block';
+                btn.disabled = false;
+                btnText.style.display = 'block';
                 spinner.style.display = 'none';
             }
         }
-        
-        // Check admin access permissions
-        function checkAdminAccess(user) {
-            if (!user) return false;
-            
-            if (user.role === 'super_admin') return true;
-            if (user.role === 'company_admin') return true;
+
+        async function authenticateUser(email) {
+            try {
+                // Try license service first
+                const result = await window.licenseService.authenticateWithEmail(email);
+                if (result.user) return result.user;
+                
+                // Fallback to direct query
+                const { data } = await window.supabaseClient
+                    .from('users')
+                    .select('*')
+                    .eq('email', email)
+                    .single();
+                
+                return data;
+            } catch (error) {
+                console.error('Auth error:', error);
+                return null;
+            }
+        }
+
+        function canAccessAnalytics(user) {
+            // Individual accounts always have access
             if (user.account_type === 'individual') return true;
-            
+            // Admins have access
+            if (user.role === 'super_admin' || user.role === 'company_admin') return true;
             return false;
         }
 
-        async function createNewUser(email) {
+        async function showAccessError(user) {
+            let message = 'Accès réservé aux administrateurs.';
+            
+            if (user.company_id) {
+                const admin = await getCompanyAdmin(user.company_id);
+                if (admin) {
+                    message = `Accès réservé aux administrateurs. Contactez ${admin.email}${admin.name ? ' (' + admin.name + ')' : ''} pour obtenir les droits.`;
+                }
+            }
+            
+            if (user.license_status === 'expired' && user.account_type !== 'individual') {
+                message = 'Votre licence a expiré. ' + message;
+            }
+            
+            showMessage(message, 'error');
+        }
+
+        async function getCompanyAdmin(companyId) {
+            try {
+                const { data } = await window.supabaseClient
+                    .from('users')
+                    .select('email, name')
+                    .eq('company_id', companyId)
+                    .eq('role', 'company_admin')
+                    .limit(1);
+                
+                return data?.[0] || null;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        async function createUser(email) {
             try {
                 const { data, error } = await window.supabaseClient
                     .from('users')
                     .insert({
-                        email: email,
+                        email,
                         name: email.split('@')[0],
                         role: 'user',
                         license_status: 'trial',
                         license_expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-                        license_starts_at: new Date().toISOString(),
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
+                        license_starts_at: new Date().toISOString()
                     })
                     .select()
                     .single();
                 
-                if (!error && data) {
-                    showAuthMessage('Compte créé avec succès !', 'success');
+                if (!error) {
+                    showMessage('Compte créé avec succès !', 'success');
                     return data;
                 }
             } catch (error) {
-                console.error('Error creating user:', error);
+                console.error('Create user error:', error);
             }
             return null;
         }
 
+        // Account Type Selection
         function showAccountTypeModal() {
             document.getElementById('accountTypeModal').classList.add('active');
         }
 
         function selectAccountType(type) {
-            state.selectedAccountType = type;
-            
-            document.querySelectorAll('.account-type-card').forEach(card => {
-                card.classList.remove('selected');
+            document.querySelectorAll('.account-type-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.type === type);
             });
             
-            event.currentTarget.classList.add('selected');
+            document.getElementById('companyNameGroup').style.display = 
+                type === 'professional' ? 'block' : 'none';
             
-            const companyInput = document.getElementById('companyNameInput');
-            companyInput.classList.toggle('visible', type === 'professional');
+            APP.selectedAccountType = type;
         }
 
         async function confirmAccountType() {
-            if (!state.selectedAccountType) {
+            if (!APP.selectedAccountType) {
                 alert('Veuillez sélectionner un type de compte');
                 return;
             }
             
-            const companyName = document.getElementById('companyNameInput').value.trim();
-            
-            if (state.selectedAccountType === 'professional' && !companyName) {
+            const companyName = document.getElementById('companyName').value.trim();
+            if (APP.selectedAccountType === 'professional' && !companyName) {
                 alert('Veuillez entrer le nom de votre entreprise');
                 return;
             }
             
             try {
                 const result = await window.licenseService.setUserAccountType(
-                    state.pendingUser.id,
-                    state.selectedAccountType,
+                    APP.pendingUser.id,
+                    APP.selectedAccountType,
                     companyName || null
                 );
                 
                 if (result.success) {
-                    const refreshResult = await window.licenseService.authenticateWithEmail(state.pendingUser.email);
-                    
-                    // Fallback to direct query
-                    if (!refreshResult.valid && refreshResult.status === 'not_found') {
-                        try {
-                            const { data: directUser } = await window.supabaseClient
-                                .from('users')
-                                .select('*')
-                                .eq('id', state.pendingUser.id)
-                                .single();
-                            
-                            if (directUser) {
-                                refreshResult.user = directUser;
-                                refreshResult.valid = true;
-                            }
-                        } catch (error) {
-                            console.error('Refresh error:', error);
-                        }
-                    }
-                    
-                    if (refreshResult.user) {
-                        state.user = refreshResult.user;
+                    // Refresh user data
+                    const user = await authenticateUser(APP.pendingUser.email);
+                    if (user && canAccessAnalytics(user)) {
+                        APP.user = user;
                         document.getElementById('accountTypeModal').classList.remove('active');
-                        
-                        // Check admin access after account type setup
-                        if (checkAdminAccess(state.user)) {
-                            showApp();
-                        } else {
-                            // For professional accounts without admin rights
-                            showAuthMessage('Compte configuré. Contactez votre administrateur pour obtenir les droits d\'accès aux analytics.', 'info');
-                            setTimeout(() => {
-                                window.location.href = './index.html';
-                            }, 3000);
-                        }
+                        showApp();
+                    } else {
+                        document.getElementById('accountTypeModal').classList.remove('active');
+                        showMessage('Compte configuré. Contactez votre administrateur pour accéder aux analytics.', 'info');
                     }
-                } else {
-                    alert('Erreur lors de la configuration : ' + (result.error || 'Erreur inconnue'));
                 }
             } catch (error) {
-                console.error('Error setting account type:', error);
                 alert('Erreur lors de la configuration');
             }
         }
 
+        // Show App
         function showApp() {
-            document.getElementById('authContainer').style.display = 'none';
-            document.getElementById('appContainer').classList.add('active');
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('appScreen').classList.add('active');
             
-            document.getElementById('currentUserEmail').textContent = state.user.email;
-            document.getElementById('currentUserRole').textContent = 
-                state.user.account_type === 'individual' ? 'Personnel' : 
-                state.user.role === 'company_admin' ? 'Admin' : 
-                state.user.role === 'super_admin' ? 'Super Admin' : 'Pro';
+            // Update user info
+            document.getElementById('userEmail').textContent = APP.user.email;
+            const role = APP.user.account_type === 'individual' ? 'Personnel' :
+                        APP.user.role === 'super_admin' ? 'Super Admin' :
+                        APP.user.role === 'company_admin' ? 'Admin' : 'User';
+            document.getElementById('userRole').textContent = role;
             
+            // Save session
             sessionStorage.setItem('analyticsAuth', JSON.stringify({
-                email: state.user.email,
+                email: APP.user.email,
                 timestamp: Date.now()
             }));
             
-            loadAnalytics();
+            // Load data
+            loadOverview();
             loadUsers();
         }
 
         function logout() {
             sessionStorage.removeItem('analyticsAuth');
-            state.user = null;
-            state.users = [];
-            document.getElementById('appContainer').classList.remove('active');
-            document.getElementById('authContainer').style.display = 'flex';
-            document.getElementById('authEmail').value = '';
-            document.getElementById('authMessage').innerHTML = '';
+            window.location.reload();
         }
 
-        function showAuthMessage(message, type) {
-            const messageDiv = document.getElementById('authMessage');
-            messageDiv.className = `alert alert-${type}`;
-            messageDiv.textContent = message;
+        function showMessage(text, type) {
+            const msg = document.getElementById('authMessage');
+            msg.className = `alert alert-${type}`;
+            msg.textContent = text;
         }
 
-        // Tab management
-        function switchTab(tabName) {
-            state.currentTab = tabName;
+        // Tab Management
+        function switchTab(tab) {
+            APP.currentTab = tab;
             
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.toLowerCase().includes(tab));
+            });
             
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            document.getElementById(`${tabName}Tab`).classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
             
-            if (tabName === 'billing') {
+            document.getElementById(`${tab}Tab`).classList.add('active');
+            
+            // Load tab data
+            if (tab === 'licenses' && APP.users.length > 0) {
+                renderLicenses();
+            } else if (tab === 'billing') {
                 loadBilling();
             }
         }
 
-        // Load analytics
-        async function loadAnalytics() {
+        // Load Overview
+        async function loadOverview() {
             try {
                 const script = document.createElement('script');
                 script.src = './analytics.js';
                 script.onload = () => {
                     if (window.analyticsModule) {
+                        const content = document.getElementById('overviewTab');
+                        content.innerHTML = '<div id="pageContent"></div>';
                         window.analyticsModule.render();
-                        document.getElementById('analyticsContent').innerHTML = '<div id="pageContent"></div>';
                     }
                 };
                 document.head.appendChild(script);
             } catch (error) {
-                console.error('Error loading analytics:', error);
+                console.error('Overview error:', error);
             }
         }
 
-        // Load users
+        // Load Users
         async function loadUsers() {
             try {
-                // Ensure supabaseClient is available
-                const client = window.supabaseClient || window.licenseService?.supabaseClient;
-                if (!client) {
-                    console.error('Supabase client not available');
-                    return;
+                let query = window.supabaseClient
+                    .from('users')
+                    .select(`
+                        *,
+                        company:companies(name, domain)
+                    `);
+                
+                // Apply filters based on user role
+                if (APP.user.account_type === 'individual') {
+                    query = query.eq('id', APP.user.id);
+                } else if (APP.user.role === 'company_admin' && APP.user.company_id) {
+                    query = query.eq('company_id', APP.user.company_id);
                 }
                 
-                let query = client.from('users').select(`
-                    id,
-                    email,
-                    name,
-                    role,
-                    license_status,
-                    license_expires_at,
-                    license_starts_at,
-                    company_id,
-                    first_login_at,
-                    last_login_at,
-                    login_count,
-                    created_at,
-                    updated_at,
-                    account_type
-                `);
+                const { data: users } = await query.order('created_at', { ascending: false });
                 
-                // Filter based on user type
-                if (state.user.account_type === 'individual') {
-                    query = query.eq('id', state.user.id);
-                } else if (state.user.role === 'company_admin' && state.user.company_id) {
-                    query = query.eq('company_id', state.user.company_id);
-                } else if (state.user.role !== 'super_admin') {
-                    query = query.eq('id', state.user.id);
-                }
-                
-                const { data, error } = await query.order('created_at', { ascending: false });
-                
-                if (!error && data) {
-                    state.users = data;
+                if (users) {
+                    // Load stats
+                    const { data: stats } = await window.supabaseClient
+                        .from('user_email_stats')
+                        .select('*');
                     
-                    // Load user stats
-                    await loadUserStats(client);
-                    
-                    updateStats();
-                    renderUsers();
-                } else if (error) {
-                    console.error('Error loading users:', error);
-                    state.users = [];
-                    renderUsers();
-                }
-            } catch (error) {
-                console.error('Error loading users:', error);
-                state.users = [];
-                renderUsers();
-            }
-        }
-        
-        // Load user stats
-        async function loadUserStats(client) {
-            try {
-                let query = client.from('user_email_stats').select('*');
-                
-                // Filter stats based on user type
-                if (state.user.account_type === 'individual') {
-                    query = query.eq('email', state.user.email);
-                } else if (state.user.role === 'company_admin' && state.user.company_id) {
-                    // Get company domain
-                    const { data: company } = await client
-                        .from('companies')
-                        .select('domain')
-                        .eq('id', state.user.company_id)
-                        .single();
-                    
-                    if (company && company.domain) {
-                        query = query.eq('domain', company.domain);
-                    }
-                } else if (state.user.role !== 'super_admin') {
-                    query = query.eq('email', state.user.email);
-                }
-                
-                const { data: stats, error } = await query;
-                
-                if (!error && stats) {
-                    // Merge stats with users
-                    state.users = state.users.map(user => {
-                        const userStats = stats.find(s => s.email === user.email);
+                    // Merge stats
+                    APP.users = users.map(user => {
+                        const userStats = stats?.find(s => s.email === user.email);
                         return {
                             ...user,
                             total_scans: userStats?.total_emails_scanned || 0,
-                            total_sessions: userStats?.total_sessions || 0,
                             total_errors: userStats?.total_errors || 0
                         };
                     });
+                    
+                    updateStats();
+                    populateFilters();
+                    renderUsers();
                 }
             } catch (error) {
-                console.error('Error loading user stats:', error);
+                console.error('Load users error:', error);
             }
         }
 
+        // Update Stats
         function updateStats() {
-            const active = state.users.filter(u => u.license_status === 'active' || u.license_status === 'trial').length;
-            const licenses = state.users.filter(u => u.license_status === 'active').length;
-            const totalScans = state.users.reduce((sum, user) => sum + (user.total_scans || 0), 0);
-            const totalErrors = state.users.reduce((sum, user) => sum + (user.total_errors || 0), 0);
+            const active = APP.users.filter(u => u.license_status === 'active' || u.license_status === 'trial');
+            const totalScans = APP.users.reduce((sum, u) => sum + u.total_scans, 0);
+            const totalErrors = APP.users.reduce((sum, u) => sum + u.total_errors, 0);
+            const activeLicenses = APP.users.filter(u => u.license_status === 'active');
             
-            document.getElementById('statUsers').textContent = active;
-            document.getElementById('statScans').textContent = totalScans.toLocaleString();
-            document.getElementById('statErrors').textContent = totalErrors;
-            document.getElementById('statLicenses').textContent = licenses;
+            document.getElementById('statActiveUsers').textContent = active.length;
+            document.getElementById('statTotalScans').textContent = totalScans.toLocaleString();
+            document.getElementById('statTotalErrors').textContent = totalErrors;
+            document.getElementById('statActiveLicenses').textContent = activeLicenses.length;
         }
 
-        function filterUsers() {
-            const search = document.getElementById('userSearch').value.toLowerCase();
-            const status = document.getElementById('statusFilter').value;
+        // Populate Filters
+        function populateFilters() {
+            const companies = [...new Set(APP.users.map(u => u.company?.name || u.domain || 'Sans société'))];
+            const select = document.getElementById('usersCompanyFilter');
             
-            const filtered = state.users.filter(user => {
-                const matchesSearch = user.email.toLowerCase().includes(search) || 
-                                    (user.name || '').toLowerCase().includes(search);
-                const matchesStatus = !status || user.license_status === status;
-                return matchesSearch && matchesStatus;
+            if (APP.user.account_type === 'individual') {
+                select.style.display = 'none';
+            } else {
+                select.innerHTML = '<option value="">Toutes les sociétés</option>';
+                companies.forEach(company => {
+                    select.innerHTML += `<option value="${company}">${company}</option>`;
+                });
+            }
+        }
+
+        // Filter Data
+        function filterData(type) {
+            const searchInput = event.target.closest('.table-controls').querySelector('.search-input');
+            const statusSelect = document.getElementById(`${type}StatusFilter`);
+            const companySelect = document.getElementById(`${type}CompanyFilter`);
+            
+            APP.filters[type] = {
+                search: searchInput?.value.toLowerCase() || '',
+                status: statusSelect?.value || '',
+                company: companySelect?.value || ''
+            };
+            
+            if (type === 'users') renderUsers();
+            else if (type === 'licenses') renderLicenses();
+        }
+
+        // Render Users
+        function renderUsers() {
+            const tbody = document.getElementById('usersTableBody');
+            const filters = APP.filters.users;
+            
+            const filtered = APP.users.filter(user => {
+                const name = user.name || user.email.split('@')[0];
+                const company = user.company?.name || user.domain || 'Sans société';
+                
+                const matchSearch = !filters.search || 
+                    name.toLowerCase().includes(filters.search) ||
+                    user.email.toLowerCase().includes(filters.search) ||
+                    company.toLowerCase().includes(filters.search);
+                
+                const matchStatus = !filters.status || user.license_status === filters.status;
+                const matchCompany = !filters.company || company === filters.company;
+                
+                return matchSearch && matchStatus && matchCompany;
             });
             
-            renderUsers(filtered);
-        }
-
-        function renderUsers(users = state.users) {
-            const tbody = document.getElementById('usersTableBody');
-            
-            if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #6b7280;">Aucun utilisateur trouvé</td></tr>';
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            <i class="fas fa-users"></i>
+                            <p>Aucun utilisateur trouvé</p>
+                        </td>
+                    </tr>
+                `;
                 return;
             }
             
-            tbody.innerHTML = users.map(user => {
+            tbody.innerHTML = filtered.map(user => {
                 const name = user.name || user.email.split('@')[0];
-                const lastLogin = user.last_login_at ? 
-                    new Date(user.last_login_at).toLocaleDateString('fr-FR') : 
-                    'Jamais';
+                const initials = name.split(/[\s@]/).map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                const company = user.company?.name || user.domain || 'Sans société';
                 const status = user.license_status || 'trial';
-                const badgeClass = `badge-${status}`;
+                const lastLogin = formatDate(user.last_login_at);
+                
+                const canEdit = APP.user.role === 'super_admin' || 
+                    (APP.user.role === 'company_admin' && APP.user.company_id === user.company_id) ||
+                    (APP.user.account_type === 'individual' && APP.user.id === user.id);
+                
+                const canDelete = APP.user.role === 'super_admin' || 
+                    (APP.user.role === 'company_admin' && APP.user.company_id === user.company_id && user.id !== APP.user.id);
                 
                 return `
                     <tr>
                         <td>
-                            <div><strong>${name}</strong></div>
-                            <div style="font-size: 0.75rem; color: #6b7280;">${user.email}</div>
+                            <div class="user-cell">
+                                <div class="user-avatar">${initials}</div>
+                                <div class="user-info">
+                                    <h4>${name}</h4>
+                                    <p>${user.email}</p>
+                                </div>
+                            </div>
                         </td>
-                        <td><span class="badge ${badgeClass}">${status}</span></td>
+                        <td>${company}</td>
+                        <td><span class="badge badge-${status === 'active' ? 'success' : status === 'trial' ? 'warning' : 'danger'}">${status}</span></td>
                         <td>${lastLogin}</td>
-                        <td>${user.license_expires_at ? new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 'N/A'}</td>
+                        <td>${user.total_scans || 0}</td>
                         <td>
-                            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;">
-                                <i class="fas fa-eye"></i> Détails
-                            </button>
+                            <div class="action-buttons">
+                                ${canEdit ? `<button class="btn btn-secondary btn-sm" onclick="editLicense('${user.id}')"><i class="fas fa-edit"></i></button>` : ''}
+                                ${canDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${user.id}')"><i class="fas fa-trash"></i></button>` : ''}
+                            </div>
                         </td>
                     </tr>
                 `;
             }).join('');
         }
 
-        async function refreshUsers() {
-            await loadUsers();
+        // Render Licenses
+        function renderLicenses() {
+            const tbody = document.getElementById('licensesTableBody');
+            const filters = APP.filters.licenses;
+            
+            const filtered = APP.users.filter(user => {
+                const name = user.name || user.email.split('@')[0];
+                const company = user.company?.name || user.domain || 'Sans société';
+                
+                const matchSearch = !filters.search || 
+                    name.toLowerCase().includes(filters.search) ||
+                    user.email.toLowerCase().includes(filters.search) ||
+                    company.toLowerCase().includes(filters.search);
+                
+                const matchStatus = !filters.status || user.license_status === filters.status;
+                
+                return matchSearch && matchStatus;
+            });
+            
+            tbody.innerHTML = filtered.map(user => {
+                const name = user.name || user.email.split('@')[0];
+                const initials = name.split(/[\s@]/).map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                const company = user.company?.name || user.domain || 'Sans société';
+                const status = user.license_status || 'trial';
+                const startDate = formatDate(user.license_starts_at);
+                const endDate = formatDate(user.license_expires_at);
+                const daysLeft = calculateDaysLeft(user.license_expires_at);
+                
+                const canEdit = APP.user.role === 'super_admin';
+                
+                return `
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-avatar">${initials}</div>
+                                <div class="user-info">
+                                    <h4>${name}</h4>
+                                    <p>${user.email}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${company}</td>
+                        <td><span class="badge badge-${status === 'active' ? 'success' : status === 'trial' ? 'warning' : 'danger'}">${status}</span></td>
+                        <td>${startDate}</td>
+                        <td>${endDate}</td>
+                        <td>${daysLeft}</td>
+                        <td>
+                            <div class="action-buttons">
+                                ${canEdit ? `<button class="btn btn-primary btn-sm" onclick="editLicense('${user.id}')"><i class="fas fa-edit"></i></button>` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
-        // Load billing
-        async function loadBilling() {
+        // Load Billing
+        function loadBilling() {
             const content = document.getElementById('billingContent');
+            const activeUsers = APP.users.filter(u => u.license_status === 'active' || u.license_status === 'trial');
+            const revenue = activeUsers.length * 9.90 * 1.20;
             
-            try {
-                const activeUsers = state.users.filter(u => 
-                    u.license_status === 'active' || u.license_status === 'trial'
-                ).length;
-                
-                const monthlyRevenue = activeUsers * 9.90 * 1.20;
-                
-                content.innerHTML = `
-                    <div style="max-width: 600px; margin: 0 auto; text-align: center;">
-                        <h2 style="font-size: 1.5rem; margin-bottom: 24px;">Résumé de facturation</h2>
-                        
-                        <div style="background: #f8fafc; padding: 32px; border-radius: 12px; margin-bottom: 24px;">
-                            <div style="font-size: 3rem; font-weight: 700; color: #1f2937; margin-bottom: 8px;">
-                                ${monthlyRevenue.toFixed(2)} €
+            content.innerHTML = `
+                <div style="max-width: 800px; margin: 0 auto;">
+                    <div style="text-align: center; margin-bottom: 40px;">
+                        <h2 style="font-size: 2rem; margin-bottom: 8px;">Facturation</h2>
+                        <p style="color: var(--gray-500);">Vue d'ensemble de vos revenus</p>
+                    </div>
+                    
+                    <div class="stats-grid" style="margin-bottom: 40px;">
+                        <div class="stat-card">
+                            <div class="stat-icon green">
+                                <i class="fas fa-euro-sign"></i>
                             </div>
-                            <div style="color: #6b7280;">Chiffre d'affaires mensuel</div>
+                            <div class="stat-value">${revenue.toFixed(2)} €</div>
+                            <div class="stat-label">Revenus mensuels</div>
                         </div>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
-                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;">
-                                <div style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">${activeUsers}</div>
-                                <div style="font-size: 0.875rem; color: #6b7280;">Utilisateurs actifs</div>
+                        <div class="stat-card">
+                            <div class="stat-icon blue">
+                                <i class="fas fa-users"></i>
                             </div>
-                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;">
-                                <div style="font-size: 1.5rem; font-weight: 700; color: #1f2937;">9,90 €</div>
-                                <div style="font-size: 0.875rem; color: #6b7280;">Prix par utilisateur</div>
-                            </div>
+                            <div class="stat-value">${activeUsers.length}</div>
+                            <div class="stat-label">Utilisateurs payants</div>
                         </div>
-                        
-                        <button class="btn btn-primary" style="width: 100%;">
-                            <i class="fas fa-credit-card"></i>
-                            Gérer la facturation
+                        <div class="stat-card">
+                            <div class="stat-icon purple">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="stat-value">${(revenue * 12).toFixed(2)} €</div>
+                            <div class="stat-label">Projection annuelle</div>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <button class="btn btn-primary" onclick="alert('Export en développement')">
+                            <i class="fas fa-download"></i> Exporter les données
                         </button>
                     </div>
-                `;
+                </div>
+            `;
+        }
+
+        // License Management
+        function editLicense(userId) {
+            const user = APP.users.find(u => u.id === userId);
+            if (!user) return;
+            
+            document.getElementById('licenseUserId').value = userId;
+            document.getElementById('licenseStartDate').value = 
+                user.license_starts_at ? user.license_starts_at.split('T')[0] : '';
+            document.getElementById('licenseEndDate').value = 
+                user.license_expires_at ? user.license_expires_at.split('T')[0] : '';
+            
+            document.getElementById('licenseModal').classList.add('active');
+        }
+
+        function closeLicenseModal() {
+            document.getElementById('licenseModal').classList.remove('active');
+        }
+
+        async function saveLicense(event) {
+            event.preventDefault();
+            
+            const userId = document.getElementById('licenseUserId').value;
+            const startDate = document.getElementById('licenseStartDate').value;
+            const endDate = document.getElementById('licenseEndDate').value;
+            
+            try {
+                const result = await window.licenseService.updateUserLicenseDates(userId, startDate, endDate);
+                
+                if (result.success) {
+                    closeLicenseModal();
+                    await loadUsers();
+                    if (APP.currentTab === 'licenses') renderLicenses();
+                    alert('Licence mise à jour');
+                } else {
+                    alert('Erreur : ' + result.error);
+                }
             } catch (error) {
-                content.innerHTML = '<div style="text-align: center; color: #dc2626;">Erreur de chargement</div>';
+                alert('Erreur lors de la mise à jour');
             }
         }
 
-        // Event listeners
-        document.getElementById('authForm').addEventListener('submit', handleAuth);
+        async function deleteUser(userId) {
+            const user = APP.users.find(u => u.id === userId);
+            if (!user || !confirm(`Supprimer ${user.email} ?`)) return;
+            
+            try {
+                await window.supabaseClient.from('user_email_stats').delete().eq('email', user.email);
+                await window.supabaseClient.from('users').delete().eq('id', userId);
+                
+                await loadUsers();
+                alert('Utilisateur supprimé');
+            } catch (error) {
+                alert('Erreur lors de la suppression');
+            }
+        }
+
+        // Utilities
+        function formatDate(date) {
+            if (!date) return 'N/A';
+            const d = new Date(date);
+            const now = new Date();
+            const diff = now - d;
+            const days = Math.floor(diff / (24 * 60 * 60 * 1000));
+            
+            if (days === 0) return "Aujourd'hui";
+            if (days === 1) return "Hier";
+            if (days < 7) return `Il y a ${days} jours`;
+            return d.toLocaleDateString('fr-FR');
+        }
+
+        function calculateDaysLeft(date) {
+            if (!date) return 'Illimitée';
+            const d = new Date(date);
+            const now = new Date();
+            const diff = d - now;
+            const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
+            
+            if (days < 0) return `Expirée (${Math.abs(days)}j)`;
+            if (days === 0) return 'Expire aujourd\'hui';
+            return `${days} jours`;
+        }
+
+        async function refreshData() {
+            await loadUsers();
+            if (APP.currentTab === 'licenses') renderLicenses();
+        }
 
         // Initialize on load
-        document.addEventListener('DOMContentLoaded', init);
+        init();
     </script>
 </body>
 </html>
