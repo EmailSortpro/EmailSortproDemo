@@ -2110,11 +2110,19 @@
                 
                 const result = await licenseService.authenticateWithEmail(email);
                 
-                if (result.valid) {
-                    const needsAccountTypeSetup = !hasAccountTypeBeenSet(result.user);
+                if (result.valid || (result.status === 'expired' && result.user)) {
+                    // Permettre l'accès même si expiré pour les admins
+                    const user = result.user;
+                    
+                    if (!user) {
+                        showAuthMessage('Erreur lors de la récupération des informations utilisateur', 'error');
+                        return;
+                    }
+                    
+                    const needsAccountTypeSetup = !hasAccountTypeBeenSet(user);
                     
                     if (needsAccountTypeSetup) {
-                        pendingUser = result.user;
+                        pendingUser = user;
                         
                         button.disabled = false;
                         buttonText.style.display = 'block';
@@ -2125,7 +2133,7 @@
                         const modalTitle = document.querySelector('.account-type-title');
                         const modalSubtitle = document.querySelector('.account-type-subtitle');
                         
-                        if (result.user.account_type === 'professional' && result.user.role === 'user') {
+                        if (user.account_type === 'professional' && user.role === 'user') {
                             modalTitle.textContent = 'Reconfiguration de votre accès Analytics';
                             modalSubtitle.textContent = 'Votre compte professionnel actuel n\'a pas accès aux analytics. Choisissez votre type d\'accès :';
                         } else {
@@ -2133,8 +2141,8 @@
                             modalSubtitle.textContent = 'Pour accéder aux analytics, vous devez configurer votre type d\'accès';
                         }
                         
-                        if (result.user.account_type) {
-                            selectAccountType(result.user.account_type);
+                        if (user.account_type) {
+                            selectAccountType(user.account_type);
                         } else {
                             selectedAccountType = null;
                             document.getElementById('personalOption').classList.remove('selected');
@@ -2146,27 +2154,51 @@
                         return;
                     }
                     
-                    const hasAccess = checkAdminAccess(result.user);
+                    const hasAccess = checkAdminAccess(user);
                     
+                    // Vérifier si c'est un admin même avec compte expiré
                     if (hasAccess) {
-                        authenticatedUser = result.user;
+                        authenticatedUser = user;
                         licenseService.currentUser = authenticatedUser;
                         
-                        showAuthMessage('Connexion réussie !', 'success');
+                        if (result.status === 'expired') {
+                            showAuthMessage('⚠️ Votre période d\'essai a expiré. Vous avez accès aux analytics en tant qu\'administrateur.', 'info');
+                        } else {
+                            showAuthMessage('Connexion réussie !', 'success');
+                        }
                         
                         setTimeout(() => {
                             showAnalytics();
                         }, 1000);
+                    } else if (result.status === 'expired') {
+                        // Utilisateur non-admin avec compte expiré
+                        if (user.company_id) {
+                            const adminInfo = await getCompanyAdminInfo(user.company_id);
+                            if (adminInfo) {
+                                showAuthMessage(
+                                    'Votre période d\'essai a expiré.',
+                                    'error',
+                                    {
+                                        title: 'Contactez l\'administrateur de votre société pour renouveler votre licence :',
+                                        content: `<span class="auth-info-email">${adminInfo.email}</span> (${adminInfo.name || 'Administrateur'})`
+                                    }
+                                );
+                            } else {
+                                showAuthMessage('Votre période d\'essai a expiré. Contactez votre administrateur pour renouveler votre licence.', 'error');
+                            }
+                        } else {
+                            showAuthMessage('Votre période d\'essai a expiré. Veuillez renouveler votre licence.', 'error');
+                        }
                     } else {
-                        // Chercher l'administrateur de la société
-                        if (result.user.company_id) {
-                            const adminInfo = await getCompanyAdminInfo(result.user.company_id);
+                        // Utilisateur non-admin avec compte actif
+                        if (user.company_id) {
+                            const adminInfo = await getCompanyAdminInfo(user.company_id);
                             if (adminInfo) {
                                 showAuthMessage(
                                     'Accès restreint aux analytics.',
                                     'error',
                                     {
-                                        title: 'Contact administrateur de votre société :',
+                                        title: 'Contactez l\'administrateur de votre société :',
                                         content: `<span class="auth-info-email">${adminInfo.email}</span> (${adminInfo.name || 'Administrateur'})`
                                     }
                                 );
