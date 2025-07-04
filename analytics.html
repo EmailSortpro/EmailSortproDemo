@@ -1274,6 +1274,7 @@
                         }
                         
                         // Pour les comptes existants, vérifier les permissions
+                        // Les comptes individual ont toujours accès, peu importe leur statut de licence
                         if (this.hasAdminAccess(user)) {
                             this.currentUser = user;
                             this.saveSession(email);
@@ -1406,11 +1407,12 @@
                                 newUser.role = role;
                             }
                         } else if (accountType === 'individual') {
-                            // Pour les comptes personnels, promouvoir en admin pour l'accès aux analytics
+                            // Pour les comptes personnels, s'assurer qu'ils sont bien configurés
                             await this.supabaseClient
                                 .from('users')
                                 .update({
-                                    role: 'user', // Garder user mais avec account_type = individual
+                                    role: 'user', // Les comptes individual restent 'user'
+                                    company_id: null, // Pas de société
                                     updated_at: new Date().toISOString()
                                 })
                                 .eq('id', newUser.id);
@@ -1424,9 +1426,16 @@
                             updated_at: new Date().toISOString()
                         };
                         
-                        // Si individual, retirer la société
+                        // Si individual, s'assurer que c'est bien configuré
                         if (accountType === 'individual') {
-                            updateData.company_id = null;
+                            await this.supabaseClient
+                                .from('users')
+                                .update({
+                                    company_id: null,
+                                    role: 'user', // Les individual restent 'user'
+                                    updated_at: new Date().toISOString()
+                                })
+                                .eq('id', this.pendingUser.id);
                         }
                         
                         const { error } = await this.supabaseClient
@@ -1512,6 +1521,7 @@
 
             hasAdminAccess(user) {
                 // Les comptes individual ont toujours accès (ils sont admin de leur propre compte)
+                // même si leur licence est expirée
                 if (user.account_type === 'individual') return true;
                 
                 // Pour les comptes professional, seuls les admins ont accès
@@ -1530,8 +1540,8 @@
                 document.getElementById('userEmail').textContent = this.currentUser.email;
                 document.getElementById('userRole').textContent = 
                     this.currentUser.role === 'super_admin' ? 'Super Admin' :
-                    this.currentUser.role === 'company_admin' ? 'Admin Société' :
-                    this.currentUser.account_type === 'individual' ? 'Admin Personnel' : 'Utilisateur';
+                    this.currentUser.role === 'company_admin' && this.currentUser.account_type !== 'individual' ? 'Admin Société' :
+                    this.currentUser.account_type === 'individual' ? 'Compte Personnel' : 'Utilisateur';
                 
                 this.loadOverview();
                 this.updateLastUpdate();
@@ -1650,19 +1660,24 @@
             }
 
             updateStats() {
-                const activeUsers = this.users.filter(u => 
+                // Pour les comptes individual, ne compter qu'eux-mêmes
+                const relevantUsers = this.currentUser.account_type === 'individual' 
+                    ? this.users.filter(u => u.id === this.currentUser.id)
+                    : this.users;
+                
+                const activeUsers = relevantUsers.filter(u => 
                     u.license_status === 'active' || u.license_status === 'trial'
                 ).length;
                 
-                const totalScans = this.users.reduce((sum, user) => 
+                const totalScans = relevantUsers.reduce((sum, user) => 
                     sum + (user.total_scans || 0), 0
                 );
                 
-                const totalErrors = this.users.reduce((sum, user) => 
+                const totalErrors = relevantUsers.reduce((sum, user) => 
                     sum + (user.total_errors || 0), 0
                 );
                 
-                const activeLicenses = this.users.filter(u => 
+                const activeLicenses = relevantUsers.filter(u => 
                     u.license_status === 'active'
                 ).length;
                 
@@ -1986,8 +2001,8 @@
                                     <label style="font-size: 0.75rem; color: var(--gray-500);">Rôle</label>
                                     <p style="font-weight: 600;">${
                                         user.role === 'super_admin' ? 'Super Admin' :
-                                        user.role === 'company_admin' ? 'Admin Société' :
-                                        user.account_type === 'individual' ? 'Admin Personnel' : 'Utilisateur'
+                                        user.role === 'company_admin' && user.account_type !== 'individual' ? 'Admin Société' :
+                                        user.account_type === 'individual' ? 'Compte Personnel' : 'Utilisateur'
                                     }</p>
                                 </div>
                                 <div>
