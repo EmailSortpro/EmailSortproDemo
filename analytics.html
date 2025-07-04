@@ -1089,6 +1089,9 @@
                         <i class="fas fa-user" style="font-size: 2rem; color: var(--primary); display: block; margin-bottom: 8px;"></i>
                         <h4 style="margin-bottom: 4px;">Personnel</h4>
                         <p style="font-size: 0.875rem; color: var(--gray-500);">Gérer votre licence personnelle</p>
+                        <p style="font-size: 0.75rem; color: var(--success); margin-top: 4px;">
+                            <i class="fas fa-gift"></i> 15 jours d'essai gratuit
+                        </p>
                     </label>
                     
                     <label class="account-type-option">
@@ -1096,6 +1099,9 @@
                         <i class="fas fa-building" style="font-size: 2rem; color: var(--primary); display: block; margin-bottom: 8px;"></i>
                         <h4 style="margin-bottom: 4px;">Professionnel</h4>
                         <p style="font-size: 0.875rem; color: var(--gray-500);">Gérer les licences de votre entreprise</p>
+                        <p style="font-size: 0.75rem; color: var(--success); margin-top: 4px;">
+                            <i class="fas fa-gift"></i> 15 jours d'essai gratuit
+                        </p>
                     </label>
                 </div>
                 
@@ -1297,14 +1303,14 @@
                             this.showMessage('error', 'Accès réservé aux administrateurs');
                         }
                     } else if (result.status === 'not_found') {
-                        // Proposer de créer un compte
+                        // Proposer de créer un compte avec période d'essai
                         this.pendingUser = { email };
                         this.isNewUser = true;
                         
-                        // Mettre à jour le modal pour la création
+                        // Mettre à jour le modal pour la création avec mention de la période d'essai
                         document.querySelector('#accountTypeModal .modal-title').textContent = 'Créer votre compte Analytics';
                         document.querySelector('#accountTypeMessage').textContent = 
-                            'Aucun compte trouvé. Créez votre compte en choisissant le type :';
+                            'Aucun compte trouvé. Créez votre compte et bénéficiez de 15 jours d\'essai gratuit :';
                         
                         this.showModal('accountTypeModal');
                         button.disabled = false;
@@ -1345,17 +1351,20 @@
                 
                 try {
                     if (this.isNewUser) {
-                        // Créer un nouveau compte
+                        // Créer un nouveau compte avec période d'essai de 15 jours
+                        const now = new Date();
+                        const trialEndDate = new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000); // 15 jours
+                        
                         const newUserData = {
                             email: this.pendingUser.email,
                             name: this.pendingUser.email.split('@')[0],
                             role: accountType === 'individual' ? 'user' : 'user',
                             account_type: accountType,
-                            license_status: 'trial',
-                            license_expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-                            license_starts_at: new Date().toISOString(),
-                            created_at: new Date().toISOString(),
-                            updated_at: new Date().toISOString(),
+                            license_status: 'trial', // Toujours en période d'essai
+                            license_expires_at: trialEndDate.toISOString(),
+                            license_starts_at: now.toISOString(),
+                            created_at: now.toISOString(),
+                            updated_at: now.toISOString(),
                             company_id: null // Important : pas de société par défaut
                         };
 
@@ -1369,6 +1378,7 @@
                             throw error;
                         }
                         
+                        console.log('[Analytics] New user created with 15-day trial:', newUser.email);
                         this.pendingUser = newUser;
                         
                         // Si c'est un compte professionnel, créer ou rejoindre la société
@@ -1438,7 +1448,7 @@
                                 .eq('id', newUser.id);
                         }
                         
-                        this.showMessage('success', 'Compte créé avec succès !');
+                        this.showMessage('success', 'Compte créé avec succès ! Période d\'essai de 15 jours activée.');
                         
                         // Important : attendre un peu pour que la base de données se synchronise
                         setTimeout(async () => {
@@ -1450,6 +1460,12 @@
                                 this.saveSession(newUser.email);
                                 this.closeModal('accountTypeModal');
                                 this.showApp();
+                                
+                                // Afficher un message de bienvenue avec les infos de la période d'essai
+                                setTimeout(() => {
+                                    const daysRemaining = this.calculateDaysRemaining(newUser.license_expires_at);
+                                    alert(`Bienvenue ! Votre période d'essai de 15 jours est activée.\n\n${daysRemaining} restants pour explorer toutes les fonctionnalités.`);
+                                }, 1500);
                             } else {
                                 // Si l'authentification échoue, forcer la connexion pour les comptes individual
                                 if (accountType === 'individual') {
@@ -1457,6 +1473,10 @@
                                     this.saveSession(newUser.email);
                                     this.closeModal('accountTypeModal');
                                     this.showApp();
+                                    
+                                    setTimeout(() => {
+                                        alert('Bienvenue ! Votre période d\'essai de 15 jours est activée.');
+                                    }, 1500);
                                 } else {
                                     this.showMessage('error', 'Compte créé. Veuillez vous reconnecter.');
                                     this.closeModal('accountTypeModal');
@@ -2441,6 +2461,9 @@
                     return `Expirée depuis ${Math.abs(days)} jour${Math.abs(days) > 1 ? 's' : ''}`;
                 } else if (days === 0) {
                     return 'Expire aujourd\'hui';
+                } else if (days <= 15) {
+                    // Afficher en orange si moins de 15 jours (fin de période d'essai proche)
+                    return `<span style="color: var(--warning);">${days} jour${days > 1 ? 's' : ''}</span>`;
                 } else {
                     return `${days} jour${days > 1 ? 's' : ''}`;
                 }
