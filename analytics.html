@@ -1297,7 +1297,14 @@
                         if (this.hasAdminAccess(user)) {
                             this.currentUser = user;
                             this.saveSession(email);
-                            this.showMessage('success', 'Connexion réussie !');
+                            
+                            // Si la licence est expirée, afficher un message d'avertissement
+                            if (result.status === 'expired') {
+                                this.showMessage('warning', 'Votre licence est expirée. Vous pouvez toujours accéder aux analytics pour la régulariser.');
+                            } else {
+                                this.showMessage('success', 'Connexion réussie !');
+                            }
+                            
                             setTimeout(() => this.showApp(), 1000);
                         } else {
                             this.showMessage('error', 'Accès réservé aux administrateurs');
@@ -1315,13 +1322,26 @@
                         this.showModal('accountTypeModal');
                         button.disabled = false;
                         button.innerHTML = originalText;
-                    } else if (result.status === 'expired' && result.user && result.user.account_type === 'individual') {
-                        // Pour les comptes individual expirés, on les laisse quand même accéder
+                    } else if (result.status === 'expired') {
+                        // Pour les comptes expirés, vérifier s'ils ont l'info admin
                         const user = result.user;
-                        this.currentUser = user;
-                        this.saveSession(email);
-                        this.showMessage('warning', 'Connexion réussie. Votre licence est expirée mais vous pouvez toujours accéder à vos analytics.');
-                        setTimeout(() => this.showApp(), 1000);
+                        if (user) {
+                            // Si c'est un compte individual expiré, on les laisse quand même accéder
+                            if (user.account_type === 'individual') {
+                                this.currentUser = user;
+                                this.saveSession(email);
+                                this.showMessage('warning', 'Connexion réussie. Votre licence est expirée mais vous pouvez toujours accéder à vos analytics.');
+                                setTimeout(() => this.showApp(), 1000);
+                            } else {
+                                // Pour les comptes professionnels expirés, afficher le contact admin
+                                this.showExpiredLicenseModal(result);
+                            }
+                        } else {
+                            this.showMessage('error', 'Licence expirée. Contactez votre administrateur.');
+                        }
+                    } else if (result.status === 'blocked') {
+                        // Pour les comptes bloqués, afficher le contact admin
+                        this.showBlockedAccountModal(result);
                     } else {
                         this.showMessage('error', result.message || 'Email non trouvé');
                     }
@@ -2553,6 +2573,178 @@
                 return session ? JSON.parse(session) : null;
             }
 
+            showExpiredLicenseModal(result) {
+                console.log('[App] Showing expired license modal:', result);
+                
+                // Créer le modal pour licence expirée
+                const modal = document.createElement('div');
+                modal.className = 'modal active';
+                modal.id = 'expiredLicenseModal';
+                
+                const adminInfo = result.adminContact || this.findAdminForUser(result.user);
+                
+                modal.innerHTML = `
+                    <div class="modal-content" style="max-width: 500px;">
+                        <div class="modal-header">
+                            <h2 class="modal-title">
+                                <i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i>
+                                Licence expirée
+                            </h2>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-warning" style="margin-bottom: 20px;">
+                                <i class="fas fa-clock"></i>
+                                Votre période d'essai ou licence a expiré.
+                            </div>
+                            
+                            <p style="margin-bottom: 20px;">
+                                Pour continuer à utiliser EmailSortPro et accéder aux analytics, 
+                                veuillez contacter votre administrateur pour renouveler votre licence.
+                            </p>
+                            
+                            ${adminInfo ? `
+                                <div style="background: var(--gray-100); padding: 20px; border-radius: 8px; margin: 20px 0;">
+                                    <h4 style="margin-bottom: 12px; color: var(--gray-700);">
+                                        <i class="fas fa-user-shield"></i> Votre administrateur
+                                    </h4>
+                                    <p style="margin-bottom: 8px;">
+                                        <strong>${adminInfo.name || 'Administrateur'}</strong>
+                                    </p>
+                                    <p style="margin-bottom: 12px;">
+                                        <i class="fas fa-envelope"></i>
+                                        <a href="mailto:${adminInfo.email}" style="color: var(--primary);">
+                                            ${adminInfo.email}
+                                        </a>
+                                    </p>
+                                    <button onclick="app.contactAdminEmail('${adminInfo.email}')" class="btn btn-primary">
+                                        <i class="fas fa-envelope"></i>
+                                        Envoyer un email
+                                    </button>
+                                </div>
+                            ` : `
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    Aucun administrateur trouvé. Contactez le support EmailSortPro.
+                                </div>
+                            `}
+                        </div>
+                        <div class="modal-footer">
+                            <button onclick="app.closeModal('expiredLicenseModal')" class="btn btn-secondary">
+                                Fermer
+                            </button>
+                            <button onclick="location.reload()" class="btn btn-primary">
+                                <i class="fas fa-sync"></i>
+                                Réessayer
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+            }
+
+            showBlockedAccountModal(result) {
+                console.log('[App] Showing blocked account modal:', result);
+                
+                const modal = document.createElement('div');
+                modal.className = 'modal active';
+                modal.id = 'blockedAccountModal';
+                
+                const adminInfo = result.adminContact || this.findAdminForUser(result.user);
+                
+                modal.innerHTML = `
+                    <div class="modal-content" style="max-width: 500px;">
+                        <div class="modal-header">
+                            <h2 class="modal-title">
+                                <i class="fas fa-ban" style="color: var(--danger);"></i>
+                                Compte bloqué
+                            </h2>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-error" style="margin-bottom: 20px;">
+                                <i class="fas fa-lock"></i>
+                                Votre compte a été bloqué par l'administrateur.
+                            </div>
+                            
+                            <p style="margin-bottom: 20px;">
+                                Pour débloquer votre compte et accéder à EmailSortPro, 
+                                veuillez contacter votre administrateur.
+                            </p>
+                            
+                            ${adminInfo ? `
+                                <div style="background: var(--gray-100); padding: 20px; border-radius: 8px; margin: 20px 0;">
+                                    <h4 style="margin-bottom: 12px; color: var(--gray-700);">
+                                        <i class="fas fa-user-shield"></i> Votre administrateur
+                                    </h4>
+                                    <p style="margin-bottom: 8px;">
+                                        <strong>${adminInfo.name || 'Administrateur'}</strong>
+                                    </p>
+                                    <p style="margin-bottom: 12px;">
+                                        <i class="fas fa-envelope"></i>
+                                        <a href="mailto:${adminInfo.email}" style="color: var(--primary);">
+                                            ${adminInfo.email}
+                                        </a>
+                                    </p>
+                                    <button onclick="app.contactAdminEmail('${adminInfo.email}')" class="btn btn-primary">
+                                        <i class="fas fa-envelope"></i>
+                                        Envoyer un email
+                                    </button>
+                                </div>
+                            ` : `
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    Aucun administrateur trouvé. Contactez le support EmailSortPro.
+                                </div>
+                            `}
+                        </div>
+                        <div class="modal-footer">
+                            <button onclick="app.closeModal('blockedAccountModal')" class="btn btn-secondary">
+                                Fermer
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+            }
+
+            async findAdminForUser(user) {
+                // Essayer de trouver l'admin de la société
+                if (!user || !user.company_id) return null;
+                
+                try {
+                    const { data: admins } = await this.supabaseClient
+                        .from('users')
+                        .select('email, name')
+                        .eq('company_id', user.company_id)
+                        .eq('role', 'company_admin')
+                        .limit(1);
+                    
+                    if (admins && admins.length > 0) {
+                        return admins[0];
+                    }
+                    
+                    // Si pas d'admin société, chercher le super admin
+                    const { data: superAdmin } = await this.supabaseClient
+                        .from('users')
+                        .select('email, name')
+                        .eq('role', 'super_admin')
+                        .limit(1);
+                    
+                    return superAdmin && superAdmin.length > 0 ? superAdmin[0] : null;
+                    
+                } catch (error) {
+                    console.error('[App] Error finding admin:', error);
+                    return null;
+                }
+            }
+
+            contactAdminEmail(email) {
+                const subject = encodeURIComponent('Demande de renouvellement de licence EmailSortPro');
+                const body = encodeURIComponent(`Bonjour,\n\nMa licence EmailSortPro a expiré et je souhaiterais la renouveler.\n\nMon email: ${this.currentUser?.email || ''}\n\nMerci d'avance pour votre aide.\n\nCordialement`);
+                window.open(`mailto:${email}?subject=${subject}&body=${body}`);
+            }
+
             logout() {
                 sessionStorage.removeItem('analyticsAuth');
                 window.location.reload();
@@ -2573,7 +2765,8 @@
             saveLicenseDates: (e) => app.saveLicenseDates(e),
             confirmAccountType: () => app.confirmAccountType(),
             closeModal: (id) => app.closeModal(id),
-            cleanupAccounts: () => app.cleanupAccounts()
+            cleanupAccounts: () => app.cleanupAccounts(),
+            contactAdminEmail: (email) => app.contactAdminEmail(email)
         };
     </script>
 </body>
