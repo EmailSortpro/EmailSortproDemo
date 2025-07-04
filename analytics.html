@@ -2640,7 +2640,7 @@
                         setTimeout(async () => {
                             if (confirm('Voulez-vous créer un compte administrateur pour ' + email + ' ?')) {
                                 try {
-                                    // Créer un nouveau compte
+                                    // Créer un nouveau compte avec 15 jours d'essai
                                     const domain = email.split('@')[1];
                                     const { data: newUser, error } = await supabaseClient
                                         .from('users')
@@ -2649,9 +2649,11 @@
                                             name: email.split('@')[0],
                                             role: 'user',
                                             license_status: 'trial',
-                                            license_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                                            license_expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 jours
+                                            license_starts_at: new Date().toISOString(),
                                             created_at: new Date().toISOString(),
-                                            updated_at: new Date().toISOString()
+                                            updated_at: new Date().toISOString(),
+                                            account_type: 'individual' // Valeur par défaut
                                         })
                                         .select()
                                         .single();
@@ -2722,7 +2724,8 @@
                 return true;
             }
             
-            if (user.account_type === 'personal') {
+            // Vérifier 'individual' au lieu de 'personal'
+            if (user.account_type === 'individual') {
                 return true;
             }
             
@@ -2736,7 +2739,7 @@
             document.getElementById('currentUserEmail').textContent = authenticatedUser.email;
             
             let roleDisplay = authenticatedUser.role.replace('_', ' ');
-            if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
+            if (authenticatedUser.account_type === 'individual' && authenticatedUser.role === 'user') {
                 roleDisplay = 'Personnel';
             }
             document.getElementById('currentUserRole').textContent = roleDisplay;
@@ -2754,6 +2757,15 @@
             if (authenticatedUser.role === 'company_admin' || authenticatedUser.role === 'super_admin') {
                 document.getElementById('adminManagementSection').style.display = 'block';
                 loadAdminPreview();
+            }
+            
+            // Afficher un message spécial pour le super_admin
+            if (authenticatedUser.role === 'super_admin') {
+                const header = document.querySelector('.page-header');
+                const adminDiv = document.createElement('div');
+                adminDiv.style.cssText = 'background: #dbeafe; color: #1d4ed8; padding: 12px; border-radius: 8px; margin-bottom: 16px; text-align: center; font-weight: 600;';
+                adminDiv.innerHTML = '<i class="fas fa-shield-alt"></i> Mode Super Administrateur - Accès complet à toutes les fonctionnalités';
+                header.insertAdjacentElement('afterend', adminDiv);
             }
             
             loadAnalytics();
@@ -3120,11 +3132,13 @@
                     .order('created_at', { ascending: false });
                 
                 if (authenticatedUser) {
-                    if (authenticatedUser.account_type === 'personal') {
+                    if (authenticatedUser.account_type === 'individual') {
+                        // Les comptes individuels ne voient que leurs propres données
                         query = query.eq('id', authenticatedUser.id);
                     } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
                         query = query.eq('company_id', authenticatedUser.company_id);
                     }
+                    // Les super_admin voient tout par défaut
                 }
                 
                 const { data: users, error } = await query;
@@ -3158,7 +3172,7 @@
                     .select('*');
                 
                 if (authenticatedUser) {
-                    if (authenticatedUser.account_type === 'personal' && authenticatedUser.role === 'user') {
+                    if (authenticatedUser.account_type === 'individual' && authenticatedUser.role === 'user') {
                         query = query.eq('email', authenticatedUser.email);
                     } else if (authenticatedUser.role === 'company_admin' && authenticatedUser.company_id) {
                         const { data: company } = await supabaseClient
@@ -3390,7 +3404,8 @@
             if (authenticatedUser.role === 'company_admin' && 
                 authenticatedUser.company_id === user.company_id) return true;
             
-            if (authenticatedUser.account_type === 'personal' && 
+            // Les comptes individuels peuvent gérer leur propre compte
+            if (authenticatedUser.account_type === 'individual' && 
                 authenticatedUser.id === user.id) return true;
             
             return false;
@@ -3475,7 +3490,7 @@
                         </div>
                         <div class="detail-item">
                             <label>Type de compte</label>
-                            <value>${user.account_type === 'personal' ? 'Personnel' : 'Professionnel'}</value>
+                            <value>${user.account_type === 'individual' ? 'Personnel' : 'Professionnel'}</value>
                         </div>
                     </div>
                 </div>
@@ -3635,7 +3650,7 @@
                 const startDate = user.license_starts_at ? new Date(user.license_starts_at).toLocaleDateString('fr-FR') : 'N/A';
                 const endDate = user.license_expires_at ? new Date(user.license_expires_at).toLocaleDateString('fr-FR') : 'N/A';
                 const daysRemaining = user.license_expires_at ? calculateDaysRemaining(new Date(user.license_expires_at)) : 'Illimitée';
-                const accountType = user.account_type === 'personal' ? 'Personnel' : 'Professionnel';
+                                                const accountType = user.account_type === 'individual' ? 'Personnel' : 'Professionnel';
 
                 return `
                     <tr>
@@ -3665,7 +3680,7 @@
                                 </button>
                                 ${canManageUser(user) ? `
                                     <button class="action-btn dates" onclick="openLicenseEditModal('${user.id}')">
-                                        <i class="fas fa-calendar-alt"></i> Modifier dates
+                                        <i class="fas fa-calendar-alt"></i> ${authenticatedUser.role === 'super_admin' ? 'Modifier dates' : 'Voir dates'}
                                     </button>
                                 ` : ''}
                                 ${canDeleteUser(user) ? `
@@ -3693,6 +3708,9 @@
             const user = currentUsers.find(u => u.id === userId);
             if (!user) return;
 
+            // Seul le super_admin peut modifier les dates
+            const canEdit = authenticatedUser.role === 'super_admin';
+            
             document.getElementById('editUserId').value = userId;
             
             const startDate = user.license_starts_at ? 
@@ -3706,6 +3724,21 @@
             document.getElementById('editStartDate').value = startDate;
             document.getElementById('editEndDate').value = endDate;
             
+            // Désactiver les champs si pas super_admin
+            document.getElementById('editStartDate').disabled = !canEdit;
+            document.getElementById('editEndDate').disabled = !canEdit;
+            
+            // Modifier le titre selon les permissions
+            document.querySelector('.license-edit-title').textContent = canEdit ? 
+                'Modifier les dates de licence' : 
+                'Détails de la licence';
+            
+            // Masquer/afficher le bouton enregistrer
+            const saveButton = document.querySelector('#licenseEditForm button[type="submit"]');
+            if (saveButton) {
+                saveButton.style.display = canEdit ? 'flex' : 'none';
+            }
+            
             document.getElementById('licenseEditModal').classList.add('active');
         }
 
@@ -3716,6 +3749,12 @@
 
         async function handleLicenseEditSubmit(event) {
             event.preventDefault();
+            
+            // Vérifier que seul le super_admin peut modifier
+            if (authenticatedUser.role !== 'super_admin') {
+                alert('Seul le super administrateur peut modifier les dates de licence');
+                return;
+            }
             
             const userId = document.getElementById('editUserId').value;
             const startDate = document.getElementById('editStartDate').value;
