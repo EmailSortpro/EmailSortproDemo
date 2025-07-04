@@ -983,6 +983,12 @@
                                 <option value="trial">En essai</option>
                                 <option value="expired">Expirés</option>
                             </select>
+                            ${this.currentUser.role === 'super_admin' ? `
+                                <button class="btn btn-secondary btn-sm" onclick="app.cleanupAccounts()">
+                                    <i class="fas fa-broom"></i>
+                                    Nettoyer
+                                </button>
+                            ` : ''}
                             <button class="btn btn-primary btn-sm" onclick="app.refreshUsers()">
                                 <i class="fas fa-sync-alt"></i>
                                 Actualiser
@@ -1664,9 +1670,12 @@
                             return user;
                         });
                         
-                        // Si on est super admin, nettoyer tous les comptes individual dans la base
+                        // Si on est super admin, nettoyer automatiquement les domaines personnels connus
                         if (this.currentUser.role === 'super_admin') {
-                            await this.cleanupAllIndividualAccounts();
+                            const personalDomains = ['hotmail.fr', 'hotmail.com', 'gmail.com', 'yahoo.com', 'outlook.com'];
+                            for (const domain of personalDomains) {
+                                await this.forceCleanupForDomain(domain);
+                            }
                         }
                         
                         // Charger les stats
@@ -1679,33 +1688,90 @@
                 }
             }
 
-            async cleanupAllIndividualAccounts() {
-                // Fonction pour nettoyer tous les comptes individual qui ont une company_id
+            async cleanupAccounts() {
+                if (this.currentUser.role !== 'super_admin') {
+                    alert('Seul le super administrateur peut nettoyer les comptes');
+                    return;
+                }
+                
+                if (!confirm('Voulez-vous nettoyer tous les comptes personnels qui ont une société associée ?')) {
+                    return;
+                }
+                
                 try {
-                    const { data: individualWithCompany } = await this.supabaseClient
+                    // D'abord, récupérer tous les comptes individual avec une company_id
+                    const { data: accountsToClean, error: fetchError } = await this.supabaseClient
                         .from('users')
-                        .select('id')
+                        .select('id, email, company_id')
                         .eq('account_type', 'individual')
                         .not('company_id', 'is', null);
                     
-                    if (individualWithCompany && individualWithCompany.length > 0) {
-                        console.log(`[Analytics] Found ${individualWithCompany.length} individual accounts with company_id to clean`);
-                        
+                    if (fetchError) {
+                        throw fetchError;
+                    }
+                    
+                    if (!accountsToClean || accountsToClean.length === 0) {
+                        alert('Aucun compte personnel avec société à nettoyer');
+                        return;
+                    }
+                    
+                    console.log(`[Analytics] Cleaning ${accountsToClean.length} individual accounts with company_id`);
+                    
+                    // Nettoyer chaque compte
+                    let cleaned = 0;
+                    for (const account of accountsToClean) {
                         const { error } = await this.supabaseClient
                             .from('users')
                             .update({
                                 company_id: null,
+                                role: 'user',
                                 updated_at: new Date().toISOString()
                             })
-                            .eq('account_type', 'individual')
-                            .not('company_id', 'is', null);
+                            .eq('id', account.id);
                         
                         if (!error) {
-                            console.log('[Analytics] All individual accounts cleaned successfully');
+                            cleaned++;
+                            console.log(`[Analytics] Cleaned account: ${account.email}`);
+                        } else {
+                            console.error(`[Analytics] Error cleaning ${account.email}:`, error);
                         }
                     }
+                    
+                    alert(`${cleaned} comptes personnels nettoyés avec succès`);
+                    
+                    // Recharger les utilisateurs
+                    await this.refreshUsers();
+                    
                 } catch (error) {
-                    console.error('[Analytics] Batch cleanup error:', error);
+                    console.error('[Analytics] Cleanup error:', error);
+                    alert('Erreur lors du nettoyage des comptes');
+                }
+            }
+
+            async forceCleanupForDomain(domain) {
+                // Nettoyer spécifiquement les comptes d'un domaine personnel
+                try {
+                    const { data: accounts } = await this.supabaseClient
+                        .from('users')
+                        .select('id, email')
+                        .eq('account_type', 'individual')
+                        .like('email', `%@${domain}`);
+                    
+                    if (accounts && accounts.length > 0) {
+                        for (const account of accounts) {
+                            await this.supabaseClient
+                                .from('users')
+                                .update({
+                                    company_id: null,
+                                    role: 'user',
+                                    updated_at: new Date().toISOString()
+                                })
+                                .eq('id', account.id);
+                        }
+                        console.log(`[Analytics] Cleaned ${accounts.length} accounts from ${domain}`);
+                    }
+                } catch (error) {
+                    console.error(`[Analytics] Error cleaning domain ${domain}:`, error);
                 }
             }
 
@@ -1834,10 +1900,19 @@
                 
                 tbody.innerHTML = users.map(user => {
                     const initials = (user.name || user.email).split(/[\s@]/)[0].slice(0, 2).toUpperCase();
-                    // Pour les comptes individual, toujours afficher "Compte personnel" même si une société est encore présente
+                    // Forcer l'affichage correct même si les données ne sont pas encore nettoyées
                     const company = user.account_type === 'individual' 
                         ? 'Compte personnel' 
                         : (user.company?.name || 'Sans société');
+                    
+                    // Si c'est un compte Hotmail/Gmail/etc et individual, c'est forcément personnel
+                    const personalDomains = ['hotmail.fr', 'hotmail.com', 'gmail.com', 'yahoo.com', 'outlook.com'];
+                    const userDomain = user.email.split('@')[1];
+                    const isPersonalEmail = personalDomains.includes(userDomain);
+                    
+                    const displayCompany = (user.account_type === 'individual' || isPersonalEmail) 
+                        ? 'Compte personnel' 
+                        : company;
                     const lastLogin = this.formatDate(user.last_login_at);
                     const daysRemaining = this.calculateDaysRemaining(user.license_expires_at);
                     
@@ -1852,7 +1927,7 @@
                                     </div>
                                 </div>
                             </td>
-                            <td>${company}</td>
+                            <td>${displayCompany}</td>
                             <td>
                                 <span class="badge badge-${this.getStatusClass(user.license_status)}">
                                     ${user.license_status || 'trial'}
@@ -2412,7 +2487,8 @@
             editLicense: (id) => app.editLicense(id),
             saveLicenseDates: (e) => app.saveLicenseDates(e),
             confirmAccountType: () => app.confirmAccountType(),
-            closeModal: (id) => app.closeModal(id)
+            closeModal: (id) => app.closeModal(id),
+            cleanupAccounts: () => app.cleanupAccounts()
         };
     </script>
 </body>
