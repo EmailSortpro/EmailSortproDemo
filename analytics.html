@@ -3343,31 +3343,41 @@
         // Initialiser Supabase
         async function initializeSupabase() {
             if (supabaseClient) {
+                console.log('[Analytics] Supabase client already exists, skipping initialization');
                 return;
             }
 
             if (!window.supabaseConfig) {
+                console.error('[Analytics] supabaseConfig not found');
                 return;
             }
 
             if (!window.supabase) {
+                console.log('[Analytics] Loading Supabase library...');
                 await loadSupabaseLibrary();
             }
 
             await window.initializeSupabaseConfig();
             const config = window.supabaseConfig.getConfig();
             
-            supabaseClient = window.supabase.createClient(
-                config.url,
-                config.anonKey,
-                {
-                    auth: {
-                        autoRefreshToken: true,
-                        persistSession: false,
-                        detectSessionInUrl: false
+            // Ne pas créer un nouveau client si licenseService en a déjà un
+            if (window.licenseService && window.licenseService.supabase) {
+                console.log('[Analytics] Using Supabase client from licenseService');
+                supabaseClient = window.licenseService.supabase;
+            } else {
+                console.log('[Analytics] Creating new Supabase client');
+                supabaseClient = window.supabase.createClient(
+                    config.url,
+                    config.anonKey,
+                    {
+                        auth: {
+                            autoRefreshToken: true,
+                            persistSession: false,
+                            detectSessionInUrl: false
+                        }
                     }
-                }
-            );
+                );
+            }
         }
 
         // Charger la librairie Supabase
