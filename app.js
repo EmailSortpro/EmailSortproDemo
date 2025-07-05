@@ -277,7 +277,8 @@ class App {
                 console.log('[App] License check result:', {
                     valid: result.valid,
                     status: result.status,
-                    message: result.message
+                    message: result.message,
+                    user: result.user ? { email: result.user.email, company_id: result.user.company_id } : null
                 });
                 
                 // Si la licence n'est pas valide, afficher le message d'erreur
@@ -328,20 +329,95 @@ class App {
             window.uiManager.showToast(message, type, 10000);
         }
         
-        // Afficher une modal avec plus d'infos
+        // Afficher une modal avec plus d'infos et l'admin contact
         this.showLicenseErrorModal(licenseResult);
         
         // Déconnecter après un délai
         setTimeout(() => {
             console.log('[App] Logging out due to license error...');
             this.logout();
-        }, 10000); // 10 secondes pour lire le message
+        }, 15000); // 15 secondes pour lire le message
+    }
+
+    // =====================================
+    // RÉCUPÉRATION DES INFOS ADMIN
+    // =====================================
+    async getAdminContactForUser(userResult) {
+        console.log('[App] Getting admin contact for user...');
+        
+        try {
+            // Si on a déjà les infos admin dans le résultat
+            if (userResult.adminContact) {
+                return userResult.adminContact;
+            }
+            
+            // Si on a un utilisateur avec company_id
+            if (userResult.user && userResult.user.company_id && window.licenseService) {
+                console.log('[App] Looking for company admin, company_id:', userResult.user.company_id);
+                
+                // Récupérer l'admin de la société
+                const { data: admins } = await window.licenseService.supabase
+                    .from('users')
+                    .select('email, name')
+                    .eq('company_id', userResult.user.company_id)
+                    .eq('role', 'company_admin')
+                    .limit(1);
+                
+                if (admins && admins.length > 0) {
+                    console.log('[App] Found company admin:', admins[0].email);
+                    return admins[0];
+                }
+            }
+            
+            // Si c'est un compte individual, chercher le super admin
+            if (userResult.user && userResult.user.account_type === 'individual' && window.licenseService) {
+                console.log('[App] Individual account, looking for super admin...');
+                
+                const { data: superAdmins } = await window.licenseService.supabase
+                    .from('users')
+                    .select('email, name')
+                    .eq('role', 'super_admin')
+                    .limit(1);
+                
+                if (superAdmins && superAdmins.length > 0) {
+                    console.log('[App] Found super admin:', superAdmins[0].email);
+                    return superAdmins[0];
+                }
+            }
+            
+            // Fallback: chercher n'importe quel super admin
+            if (window.licenseService && window.licenseService.supabase) {
+                const { data: anyAdmin } = await window.licenseService.supabase
+                    .from('users')
+                    .select('email, name')
+                    .eq('role', 'super_admin')
+                    .limit(1);
+                
+                if (anyAdmin && anyAdmin.length > 0) {
+                    return anyAdmin[0];
+                }
+            }
+            
+        } catch (error) {
+            console.error('[App] Error getting admin contact:', error);
+        }
+        
+        // Fallback par défaut
+        return {
+            email: 'support@emailsortpro.com',
+            name: 'Support EmailSortPro'
+        };
     }
 
     // =====================================
     // AFFICHAGE MODAL ERREUR DE LICENCE
     // =====================================
-    showLicenseErrorModal(licenseResult) {
+    async showLicenseErrorModal(licenseResult) {
+        // Récupérer les infos de l'admin
+        const adminContact = await this.getAdminContactForUser(licenseResult);
+        
+        console.log('[App] Showing license error modal with admin:', adminContact);
+        
         // Créer la modal
         const modal = document.createElement('div');
         modal.className = 'license-error-modal';
@@ -356,30 +432,98 @@ class App {
             align-items: center;
             justify-content: center;
             z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         `;
         
         const content = document.createElement('div');
         content.style.cssText = `
             background: white;
-            padding: 2rem;
+            padding: 2.5rem;
             border-radius: 16px;
-            max-width: 500px;
+            max-width: 550px;
             box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
             text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
         `;
         
         const icon = licenseResult.status === 'blocked' ? '🚫' : '⚠️';
         const color = licenseResult.status === 'blocked' ? '#dc2626' : '#d97706';
         
         content.innerHTML = `
-            <div style="font-size: 3rem; margin-bottom: 1rem;">${icon}</div>
-            <h2 style="color: ${color}; margin-bottom: 1rem;">Accès refusé</h2>
-            <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">${icon}</div>
+            <h2 style="color: ${color}; margin-bottom: 1rem; font-size: 1.8rem;">Accès refusé</h2>
+            <p style="margin-bottom: 2rem; line-height: 1.6; font-size: 1.1rem; color: #374151;">
                 ${this.getLicenseErrorMessage(licenseResult)}
             </p>
-            <p style="margin-bottom: 2rem; color: #6b7280;">
-                Vous allez être déconnecté dans quelques secondes.
+            
+            <div style="
+                background: #f3f4f6;
+                border: 2px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 1.5rem;
+                margin-bottom: 2rem;
+                text-align: left;
+            ">
+                <h3 style="
+                    color: #1f2937;
+                    font-size: 1rem;
+                    margin-bottom: 1rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                ">
+                    <i class="fas fa-user-shield" style="color: #6b7280;"></i>
+                    Contacter votre administrateur
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    ${adminContact.name ? `
+                        <div style="
+                            display: flex;
+                            align-items: center;
+                            gap: 0.5rem;
+                            color: #4b5563;
+                        ">
+                            <i class="fas fa-user" style="width: 20px; color: #9ca3af;"></i>
+                            <span style="font-weight: 600;">${adminContact.name}</span>
+                        </div>
+                    ` : ''}
+                    <div style="
+                        display: flex;
+                        align-items: center;
+                        gap: 0.5rem;
+                    ">
+                        <i class="fas fa-envelope" style="width: 20px; color: #9ca3af;"></i>
+                        <a href="mailto:${adminContact.email}" style="
+                            color: #3b82f6;
+                            text-decoration: none;
+                            font-weight: 600;
+                            padding: 0.5rem 1rem;
+                            background: rgba(59, 130, 246, 0.1);
+                            border-radius: 8px;
+                            display: inline-block;
+                            transition: all 0.2s;
+                        " onmouseover="this.style.background='rgba(59, 130, 246, 0.2)'" 
+                           onmouseout="this.style.background='rgba(59, 130, 246, 0.1)'">
+                            ${adminContact.email}
+                        </a>
+                    </div>
+                </div>
+                <p style="
+                    margin-top: 1rem;
+                    font-size: 0.875rem;
+                    color: #6b7280;
+                    font-style: italic;
+                ">
+                    Cliquez sur l'email pour envoyer un message
+                </p>
+            </div>
+            
+            <p style="margin-bottom: 2rem; color: #6b7280; font-size: 0.95rem;">
+                <i class="fas fa-clock"></i> Vous serez déconnecté dans quelques secondes...
             </p>
+            
             <button onclick="window.app.logout()" style="
                 background: #3b82f6;
                 color: white;
@@ -389,7 +533,10 @@ class App {
                 cursor: pointer;
                 font-size: 1rem;
                 font-weight: 600;
-            ">
+                transition: all 0.2s;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            " onmouseover="this.style.background='#2563eb'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 6px rgba(0, 0, 0, 0.1)'" 
+               onmouseout="this.style.background='#3b82f6'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.1)'">
                 Se déconnecter maintenant
             </button>
         `;
@@ -400,6 +547,7 @@ class App {
         // Animation d'entrée
         setTimeout(() => {
             modal.style.opacity = '1';
+            content.style.transform = 'scale(1)';
         }, 10);
     }
 
