@@ -410,7 +410,7 @@ class App {
     }
 
     // =====================================
-    // AFFICHAGE MODAL ERREUR DE LICENCE
+    // AFFICHAGE MODAL ERREUR DE LICENCE (MODIFIÉE)
     // =====================================
     async showLicenseErrorModal(licenseResult) {
         // Récupérer les infos de l'admin
@@ -495,7 +495,8 @@ class App {
                         gap: 0.5rem;
                     ">
                         <i class="fas fa-envelope" style="width: 20px; color: #9ca3af;"></i>
-                        <a href="mailto:${adminContact.email}" style="
+                        <a href="mailto:${adminContact.email}?subject=EmailSortPro%20-%20Problème%20de%20licence&body=Bonjour,%0A%0AJe%20rencontre%20un%20problème%20avec%20ma%20licence%20EmailSortPro.%0A%0AStatut:%20${licenseResult.status}%0AEmail:%20${this.user?.email || this.user?.mail || ''}%0A%0AMerci%20de%20votre%20aide.%0A%0ACordialement" 
+                        style="
                             color: #3b82f6;
                             text-decoration: none;
                             font-weight: 600;
@@ -516,29 +517,43 @@ class App {
                     color: #6b7280;
                     font-style: italic;
                 ">
-                    Cliquez sur l'email pour envoyer un message
+                    Cliquez sur l'email pour envoyer un message pré-rempli
                 </p>
             </div>
             
-            <p style="margin-bottom: 2rem; color: #6b7280; font-size: 0.95rem;">
-                <i class="fas fa-clock"></i> Vous serez déconnecté dans quelques secondes...
-            </p>
-            
-            <button onclick="window.app.logout()" style="
-                background: #3b82f6;
-                color: white;
-                border: none;
-                padding: 0.75rem 2rem;
-                border-radius: 8px;
-                cursor: pointer;
-                font-size: 1rem;
-                font-weight: 600;
-                transition: all 0.2s;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            " onmouseover="this.style.background='#2563eb'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 6px rgba(0, 0, 0, 0.1)'" 
-               onmouseout="this.style.background='#3b82f6'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.1)'">
-                Se déconnecter maintenant
-            </button>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <button onclick="window.location.href='analytics.html'" style="
+                    background: #10b981;
+                    color: white;
+                    border: none;
+                    padding: 0.75rem 2rem;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    transition: all 0.2s;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                " onmouseover="this.style.background='#059669'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 6px rgba(0, 0, 0, 0.1)'" 
+                   onmouseout="this.style.background='#10b981'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.1)'">
+                    <i class="fas fa-chart-line"></i> Accéder aux Analytics
+                </button>
+                
+                <button onclick="window.app.logout()" style="
+                    background: #ef4444;
+                    color: white;
+                    border: none;
+                    padding: 0.75rem 2rem;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    transition: all 0.2s;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                " onmouseover="this.style.background='#dc2626'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 6px rgba(0, 0, 0, 0.1)'" 
+                   onmouseout="this.style.background='#ef4444'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.1)'">
+                    <i class="fas fa-sign-out-alt"></i> Se déconnecter
+                </button>
+            </div>
         `;
         
         modal.appendChild(content);
