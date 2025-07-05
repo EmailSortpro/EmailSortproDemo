@@ -64,7 +64,7 @@ class TaskManager {
             actions: Array.isArray(task.actions) ? task.actions : [],
             keyInfo: Array.isArray(task.keyInfo) ? task.keyInfo : [],
             risks: Array.isArray(task.risks) ? task.risks : [],
-            aiAnalysis: task.aiAnalysis || null,
+            // SUPPRIMÉ: suggestedReplies, aiRepliesGenerated, aiRepliesGeneratedAt, aiAnalysis
             checklist: Array.isArray(task.checklist) ? task.checklist : [],
             createdAt: task.createdAt || new Date().toISOString(),
             updatedAt: task.updatedAt || new Date().toISOString(),
@@ -746,10 +746,10 @@ class TasksView {
             <i class="fas fa-eye"></i>
         </button>`);
         
-        // Nouveau bouton Outlook pour les emails
-        if (task.hasEmail && task.emailFrom) {
-            actions.push(`<button class="action-btn outlook" onclick="event.stopPropagation(); window.tasksView.openInOutlook('${task.id}')" title="Répondre dans Outlook">
-                <i class="fas fa-envelope-open"></i>
+        // NOUVEAU: Bouton Répondre à l'email pour les tâches avec email
+        if (task.hasEmail && task.emailFrom && !task.emailReplied) {
+            actions.push(`<button class="action-btn reply" onclick="event.stopPropagation(); window.tasksView.openInOutlook('${task.id}')" title="Répondre à l'email">
+                <i class="fas fa-reply"></i>
             </button>`);
         }
         
@@ -773,10 +773,10 @@ class TasksView {
             <i class="fas fa-eye"></i> Détails
         </button>`);
         
-        // Nouveau bouton Outlook pour les emails
-        if (task.hasEmail && task.emailFrom) {
-            actions.push(`<button class="btn-detailed outlook" onclick="window.tasksView.openInOutlook('${task.id}')">
-                <i class="fas fa-envelope-open"></i> Outlook
+        // NOUVEAU: Bouton Répondre pour les emails non répondus
+        if (task.hasEmail && task.emailFrom && !task.emailReplied) {
+            actions.push(`<button class="btn-detailed reply" onclick="window.tasksView.openInOutlook('${task.id}')">
+                <i class="fas fa-reply"></i> Répondre
             </button>`);
         }
         
@@ -856,9 +856,9 @@ class TasksView {
         
         this.showModal('Détails de la tâche', content, null, {
             footer: `
-                ${task.hasEmail && task.emailFrom ? `
-                    <button class="btn btn-outlook" onclick="window.tasksView.openInOutlook('${task.id}')">
-                        <i class="fas fa-envelope-open"></i> Répondre dans Outlook
+                ${task.hasEmail && task.emailFrom && !task.emailReplied ? `
+                    <button class="btn btn-reply" onclick="window.tasksView.openInOutlook('${task.id}')">
+                        <i class="fas fa-reply"></i> Répondre à l'email
                     </button>
                 ` : ''}
                 <button class="btn btn-secondary" onclick="window.tasksView.closeModal()">Fermer</button>
@@ -1010,9 +1010,10 @@ class TasksView {
                         <h3><i class="fas fa-envelope"></i> Email</h3>
                         <div class="email-details">
                             <div><strong>De:</strong> ${this.escape(task.emailFromName || task.emailFrom || '')}</div>
-                            <div><strong>Email:</strong> ${this.escape(task.emailFrom || '')}</div>
                             <div><strong>Sujet:</strong> ${this.escape(task.emailSubject || '')}</div>
+                            <div><strong>Date:</strong> ${task.emailDate ? new Date(task.emailDate).toLocaleString('fr-FR') : 'Non spécifiée'}</div>
                             <div><strong>Réponse requise:</strong> ${task.needsReply ? '✅ Oui' : '❌ Non'}</div>
+                            <div><strong>Déjà répondu:</strong> ${task.emailReplied ? '✅ Oui' : '❌ Non'}</div>
                         </div>
                         ${task.emailContent ? `
                             <div class="email-content">
@@ -2213,7 +2214,7 @@ class TasksView {
             .action-btn.complete:hover { background: #dcfce7; border-color: var(--success); color: var(--success); }
             .action-btn.edit:hover { background: #fef3c7; border-color: var(--warning); color: var(--warning); }
             .action-btn.details:hover { background: #f3e8ff; border-color: #8b5cf6; color: #8b5cf6; }
-            .action-btn.outlook:hover { background: #eff6ff; border-color: var(--primary); color: var(--primary); }
+            .action-btn.reply:hover { background: #eff6ff; border-color: var(--primary); color: var(--primary); }
 
             .btn-detailed {
                 display: flex;
@@ -2262,15 +2263,15 @@ class TasksView {
                 border-color: var(--text-secondary);
             }
 
-            .btn-detailed.outlook {
-                background: #0078d4;
+            .btn-detailed.reply {
+                background: var(--primary);
                 color: white;
-                border-color: #0078d4;
+                border-color: var(--primary);
             }
 
-            .btn-detailed.outlook:hover {
-                background: #106ebe;
-                border-color: #106ebe;
+            .btn-detailed.reply:hover {
+                background: var(--primary-hover);
+                border-color: var(--primary-hover);
             }
 
             /* Modal */
@@ -2390,15 +2391,15 @@ class TasksView {
                 border-color: #059669;
             }
 
-            .btn-outlook {
-                background: #0078d4;
+            .btn-reply {
+                background: var(--primary);
                 color: white;
-                border-color: #0078d4;
+                border-color: var(--primary);
             }
 
-            .btn-outlook:hover {
-                background: #106ebe;
-                border-color: #106ebe;
+            .btn-reply:hover {
+                background: var(--primary-hover);
+                border-color: var(--primary-hover);
             }
 
             /* Forms */
