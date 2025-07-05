@@ -78,7 +78,7 @@ class TaskManager {
             {
                 id: 'sample_1',
                 title: 'Répondre à l\'équipe marketing sur la campagne Q2',
-                description: '📧 Email de Sarah Martin concernant la validation de la campagne marketing Q2.\nBudget proposé : 50k€\nCible : 25-45 ans\nCanaux : LinkedIn, Google Ads',
+                description: 'Email de Sarah Martin concernant la validation de la campagne marketing Q2.\nBudget proposé : 50k€\nCible : 25-45 ans\nCanaux : LinkedIn, Google Ads',
                 priority: 'high',
                 status: 'todo',
                 category: 'email',
@@ -975,13 +975,6 @@ class TasksView {
                         </span>` : ''}
                     </div>
                 </div>
-                
-                ${task.description ? `
-                    <div class="section">
-                        <h3><i class="fas fa-align-left"></i> Description</h3>
-                        <div class="content">${this.escape(task.description).replace(/\n/g, '<br>')}</div>
-                    </div>
-                ` : ''}
                 
                 ${task.checklist?.length > 0 ? `
                     <div class="section">
