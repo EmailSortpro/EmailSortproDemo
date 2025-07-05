@@ -678,6 +678,8 @@ class TasksView {
                                 <i class="fas fa-check-square"></i> ${progress.completed}/${progress.total}
                             </span>` : ''}
                             ${task.hasEmail ? '<span class="email-badge">📧 Email</span>' : ''}
+                            ${task.hasEmail && task.needsReply && !task.emailReplied ? 
+                                '<span class="reply-needed-badge">⚠️ À répondre</span>' : ''}
                         </div>
                     </div>
                     <div class="task-details">
@@ -706,6 +708,8 @@ class TasksView {
                         <span class="priority-badge ${task.priority}">${this.getPriorityLabel(task.priority)}</span>
                         <span class="status-badge ${task.status}">${this.getStatusLabel(task.status)}</span>
                         ${task.hasEmail ? '<span class="email-badge">📧</span>' : ''}
+                        ${task.hasEmail && task.needsReply && !task.emailReplied ? 
+                            '<span class="reply-needed-badge">⚠️</span>' : ''}
                     </div>
                 </div>
                 <div class="card-content">
@@ -732,6 +736,15 @@ class TasksView {
     renderActions(task) {
         const actions = [];
         
+        // PRIORITÉ 1: Bouton Répondre à l'email (le plus important pour les emails)
+        if (task.hasEmail && task.emailFrom) {
+            actions.push(`<button class="action-btn reply ${task.emailReplied ? 'replied' : ''}" 
+                    onclick="event.stopPropagation(); window.tasksView.openInOutlook('${task.id}')" 
+                    title="${task.emailReplied ? 'Email déjà répondu - Répondre à nouveau' : 'Répondre à l\'email'}">
+                <i class="fas fa-reply"></i>
+            </button>`);
+        }
+        
         if (task.status !== 'completed') {
             actions.push(`<button class="action-btn complete" onclick="event.stopPropagation(); window.tasksView.complete('${task.id}')" title="Terminer">
                 <i class="fas fa-check"></i>
@@ -746,18 +759,19 @@ class TasksView {
             <i class="fas fa-eye"></i>
         </button>`);
         
-        // NOUVEAU: Bouton Répondre à l'email pour les tâches avec email
-        if (task.hasEmail && task.emailFrom && !task.emailReplied) {
-            actions.push(`<button class="action-btn reply" onclick="event.stopPropagation(); window.tasksView.openInOutlook('${task.id}')" title="Répondre à l'email">
-                <i class="fas fa-reply"></i>
-            </button>`);
-        }
-        
         return `<div class="task-actions">${actions.join('')}</div>`;
     }
 
     renderDetailedActions(task) {
         const actions = [];
+        
+        // PRIORITÉ 1: Bouton Répondre pour les emails
+        if (task.hasEmail && task.emailFrom) {
+            actions.push(`<button class="btn-detailed reply ${task.emailReplied ? 'replied' : ''}" 
+                    onclick="window.tasksView.openInOutlook('${task.id}')">
+                <i class="fas fa-reply"></i> ${task.emailReplied ? 'Répondre à nouveau' : 'Répondre à l\'email'}
+            </button>`);
+        }
         
         if (task.status !== 'completed') {
             actions.push(`<button class="btn-detailed complete" onclick="window.tasksView.complete('${task.id}')">
@@ -772,13 +786,6 @@ class TasksView {
         actions.push(`<button class="btn-detailed details" onclick="window.tasksView.showDetails('${task.id}')">
             <i class="fas fa-eye"></i> Détails
         </button>`);
-        
-        // NOUVEAU: Bouton Répondre pour les emails non répondus
-        if (task.hasEmail && task.emailFrom && !task.emailReplied) {
-            actions.push(`<button class="btn-detailed reply" onclick="window.tasksView.openInOutlook('${task.id}')">
-                <i class="fas fa-reply"></i> Répondre
-            </button>`);
-        }
         
         return actions.join('');
     }
@@ -856,9 +863,10 @@ class TasksView {
         
         this.showModal('Détails de la tâche', content, null, {
             footer: `
-                ${task.hasEmail && task.emailFrom && !task.emailReplied ? `
-                    <button class="btn btn-reply" onclick="window.tasksView.openInOutlook('${task.id}')">
-                        <i class="fas fa-reply"></i> Répondre à l'email
+                ${task.hasEmail && task.emailFrom ? `
+                    <button class="btn btn-reply ${task.emailReplied ? 'replied' : ''}" 
+                            onclick="window.tasksView.openInOutlook('${task.id}')">
+                        <i class="fas fa-reply"></i> ${task.emailReplied ? 'Répondre à nouveau' : 'Répondre à l\'email'}
                     </button>
                 ` : ''}
                 <button class="btn btn-secondary" onclick="window.tasksView.closeModal()">Fermer</button>
@@ -2067,6 +2075,20 @@ class TasksView {
                 border: none;
             }
 
+            .reply-needed-badge {
+                background: #fef2f2;
+                color: #dc2626;
+                border-color: #fecaca;
+                font-weight: 700;
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0% { opacity: 1; }
+                50% { opacity: 0.7; }
+                100% { opacity: 1; }
+            }
+
             .task-details {
                 display: flex;
                 align-items: center;
@@ -2214,7 +2236,22 @@ class TasksView {
             .action-btn.complete:hover { background: #dcfce7; border-color: var(--success); color: var(--success); }
             .action-btn.edit:hover { background: #fef3c7; border-color: var(--warning); color: var(--warning); }
             .action-btn.details:hover { background: #f3e8ff; border-color: #8b5cf6; color: #8b5cf6; }
-            .action-btn.reply:hover { background: #eff6ff; border-color: var(--primary); color: var(--primary); }
+            .action-btn.reply { 
+                background: var(--primary); 
+                color: white; 
+                border-color: var(--primary);
+            }
+            .action-btn.reply:hover { 
+                background: var(--primary-hover); 
+                transform: translateY(-1px) scale(1.05);
+            }
+            .action-btn.reply.replied {
+                background: #10b981;
+                border-color: #10b981;
+            }
+            .action-btn.reply.replied:hover {
+                background: #059669;
+            }
 
             .btn-detailed {
                 display: flex;
@@ -2272,6 +2309,17 @@ class TasksView {
             .btn-detailed.reply:hover {
                 background: var(--primary-hover);
                 border-color: var(--primary-hover);
+                transform: translateY(-1px);
+            }
+
+            .btn-detailed.reply.replied {
+                background: #10b981;
+                border-color: #10b981;
+            }
+
+            .btn-detailed.reply.replied:hover {
+                background: #059669;
+                border-color: #059669;
             }
 
             /* Modal */
